@@ -99,6 +99,7 @@ async function poll() {
     $('#imu-truth').innerHTML = calibrated ? angle(imu.truth_heading_deg) : '—';
     $('#imu-error').innerHTML = calibrated ? angle(imu.heading_error_deg) : '—';
     $('#imu-status').textContent = !online ? 'IMU offline' : paused ? 'Paused · IMU time held' : !imu.streaming ? 'Waiting for IMU samples' : imu.heading_status;
+    $('#camera-status').textContent = !online ? 'OFFLINE' : paused ? 'PAUSED' : state.camera?.streaming ? 'LIVE' : 'WAITING';
     const last = trail.at(-1);
     if (online && (!last || Math.hypot(state.pose.x-last.x, state.pose.y-last.y) > .003)) {
       trail.push({...state.pose}); if (trail.length > 500) trail.shift();
@@ -135,3 +136,13 @@ function drawMap() {
 }
 setInterval(drive, 90);
 poll();
+
+let cameraBusy = false;
+const cameraImage = $('#camera-image');
+cameraImage.onload = () => { cameraBusy = false; cameraImage.hidden = false; };
+cameraImage.onerror = () => { cameraBusy = false; };
+setInterval(() => {
+  if (!cameraBusy && online && !paused && state.camera?.streaming) {
+    cameraBusy = true; cameraImage.src = `/camera.png?frame=${state.camera.sequence}`;
+  }
+}, 200);

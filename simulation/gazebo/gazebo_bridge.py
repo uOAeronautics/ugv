@@ -14,6 +14,8 @@ from gz.msgs.world_control_pb2 import WorldControl
 from gz.msgs.boolean_pb2 import Boolean
 from control_state import ControlState
 from imu_model import RecordedImu, ImuDownsampler
+from camera_stream import CameraStream
+from gz.msgs.image_pb2 import Image
 from gz.msgs.imu_pb2 import IMU
 from gz.msgs.stringmsg_pb2 import StringMsg
 from build_motor_plugin import plugin_environment
@@ -23,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 class GazeboBridge:
     def __init__(self):
         self.control = ControlState()
+        self.camera = CameraStream()
         self.imu = RecordedImu()
         self.imu_downsampler = ImuDownsampler(self.imu.profile['update_rate_hz'],self.imu.profile['anti_alias_cutoff_hz_assumed'])
         self.imu_received_at = 0.
@@ -40,6 +43,7 @@ class GazeboBridge:
         self.noisy_imu_publisher = self.node.advertise('/model/freenove/imu/noisy', IMU)
         self.nano_publisher = self.node.advertise('/model/freenove/imu/nano', StringMsg)
         self.node.subscribe(IMU, '/model/freenove/imu/ideal', self.imu_sample)
+        self.node.subscribe(Image, '/model/freenove/camera/image', self.camera.update)
         self.node.subscribe(WorldStatistics, '/world/freenove_lab/stats', self.stats)
         self.node.subscribe(Pose_V, '/world/freenove_lab/dynamic_pose/info', self.poses)
         self.worker = threading.Thread(target=self.publish_loop, daemon=True)
@@ -92,7 +96,7 @@ class GazeboBridge:
             sim_time_s, rtf = self.sim_time_s, self.real_time_factor
         imu=dict(self.imu.snapshot(), streaming=online and not paused and time.monotonic()-self.imu_received_at<1)
         v, w = self.control.command(online and not paused)
-        return dict(online=online, paused=paused, pose=pose, imu=imu, sim_time_s=sim_time_s, real_time_factor=rtf, linear=v if self.control.pwm is None else None, angular=w if self.control.pwm is None else None, driving=any(self.control.duty_command(online and not paused)) if self.control.pwm is not None else bool(v or w), pwm=self.control.pwm, drive_mode="real-car PWM" if self.control.pwm is not None else "SI velocity")
+        return dict(online=online, paused=paused, pose=pose, imu=imu, camera=self.camera.status(), sim_time_s=sim_time_s, real_time_factor=rtf, linear=v if self.control.pwm is None else None, angular=w if self.control.pwm is None else None, driving=any(self.control.duty_command(online and not paused)) if self.control.pwm is not None else bool(v or w), pwm=self.control.pwm, drive_mode="real-car PWM" if self.control.pwm is not None else "SI velocity")
 
     def publish_command(self):
         state = self.status()

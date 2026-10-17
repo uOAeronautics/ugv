@@ -30,6 +30,14 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if self.path.split('?',1)[0]=='/camera.png':
+            frame=self.server.bridge.camera.png()
+            if frame is None:return self.reply({'error':'Waiting for simulated camera'},503)
+            self.send_response(200);self.send_header('Content-Type','image/png')
+            self.send_header('Content-Length',str(len(frame)));self.end_headers()
+            try:self.wfile.write(frame)
+            except (BrokenPipeError,ConnectionResetError):pass
+            return
         if self.path == '/api/status':
             return self.reply(dict(app='ugv-gazebo-controls', **self.server.bridge.status()))
         if self.path not in {'/', '/index.html', '/app.js', '/style.css'}:

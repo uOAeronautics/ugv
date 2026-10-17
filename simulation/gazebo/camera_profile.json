@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "hardware_label": "Arducam UC-788 Rev.B / Pivariety monochrome global shutter",
+  "sensor_identity_confirmed": false,
+  "identity_note": "Historical docs label OV9281; live Pivariety driver advertises 1600x1300. Exact sensor and installed lens are unresolved; do not substitute another model's lens specs.",
+  "observed_sensor_modes": [[1280,720,30],[1600,1080,30],[1600,1300,30]],
+  "width": 1280,
+  "height": 720,
+  "update_rate_hz": 30,
+  "format": "L8",
+  "fx": 968.0,
+  "fy": 968.0,
+  "cx": 640.0,
+  "cy": 360.0,
+  "intrinsics_confirmed": false,
+  "intrinsics_source": "Existing real-car ArUco and parking nominal K at 1280x720; about 67 degrees horizontal. Not a checkerboard calibration.",
+  "distortion": [0,0,0,0,0],
+  "distortion_confirmed": false,
+  "real_exposure_us": 8000,
+  "real_gain": 1.5,
+  "real_mjpeg_quality": 75,
+  "mount": {
+    "inset_from_board_front_m": 0.04,
+    "width_m": 0.04,
+    "height_m": 0.04,
+    "depth_m_assumed": 0.004,
+    "rail_width_m_assumed": 0.0025,
+    "lens_front_offset_m_assumed": 0.0158,
+    "pitch_rad_assumed": 0,
+    "yaw_rad_assumed": 0,
+    "source": "User confirmed 4cm back from main board front edge; 4x4cm upright stand with centered lens. Thickness, lens projection and exact alignment estimated from photo."
+  },
+  "near_clip_m": 0.005,
+  "far_clip_m": 20,
+  "limits": [
+    "Resolution, rate and monochrome format match observed running Pi stream; FOV/intrinsics remain nominal.",
+    "Rendered frames are instantaneous global projections, without a calibrated 8ms exposure integration, gain/noise response, lens PSF or spectral response.",
+    "No calibrated distortion or sensor image-noise model is available."
+  ]
+}

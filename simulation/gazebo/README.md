@@ -16,7 +16,7 @@ height.** The old solid chassis envelope was incorrect and has been removed.
 The visual assembly includes a thin black main PCB, four yellow TT gearmotors
 with silver cans, black treaded tires and yellow spoke hubs, an underside
 estimated low central LiPo battery, a raised green Raspberry Pi, a blue Nano on
-headers, a front servo/horn, a lower forward-facing camera, an orange ribbon,
+headers, a front servo/horn, an upright forward-facing camera in its new white stand, an orange ribbon,
 and approximate screws, switches, LEDs and connectors. It represents the
 photographed configuration, with no ultrasonic turret attached. Loose cables
 outside the car are omitted.
@@ -33,7 +33,7 @@ outside the car are omitted.
 
 The board thickness is provisionally 1.6mm; the 1.75in reference is interpreted
 as its top surface. The heights no longer define a 0.75in thick chassis block.
-Motor housings reach down to 25.4mm. The battery pack and camera can extend
+Motor housings reach down to 25.4mm. The battery pack can extend
 below the motor bottoms; the 1in measurement is not a universal clearance.
 
 Assumptions retained from the original sketch: symmetric axles, overall length
@@ -45,7 +45,8 @@ tread reaching the nominal envelope; collision cylinders use the full radius.
 **Unmeasured component sizes and locations are approximate.** Photos guide
 appearance, not calibrated photogrammetry. Board corner shape, circuitry,
 wiring, fasteners, rim/spoke geometry, lens, and brackets are simplified.
-The camera extends beyond the 8in tire envelope. No accessory dimensions or
+The updated camera stand is 4cm back from the board front and stays within
+the tire envelope. No accessory dimensions or
 mass distribution should be treated as measured clearance geometry.
 
 Existing `docs/HARDWARE.md` records a 210mm wheelbase and 149mm track from
@@ -175,3 +176,13 @@ real-car heading estimator. Hold still for three simulation seconds to zero it;
 then compare IMU heading with true relative heading and error in the console.
 The noise/bias profile comes from the existing real recordings. See
 [IMU model and topics](IMU_MODEL.md) for units, fitting, reset behavior and limits.
+
+
+## Updated camera stand and live view
+
+The camera now occupies a white 40 × 40 mm upright frame, 40 mm behind the
+board's front edge, with the lens centered 20 mm above the board. The old lower
+camera and its ribbon placement are replaced. The console has a live forward
+monochrome preview from a native 1280 × 720, 30 Hz camera sensor. FOV matches
+the real software's nominal fx=fy=968 intrinsics; exact lens calibration is
+still pending. See [camera geometry, specs and checks](CAMERA_MODEL.md).

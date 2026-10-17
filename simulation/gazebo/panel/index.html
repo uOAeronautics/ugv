@@ -20,6 +20,11 @@
       <input id="speed" type="range" min="500" max="1800" step="100" value="1800" aria-label="Motor power (same scale as the car)">
       <div class="range-labels"><span>Low · 500</span><span>1800 · Full dashboard power</span></div>
       <p class="focus-note" id="focus-note">Keep this window focused. Low power may not overcome tire scrub.</p>
+      <section class="camera-panel" aria-label="Forward camera preview">
+        <div class="card-head"><h3>Front camera</h3><span id="camera-status" class="tiny">WAITING</span></div>
+        <img id="camera-image" alt="Monochrome view from the simulated Arducam" hidden>
+        <p>1280 × 720 · monochrome · 30 Hz sensor</p><p class="camera-note">Nominal 67° lens angle · intrinsics not yet calibrated</p>
+      </section>
     </section>
     <section class="card view-card"><div class="card-head"><h2>On the test pad</h2><span class="live-label">WORLD POSITION</span></div>
       <div class="map"><canvas id="map" width="640" height="480" aria-label="Top-down position and recent path of the simulated car"></canvas><div class="map-caption"><i></i> Car &nbsp; <span>·</span> Recent path <span class="map-scale">10 cm grid</span></div></div>

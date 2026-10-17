@@ -1,5 +1,6 @@
 """Generate a photo-informed Freenove visual model; stdlib only, SI in SDF."""
 from assembly import assembly, COLORS
+from camera_model import add_camera_sensor
 from environment import add_environment
 from motor_physics import load_profile, add_rubber_surface, add_visual_material
 from mass_properties import properties
@@ -37,6 +38,8 @@ def main():
     node(physics, 'real_time_factor', 1)
     for name, cls in [('physics', 'Physics'), ('user-commands', 'UserCommands'), ('scene-broadcaster', 'SceneBroadcaster'), ('imu', 'Imu')]:
         node(world, 'plugin', filename=f'gz-sim-{name}-system', name=f'gz::sim::systems::{cls}')
+    sensors=node(world,'plugin',filename='gz-sim-sensors-system',name='gz::sim::systems::Sensors')
+    node(sensors,'render_engine','ogre2')
     add_environment(world, node)
     model = node(world, 'model', name='freenove')
     node(model, 'pose', '0 0 0.001 0 0 0')
@@ -74,6 +77,7 @@ def main():
                     node(mat,'diffuse',color)
                     add_visual_material(mat,node,part['color'],motor)
         if name=='chassis':
+            add_camera_sensor(link,node,p)
             imu_profile=json.loads((HERE/'imu_noise_profile.json').read_text())
             sensor=node(link,'sensor',name='nano_ideal_imu',type='imu')
             node(sensor,'pose',' '.join(map(str,(*imu_profile['position_body_m'],0,0,0))))

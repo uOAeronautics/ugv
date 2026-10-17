@@ -1,0 +1,28 @@
+{
+  "width": 1280,
+  "height": 720,
+  "pixel_format": "L_INT8",
+  "rate_per_sim_second_hz": 30.42394014962593,
+  "camera_info_intrinsics": [
+    968.0,
+    0.0,
+    640.0,
+    0.0,
+    968.0,
+    360.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "target_projection_errors_px": [
+    1.0031948963187618,
+    0.9775479527879979,
+    1.0983624174197042
+  ],
+  "optical_origin_body_m": [
+    0.07105,
+    0,
+    0.06445
+  ],
+  "intrinsics_confirmed_on_real_camera": false
+}

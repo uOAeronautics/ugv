@@ -4,6 +4,7 @@ X points toward the camera/front, Y left, Z up. Small components are approximate
 """
 import math
 from tt_geometry import add_tt_motor
+from camera_model import camera_geometry, load_camera
 
 COLORS = {
     'pcb': (.018, .024, .03), 'green': (.025, .26, .10),
@@ -98,25 +99,33 @@ def assembly(p):
     for x in range(12):
         for y in (-.005,.011):
             box('nano_pin_'+str((x,y)),(-.072+x*.003,y,nano_z-.009),(.0006,.0006,.018),'gold')
-    # Servo, white horn and taped mount shown at the front.
-    box('front_servo',(.052,0,board+.009),(.023,.013,.017),'chip',collision=True)
-    cyl('servo_pivot',(.052,0,board+.019),.003,.005,'white')
-    box('servo_horn',(.052,0,board+.022),(.004,.022,.002),'white')
-    box('camera_mount',(.092,0,.031),(.005,.034,.022),'chip')
-    # Camera faces +X, mounted below the leading board edge.
-    box('camera_pcb',(.099,0,.030),(.0016,.025,.024),'green',collision=True)
-    cyl('camera_lens_barrel',(.105,0,.028),.008,.011,'chip',(0,math.pi/2,0),True)
-    cyl('camera_glass',(.111,0,.028),.0055,.0007,'lens',(0,math.pi/2,0))
-    for y in (-.010,.010):
-        cyl('camera_screw_'+str(y),(.1005,y,.039),.002,.002,'silver',(0,math.pi/2,0))
-    # Broad flexible orange ribbon draped over the board, with a short raised bend.
-    for name,pos,size,rot in [
-        ('ribbon_rear',(-.025,-.003,pi_z+.004),(.030,.015,.0003),(0,.25,0)),
-        ('ribbon_middle',(.010,-.003,board+.012),(.048,.015,.0003),(0,.22,0)),
-        ('ribbon_front',(.055,-.003,board+.006),(.044,.015,.0003),(0,-.04,0)),
-        ('ribbon_fold',(.082,-.003,board+.003),(.014,.015,.0003),(0,.5,0))]:
-        box(name,pos,size,'orange',rot)
-    box('black_mount_tape',(.074,-.003,board+.005),(.020,.022,.0006),'chip')
+    # New upright white 40x40mm camera stand, 40mm behind board front.
+    camera=load_camera();mount=camera['mount'];geometry=camera_geometry(p,camera)
+    cx,cz=geometry['stand_x'],geometry['center_z']
+    depth,rail=mount['depth_m_assumed'],mount['rail_width_m_assumed']
+    for side in (-1,1):
+        box('camera_stand_side_'+str(side),(cx,side*(mount['width_m']-rail)/2,cz),
+            (depth,rail,mount['height_m']),'white',collision=True)
+        box('camera_stand_edge_'+str(side),(cx,0,cz+side*(mount['height_m']-rail)/2),
+            (depth,mount['width_m']-2*rail,rail),'white',collision=True)
+    box('camera_stand_foot',(cx-.003,0,board+.001),( .012,.040,.002),'white',collision=True)
+    box('camera_pcb',(cx+.003,0,cz),(.0016,.035,.035),'green',collision=True)
+    box('camera_lens_base',(cx+.006,0,cz),(.004,.017,.017),'chip')
+    cyl('camera_lens_barrel',(cx+.010,0,cz),.007,.0104,'chip',(0,math.pi/2,0),True)
+    cyl('camera_glass',(geometry['optical_xyz'][0]-.0003,0,cz),.0055,.0006,'lens',(0,math.pi/2,0))
+    for y in (-.0145,.0145):
+        for z in (-.0145,.0145):
+            cyl('camera_screw_'+str((y,z)),(cx+.0045,y,cz+z),.0018,.0014,'silver',(0,math.pi/2,0))
+    # Retained servo geometry sits behind the fixed stand; position is estimated.
+    servo_x=cx-.020
+    box('front_servo',(servo_x,0,board+.009),(.023,.013,.017),'chip',collision=True)
+    cyl('servo_pivot',(servo_x,0,board+.019),.003,.005,'white')
+    box('servo_horn',(servo_x,0,board+.022),(.004,.022,.002),'white')
+    # Photo-informed ribbon loop rises from the Pi to the stand's top connector.
+    path=[(-.015,pi_z+.003),(-.003,board+.067),(.023,board+.070),(cx-.004,board+.039)]
+    for i,((ax,az),(bx,bz)) in enumerate(zip(path,path[1:])):
+        box('camera_ribbon_'+str(i),((ax+bx)/2,0,(az+bz)/2),
+            (math.hypot(bx-ax,bz-az),.015,.0003),'orange',(0,-math.atan2(bz-az,bx-ax),0))
     cyl('buzzer',(.071,-.030,board+.0055),.006,.011,'chip')
     cyl('buzzer_label',(.071,-.030,board+.0112),.0053,.0003,'white')
     for x in (-.026,-.011):

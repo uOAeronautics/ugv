@@ -6,15 +6,16 @@ Total mass: **577.4 g**. Sketch dimensions confirmed in inches: 7.5 × 3.75 in
 main PCB, 8 × 5.75 in tire envelope, 2.5 in wheel diameter. Symmetric axle
 placement implies 139.7 mm wheelbase and 120.65 mm wheel-center track. Motor
 bottom clearance is 1 in; the main board top is 1.75 in above the floor.
-The camera extends beyond the tire envelope. Component weights and LiPo
-placement are estimates recorded in `simulation/gazebo/mass_distribution.json`.
+The camera now sits on a 40 × 40 mm upright stand, 40 mm back from the PCB
+front edge; its lens is centered 20 mm above the board. Component weights and
+LiPo placement are estimates recorded in `simulation/gazebo/mass_distribution.json`.
 Older snapshots below retain their observation dates.
 
 ## graph
 
 ```text
 Pi4B
-├─ CSI -> Arducam UC-788 Rev.B / OV9281 mono global-shutter
+├─ CSI -> Arducam UC-788 Rev.B / Pivariety mono global-shutter (exact sensor/lens unresolved)
 │  ├─ controller=Pivariety@0x0c fw=0x10002; sensor=mono global-shutter
 │  ├─ boot:=camera_auto_detect=0 + dtoverlay=arducam-pivariety
 │  └─ modes=1280x720|1600x1080|1600x1300@30; stream=1280x720@30 MJPEG
@@ -50,6 +51,13 @@ capture := rpicam-still --nopreview --timeout 1000 -o <file>
 boot backup := /boot/firmware/config.txt.pre-uc788
 userspace := Arducam libcamera+rpicam trixie packages; capture✓ 2026-09-27
 ```
+
+The live driver reports 1600×1300 mono and the modes above. The historical
+OV9281 label conflicts with that size and is not treated as a verified sensor ID.
+The Gazebo camera matches the running 1280×720/30 mono stream, using the same
+nominal, uncalibrated fx=fy=968 intrinsics as the real vision code. See
+[the camera model](../simulation/gazebo/CAMERA_MODEL.md) for the new mount,
+source observations and differences from the physical exposure/lens.
 
 ## electrical invariants
 
