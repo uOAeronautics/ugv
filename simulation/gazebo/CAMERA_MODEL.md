@@ -33,7 +33,11 @@ That sensor label conflicts with the live 1600 × 1300 modes: Arducam's
 [OV9281 datasheet](https://www.arducam.com/downloads/modules/RaspberryPi_camera/OV9281_MIPI_Camera_Module_DS_v2.pdf)
 lists a 1280 × 800 sensor. The generic Pivariety name is insufficient to identify
 the installed sensor and lens. We therefore match the observed stream without
-claiming a verified sensor SKU or borrowing FOV from a different Arducam lens.
+claiming a verified sensor SKU. The user subsequently confirmed the standard
+lens. Arducam lists **67° horizontal × 41.8° vertical** for the likely
+[B0165/OV9281 standard M12 lens](https://docs.arducam.com/Raspberry-Pi-Camera/Global-Shutter-Camera/quick-start/),
+which supports retaining the current approximately 67° horizontal setting.
+Standard-lens confirmation is recorded separately from measured calibration.
 
 `camera_profile.json` is the shared camera/mount configuration. The native
 Gazebo camera publishes **1280 × 720 L8 grayscale at a configured 30 Hz**, with
@@ -85,6 +89,6 @@ optional `CAMERA_SCREENSHOT` output path). It never connects to the real car.
 The renderer does not yet integrate an actual 8 ms exposure, reproduce analog
 gain, motion blur, lens focus/PSF, spectral/infrared response, calibrated
 photometric noise or measured distortion. No unsupported camera noise constants
-are invented. Matching those requires the exact module/lens identification,
-checkerboard intrinsics and controlled image captures. The simulated optical
+are invented. Matching those requires checkerboard intrinsics and controlled image captures;
+the standard lens is user-confirmed, while exact sensor SKU remains unresolved. The simulated optical
 pose also remains an estimate beyond the user-confirmed stand measurements.
