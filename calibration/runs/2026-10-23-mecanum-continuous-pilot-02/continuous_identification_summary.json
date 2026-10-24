@@ -1,0 +1,191 @@
+{
+  "observation_scope": "contiguous visually observed segments; endpoints are segment endpoints, not full trajectory endpoints",
+  "visual_alignment": {
+    "valid": true,
+    "height_m": 0.05991771842159588,
+    "height_bootstrap_95_m": [
+      0.05745909881056967,
+      0.06143088245911732
+    ],
+    "camera_to_body_yaw_rad": -0.04522289820352325,
+    "training": {
+      "equations": 411,
+      "trials": 6,
+      "integrated_acceleration_rmse_mps": 0.05610843006350171
+    },
+    "heldout": {
+      "equations": 151,
+      "trials": 2,
+      "integrated_acceleration_rmse_mps": 0.07155164698772624
+    },
+    "source": "visual_inertial_train_scaled",
+    "scale_fit_trial_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "imu_offset_m": [
+      -0.051302,
+      0.002974
+    ],
+    "camera_offset_m": [
+      0.1,
+      0.0
+    ],
+    "limitations": [
+      "Metric scale shares accelerometer calibration; heldout images are independent of scale fitting but not an external surveyed reference.",
+      "Bootstrap resamples whole training trials and excludes systematic camera, IMU and mounting errors.",
+      "Floor homography ambiguity, vibration and tilt remain systematic errors; invalid alignment is not promoted."
+    ]
+  },
+  "coverage": [
+    {
+      "trial": 0,
+      "split": "train",
+      "observed_segment_seconds": 5.772679705999508,
+      "total_trial_seconds": 9.246232673999657,
+      "fraction": 0.6243277569936395
+    },
+    {
+      "trial": 1,
+      "split": "train",
+      "observed_segment_seconds": 2.38795072099947,
+      "total_trial_seconds": 9.236651850000271,
+      "fraction": 0.2585299045345527
+    },
+    {
+      "trial": 2,
+      "split": "train",
+      "observed_segment_seconds": 1.076668888000313,
+      "total_trial_seconds": 9.181131549999918,
+      "fraction": 0.11726973762839969
+    },
+    {
+      "trial": 3,
+      "split": "train",
+      "observed_segment_seconds": 8.577823859001,
+      "total_trial_seconds": 9.176002986999265,
+      "fraction": 0.9348104911424097
+    },
+    {
+      "trial": 4,
+      "split": "train",
+      "observed_segment_seconds": 3.3264656699993793,
+      "total_trial_seconds": 9.194015136000417,
+      "fraction": 0.36180772173999914
+    },
+    {
+      "trial": 5,
+      "split": "train",
+      "observed_segment_seconds": 0.8227180209996732,
+      "total_trial_seconds": 9.196586761000617,
+      "fraction": 0.0894590615388441
+    },
+    {
+      "trial": 6,
+      "split": "heldout",
+      "observed_segment_seconds": 7.055167330000586,
+      "total_trial_seconds": 9.206605061000118,
+      "fraction": 0.7663158442504299
+    },
+    {
+      "trial": 7,
+      "split": "heldout",
+      "observed_segment_seconds": 0.885555247999946,
+      "total_trial_seconds": 9.216671886999393,
+      "fraction": 0.09608188930421499
+    }
+  ],
+  "heldout_velocity_rmse": [
+    0.052780084099585595,
+    0.03235630227657763,
+    0.14527656015912999
+  ],
+  "heldout_velocity_interval_95_coverage": [
+    0.9686323713927227,
+    0.863237139272271,
+    0.9284818067754078
+  ],
+  "heldout_segment_endpoint_rmse": [
+    0.030291998439925714,
+    0.016548835056521022,
+    0.06466319871375914
+  ],
+  "heldout_segment_endpoint_95_coverage": [
+    0.875,
+    1.0,
+    0.875
+  ],
+  "probe_profile_transfer_heldout_velocity_rmse": [
+    0.11758088187270241,
+    0.07972494657346925,
+    0.1765887619136996
+  ],
+  "yaw_coupling": [
+    {
+      "trial": 0,
+      "pwm": 1400,
+      "split": "train",
+      "peak_yaw_dps": 48.835209967754295,
+      "yaw_rms_dps": 8.802850355219237
+    },
+    {
+      "trial": 1,
+      "pwm": 2600,
+      "split": "train",
+      "peak_yaw_dps": 181.43780425445598,
+      "yaw_rms_dps": 48.62898758176959
+    },
+    {
+      "trial": 2,
+      "pwm": 4095,
+      "split": "train",
+      "peak_yaw_dps": 239.37396501892837,
+      "yaw_rms_dps": 36.55356506237112
+    },
+    {
+      "trial": 3,
+      "pwm": 1400,
+      "split": "train",
+      "peak_yaw_dps": 34.59583822134418,
+      "yaw_rms_dps": 7.041667189042717
+    },
+    {
+      "trial": 4,
+      "pwm": 2600,
+      "split": "train",
+      "peak_yaw_dps": 71.9242733190115,
+      "yaw_rms_dps": 11.444921637239315
+    },
+    {
+      "trial": 5,
+      "pwm": 4095,
+      "split": "train",
+      "peak_yaw_dps": 85.6372666542698,
+      "yaw_rms_dps": 13.263159404615052
+    },
+    {
+      "trial": 6,
+      "pwm": 1400,
+      "split": "heldout",
+      "peak_yaw_dps": 27.630585746298856,
+      "yaw_rms_dps": 7.261893689919971
+    },
+    {
+      "trial": 7,
+      "pwm": 2600,
+      "split": "heldout",
+      "peak_yaw_dps": 68.89435927108192,
+      "yaw_rms_dps": 10.619789978475502
+    }
+  ],
+  "limitations": [
+    "Only2wholeheldouttrajectories; observedsegments are correlated withintrajectory.",
+    "No full8secendpointobserved continuously; highpowerfulltrajectoryacceptance failedobservability.",
+    "Metric scale is shared visual-inertial, not surveyedexternaltruth.",
+    "Posteriornoise includesmeasurementandprocessresidual, not intrinsicmotornoise alone."
+  ]
+}

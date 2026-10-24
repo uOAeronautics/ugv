@@ -11,7 +11,7 @@ HERE = Path(__file__).resolve().parent
 class MassPropertiesTest(unittest.TestCase):
     def test_generated_links_match_measured_total_including_carriers(self):
         model = E.parse(HERE/'freenove_world.sdf').find('./world/model[@name="freenove"]')
-        self.assertEqual(len(model.findall('link')), 9)
+        self.assertEqual(len(model.findall('link')), 41)
         self.assertAlmostEqual(sum(float(l.findtext('inertial/mass')) for l in model.findall('link')), .5774)
         self.assertAlmostEqual(float(model.findtext('./link[@name="chassis"]/inertial/mass')), .4454)
 

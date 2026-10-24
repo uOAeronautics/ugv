@@ -1,0 +1,27 @@
+{"event": "baseline_start", "t": 4348.316823796}
+{"event": "baseline_end", "t": 4360.339901622}
+{"event": "phase_start", "t": 4360.547898251, "phase": "forward", "leg": 0, "keys": "W", "pwm": 1800}
+{"event": "phase_end", "t": 4361.148478658, "phase": "forward", "leg": 0}
+{"event": "phase_start", "t": 4361.148531658, "phase": "right_turn", "leg": 0, "keys": "WD", "pwm": 1800}
+{"event": "phase_end", "t": 4363.150526231, "phase": "right_turn", "leg": 0, "yaw_angle_deg": -181.8592321704521}
+{"event": "phase_start", "t": 4363.150749398, "phase": "forward", "leg": 1, "keys": "W", "pwm": 1800}
+{"event": "phase_end", "t": 4363.751880268, "phase": "forward", "leg": 1}
+{"event": "phase_start", "t": 4363.751970287, "phase": "right_turn", "leg": 1, "keys": "WD", "pwm": 1800}
+{"event": "phase_end", "t": 4365.612317952, "phase": "right_turn", "leg": 1, "yaw_angle_deg": -180.32879897131815}
+{"event": "phase_start", "t": 4365.612580952, "phase": "forward", "leg": 2, "keys": "W", "pwm": 1800}
+{"event": "phase_end", "t": 4366.212964341, "phase": "forward", "leg": 2}
+{"event": "phase_start", "t": 4366.213094878, "phase": "right_turn", "leg": 2, "keys": "WD", "pwm": 1800}
+{"event": "phase_end", "t": 4368.278384673, "phase": "right_turn", "leg": 2, "yaw_angle_deg": -180.95609656186278}
+{"event": "phase_start", "t": 4368.278616932, "phase": "forward", "leg": 3, "keys": "W", "pwm": 1800}
+{"event": "phase_end", "t": 4368.878988172, "phase": "forward", "leg": 3}
+{"event": "phase_start", "t": 4368.879121117, "phase": "right_turn", "leg": 3, "keys": "WD", "pwm": 1800}
+{"event": "phase_end", "t": 4370.734080708, "phase": "right_turn", "leg": 3, "yaw_angle_deg": -181.24716252554157}
+{"event": "phase_start", "t": 4370.734281375, "phase": "forward", "leg": 4, "keys": "W", "pwm": 1800}
+{"event": "phase_end", "t": 4371.335188597, "phase": "forward", "leg": 4}
+{"event": "phase_start", "t": 4371.335302504, "phase": "right_turn", "leg": 4, "keys": "WD", "pwm": 1800}
+{"event": "phase_end", "t": 4373.368683688, "phase": "right_turn", "leg": 4, "yaw_angle_deg": -181.26635208023902}
+{"event": "phase_start", "t": 4373.368879392, "phase": "forward", "leg": 5, "keys": "W", "pwm": 1800}
+{"event": "phase_end", "t": 4373.970586892, "phase": "forward", "leg": 5}
+{"event": "phase_start", "t": 4373.970636558, "phase": "right_turn", "leg": 5, "keys": "WD", "pwm": 1800}
+{"event": "phase_end", "t": 4376.018783427, "phase": "right_turn", "leg": 5, "yaw_angle_deg": -184.68139518933359}
+{"event": "sequence_end", "t": 4376.019447761}

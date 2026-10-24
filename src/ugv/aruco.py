@@ -128,6 +128,9 @@ class ArucoFollower:
         self.last_detection_at = 0.0
         self.previous_gray: Any | None = None
         self.tracks: dict[int, TrackMemory] = {}
+        self.pending_low_light: dict[int, tuple[Detection, float]] = {}
+        self.last_full_decode = 0.0
+        self.live_decode_index = 0
         self.target_id: int | None = None
         self.filter_state: tuple[float, float, float, float, float] | None = None
         self.completed_at = deque(maxlen=90)
@@ -213,6 +216,8 @@ class ArucoFollower:
         state.aruco_status = status
         self.previous_gray = None
         self.tracks.clear()
+        if status != "aruco-searching":
+            self.pending_low_light.clear()
         self.target_id = None
         self.filter_state = None
 
@@ -289,7 +294,7 @@ class ArucoFollower:
         # few milliseconds. Very permissive sweeps cost hundreds of ms/frame.
         parameters.minCornerDistanceRate = 0.01
         parameters.minDistanceToBorder = 3
-        parameters.errorCorrectionRate = 0.8
+        parameters.errorCorrectionRate = 0.0
         # Verified on the steeply foreshortened live ID 2: 4 px/cell rejects
         # its bits; 8 px/cell decodes it at essentially the same total cost.
         parameters.perspectiveRemovePixelPerCell = 8
@@ -306,9 +311,71 @@ class ArucoFollower:
         return [] if image is None else ArucoFollower.detect_gray(image)
 
     @staticmethod
-    def detect_gray(image: Any) -> list[Detection]:
+    @lru_cache(maxsize=1)
+    def low_light_detectors():
+        """Small dark tags need local contrast and smaller threshold windows.
+
+        Require exact dictionary bits on these extra passes; do not increase
+        error correction to compensate for missing image detail.
+        """
+        import cv2
+        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        detectors = []
+        for window, constant in ((3, 2), (11, 0), (5, -2)):
+            p = cv2.aruco.DetectorParameters()
+            p.adaptiveThreshWinSizeMin = p.adaptiveThreshWinSizeMax = window
+            p.adaptiveThreshConstant = constant
+            p.minOtsuStdDev = 1
+            p.perspectiveRemovePixelPerCell = 8
+            p.errorCorrectionRate = 0
+            p.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+            detectors.append(cv2.aruco.ArucoDetector(dictionary, p))
+        return tuple(detectors)
+
+    @staticmethod
+    def detect_gray(image: Any, live_pass: int | None = None) -> list[Detection]:
+        import cv2
         import numpy as np
         dictionary, parameters, detector = ArucoFollower.detector()
+        if live_pass is not None:
+            # Spread acquisition alternatives across fresh frames instead of
+            # stacking their latency into one stale result.
+            which = live_pass % 5
+            scale = 1
+            pixels = image
+            if which:
+                local, small, fine = ArucoFollower.low_light_detectors()
+                detector = (local, small, fine, small)[which-1]
+                if which == 1:
+                    pixels = cv2.createCLAHE(3., (8, 8)).apply(image)
+                elif which == 4:
+                    scale = 2
+                    pixels = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+            quads, ids, rejected_live = detector.detectMarkers(pixels)
+            result = []
+            if ids is not None:
+                for quad, raw_id in zip(quads, ids.flatten()):
+                    tag = int(raw_id)
+                    if tag in ALLOWED_IDS:
+                        item = ArucoFollower.from_points(tag, quad.reshape(4, 2)/scale,
+                            source="decode" if which == 0 else "decode-low-light")
+                        if item:
+                            result.append(item)
+            if which in (0, 1):
+                # Bent paper can supply a good outer contour but fail the
+                # planar bit grid. Boost contrast before border-based
+                # unbending; only a few large candidates are attempted.
+                boosted = pixels if which == 1 else cv2.convertScaleAbs(pixels, alpha=2.)
+                large = [q for q in rejected_live if abs(cv2.contourArea(q)) > 800
+                         and min(math.dist(q.reshape(4, 2)[i], q.reshape(4, 2)[(i+1)%4]) for i in range(4)) >= 24]
+                large.sort(key=lambda q: abs(cv2.contourArea(q)), reverse=True)
+                seen = {item.tag_id for item in result}
+                for tag, points, errors in ArucoFollower.decode_rejected(boosted, large[:4], dictionary, 0):
+                    if tag not in seen:
+                        item = ArucoFollower.from_points(tag, points, source="decode-curved", confidence=.9)
+                        if item:
+                            result.append(item); seen.add(tag)
+            return sorted(result, key=lambda item: item.size_px, reverse=True)
         corners, ids, rejected = detector.detectMarkers(image)
         candidates: list[Detection] = []
         found_ids: set[int] = set()
@@ -350,6 +417,45 @@ class ArucoFollower:
             if detection:
                 candidates.append(detection)
                 found_ids.add(tag_id)
+        # Bounded extra passes retain small markers even when another, larger
+        # marker is already visible. Their identities require exact bit reads.
+        local, small, fine = ArucoFollower.low_light_detectors()
+        enhanced = cv2.createCLAHE(3., (8, 8)).apply(image)
+        passes = [(local, enhanced, 1, (0, 0)), (small, image, 1, (0, 0)), (fine, image, 1, (0, 0))]
+        # Upsample only small rejected candidates, keeping Pi latency bounded.
+        small_quads = [q for q in rejected if all(10 <= v <= 90 for v in cv2.boundingRect(q)[2:])]
+        for quad in sorted(small_quads, key=lambda q: abs(cv2.contourArea(q)), reverse=True)[:48]:
+            x, y, w, h = cv2.boundingRect(quad)
+            if not (10 <= w <= 90 and 10 <= h <= 90):
+                continue
+            x0, y0 = max(0, x-8), max(0, y-8)
+            crop = image[y0:min(height, y+h+8), x0:min(width, x+w+8)]
+            passes.append((small, cv2.resize(crop, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC), 2, (x0, y0)))
+        for decoder, pixels, scale, offset in passes:
+            extra_corners, extra_ids, _ = decoder.detectMarkers(pixels)
+            if extra_ids is None:
+                continue
+            for quad, raw_id in zip(extra_corners, extra_ids.flatten()):
+                tag_id = int(raw_id)
+                if tag_id not in ALLOWED_IDS or tag_id in found_ids:
+                    continue
+                detection = ArucoFollower.from_points(tag_id, quad.reshape(4, 2) / scale + np.asarray(offset, dtype=np.float32), source="decode-low-light")
+                if detection:
+                    candidates.append(detection)
+                    found_ids.add(tag_id)
+        if not any(d.size_px < 60 for d in candidates):
+            # A tiny tag may have no native-resolution contour at all.
+            enlarged = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+            extra_corners, extra_ids, _ = small.detectMarkers(enlarged)
+            if extra_ids is not None:
+                for quad, raw_id in zip(extra_corners, extra_ids.flatten()):
+                    tag_id = int(raw_id)
+                    if tag_id not in ALLOWED_IDS or tag_id in found_ids:
+                        continue
+                    detection = ArucoFollower.from_points(tag_id, quad.reshape(4, 2)/2, source="decode-low-light")
+                    if detection:
+                        candidates.append(detection)
+                        found_ids.add(tag_id)
         return sorted(candidates, key=lambda item: item.size_px, reverse=True)
 
     @staticmethod
@@ -637,8 +743,65 @@ class ArucoFollower:
             return []
         gray = image
         now = time.monotonic()
-        measured = self.detect_gray(gray)
+        # Once a marker is acquired, decode its neighbourhood at higher pixel
+        # density. Re-running all full-frame fallbacks on every frame starves
+        # tracking on a Pi and can make otherwise valid results stale.
+        seeds = [m.detection for m in self.tracks.values()]
+        seeds += [d for d, stamp in self.pending_low_light.values() if now-stamp < 1.2]
+        seeds = [d for d in seeds if d.size_px < 60]
+        measured = []
+        if seeds:
+            dictionary = self.detector()[0]
+            p = cv2.aruco.DetectorParameters()
+            p.adaptiveThreshWinSizeMin = 3
+            p.adaptiveThreshWinSizeMax = 31
+            p.adaptiveThreshWinSizeStep = 4
+            p.minOtsuStdDev = 1
+            p.errorCorrectionRate = 1.0
+            p.perspectiveRemovePixelPerCell = 8
+            roi_ids = set()
+            for seed in seeds[:8]:
+                pad = max(24, seed.size_px)
+                points = np.asarray(seed.corners)
+                x0 = max(0, int(points[:, 0].min()-pad)); y0 = max(0, int(points[:, 1].min()-pad))
+                x1 = min(gray.shape[1], int(points[:, 0].max()+pad)); y1 = min(gray.shape[0], int(points[:, 1].max()+pad))
+                if x1 <= x0 or y1 <= y0:
+                    continue
+                scale = 3 if seed.size_px < 60 else 1
+                roi = cv2.resize(gray[y0:y1, x0:x1], None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+                for constant in (-2, 0, 2, 4, 7):
+                    p.adaptiveThreshConstant = constant
+                    quads, ids, _ = cv2.aruco.ArucoDetector(dictionary, p).detectMarkers(roi)
+                    if ids is None:
+                        continue
+                    for quad, raw_id in zip(quads, ids.flatten()):
+                        tag = int(raw_id)
+                        # This local pass verifies the acquired identity.
+                        if tag != seed.tag_id or tag in roi_ids:
+                            continue
+                        item = self.from_points(tag, quad.reshape(4, 2)/scale + np.array([x0, y0], np.float32), source="decode-roi")
+                        if item:
+                            measured.append(item); roi_ids.add(tag)
+        if not measured:
+            full = self.detect_gray(gray, live_pass=self.live_decode_index)
+            self.live_decode_index += 1
+            self.last_full_decode = now
+            measured += [d for d in full if d.tag_id not in {item.tag_id for item in measured}]
         self.decode_ms = (time.monotonic() - now) * 1000
+        confirmed = []
+        for item in measured:
+            if item.tag_id in self.tracks or (item.source == "decode" and item.size_px >= 60):
+                confirmed.append(item)
+                continue
+            previous = self.pending_low_light.get(item.tag_id)
+            self.pending_low_light[item.tag_id] = (item, now)
+            if previous is not None:
+                old, stamp = previous
+                if (now-stamp < 1.2 and math.hypot(item.center_x-old.center_x, item.center_y-old.center_y) < max(20., item.size_px)
+                        and .6 < item.size_px/old.size_px < 1.7):
+                    confirmed.append(item)
+        self.pending_low_light = {tag: value for tag, value in self.pending_low_light.items() if now-value[1] < 1.2}
+        measured = confirmed
         by_id = {item.tag_id: item for item in measured}
 
         flow_candidates: dict[int, Detection] = {}

@@ -1,0 +1,40 @@
+{
+  "units": "metres",
+  "status": "Photo estimates; no surveyed drone measurements available",
+  "skid_length": 0.48,
+  "skid_center_spacing": 0.34,
+  "skid_radius": 0.015,
+  "deck_height": 0.43,
+  "deck_diameter": 0.235,
+  "motor_center_radius": 0.36,
+  "propeller_diameter": 0.38,
+  "gps_top_height": 0.694,
+  "payload_bottom_height": 0.225,
+  "minimum_center_corridor_width": 0.255,
+  "notes": [
+    "Photo 6 compares the roughly 0.20m UGV with the landing gear. Built skid end-to-end length is 0.480m (0.470m collision core, 0.4575m foam), with 0.310m inside gap at floor level.",
+    "Photo 7 informs the underbody headroom. Physical payload collision geometry bottoms at 0.225m; visual marker card extends to 0.168m and a loose cable to about 0.195m.",
+    "Photo 3 side view informs landing leg rake and cylindrical GPS mast; propeller and motor dimensions are proportional estimates.",
+    "Static obstacle for UGV perception and parking; no aerial dynamics or spinning rotors.",
+    "Fiducial cards use real DICT_4X4_50 IDs 9 and 12 on the two landing legs and IDs 0 and 1 on separate opposite-X cards at the suspended platform; each is printed on its outward face with a 50mm black square and 9mm quiet zone.",
+    "These values describe the built photo model. Only deck_diameter and skid_center_spacing currently directly drive geometry; other detail coordinates are authored in drone_model.py and are not independent scaling controls.",
+    "Landing gear has exactly TWO splayed tubes: one from each skid center to the central deck, as shown in photos 1/3/5/7. There are four distinct physical marker cards total."
+  ],
+  "skid_collision_length": 0.47,
+  "skid_foam_covered_length": 0.4575,
+  "deck_plate_heights": [
+    0.41,
+    0.438
+  ],
+  "payload_marker_bottom_height": 0.168,
+  "loose_cable_bottom_height": 0.195,
+  "corridor_width_evaluation_height": 0.2,
+  "landing_leg_count": 2,
+  "marker_card_count": 4,
+  "marker_ids": {
+    "left_leg": 12,
+    "right_leg": 9,
+    "payload_negative_x": 0,
+    "payload_positive_x": 1
+  }
+}

@@ -15,6 +15,5 @@ tmp/
 !tests/fixtures/*.png
 ._*
 
-# Raw calibration sessions; compact fitted profiles are versioned separately.
-calibration/runs/
-calibration/reports/
+# Calibration telemetry and reports are versioned. Camera images remain covered
+# by the image exclusions above and are retained in Pi/local raw-data backups.

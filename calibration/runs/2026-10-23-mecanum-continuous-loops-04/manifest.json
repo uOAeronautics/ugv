@@ -1,0 +1,483 @@
+{
+  "schema_version": 2,
+  "clock": "Pi monotonic seconds",
+  "status": "aborted",
+  "explicit_authorization": "User authorized autonomous clear-floor full-range live identification",
+  "initial_state": {
+    "type": "state",
+    "state": {
+      "connected": true,
+      "owner": null,
+      "armed": false,
+      "forward": 0,
+      "strafe": 0,
+      "turn": 0,
+      "turn_target_dps": 0,
+      "motion_mode": "idle",
+      "speed_limit": 1400,
+      "pan_us": 1500,
+      "tilt_us": 1500,
+      "aruco_enabled": false,
+      "aruco_follow": false,
+      "aruco_visible": false,
+      "aruco_id": null,
+      "aruco_distance_m": null,
+      "aruco_error_x": null,
+      "aruco_corners": [],
+      "aruco_markers": [],
+      "aruco_status": "aruco-disabled",
+      "imu_connected": true,
+      "imu_status": "streaming",
+      "imu_age_ms": 10,
+      "imu_rate_hz": 100.0,
+      "imu_accel_g": {
+        "x": 0.2301,
+        "y": -0.19458,
+        "z": 0.95996
+      },
+      "imu_gyro_dps": {
+        "x": 0.1221,
+        "y": 0.7935,
+        "z": -0.061
+      },
+      "heading_deg": 8.881041118784808,
+      "heading_rate_dps": 0.0,
+      "heading_calibrated": true,
+      "heading_stationary": true,
+      "heading_status": "relative \u00b7 rest",
+      "heading_progress": 0.0,
+      "wheels": {
+        "front-left": 0,
+        "rear-left": 0,
+        "front-right": 0,
+        "rear-right": 0
+      },
+      "stopped": true,
+      "reason": "client-stop",
+      "revision": 420,
+      "clients": 1,
+      "you_are_owner": false,
+      "watchdog_ms": 600,
+      "camera_enabled": true,
+      "camera_fps": 30.0,
+      "camera_frame_age_ms": 10,
+      "camera_sequence": 15517,
+      "aruco_fps": 0.0,
+      "aruco_processing_ms": 0.0,
+      "aruco_decode_ms": 0.0,
+      "aruco_skipped_frames": 0,
+      "aruco_result_age_ms": null,
+      "parking": {
+        "status": "waiting for drone tags",
+        "odometry": {
+          "status": "needs translated tag observations",
+          "mapped_features": 0,
+          "inliers": 0,
+          "reprojection_error_px": null
+        },
+        "pose_source": "none",
+        "camera_pose": null,
+        "pose_age_ms": null,
+        "position_sigma_m": null,
+        "tags": [],
+        "seen_tag_ids": [],
+        "entry_ready": false,
+        "blockers": [
+          "motion response and stopping bounds unverified",
+          "localization error bound unverified",
+          "tag size unverified",
+          "camera intrinsics unverified",
+          "camera-to-car mounting unverified",
+          "camera-to-car transform missing",
+          "drone-to-tag transform missing",
+          "full car envelope unknown",
+          "landing-gear clearance unverified",
+          "drone centre/parking pose uncalibrated",
+          "fresh localized pose unavailable",
+          "position uncertainty too large for exact parking",
+          "car centre not localized in drone frame"
+        ],
+        "gear": {
+          "clear_width_m": 0.254,
+          "bar_length_m": 0.3048,
+          "bar_radius_m": 0.03,
+          "height_clearance_m": null,
+          "inward_slope": null,
+          "confirmed": false
+        },
+        "vehicle": {
+          "width_m": null,
+          "length_m": null,
+          "height_m": null,
+          "wheelbase_m": 0.21,
+          "track_m": 0.149
+        },
+        "motion_model": {
+          "forward_mps": 0.64,
+          "reverse_mps": 0.5,
+          "left_dps": 91.0,
+          "right_dps": 127.0,
+          "confirmed": false,
+          "max_forward_mps": 1.2,
+          "max_reverse_mps": 1.2,
+          "max_left_dps": 160.0,
+          "max_right_dps": 200.0,
+          "stopping_distance_m": 0.02,
+          "angular_stop_deg": 5.0
+        },
+        "rejected_poses": 0,
+        "distance_sensor": "not verified; no obstacle-range authority",
+        "car_pose": null,
+        "car_pose_proxy": null,
+        "map_reference": "first mapped drone tag; not yet drone centre",
+        "active": false,
+        "execution_status": "client-stop"
+      },
+      "motion_input_age_ms": null
+    }
+  },
+  "plan": [
+    {
+      "forward": -1.0,
+      "strafe": 0.0,
+      "turn": 0,
+      "pwm": 1400,
+      "duration": 8.0,
+      "repeat": 2,
+      "split": "heldout",
+      "trajectory": "translation",
+      "phases": [
+        {
+          "forward": -1.0,
+          "strafe": 1.2246467991473532e-16,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.8910065242151102,
+          "strafe": -0.453990499687062,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.5877852523877833,
+          "strafe": -0.8090169943057005,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.15643446521477003,
+          "strafe": -0.9876883405674934,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.30901699415085976,
+          "strafe": -0.9510565163679641,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.7071067809782872,
+          "strafe": -0.7071067813948079,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.9510565161859379,
+          "strafe": -0.30901699471107885,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.9876883406596411,
+          "strafe": 0.15643446463297297,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.809016994651935,
+          "strafe": 0.5877852519112325,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.45399050021190873,
+          "strafe": 0.8910065239476874,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 5.890491158910199e-10,
+          "strafe": 1.0,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.4539904991622155,
+          "strafe": 0.8910065244825328,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.8090169939594661,
+          "strafe": 0.587785252864334,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.9876883404753461,
+          "strafe": 0.15643446579656511,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.9510565165499902,
+          "strafe": -0.3090169935906409,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.7071067818113285,
+          "strafe": -0.7071067805617667,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.3090169952712978,
+          "strafe": -0.9510565160039117,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.1564344640511779,
+          "strafe": -0.9876883407517884,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.5877852514346819,
+          "strafe": -0.8090169949981693,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.8910065236802648,
+          "strafe": -0.45399050073675523,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 1.0,
+          "strafe": -1.1780981093173598e-09,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.8910065247499547,
+          "strafe": 0.4539904986373706,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.5877852533408846,
+          "strafe": 0.8090169936132319,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.15643446637836192,
+          "strafe": 0.9876883403831986,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.3090169930304237,
+          "strafe": 0.9510565167320159,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.7071067801452473,
+          "strafe": 0.7071067822278477,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.9510565158218867,
+          "strafe": 0.30901699583151326,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.9876883408439359,
+          "strafe": -0.15643446346938109,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.8090169953444015,
+          "strafe": -0.587785250958134,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.45399050126160173,
+          "strafe": -0.8910065234128421,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -1.767143550030021e-09,
+          "strafe": -1.0,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.45399049811252257,
+          "strafe": -0.8910065250173781,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.8090169932669996,
+          "strafe": -0.5877852538174324,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.9876883402910513,
+          "strafe": -0.156434466960157,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.9510565169140415,
+          "strafe": 0.3090169924702065,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.7071067826443695,
+          "strafe": 0.7071067797287256,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": 0.3090169963917355,
+          "strafe": 0.9510565156398594,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.156434462887586,
+          "strafe": 0.9876883409360832,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.5877852504815806,
+          "strafe": 0.8090169956906379,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        },
+        {
+          "forward": -0.8910065231454195,
+          "strafe": 0.45399050178644823,
+          "turn": 0,
+          "pwm": 1400,
+          "duration": 0.2
+        }
+      ],
+      "loop_period_s": 2.666666667
+    }
+  ],
+  "heldout": "entire repeat 2, never used for fitting",
+  "camera_time": "Pi receipt timestamp for each JPEG, not hardware exposure timestamp",
+  "started_utc_untrusted_pi_clock": 1792807546.6396265,
+  "visual_guard": {
+    "enabled": true,
+    "radius_m": 0.35,
+    "height_prior_m": 0.05992,
+    "floor_normal_camera": [
+      -0.03495,
+      0.99926,
+      -0.00158
+    ],
+    "initial_origin_only": true,
+    "invalid_pair_policy": "stop and disarm; no tracking reset between trials",
+    "scale_source": "training estimated camera height, not surveyed",
+    "gyro_bias_dps": [
+      0.061,
+      0.7935,
+      -0.061
+    ],
+    "gyro_up_sensor": [
+      0.22921123829230367,
+      -0.19324990053721855,
+      0.9540003585863392
+    ],
+    "processing": {
+      "width_px": 480,
+      "denoise_kernel_px": [
+        3,
+        3
+      ],
+      "denoise_sigma": 0.7,
+      "denoise_before_resize": true,
+      "corner_quality": 0.02,
+      "corner_min_distance_px": 6,
+      "homography_ransac_px": 1.5,
+      "minimum_inlier_fraction": 0.7
+    }
+  },
+  "camera_capture_environment": {},
+  "requested_camera_provenance": {
+    "exposure_us": 3000,
+    "analogue_gain": 12.0,
+    "note": "Recorder provenance only; camera service controls exposure and gain"
+  },
+  "error": "RuntimeError('Visual workspace tracking lost: nonplanar_flow')",
+  "sample_count": 1338,
+  "frame_count": 262,
+  "ended_utc_untrusted_pi_clock": 1792807559.4925487
+}

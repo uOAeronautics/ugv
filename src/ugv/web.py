@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Iterator
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from smbus2 import SMBus
 from . import SERVO_CHANNELS, WHEEL_CHANNELS, _configure_pca9685, _set_pulse, _set_pwm, _stop_wheels
@@ -66,6 +66,7 @@ class CameraStream:
         self.received_at = 0.0; self.frame_times = deque(maxlen=90)
         self.cv = threading.Condition(); self.stop = threading.Event()
         self.process = None; self.thread = None
+        self.enabled = True
 
     def start(self):
         self.thread = threading.Thread(target=self._run, daemon=True, name="camera-stream")
@@ -74,15 +75,19 @@ class CameraStream:
     def _run(self):
         cmd = ["rpicam-vid", "--timeout", "0", "--nopreview", "--codec", "mjpeg",
                "--width", "1280", "--height", "720", "--framerate", "30",
-               "--quality", "75", "--shutter", "8000", "--gain", "1.5", "--denoise", "cdn_off",
+               "--quality", os.environ.get("UGV_CAMERA_JPEG_QUALITY", "95"), "--shutter", os.environ.get("UGV_CAMERA_SHUTTER_US", "8000"),
+               "--gain", os.environ.get("UGV_CAMERA_GAIN", "1.5"), "--denoise", "cdn_off",
                "--flush", "--output", "-"]
         while not self.stop.is_set():
+            if not self.enabled:
+                self.stop.wait(.25)
+                continue
             try:
                 self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
                 buf = bytearray()
                 last_frame_at = time.monotonic()
                 received_frame = False
-                while not self.stop.is_set():
+                while not self.stop.is_set() and self.enabled:
                     # A live rpicam process can stall indefinitely without EOF.
                     # Bound pipe waits and recover capture independently of the
                     # controller. Stale-frame checks still clear old overlays.
@@ -105,6 +110,7 @@ class CameraStream:
                         last_frame_at = time.monotonic()
                         received_frame = True
                         with self.cv:
+                            if not self.enabled: break
                             self.received_at = time.monotonic(); self.frame_times.append(self.received_at)
                             self.frame = frame; self.seq += 1; self.cv.notify_all()
             except Exception: pass
@@ -117,6 +123,14 @@ class CameraStream:
                         self.process.kill(); self.process.wait()
                     self.process = None
             self.stop.wait(1)
+
+    def set_enabled(self, enabled: bool):
+        with self.cv:
+            self.enabled = enabled
+            self.frame = None
+            self.received_at = 0.0
+            self.frame_times.clear()
+            self.cv.notify_all()
 
     def frames(self) -> Iterator[bytes]:
         seen = -1
@@ -143,7 +157,7 @@ class CameraStream:
             recent = [t for t in self.frame_times if now - t < 3]
             age = now - self.received_at if self.received_at else None
             fps = (len(recent) - 1) / (recent[-1] - recent[0]) if len(recent) > 1 and age < 0.5 else 0.0
-            return {"camera_fps": round(fps, 1), "camera_frame_age_ms": round(age * 1000) if age is not None else None,
+            return {"camera_enabled": self.enabled, "camera_fps": round(fps, 1), "camera_frame_age_ms": round(age * 1000) if age is not None else None,
                     "camera_sequence": self.seq}
 
     def close(self):
@@ -163,6 +177,7 @@ class RobotController:
         self.last_operator_command = 0.0
         self.last_pwm_at = time.monotonic()
         self.drive_deadline: float | None = None
+        self.calibration_up = (0.,0.,1.)
         self.imu_sample_at: float | None = None
         self.heading = RelativeHeading()
         self.dynamics = DynamicsTelemetry()
@@ -224,14 +239,22 @@ class RobotController:
                 self.parking_active = False
                 reason = "parking-sensors-stale"
             elif self.drive_deadline is not None and now >= self.drive_deadline:
-                reason = "aruco-pivot-complete"
+                reason = "calibration-pulse-complete" if self.state.motion_mode == "calibration" else "aruco-pivot-complete"
+            elif self.state.motion_mode == "calibration" and not self._imu_ready(now):
+                reason = "calibration-imu-stale"
+            elif self.state.motion_mode == "calibration":
+                gyro=tuple(self.state.imu_gyro_dps[a] for a in 'xyz')
+                yaw=sum(a*b for a,b in zip(gyro,self.calibration_up))
+                tilt=math.sqrt(max(0,sum(v*v for v in gyro)-yaw*yaw))
+                if not all(math.isfinite(v) for v in gyro) or abs(yaw)>850 or tilt>180:
+                    reason="calibration-sensor-motion-limit"
             elif self.motion.mode and now - self.last_operator_command > WATCHDOG_SECONDS:
                 reason = "input-watchdog"
             elif self.motion.requires_gyro and not self._imu_ready(now):
                 reason = "gyro-unavailable"
             elif not self.state.stopped and now - self.last_drive > WATCHDOG_SECONDS:
                 reason = "watchdog"
-            if reason: self._brake_locked(reason)
+            if reason: self._brake_locked(reason, release=reason in ("calibration-imu-stale","calibration-sensor-motion-limit"))
 
     def _guard(self):
         while not self.guard_stop.wait(.01):
@@ -301,24 +324,58 @@ class RobotController:
                 elif duty < 0: _set_pwm(self.bus, fwd, 0); _set_pwm(self.bus, rev, abs(duty))
                 else: _set_pwm(self.bus, rev, 4095); _set_pwm(self.bus, fwd, 4095)
 
-    def _apply_vector(self, forward: float, turn: float, limit: int, reason: str = "drive", smooth=False) -> None:
+    def _apply_vector(self, forward: float, turn: float, limit: int, reason: str = "drive", smooth=False, strafe: float = 0.0) -> None:
         motor_forward = -forward
-        left, right = motor_forward + turn, motor_forward - turn
-        scale = max(1.0, abs(left), abs(right))
+        # Mecanum inverse kinematics: forward, rightward strafe, and yaw.
+        # Q/positive yaw retains the established left-turn convention.
+        values = {
+            "front-left": motor_forward - strafe + turn,
+            "front-right": motor_forward + strafe - turn,
+            "rear-left": motor_forward + strafe + turn,
+            "rear-right": motor_forward - strafe - turn,
+        }
+        scale = max(1.0, *(abs(value) for value in values.values()))
         wheels = {
-            "front-left": round(left / scale * limit), "rear-left": round(left / scale * limit),
-            "front-right": round(right / scale * limit), "rear-right": round(right / scale * limit),
+            name: round(value / scale * limit) for name, value in values.items()
         }
         with self.hw_lock:
             if not self.state.armed: return
             now = time.monotonic()
             if smooth: wheels = ramp_wheels(self.state.wheels, wheels, now - self.last_pwm_at)
             self._write(wheels); self.last_drive = self.last_pwm_at = now
-            self.state.forward = forward; self.state.turn = turn; self.state.speed_limit = limit; self.state.wheels = wheels
+            self.state.forward = forward; self.state.strafe = strafe; self.state.turn = turn; self.state.speed_limit = limit; self.state.wheels = wheels
             self.state.stopped = not any(wheels.values()); self.state.reason = "command-zero" if self.state.stopped else reason; self.state.revision += 1
 
+    async def calibration_step(self, cid, forward, strafe, turn, limit, duration):
+        """Explicit identification pulse: full PCA range, at most 250ms lease."""
+        async with self.lock:
+            if self.state.owner != cid or not self.state.armed:
+                raise PermissionError("arm controls first")
+            if self.parking_active or aruco.follow:
+                raise PermissionError("disable autonomous motion before calibration")
+            if not all(math.isfinite(v) for v in (forward, strafe, turn, limit, duration)):
+                raise ValueError("nonfinite calibration input")
+            if not 0 <= limit <= 4095 or not .01 <= duration <= .25:
+                raise ValueError("calibration PWM/duration out of range")
+            if any(abs(v) > 1 for v in (forward, strafe, turn)):
+                raise ValueError("calibration vector out of range")
+            with self.hw_lock:
+                now = time.monotonic()
+                if not self._imu_ready(now):
+                    raise PermissionError("fresh calibrated IMU required")
+                if self.state.motion_mode != "calibration":
+                    gravity=tuple(self.state.imu_accel_g[a] for a in 'xyz')
+                    norm=math.sqrt(sum(v*v for v in gravity))
+                    if norm>.5:self.calibration_up=tuple(v/norm for v in gravity)
+                self.motion.cancel()
+                self.state.motion_mode = "calibration"
+                self.last_operator_command = now
+                self._apply_vector(forward, turn, int(limit), reason="calibration", strafe=strafe)
+                self.drive_deadline = now + duration
+        await self.broadcast()
+
     async def sidestep(self, cid: str, direction: int, limit: int) -> None:
-        raise PermissionError("side-step disabled; use direct turning")
+        await self.drive(cid, 0, float(direction), 0, limit)
 
     async def survey_step(self, cid, forward, turn, limit, duration):
         if self.parking_active:
@@ -419,6 +476,17 @@ class RobotController:
             await self.stop("parking-stopped", release=False)
             await self.broadcast()
 
+    async def camera_capture(self, cid, enabled):
+        if self.state.owner not in (None, cid):
+            raise PermissionError("only the controller can change camera capture")
+        if not isinstance(enabled, bool):
+            raise ValueError("camera enabled must be a boolean")
+        if not enabled:
+            await self.cancel_parking("camera-paused")
+            await aruco.configure(cid, False, False)
+        camera.set_enabled(enabled)
+        await self.broadcast()
+
     async def drive(self, cid, forward, strafe, turn, limit, autonomous=False, duration=None):
         async with self.lock:
             if self.state.owner != cid or not self.state.armed: raise PermissionError("arm controls first")
@@ -426,29 +494,28 @@ class RobotController:
             if aruco.follow and not autonomous: raise PermissionError("disable ArUco follow before manual drive")
             if not all(math.isfinite(value) for value in (forward, strafe, turn)): raise ValueError
             forward = max(-1., min(1., forward)); strafe = max(-1., min(1., strafe)); turn = max(-1., min(1., turn)); limit = max(500, min(1800, limit))
-            if strafe: raise ValueError("use side-step command for ordinary wheels")
             if duration is not None:
                 if not autonomous or not math.isfinite(duration): raise ValueError("invalid pulse duration")
                 duration = max(.01, min(.25, float(duration)))
             with self.hw_lock:
                 now = time.monotonic()
                 self.drive_deadline = None
-                self.state.strafe = 0.0
+                self.state.strafe = strafe
                 if autonomous:
                     self.motion.cancel()
                     self.state.motion_mode = "aruco-follow"
                     self.state.turn_target_dps = 0
-                    self._apply_vector(forward, turn, limit)
+                    self._apply_vector(forward, turn, limit, strafe=strafe)
                     if duration is not None:
                         self.drive_deadline = now + duration
-                elif not forward and not turn:
+                elif not forward and not strafe and not turn:
                     self._brake_locked("key-release")
                 else:
                     self.motion.cancel()
                     self.last_operator_command = now
                     self.state.motion_mode = "manual"
                     self.state.turn_target_dps = 0
-                    self._apply_vector(forward, turn, limit)
+                    self._apply_vector(forward, turn, limit, strafe=strafe)
         await self.broadcast()
 
     async def stop(self, reason, release=False):
@@ -496,6 +563,15 @@ def stream():
 @app.get("/api/state")
 async def state(): return controller.payload()
 
+@app.get("/api/calibration/frame")
+async def calibration_frame():
+    frame, sequence, captured_at = camera.latest_sample()
+    if frame is None:
+        return Response(status_code=503)
+    return Response(frame, media_type="image/jpeg", headers={
+        "X-Pi-Monotonic": str(captured_at), "X-Frame-Sequence": str(sequence),
+        "Cache-Control": "no-store"})
+
 @app.get("/api/dynamics")
 async def dynamics(after: int = 0): return controller.dynamics.snapshot(max(0, after))
 
@@ -514,11 +590,16 @@ async def websocket_endpoint(ws: WebSocket):
             try:
                 m = json.loads(await ws.receive_text()); kind = m.get("type")
                 if kind == "drive": await controller.drive(cid, float(m.get("forward",0)), float(m.get("strafe",0)), float(m.get("turn",0)), int(m.get("speed_limit",1800)))
+                elif kind == "calibration-step": await controller.calibration_step(cid, float(m.get("forward",0)), float(m.get("strafe",0)), float(m.get("turn",0)), float(m.get("speed_limit",0)), float(m.get("duration",0)))
                 elif kind == "sidestep": await controller.sidestep(cid, int(m.get("direction",0)), int(m.get("speed_limit",1200)))
                 elif kind == "survey-step": await controller.survey_step(cid, float(m.get("forward",0)), float(m.get("turn",0)), int(m.get("speed_limit",1800)), float(m.get("duration",.1)))
                 elif kind == "arm": await controller.arm(cid)
                 elif kind == "camera": await controller.camera_move(cid, str(m.get("axis")), int(m.get("delta", 0)))
-                elif kind == "aruco": await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"))
+                elif kind == "camera-capture": await controller.camera_capture(cid, m.get("enabled"))
+                elif kind == "aruco":
+                    if m.get("enabled") and not camera.enabled:
+                        raise PermissionError("enable camera capture before ArUco")
+                    await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"))
                 elif kind == "parking":
                     if m.get("action") == "start": await controller.start_parking(cid)
                     elif m.get("action") == "stop" and controller.state.owner == cid: await controller.cancel_parking()

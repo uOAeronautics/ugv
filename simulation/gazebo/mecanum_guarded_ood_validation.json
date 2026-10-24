@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "source_run": "2026-10-23-mecanum-continuous-loops-01",
+  "status": "FROZEN_MODEL_RELATIVE_VISUAL_INERTIAL_EVALUATION",
+  "model_artifact": "2026-10-23.continuous-pilot02.v1",
+  "model_sha256": "65081384610bd473a77e1356538e5e6fdef2d13a239b6e6222db1c258f211c76",
+  "model_unchanged": true,
+  "model_training_pwm": [
+    1400,
+    2600,
+    4095
+  ],
+  "model_posterior_particles": 60,
+  "recording_sha256": {
+    "samples.jsonl": "b0101ee751a0d22fb68a299765c14795ad5872e16b314641cfd5f34998e35e46",
+    "events.jsonl": "c52e1c687c87ba81a7dc086ec60cdafd2a79978e5c57d31b7eb5a340b42bb7de",
+    "visual_guard.jsonl": "c72e7fe6c5577239e929c852d4223dfc122123b27668d22cbff17e0e4472583c"
+  },
+  "camera_height_prior_m": 0.05992,
+  "requested_camera_provenance": {
+    "exposure_us": 3000,
+    "analogue_gain": 12.0,
+    "note": "Recorder provenance only; camera service controls exposure and gain"
+  },
+  "trials": [
+    {
+      "trial": 0,
+      "evaluation_split": "new_frozen_model_evaluation; recorder split label is ignored",
+      "recorder_split": "train",
+      "pwm": 1000,
+      "duration_s": 8.077452456000174,
+      "complete_guard_observation": true,
+      "accepted_guard_pairs": 87,
+      "guard_pairs": 87,
+      "maximum_guard_frame_gap_s": 0.10982419999982085,
+      "observed_velocity_samples": 87,
+      "velocity_rmse": [
+        0.03984986627173859,
+        0.059289856335144664,
+        0.154945007192558
+      ],
+      "velocity_interval_95_coverage": [
+        0.9885057471264368,
+        0.7126436781609196,
+        0.9540229885057471
+      ],
+      "pose_time_rmse": [
+        0.08590837473133467,
+        0.05910736078243738,
+        0.030406769199741182
+      ],
+      "endpoint_reference": [
+        -0.07974663372338016,
+        -0.06316035152532226,
+        -0.21642356393992995
+      ],
+      "endpoint_predicted_mean": [
+        0.05101730883543289,
+        0.011634406970188709,
+        -0.2125377062390393
+      ],
+      "endpoint_error": [
+        0.13076394255881305,
+        0.07479475849551097,
+        0.0038858577008906436
+      ],
+      "endpoint_position_error_norm_m": 0.15064350159209114,
+      "endpoint_interval_95_low": [
+        -0.24937950435561157,
+        -0.17622962765148661,
+        -1.0692445377853252
+      ],
+      "endpoint_interval_95_high": [
+        0.3256771069050593,
+        0.17647352458973484,
+        0.7061695037811644
+      ],
+      "endpoint_covered": [
+        true,
+        true,
+        true
+      ],
+      "maximum_observed_yaw_rate_dps": 39.12172821217459,
+      "imu_up_sensor": [
+        0.22536952656634612,
+        -0.185160513700773,
+        0.956516680806627
+      ],
+      "gyro_bias_before_dps": [
+        0.061,
+        0.7935,
+        -0.061
+      ],
+      "gyro_bias_after_dps": [
+        0.061,
+        0.7935,
+        -0.061
+      ]
+    }
+  ],
+  "limitations": [
+    "New trajectories are evaluation only despite recorder split labels; no refit, scale fitting or hyperparameter tuning is performed here.",
+    "Guard pose uses training-derived floor height, estimated plane and camera lever arm; no surveyed external metric pose.",
+    "Reference yaw and visual rotation compensation share the IMU, so yaw is not an independent optical check.",
+    "JPEG receipt times are not hardware exposure times; interpolation and velocity differencing add temporal uncertainty.",
+    "Predictive intervals condition on the fitted model and shared visual scale; systematic scale and mounting uncertainty are not fully propagated."
+  ]
+}

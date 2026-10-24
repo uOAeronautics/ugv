@@ -20,8 +20,8 @@ def assembly(p):
     L=p['chassis_length_in']*inch
     W=p['chassis_width_in']*inch
     R=p['wheel_diameter_in']*inch/2
-    tire=(p['overall_width_in']*inch-W)/2
-    track=p['overall_width_in']*inch-tire
+    tire=p.get('wheel_width_mm_assumed',(p['overall_width_in']*inch-W)*500)/1000
+    track=p.get('wheel_track_mm_assumed',(p['overall_width_in']*inch-tire)*1000)/1000
     wb=p['overall_length_in']*inch-2*R
     board=p['main_board_height_in']*inch
     thick=p['board_thickness_mm_assumed']/1000
@@ -46,25 +46,8 @@ def assembly(p):
             add_tt_motor(groups['chassis']['parts'], tag, x, y, direction, s, motorbottom, R)
             group=tag+'_wheel'
             groups[group]={'origin':(x,s*track/2,R),'parts':[]}
-            # Low-radius core plus outer tread blocks leave a visible tire pattern.
-            part(group,'tire','cylinder',(0,0,0),(R-.0008,tire),'rubber',(math.pi/2,0,0),True)
-            for a in range(44):
-                theta=2*math.pi*a/44
-                for row in range(4):
-                    t=theta+(row%2)*.024
-                    part(group,f'tread_{a}_{row}','box',
-                         ((R-.0006)*math.sin(t),(row-1.5)*tire/4,(R-.0006)*math.cos(t)),
-                         (.0037,tire/4-.00065,.0012),'rubber',(0,t,0))
-            # Yellow inset rim and spokes on both faces, just inside the tire width.
-            for face in (-1,1):
-                yy=face*(tire/2-.0005)
-                part(group,f'rim_{face}','cylinder',(0,yy,0),(.0238,.001),'yellow',(math.pi/2,0,0))
-                part(group,f'inset_{face}','cylinder',(0,yy+face*.00055,0),(.0208,.0005),'rubber',(math.pi/2,0,0))
-                for j in range(6):
-                    t=j*math.pi/3
-                    part(group,f'spoke_{face}_{j}','box',(.012*math.sin(t),yy+face*.001,.012*math.cos(t)),
-                         (.005,.002,.020),'yellow',(0,t+.12,0))
-                part(group,f'hub_{face}','cylinder',(0,yy+face*.001,0),(.007,.003),'yellow',(math.pi/2,0,0))
+            from mecanum_geometry import wheel_parts
+            groups[group]['parts'].extend(wheel_parts(R,tire))
 
     # Estimated low central LiPo envelope; mass and placement in mass_distribution.json.
     box('lipo_pack',(-.002,0,.030),(.085,.044,.020),'silver',collision=True)

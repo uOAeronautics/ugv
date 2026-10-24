@@ -4,8 +4,11 @@ from camera_model import add_camera_sensor
 from environment import add_environment
 from motor_physics import load_profile, add_rubber_surface, add_visual_material
 from mass_properties import properties
+from native_motor_parameters import apply_native_parameters
 from pathlib import Path
 import json
+import hashlib
+import argparse
 import math
 import xml.etree.ElementTree as E
 
@@ -18,6 +21,15 @@ def node(parent, tag, text=None, **attrs):
     return el
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--drone', action='store_true', help='Add the photo-informed drone docking target')
+    parser.add_argument('--room', action='store_true', help='Add the photo-informed 24 by 12 metre lab')
+    default_profile=HERE/'mecanum_native_profile_pilot02_v1.json'
+    motors=parser.add_mutually_exclusive_group()
+    motors.add_argument('--motor-profile',type=Path,default=default_profile if default_profile.exists() else None,help='Native motor/contact candidate JSON; defaults to pilot02-v1 when available')
+    motors.add_argument('--nominal-motors',action='store_true',help='Use reference motor assumptions instead of the candidate calibration')
+    parser.add_argument('--output', type=Path, default=HERE / 'freenove_world.sdf')
+    args = parser.parse_args()
     p = json.loads((HERE / 'dimensions.json').read_text())
     motor=load_profile()
     empirical=json.loads((HERE/"real_robot_profile.json").read_text())
@@ -26,8 +38,8 @@ def main():
     length, width, outer, diameter, overall = [p[k] * inch for k in
         ('chassis_length_in', 'chassis_width_in', 'overall_width_in', 'wheel_diameter_in', 'overall_length_in')]
     radius = diameter / 2
-    tire = (outer - width) / 2
-    track = outer - tire
+    tire = p.get('wheel_width_mm_assumed',(outer-width)*500)/1000
+    track = p.get('wheel_track_mm_assumed',(outer-tire)*1000)/1000
     wheelbase = overall - diameter
     groups = assembly(p)
     masses, total = properties(p, groups)
@@ -40,9 +52,16 @@ def main():
         node(world, 'plugin', filename=f'gz-sim-{name}-system', name=f'gz::sim::systems::{cls}')
     sensors=node(world,'plugin',filename='gz-sim-sensors-system',name='gz::sim::systems::Sensors')
     node(sensors,'render_engine','ogre2')
-    add_environment(world, node)
+    add_environment(world, node, floor=not args.room)
+    if args.room:
+        from room_model import add_room
+        add_room(world, node)
+    room_config = json.loads((HERE/'room_dimensions.json').read_text()) if args.room else {}
+    if args.drone:
+        from drone_model import add_drone
+        add_drone(world, node, pose=room_config.get('drone_pose', (.75, 0, 0, 0, 0, 0)))
     model = node(world, 'model', name='freenove')
-    node(model, 'pose', '0 0 0.001 0 0 0')
+    node(model, 'pose', ' '.join(map(str,room_config.get('ugv_pose',(0,0,.001,0,0,0)))))
 
     for name, group in groups.items():
         link = node(model, 'link', name=name)
@@ -64,9 +83,6 @@ def main():
                     node(shape,'size',' '.join(map(str,part['size'])))
                 else:
                     node(shape,'radius',part['size'][0])
-                    # Collision reaches the full measured wheel radius; treads are visual.
-                    if kind=='collision' and name!='chassis':
-                        shape.find('radius').text=str(radius)
                     node(shape,'length',part['size'][1])
                 if kind=='collision' and name!='chassis':
                     add_rubber_surface(obj,node,motor)
@@ -120,7 +136,11 @@ def main():
             dynamics=node(axis,'dynamics')
             node(dynamics,'friction',.0008)
             node(dynamics,'damping',.00002)
+    from mecanum_geometry import add_passive_rollers
+    add_passive_rollers(model,node,groups,radius=radius,width=tire)
     drive = node(model, 'plugin', filename='ugv_tt_motor', name='ugv::TTMotorSystem')
+    node(drive,'mecanum','true')
+    node(drive,'wheelbase',wheelbase)
     node(drive, 'wheel_separation', track)
     node(drive, 'wheel_radius', radius)
     node(drive,'stall_torque',motor['stall_nm'])
@@ -135,8 +155,17 @@ def main():
     odom=node(model,'plugin',filename='gz-sim-odometry-publisher-system',name='gz::sim::systems::OdometryPublisher')
     node(odom,'dimensions',2)
     node(odom,'odom_topic','/model/freenove/odometry')
+    if args.motor_profile is not None and not args.nominal_motors:
+        profile=json.loads(args.motor_profile.read_text())
+        apply_native_parameters(root,profile)
+        node(drive,'calibration_profile',args.motor_profile.name)
+        node(drive,'calibration_status',profile.get('status','CANDIDATE_NOT_FULLY_VALIDATED'))
+        node(drive,'calibration_profile_sha256',hashlib.sha256(args.motor_profile.read_bytes()).hexdigest())
+        print('Motor candidate: '+str(args.motor_profile)+'; '+profile.get('status','CANDIDATE_NOT_FULLY_VALIDATED'))
+    else:
+        node(drive,'calibration_status','NOMINAL_REFERENCE_PARAMETERS_UNCALIBRATED')
     E.indent(root)
-    E.ElementTree(root).write(HERE / 'freenove_world.sdf', encoding='utf-8', xml_declaration=True)
+    E.ElementTree(root).write(args.output, encoding='utf-8', xml_declaration=True)
     print(f"Mass: {total['mass']*1000:.1f} g; assembly COM (mm): {[round(v*1000, 3) for v in total['center']]}")
     print(f'Generated: wheelbase={wheelbase*1000:.2f}mm, track={track*1000:.2f}mm, tire width={tire*1000:.2f}mm')
 

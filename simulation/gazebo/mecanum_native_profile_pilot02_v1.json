@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "gazebo_motor_parameters": {
+    "wheel_duty_exponent": [
+      0.5963649752160011,
+      0.5963649752160011,
+      0.5963649752160011,
+      0.5963649752160011
+    ],
+    "wheel_voltage_gain": [
+      1.1480102471787494,
+      1.0019516925854728,
+      0.9796083037673959,
+      1.0978792651827507
+    ],
+    "wheel_reverse_voltage_gain": [
+      0.8483098976185036,
+      0.9248557316369448,
+      0.9700020430087899,
+      1.029382819021393
+    ],
+    "no_load_speed": 33.26951296312281,
+    "stall_torque": 0.0784532,
+    "wheel_drive_tau": [
+      0.2179723315957532,
+      0.2179723315957532,
+      0.2179723315957532,
+      0.2179723315957532
+    ],
+    "wheel_brake_tau": [
+      0.12,
+      0.12,
+      0.12,
+      0.12
+    ],
+    "wheel_deadzone": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "wheel_gain_stddev": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "roller_bearing_damping": 3.1854155336536274e-05,
+    "roller_bearing_friction": 1e-06,
+    "random_seed": 0
+  },
+  "scope": "Training-selected native Gazebo motor/contact profile; provisional visual inertial metric reference",
+  "training_run": "/Users/fern/Projects/ugv/calibration/runs/2026-10-23-mecanum-continuous-pilot-02",
+  "heldout_used": false,
+  "wheel_order": [
+    "front-left",
+    "front-right",
+    "rear-left",
+    "rear-right"
+  ],
+  "training_trial_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "fitting_method": "bounded least-squares first-order mecanum motor surrogate, then equivalent passive bearing load",
+  "fitted_surrogate_gains_positive": [
+    1.4588934046568183,
+    1.2732819412456722,
+    1.244887924150022,
+    1.3951868661632254
+  ],
+  "fitted_surrogate_gains_negative": [
+    1.0780336828718549,
+    1.175308260932369,
+    1.2326802713885725,
+    1.3081414640922835
+  ],
+  "fitted_surrogate_lateral_factor": 0.569309518695428,
+  "fitted_surrogate_duty_exponent": 0.5963649752160011,
+  "optimizer_cost": 1450.522091101794,
+  "optimizer_success": true,
+  "limitations": [
+    "Only contiguous accepted visual segments fit translation; gyro yaw fits full training trajectories.",
+    "Visual inertial scale is not independent external metric truth.",
+    "Motor speed, gain, slip and passive bearing drag are not separately identifiable.",
+    "Gaussian randomization defaults to zero; no arbitrary uncertainty claimed as calibrated.",
+    "Heldout whole-trajectory gyro yaw RMSE worsened from 0.18665 to 0.20192 rad/s despite improved translation.",
+    "Only 43.48 percent of heldout samples have accepted contiguous visual translation; no full-trajectory translation acceptance.",
+    "Heldout full-power PWM4095 trajectory aborted; completed heldout covers PWM1400 and PWM2600 only."
+  ],
+  "native_training_validation": "mecanum_continuous_native_train_validation.json",
+  "selection_rule": "Parameters estimated only from complete training trajectories 0..5; continuous effort lag semantics fixed before heldout replay",
+  "heldout_used_for_fitting": false,
+  "profile_id": "mecanum-continuous-pilot02-native-v1",
+  "status": "CANDIDATE_PARTIAL_OBSERVATION_NOT_FULL_REAL2SIM_ACCEPTANCE",
+  "native_heldout_validation": "mecanum_continuous_native_heldout_validation.json",
+  "heldout_metrics": {
+    "observed_translation_rmse_mps": [
+      0.07905772593695215,
+      0.039113175795775675
+    ],
+    "observed_active_translation_rmse_mps": [
+      0.09011213562818789,
+      0.044372360533859824
+    ],
+    "all_samples_gyro_yaw_rmse_radps": 0.20191699066111493,
+    "visual_observation_fraction": 0.4348063284233497
+  }
+}

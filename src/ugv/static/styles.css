@@ -54,6 +54,13 @@ main { width: 100vw; height: 100vh; margin: 0; padding: 0; }
 .key-overlay span { width: 52px; color: #68727d; font-size: 9px; }
 .key-overlay i { display: grid; place-items: center; width: 25px; height: 23px; border: 1px solid #aeb5bc; background: #fff; font-style: normal; font-weight: 700; }
 .key-overlay i.active { color: #fff; background: #1769aa; border-color: #1769aa; }
+.joystick { position:absolute; right:24px; bottom:92px; width:150px; height:150px; border:1px solid #ffffffaa; border-radius:50%; background:rgb(255 255 255 / 28%); box-shadow:0 2px 12px #0005; touch-action:none; user-select:none; }
+.joystick::before { position:absolute; inset:25%; border:1px dashed #ffffffa8; border-radius:50%; content:""; }
+.joystick > span { position:absolute; color:#fff; font:700 12px system-ui; text-shadow:0 1px 3px #000; }
+.joy-up { top:7px; left:calc(50% - 6px); } .joy-right { top:calc(50% - 7px); right:7px; }
+.joy-down { bottom:7px; left:calc(50% - 6px); } .joy-left { top:calc(50% - 7px); left:7px; }
+.joystick i { position:absolute; top:50%; left:50%; width:48px; height:48px; border:2px solid #fff; border-radius:50%; background:#1769aa; box-shadow:0 2px 6px #0006; transform:translate(0,0); margin:-24px; pointer-events:none; }
+.joystick small { position:absolute; right:0; bottom:-20px; left:0; color:#fff; font:700 9px ui-monospace,monospace; text-align:center; text-shadow:0 1px 3px #000; }
 
 .control-bar { right: 12px; bottom: 12px; left: 12px; display: grid; grid-template-columns: 68px 92px 108px 88px 92px auto minmax(120px, 1fr) 0 68px; align-items: center; gap: 6px; padding: 7px; }
 .control-bar button { font-size: 11px; }
@@ -75,6 +82,7 @@ main { width: 100vw; height: 100vh; margin: 0; padding: 0; }
   .control-bar { grid-template-columns: repeat(5, auto); overflow-x: auto; }
   .control-bar label { display: none; }
   .control-bar input { grid-column: 2; }
+  .joystick { right:16px; bottom:96px; width:130px; height:130px; }
 }
 
 #parking-panel { position:absolute; top:52px; left:12px; width:340px; max-height:calc(100vh - 155px); overflow:auto; padding:12px; background:rgba(255,255,255,.95); z-index:8; font:12px system-ui; box-shadow:0 2px 10px #0003; }

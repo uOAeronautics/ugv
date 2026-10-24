@@ -1,0 +1,41 @@
+{
+  "valid": true,
+  "height_m": 0.05025754573155058,
+  "height_bootstrap_95_m": [
+    0.03968749917165144,
+    0.05874046801116704
+  ],
+  "camera_to_body_yaw_rad": -0.033060803003997545,
+  "training": {
+    "equations": 129,
+    "trials": 6,
+    "integrated_acceleration_rmse_mps": 0.089482905116892
+  },
+  "heldout": {
+    "equations": 57,
+    "trials": 2,
+    "integrated_acceleration_rmse_mps": 0.08661227881447023
+  },
+  "source": "visual_inertial_train_scaled",
+  "scale_fit_trial_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "imu_offset_m": [
+    -0.051302,
+    0.002974
+  ],
+  "camera_offset_m": [
+    0.1,
+    0.0
+  ],
+  "limitations": [
+    "Metric scale shares accelerometer calibration; heldout images are independent of scale fitting but not an external surveyed reference.",
+    "Bootstrap resamples whole training trials and excludes systematic camera, IMU and mounting errors.",
+    "Floor homography ambiguity, vibration and tilt remain systematic errors; invalid alignment is not promoted."
+  ]
+}

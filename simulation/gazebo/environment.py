@@ -1,6 +1,6 @@
 """A small, well-lit lab floor with a visual-only metric test mat."""
 
-def add_environment(world, node):
+def add_environment(world, node, floor=True):
     scene=node(world,'scene')
     node(scene,'ambient','.65 .65 .65 1')
     node(scene,'background','.84 .88 .9 1')
@@ -16,6 +16,8 @@ def add_environment(world, node):
         node(light,'direction',direction)
         node(light,'cast_shadows','true' if name=='key_light' else 'false')
 
+    if not floor:
+        return
     ground=node(world,'model',name='ground')
     node(ground,'static','true')
     link=node(ground,'link',name='ground_link')

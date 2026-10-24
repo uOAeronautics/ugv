@@ -56,7 +56,7 @@ class GazeboBridge:
         v,w=self.control.command()
         averaged=self.imu_downsampler.update(t,[a.x,a.y,a.z],[g.x,g.y,g.z])
         if averaged is None:return
-        sample=self.imu.update(t,*averaged,yaw,moving=bool(v or w))
+        sample=self.imu.update(t,*averaged,yaw,moving=bool(v or w or self.control.lateral_command()))
         if sample is None:return
         self.imu_received_at=time.monotonic()
         noisy=IMU();noisy.header.CopyFrom(message.header)
@@ -96,7 +96,7 @@ class GazeboBridge:
             sim_time_s, rtf = self.sim_time_s, self.real_time_factor
         imu=dict(self.imu.snapshot(), streaming=online and not paused and time.monotonic()-self.imu_received_at<1)
         v, w = self.control.command(online and not paused)
-        return dict(online=online, paused=paused, pose=pose, imu=imu, camera=self.camera.status(), sim_time_s=sim_time_s, real_time_factor=rtf, linear=v if self.control.pwm is None else None, angular=w if self.control.pwm is None else None, driving=any(self.control.duty_command(online and not paused)) if self.control.pwm is not None else bool(v or w), pwm=self.control.pwm, drive_mode="real-car PWM" if self.control.pwm is not None else "SI velocity")
+        return dict(online=online, paused=paused, pose=pose, imu=imu, camera=self.camera.status(), sim_time_s=sim_time_s, real_time_factor=rtf, lateral=self.control.lateral_command(online and not paused), linear=v if self.control.pwm is None else None, angular=w if self.control.pwm is None else None, driving=any(self.control.duty_command(online and not paused)) if self.control.pwm is not None else bool(v or w or self.control.lateral_command()), pwm=self.control.pwm, drive_mode="real-car PWM" if self.control.pwm is not None else "SI velocity")
 
     def publish_command(self):
         state = self.status()
@@ -107,6 +107,7 @@ class GazeboBridge:
         else:
             message = Twist()
             message.linear.x, message.angular.z = state['linear'], state['angular']
+            message.linear.y = state['lateral']
             self.publisher.publish(message)
 
     def publish_loop(self):
@@ -171,5 +172,5 @@ class GazeboBridge:
         self.closed.set()
         self.worker.join(timeout=1)
         self.publisher.publish(Twist())
-        message=Double_V();message.data.extend([0,0]);self.duty_publisher.publish(message)
+        message=Double_V();message.data.extend([0,0,0,0]);self.duty_publisher.publish(message)
         time.sleep(.1)

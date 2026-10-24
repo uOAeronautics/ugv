@@ -1,0 +1,27 @@
+{
+  "method": "known-floor-normal tangent-space homography rotation recovery",
+  "attempted_pairs": 1916,
+  "accepted_pairs": 1177,
+  "accepted_fraction": 0.6143006263048016,
+  "initial_floor_normal_camera": [
+    -0.037,
+    0.971,
+    -0.17
+  ],
+  "height_prior_m": 0.06635,
+  "full_trajectory_observable": false,
+  "invalid_pair_policy": "latch unhealthy; stop; do not interpolate unobserved displacement",
+  "limitations": [
+    "Initial floor normal and height are estimated, not surveyed.",
+    "Yaw replay used gravity-projected gyro and initial rest bias; no external metric reference.",
+    "Accepted pair accumulation across rejected gaps cannot establish a workspace bound."
+  ],
+  "rejections": {
+    "nonplanar_flow": 692,
+    "plane_rotation_inconsistent": 35,
+    "gyro_rotation_inconsistent": 1,
+    "insufficient_floor_coverage": 2,
+    "too_few_floor_tracks": 5,
+    "too_few_features": 4
+  }
+}

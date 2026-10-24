@@ -1,0 +1,498 @@
+{
+  "schema_version": 1,
+  "recordings": [
+    {
+      "name": "2026-10-17-floor-01",
+      "files": {
+        "analysis.json": {
+          "bytes": 130292,
+          "sha256": "ae16d2bca1feea84bbf1a0169ac5e572ce398e5a59e30f34e966db37236ceeeb"
+        },
+        "events.jsonl": {
+          "bytes": 28538,
+          "sha256": "4d343be0217a4edf25ef086700ead823aaf9b3f43638910b37b937e7840d44ba"
+        },
+        "manifest.json": {
+          "bytes": 7923,
+          "sha256": "bbc35fe6c94d6db84355a8647c081edc9c9d77a1e6e7802b4503d6cfe0358dfe"
+        },
+        "samples.jsonl": {
+          "bytes": 6310179,
+          "sha256": "db4ab2e2849fb9f68876e51f54b2ab6a830234ffb7f76a437a8d3a169b571582"
+        }
+      },
+      "local_camera_images": 0
+    },
+    {
+      "name": "2026-10-17-floor-long-01",
+      "files": {
+        "analysis.json": {
+          "bytes": 26117,
+          "sha256": "68b05c5d8b56528d9421438e16993498bc67277672f219424a5788b2f1b6e2ed"
+        },
+        "events.jsonl": {
+          "bytes": 5357,
+          "sha256": "53a8880af840fe54979401636fb040365c0563d546c7c04c28e5738f972bfebf"
+        },
+        "manifest.json": {
+          "bytes": 7982,
+          "sha256": "b102e7e7dfaa6962116ae8f56a7094b9a1c7f5dc02249cbc3aaa6ad87705e277"
+        },
+        "samples.jsonl": {
+          "bytes": 2588277,
+          "sha256": "eabc3f6d7889a1bc96ce92c105a5e5327bec3569ea31e2b1432c20c771a7440b"
+        }
+      },
+      "local_camera_images": 0
+    },
+    {
+      "name": "2026-10-17-floor-long-03",
+      "files": {
+        "analysis.json": {
+          "bytes": 25987,
+          "sha256": "78624d28a47ea832a9cb79a52010628b3809cb45abc65c53f26facf01e307ac9"
+        },
+        "events.jsonl": {
+          "bytes": 4830,
+          "sha256": "ea556b11d05b99163898ec4bb0913d49f27c622bca72ca2d65d4ea702449095f"
+        },
+        "manifest.json": {
+          "bytes": 7921,
+          "sha256": "e320106190a2f229156ccef027f449e925134a11336aa1ecf7184d3e63ba99f1"
+        },
+        "samples.jsonl": {
+          "bytes": 2568159,
+          "sha256": "1e63f7d52e08db183f26bc424e3d09ab8634171bccd83a92a8a68e2a5319dc9a"
+        }
+      },
+      "local_camera_images": 0
+    },
+    {
+      "name": "2026-10-17-laps-observed-01",
+      "files": {
+        "manifest.json": {
+          "bytes": 4034,
+          "sha256": "7211f8746faebb4e3a7a0af8208b621574b15645f1fa0b9a1513ec6d2dd6e8e0"
+        },
+        "samples.jsonl": {
+          "bytes": 3035953,
+          "sha256": "f4501b14be5f2518dfc4a631fcae40a67e2888353b51090ef32f938a06f29770"
+        }
+      },
+      "local_camera_images": 0
+    },
+    {
+      "name": "2026-10-17-laps-right-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 2524,
+          "sha256": "3e3513b53a52954e88cd0475cec2e5cdf1da81afd6aafb70f6485f95b07522ad"
+        },
+        "lap_analysis.json": {
+          "bytes": 3990,
+          "sha256": "38a616304fbc6c7a302981ccd149ce4dd811932d701d3f5a7e68b320f06b61a5"
+        },
+        "manifest.json": {
+          "bytes": 7987,
+          "sha256": "301eae038f0e4b1105d0d4c7ad767e713f3c2af0214838545933c2000274701d"
+        },
+        "samples.jsonl": {
+          "bytes": 1063302,
+          "sha256": "7e8beeaa5ef56a37b26206b24cbd2715c983f83b52b036af0e8bf7a2b140f272"
+        }
+      },
+      "local_camera_images": 0
+    },
+    {
+      "name": "2026-10-23-mecanum-continuous-loops-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 11595,
+          "sha256": "c52e1c687c87ba81a7dc086ec60cdafd2a79978e5c57d31b7eb5a340b42bb7de"
+        },
+        "frames.jsonl": {
+          "bytes": 26873,
+          "sha256": "eb320f2bfba536d29289f2b36f094f22c62697b443a14ed32c9cec22ba5e72a7"
+        },
+        "manifest.json": {
+          "bytes": 12542,
+          "sha256": "26fe99d4c5115f501bf4fd971f27232937227b5ba6d76d20420495b285150b57"
+        },
+        "samples.jsonl": {
+          "bytes": 744154,
+          "sha256": "b0101ee751a0d22fb68a299765c14795ad5872e16b314641cfd5f34998e35e46"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 132249,
+          "sha256": "c72e7fe6c5577239e929c852d4223dfc122123b27668d22cbff17e0e4472583c"
+        }
+      },
+      "local_camera_images": 398
+    },
+    {
+      "name": "2026-10-23-mecanum-continuous-loops-02",
+      "files": {
+        "events.jsonl": {
+          "bytes": 16424,
+          "sha256": "c9f1fbca0c2a527e6a8e1fc5e35886d286bacf03b76f74901a7433f7feb37919"
+        },
+        "frames.jsonl": {
+          "bytes": 24502,
+          "sha256": "d73269f411b1199fa2d36444994fab12e81dc97e08b8a073680e589bb2e583b7"
+        },
+        "manifest.json": {
+          "bytes": 26739,
+          "sha256": "9876e3d1d7d030dbc390388690243373e026a0de926978c61747bc42e8cf010a"
+        },
+        "samples.jsonl": {
+          "bytes": 652345,
+          "sha256": "d4d68b297aea0b30ddbef1ce2d967595e7fe825f9b395d92abc3e2ad1ea305cb"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 103056,
+          "sha256": "c5b5dffe4d0c066e218dd5c26cb5018cde6880387f7634daf22f3bf09df91abd"
+        }
+      },
+      "local_camera_images": 361
+    },
+    {
+      "name": "2026-10-23-mecanum-continuous-loops-03",
+      "files": {
+        "events.jsonl": {
+          "bytes": 5098,
+          "sha256": "284c61f303a3f57862ee2af7760204dc8c90fa1658e74f4586d31d9a0c41c9e4"
+        },
+        "frames.jsonl": {
+          "bytes": 16366,
+          "sha256": "d076af1bed1a52aa96a44ca8b87e59e5dad8c7f8c6944ae630a77a27a444bf67"
+        },
+        "manifest.json": {
+          "bytes": 12682,
+          "sha256": "d96e0497f94df21ea1535a86032303e45164e0871b06eeef56a923bfe6653da2"
+        },
+        "samples.jsonl": {
+          "bytes": 350037,
+          "sha256": "68e836189269ff7a7c24e77ffbd10e5eed9ae9ad188b51b2a948f2df0bf59647"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 13655,
+          "sha256": "4ab858e999fedd4eb80eea5f60926904d87e40891978d1a3de6b1cf9bb878a74"
+        }
+      },
+      "local_camera_images": 241
+    },
+    {
+      "name": "2026-10-23-mecanum-continuous-loops-04",
+      "files": {
+        "events.jsonl": {
+          "bytes": 5620,
+          "sha256": "88cdb245bdafc8c31caecb0439e4d1ea9e65fea785c61c8ffbecf801c51c777c"
+        },
+        "frames.jsonl": {
+          "bytes": 17795,
+          "sha256": "e0311761477f097430ad175cecf30de055270fe79549ee3fae23612500a39b48"
+        },
+        "manifest.json": {
+          "bytes": 12687,
+          "sha256": "e6ec9979795a93ad33ab4de6fb48613366c5013824e66f91253ac144a55d905e"
+        },
+        "samples.jsonl": {
+          "bytes": 360304,
+          "sha256": "438cc9a135550349bf781b26780b0fc96bae2a7047c0d6a8f7f0a31cb4aabf0a"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 26568,
+          "sha256": "8f2c4607e01363d96666beb564cceb72acc7021f76c1305141c5f1a078c0e953"
+        }
+      },
+      "local_camera_images": 262
+    },
+    {
+      "name": "2026-10-23-mecanum-continuous-pilot-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 10629,
+          "sha256": "4afad8117a38c659ddb17577157d3accfa2dc7837bf11594ea08de7dfdd2e138"
+        },
+        "frames.jsonl": {
+          "bytes": 25735,
+          "sha256": "2a6cbbf9006bd41e4c0ac2a0921d505a849e744ced5528094e5ba2bc173d8942"
+        },
+        "manifest.json": {
+          "bytes": 68077,
+          "sha256": "e4c5f6bd9084d0a8f048d21754273b48c3503896add69eb9bb0694d908acc412"
+        },
+        "samples.jsonl": {
+          "bytes": 538692,
+          "sha256": "430ac914ce16d6f91be901affc112f6b28735e93bdb5c51e0e9a40bf1b9095f4"
+        }
+      },
+      "local_camera_images": 389
+    },
+    {
+      "name": "2026-10-23-mecanum-continuous-pilot-02",
+      "files": {
+        "continuous_identification_summary.json": {
+          "bytes": 5032,
+          "sha256": "5436c5b448e87334e3112552f0f3cf452998afcddd2da58271b719a39ffdcd85"
+        },
+        "events.jsonl": {
+          "bytes": 97701,
+          "sha256": "d32fd8e04b01e95c3d0342dbc09dc3ddd0d31bf2fe21d70242a82b6bffa7f20b"
+        },
+        "frames.jsonl": {
+          "bytes": 129414,
+          "sha256": "55718a1738a72679a254759d89c14d5bfb60ed8df9944d4472acf1e26d490ed7"
+        },
+        "manifest.json": {
+          "bytes": 68038,
+          "sha256": "2e1e77cd70fa8ea2a4b1e935335bec30c33fb427f668b59f8c44e8aea39f8f64"
+        },
+        "mecanum_profile.json": {
+          "bytes": 189343,
+          "sha256": "710dc5611c410eb48d25a40ebfa957b045a6754f1f2b614861b522da6d4dbbaf"
+        },
+        "online_guard_replay_summary.json": {
+          "bytes": 912,
+          "sha256": "e2fb5bba46274c801df693415327dcca41af90d61ce2c57a23b2c2a2894fe2ae"
+        },
+        "reference.jsonl": {
+          "bytes": 598426,
+          "sha256": "7e1cf1b3f105e7e5380e708b0d88e87fa41a6ccee28d66fc88837f7a82148d11"
+        },
+        "samples.jsonl": {
+          "bytes": 2846368,
+          "sha256": "9f64c45acd8bdd82bee015f358b3b88aad69554b8f7fde310bee89ab502a67a8"
+        },
+        "vision_quality.json": {
+          "bytes": 892882,
+          "sha256": "41aa08a0c2b93b263ff9a3fbd743020cf6e2c822383225e9a23fc3cb0ecc7d67"
+        },
+        "vision_quality_gyro.json": {
+          "bytes": 1264189,
+          "sha256": "5d97fc279f6c60ffa5c7109d7e762a1ea115a5e3e5337aa8f2906bcbec2989e7"
+        },
+        "visual_inertial_alignment.json": {
+          "bytes": 1027,
+          "sha256": "f4e5412266127862f78e426d9650ae8d52483795e703755d94448708609ad20e"
+        },
+        "visual_inertial_alignment_gyro.json": {
+          "bytes": 1025,
+          "sha256": "9d1d3e980ce3669c663dc2d1fd54e2d34bb6d20274492e649d4487b8543459ce"
+        },
+        "visual_reference.jsonl": {
+          "bytes": 517715,
+          "sha256": "7e33b2437338e195028372423819bc6142d5e0eee1d88ae8e90836b739136416"
+        },
+        "visual_reference_gyro.jsonl": {
+          "bytes": 554185,
+          "sha256": "b0c90cefc21aa254462e6ba5cc6fda074c336d6c563a51dc9ba383c4fb9debb4"
+        },
+        "visual_reference_homography.jsonl": {
+          "bytes": 517715,
+          "sha256": "7e33b2437338e195028372423819bc6142d5e0eee1d88ae8e90836b739136416"
+        }
+      },
+      "local_camera_images": 1917
+    },
+    {
+      "name": "2026-10-23-mecanum-continuous-yaw-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 4526,
+          "sha256": "d21fdf898e135d2b6dc77faba3f246448d48e4b3ed31b1bb6f183943ce93330a"
+        },
+        "frames.jsonl": {
+          "bytes": 17653,
+          "sha256": "197c6eeacae4251a707d1bd5caffcf827a5f78f8c31f00fe6a03ce13a97ac101"
+        },
+        "manifest.json": {
+          "bytes": 12015,
+          "sha256": "36570a71cb1945bcbda66beb3ae493553ff9e50fd6cc654e4b6e765609f4c206"
+        },
+        "samples.jsonl": {
+          "bytes": 351245,
+          "sha256": "28399ac8231efc552267752ffa55e27e16875a1f52ab8e6338ed7823a0fe2e07"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 25964,
+          "sha256": "505bcf37f5af9963d961dcce881268814687fec1d32995c27b2a98a477bf38f0"
+        }
+      },
+      "local_camera_images": 260
+    },
+    {
+      "name": "2026-10-23-mecanum-imu-rest-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 96,
+          "sha256": "a08625f7ac914c096e8dcad3a8ad9e43aef159a197c2db2833a9a86719e5216f"
+        },
+        "frames.jsonl": {
+          "bytes": 89828,
+          "sha256": "091120afa6e19dd752aa903d5c95c35a59c420ee7f23eb99e0c9259a3c53055c"
+        },
+        "imu_calibration.json": {
+          "bytes": 11579,
+          "sha256": "458bcec6822d141642d7da26d17211736d5b7174d222f45104ab03012a54ebc9"
+        },
+        "manifest.json": {
+          "bytes": 56468,
+          "sha256": "614af0459aa672a75ac5d5d1e5a5718189df76488904bdd417717df9f9aab08f"
+        },
+        "samples.jsonl": {
+          "bytes": 1607839,
+          "sha256": "faaf328213ea63629f7804274503412efae1b14403fcfef7ae1bb7b1f7795bd2"
+        }
+      },
+      "local_camera_images": 1323
+    },
+    {
+      "name": "2026-10-23-mecanum-long-guard-03",
+      "files": {
+        "events.jsonl": {
+          "bytes": 5011,
+          "sha256": "3d53fa04d9dc81e6786afd8d6302d4bbf118c8ace70feb038fdce213cca497ca"
+        },
+        "frames.jsonl": {
+          "bytes": 15949,
+          "sha256": "c7ad261b0c93bd414db0d76af38426cb094bcf508be4bd08081803d5c2961b3d"
+        },
+        "manifest.json": {
+          "bytes": 12300,
+          "sha256": "f5ca40b2640977a36e1416bb9b6f8459ef6c102a8c449f4099a413b5070691be"
+        },
+        "samples.jsonl": {
+          "bytes": 338121,
+          "sha256": "6f0a87b588477ff9fc271c87530bba70b1c775b76bff2eb4daa211bbe198daf8"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 12142,
+          "sha256": "2a42dab7a65a9954074d8c0318e38aa3b2829a042fc901c3ebafdb3f64f33f1b"
+        }
+      },
+      "local_camera_images": 242
+    },
+    {
+      "name": "2026-10-23-mecanum-long-guard-04",
+      "files": {
+        "events.jsonl": {
+          "bytes": 6566,
+          "sha256": "1e50b71944209ac898a8e33d69b1b2e7e6bd9b359cfd98fcd55e168ba1af7496"
+        },
+        "frames.jsonl": {
+          "bytes": 17596,
+          "sha256": "194da4030e51122855dee894fa4e7eef764af7509dfe74fe737b85b4e2c26159"
+        },
+        "manifest.json": {
+          "bytes": 12596,
+          "sha256": "ceb3c96bd98a2c32575598dc2bb218fe5b4034218b7c5b5b1791d0136159c94e"
+        },
+        "samples.jsonl": {
+          "bytes": 401065,
+          "sha256": "501280530ebf63c37a07531fc557ddf6bda8e232217b1083a1303b0c2ba18f0c"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 28445,
+          "sha256": "8e314b0529c48f53879934f2c0987161949d8465f5595fb43fbda608e57d4b6f"
+        }
+      },
+      "local_camera_images": 263
+    },
+    {
+      "name": "2026-10-23-mecanum-probe-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 8181,
+          "sha256": "f69dfd18db3ed52dcf71c12979478e3a9dd71c5601753f9de6a89ef563b5f8ea"
+        },
+        "frames.jsonl": {
+          "bytes": 95576,
+          "sha256": "5553aea9541cd78494c426036d0c61874e02db261ee12e3ce5c54878912edcd8"
+        },
+        "manifest.json": {
+          "bytes": 9085,
+          "sha256": "8c8e8d07005b5c8af133563dce1c88beb8d640784fbea6421369179f847ff693"
+        },
+        "mecanum_profile.json": {
+          "bytes": 125183,
+          "sha256": "74e43a97dde94d19c15423638620d20b40120cbd70b7f7b0c69bee83c3e217df"
+        },
+        "probe_identification_summary.json": {
+          "bytes": 17216,
+          "sha256": "13897bee27c24d3764eb21bbecdb311ff4dafd680904701755889161a7b8e93b"
+        },
+        "reference.jsonl": {
+          "bytes": 579875,
+          "sha256": "72ad94c4358c8c57ca8f6a87fbc4c1553a5ff8378d4858661014d0d54517cc45"
+        },
+        "samples.jsonl": {
+          "bytes": 1756407,
+          "sha256": "87ce47cddab684edf0c507c92becb2dbdb03a5e94bfc784059733ad0cefcea40"
+        },
+        "vision_quality.json": {
+          "bytes": 798633,
+          "sha256": "3f4a0c306423cb0c80ccb70a066c923e1a81ec746a1269ab675b872f1ae1da87"
+        },
+        "visual_inertial_alignment.json": {
+          "bytes": 1107,
+          "sha256": "de34fb163206044e91a32c09457cfb9c126fcfdaa6136da92758021ac19180ad"
+        },
+        "visual_reference.jsonl": {
+          "bytes": 502081,
+          "sha256": "a4ac65db65ffd49c156bc5abe7b3fc7f224987d0257c24575b698c744bbbc81e"
+        }
+      },
+      "local_camera_images": 1429
+    },
+    {
+      "name": "2026-10-23-mecanum-reorient-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 495,
+          "sha256": "8dc209995776811837bb88cca9aa91e935e8711f39988e4b8b6a0b6a0b5a3e49"
+        },
+        "frames.jsonl": {
+          "bytes": 27759,
+          "sha256": "39d5ef27b7198c4ae5a8fe7b8ecf659c209b23b2ee3d8e23d02adaa986e7d44e"
+        },
+        "manifest.json": {
+          "bytes": 4587,
+          "sha256": "d63de2e2cfae92dfe17b293c4f777d56202d750e4911d5a09d5bda6f8c86e74e"
+        },
+        "samples.jsonl": {
+          "bytes": 519258,
+          "sha256": "a25679bbab621c0bbb111e20e64c6c9b4d43b2aa62435fa68d2436998634034b"
+        }
+      },
+      "local_camera_images": 415
+    },
+    {
+      "name": "2026-10-23-mecanum-sharp-guard-01",
+      "files": {
+        "events.jsonl": {
+          "bytes": 4838,
+          "sha256": "366720ae4b0d851b47193d88e43fb0bc8860ad04d0b3e89936479990a5a69f74"
+        },
+        "frames.jsonl": {
+          "bytes": 16400,
+          "sha256": "8d9e58e18f880577223be6d8fbee0abe46bfe5ce499fd788682d88b1849e752b"
+        },
+        "manifest.json": {
+          "bytes": 12297,
+          "sha256": "d168380c4b6522be37604e3c55aa05d4c3e1c4bbb91e94139eaab92e1a3d7292"
+        },
+        "samples.jsonl": {
+          "bytes": 343413,
+          "sha256": "ad2b1216ccd5e4b2244fa9fd61bb54a537fc9f26626f8ce531c4e59c11595aa6"
+        },
+        "visual_guard.jsonl": {
+          "bytes": 10279,
+          "sha256": "9c2cb731d85afa493904a04ff68b114d9914d70b1f854fe718e01e7298bda0cb"
+        }
+      },
+      "local_camera_images": 245
+    }
+  ],
+  "camera_images": "Retained on Pi and local backups; excluded from Git. Frame manifests are versioned."
+}

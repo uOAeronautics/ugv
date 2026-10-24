@@ -16,7 +16,7 @@ class DynamicsTelemetry:
         with self.lock:
             self.sequence += 1
             self.samples.append(dict(seq=self.sequence, t=now, accel_g=list(acceleration),
-                gyro_dps=list(gyro), forward=state.forward, turn=state.turn,
+                gyro_dps=list(gyro), forward=state.forward, strafe=state.strafe, turn=state.turn,
                 pwm_limit=state.speed_limit, wheels=dict(state.wheels),
                 stopped=state.stopped, armed=state.armed, revision=state.revision))
 

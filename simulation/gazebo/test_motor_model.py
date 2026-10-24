@@ -20,22 +20,26 @@ class MotorModelTest(unittest.TestCase):
         plugins={p.get('name') for p in self.model.findall('plugin')}
         self.assertIn('ugv::TTMotorSystem',plugins)
         self.assertNotIn('gz::sim::systems::DiffDrive',plugins)
-        joints=self.model.findall('./joint[@type="revolute"]')
+        joints=[j for j in self.model.findall('./joint[@type="revolute"]') if '_roller_' not in j.get('name')]
         self.assertEqual(len(joints),4)
         for joint in joints:
             self.assertAlmostEqual(float(joint.findtext('axis/limit/effort')),self.profile['stall_nm'])
 
-    def test_rubber_contacts_have_lateral_axis_and_radial_compliance(self):
+    def test_mecanum_contacts_are_passive_independent_rollers(self):
         springs=self.model.findall('./joint[@type="prismatic"]')
         self.assertEqual(len(springs),4)
-        for link in self.model.findall('link'):
-            if not link.get('name').endswith('_wheel'):
-                continue
+        rollers=[l for l in self.model.findall('link') if '_roller_' in l.get('name')]
+        self.assertEqual(len(rollers),32)
+        for link in rollers:
             contact=link.find('collision/surface/friction/ode')
-            self.assertEqual(contact.findtext('fdir1'),'0 0 1')
-            self.assertEqual(link.findtext('collision/pose').split()[3],str(math.pi/2))
-            self.assertGreater(float(contact.findtext('slip1')),float(contact.findtext('slip2')))
             self.assertGreater(float(contact.findtext('mu')),0)
+            self.assertEqual(contact.findtext('mu'),contact.findtext('mu2'))
+            joint=self.model.find('./joint[@name="'+link.get('name')+'_joint"]')
+            self.assertEqual(joint.get('type'),'revolute')
+            self.assertEqual(joint.findtext('axis/xyz'),'0 0 1')
+            self.assertLess(float(joint.findtext('axis/dynamics/friction')),1e-4)
+        drive=self.model.find('./plugin[@name="ugv::TTMotorSystem"]')
+        self.assertEqual(drive.findtext('mecanum'),'true')
 
 if __name__=='__main__':
     unittest.main()

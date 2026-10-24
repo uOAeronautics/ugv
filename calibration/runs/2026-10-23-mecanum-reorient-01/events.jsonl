@@ -1,0 +1,7 @@
+{"event": "baseline_start", "t": 5575.990775481}
+{"event": "baseline_end", "t": 5586.007989915}
+{"event": "trial_start", "t": 5587.036434008, "trial": 0, "forward": 0, "strafe": 0, "turn": 1, "pwm": 900, "duration": 6, "repeat": 0, "split": "probe", "target_yaw_deg": 175.0}
+{"event": "drive_end", "t": 5588.449520764, "trial": 0}
+{"event": "trial_end", "t": 5589.601559653, "trial": 0}
+{"event": "final_baseline_start", "t": 5589.601765122}
+{"event": "final_baseline_end", "t": 5594.659761949}

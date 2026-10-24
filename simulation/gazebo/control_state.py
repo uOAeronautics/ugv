@@ -10,9 +10,10 @@ class ControlState:
         self.clock = clock
         self.lock = threading.RLock()
         self.deadline = 0
-        self.linear = self.angular = 0.0
+        self.linear = self.lateral = self.angular = 0.0
         self.pwm = None
         self.left_duty = self.right_duty = 0.0
+        self.wheel_duties = (0.,0.,0.,0.)
         self.owner = None
         self.sequences = {}
 
@@ -25,8 +26,8 @@ class ControlState:
             raise ValueError('Invalid driving keys')
         if isinstance(speed, bool) or not isinstance(speed, (int, float)) or not math.isfinite(speed):
             raise ValueError('Invalid speed')
-        if pwm is not None and (type(pwm) is not int or not 500 <= pwm <= 1800):
-            raise ValueError("PWM must be an integer from 500 to 1800")
+        if pwm is not None and (type(pwm) is not int or not 0 <= pwm <= 4095):
+            raise ValueError("PWM must be an integer from 0 to 4095")
         speed = max(.03, min(.3, speed))
         with self.lock:
             if sequence <= self.sequences.get(client, -1):
@@ -38,8 +39,9 @@ class ControlState:
             if not keys:
                 self.sequences[client] = sequence
                 if self.owner in (None, client):
-                    self.linear = self.angular = 0.0
+                    self.linear = self.lateral = self.angular = 0.0
                     self.left_duty = self.right_duty = 0.0
+                    self.wheel_duties=(0.,0.,0.,0.)
                     self.deadline = 0
                     self.owner = None
                 return True
@@ -51,12 +53,15 @@ class ControlState:
             pivot = int('KeyQ' in keys) - int('KeyE' in keys)
             steering = int('KeyA' in keys) - int('KeyD' in keys)
             self.pwm = pwm
-            turn = pivot or steering
-            scale=max(1, abs(forward-turn), abs(forward+turn))
-            self.left_duty = (forward-turn)/scale*(pwm or 0)/4095
-            self.right_duty = (forward+turn)/scale*(pwm or 0)/4095
+            # Body +Y is left; Q is counterclockwise rotation.
+            raw=(forward-steering-pivot,forward+steering+pivot,
+                 forward+steering-pivot,forward-steering+pivot)
+            scale=max(1,*(abs(value) for value in raw))
+            self.wheel_duties=tuple(value/scale*(pwm or 0)/4095 for value in raw)
+            self.left_duty,self.right_duty=self.wheel_duties[:2]
             self.linear = forward * speed
-            self.angular = (pivot or steering) * min(1, speed * 5)
+            self.lateral = steering * speed
+            self.angular = pivot * min(1, speed * 5)
             self.deadline = self.clock() + .4
             return True
 
@@ -69,11 +74,16 @@ class ControlState:
     def duty_command(self, enabled=True):
         with self.lock:
             if not enabled or self.clock() >= self.deadline:
-                return 0.0, 0.0
-            return self.left_duty, self.right_duty
+                return (0.,0.,0.,0.)
+            return self.wheel_duties
+
+    def lateral_command(self, enabled=True):
+        with self.lock:
+            return self.lateral if enabled and self.clock()<self.deadline else 0.
 
     def stop(self):
         with self.lock:
-            self.linear = self.angular = 0.0
+            self.linear = self.lateral = self.angular = 0.0
             self.left_duty = self.right_duty = 0.0
+            self.wheel_duties=(0.,0.,0.,0.)
             self.deadline = 0

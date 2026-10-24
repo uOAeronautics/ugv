@@ -1,0 +1,54 @@
+{
+  "scope": "Full generated car mechanics smoke check; does not establish real2sim acceptance",
+  "motor_profile": "mecanum_native_profile_pilot02_v1.json",
+  "calibration_status": "CANDIDATE_PARTIAL_OBSERVATION_NOT_FULL_REAL2SIM_ACCEPTANCE",
+  "results": {
+    "forward": {
+      "dx_body": 0.1559851511518461,
+      "dy_body": -1.3310314653242223e-06,
+      "dyaw": -0.00017057104690746668,
+      "z": 0.00014960570357525822,
+      "duration_sim_s": 1.524
+    },
+    "reverse": {
+      "dx_body": -0.1558496191592725,
+      "dy_body": -1.518985016499645e-05,
+      "dyaw": 0.00019389260838042178,
+      "z": 0.00011318718880642141,
+      "duration_sim_s": 1.5290000000000004
+    },
+    "left": {
+      "dx_body": -3.0253517199238952e-05,
+      "dy_body": 0.1484690487421795,
+      "dyaw": 0.000253880838752998,
+      "z": -2.962016207379639e-06,
+      "duration_sim_s": 1.5139999999999993
+    },
+    "right": {
+      "dx_body": -5.3070253840375875e-05,
+      "dy_body": -0.1492450468654432,
+      "dyaw": 1.5207009509020463e-05,
+      "z": -0.0001895204373240376,
+      "duration_sim_s": 1.5250000000000004
+    },
+    "ccw": {
+      "dx_body": 4.5062932373332624e-05,
+      "dy_body": 8.419659703863474e-05,
+      "dyaw": 0.7442844590939977,
+      "z": 0.00022899854855213894,
+      "duration_sim_s": 1.513
+    },
+    "cw": {
+      "dx_body": 9.820076680900573e-05,
+      "dy_body": -7.074130746760889e-05,
+      "dyaw": -0.7451401053928695,
+      "z": 0.00026178762942520345,
+      "duration_sim_s": 1.5120000000000005
+    }
+  },
+  "full_power_watchdog": {
+    "displacement_m": 0.5149202523732876,
+    "final_drift_m": 4.837491439864781e-06,
+    "max_torque_nm": 0.0784532
+  }
+}

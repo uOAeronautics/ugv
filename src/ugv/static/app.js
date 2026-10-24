@@ -11,6 +11,10 @@ const speed = $("#speed");
 const speedValue = $("#speed-value");
 const arucoCanvas = $("#aruco-overlay");
 const arucoContext = arucoCanvas.getContext("2d");
+const joystick = $("#joystick");
+const joystickKnob = $("#joystick-knob");
+let stick = { forward: 0, strafe: 0 };
+let stickPointer = null;
 
 function drawAruco(next) {
   const ratio = devicePixelRatio || 1;
@@ -42,13 +46,13 @@ function drawAruco(next) {
 }
 
 function vector() {
-  const forward = Number(keys.has("KeyW")) - Number(keys.has("KeyS"));
+  const forward = Math.max(-1, Math.min(1, Number(keys.has("KeyW")) - Number(keys.has("KeyS")) + stick.forward));
+  const strafe = Math.max(-1, Math.min(1, Number(keys.has("KeyD")) - Number(keys.has("KeyA")) + stick.strafe));
   const pivot = Number(keys.has("KeyQ")) - Number(keys.has("KeyE"));
-  const steering = Number(keys.has("KeyA")) - Number(keys.has("KeyD"));
   return {
     forward,
-    strafe: 0,
-    turn: pivot || steering,
+    strafe,
+    turn: pivot,
   };
 }
 
@@ -65,14 +69,27 @@ function drive() {
 
 function stop(reason = "client-stop") {
   keys.clear();
+  stick = { forward: 0, strafe: 0 };
+  stickPointer = null;
+  joystickKnob.style.transform = "translate(0, 0)";
   document.querySelectorAll("[data-key]").forEach((button) => button.classList.remove("active"));
   send({ type: "stop", reason });
 }
 
 function render(next) {
   state = next;
+  const cameraEnabled = next.camera_enabled !== false;
+  $("#camera-toggle").textContent = cameraEnabled ? "CAMERA ON" : "CAMERA OFF";
+  $("#camera-toggle").setAttribute("aria-pressed", String(cameraEnabled));
+  $("#camera-toggle").disabled = Boolean(next.owner && !next.you_are_owner);
+  const feed = $("#camera-feed");
+  if (!cameraEnabled && feed.hasAttribute("src")) feed.removeAttribute("src");
+  if (cameraEnabled && !feed.hasAttribute("src")) feed.src = "/stream.mjpg";
+  feed.style.visibility = cameraEnabled ? "visible" : "hidden";
+  $("#aruco-toggle").disabled = !cameraEnabled;
+  $("#follow-toggle").disabled = !cameraEnabled;
   const cameraFresh = next.camera_frame_age_ms != null && next.camera_frame_age_ms < 500;
-  $("#feed-stats").textContent = `${cameraFresh ? "LIVE" : "STALE"} · 1280×720 · ${(next.camera_fps || 0).toFixed(1)} FPS · MONO GS`;
+  $("#feed-stats").textContent = `${!cameraEnabled ? "CAMERA PAUSED" : cameraFresh ? "LIVE" : "STALE"} · 1280×720 · ${(next.camera_fps || 0).toFixed(1)} FPS · MONO GS`;
   $("#vision-rate").textContent = `${(next.aruco_fps || 0).toFixed(1)} processed fps`;
   $("#vision-time").textContent = `${(next.aruco_processing_ms || 0).toFixed(0)} ms compute · ${next.aruco_result_age_ms ?? "—"} ms age`;
   $("#motion").textContent = next.stopped ? "STOPPED" : "MOVING";
@@ -122,7 +139,7 @@ function connect() {
     connection.lastChild.textContent = " Online";
     heartbeat = setInterval(() => send({ type: "heartbeat" }), 200);
     driveRefresh = setInterval(() => {
-      if (["KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE"].some(key => keys.has(key))) drive();
+      if (["KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE"].some(key => keys.has(key)) || stick.forward || stick.strafe) drive();
     }, 150);
   });
   socket.addEventListener("message", (event) => {
@@ -161,6 +178,7 @@ document.addEventListener("keyup", (event) => {
 });
 $("#stop").addEventListener("click", () => stop("button-stop"));
 $("#arm").addEventListener("click", () => state.armed && state.you_are_owner ? stop("disarm") : send({ type: "arm" }));
+$("#camera-toggle").addEventListener("click", () => send({ type: "camera-capture", enabled: state.camera_enabled === false }));
 $("#aruco-toggle").addEventListener("click", () => send({ type: "aruco", enabled: !state.aruco_enabled, follow: state.aruco_follow ? false : null }));
 $("#follow-toggle").addEventListener("click", () => send({ type: "aruco", enabled: true, follow: !state.aruco_follow, speed_limit: Number(speed.value) }));
 $("#heading-calibrate").addEventListener("click", () => send({ type: "heading-calibrate" }));
@@ -170,6 +188,21 @@ speed.addEventListener("input", () => {
   if (state.aruco_follow && state.you_are_owner) send({ type: "aruco", enabled: true, speed_limit: Number(speed.value) });
   if (keys.size) drive();
 });
+function updateStick(event) {
+  const rect = joystick.getBoundingClientRect();
+  const radius = Math.min(rect.width, rect.height) * .38;
+  const dx = event.clientX - (rect.left + rect.width / 2), dy = event.clientY - (rect.top + rect.height / 2);
+  const magnitude = Math.hypot(dx, dy), scale = magnitude > radius ? radius / magnitude : 1;
+  const x = dx * scale, y = dy * scale;
+  stick = { strafe: x / radius, forward: -y / radius };
+  joystickKnob.style.transform = `translate(${x}px, ${y}px)`;
+  if (state.armed && state.you_are_owner) drive();
+}
+joystick.addEventListener("pointerdown", event => { event.preventDefault(); stickPointer = event.pointerId; joystick.setPointerCapture(event.pointerId); updateStick(event); });
+joystick.addEventListener("pointermove", event => { if (event.pointerId === stickPointer) updateStick(event); });
+function releaseStick(event) { if (event.pointerId !== stickPointer) return; stickPointer = null; stick = { forward: 0, strafe: 0 }; joystickKnob.style.transform = "translate(0, 0)"; drive(); }
+joystick.addEventListener("pointerup", releaseStick);
+joystick.addEventListener("pointercancel", releaseStick);
 window.addEventListener("blur", () => stop("window-blur"));
 document.addEventListener("visibilitychange", () => { if (document.hidden) stop("hidden"); });
 window.addEventListener("pagehide", () => stop("pagehide"));

@@ -10,11 +10,13 @@ class ControlsTest(unittest.TestCase):
     def drive(self, keys, seq=1, speed=.12, client='panel'):
         return self.state.drive(client, seq, keys, speed)
 
-    def test_keys_match_existing_dashboard_and_pivot_takes_priority(self):
+    def test_translation_and_rotation_are_independent(self):
         self.drive(['KeyW', 'KeyA'])
-        self.assertEqual(self.state.command(), (.12, .6))
+        self.assertEqual(self.state.command(), (.12, 0))
+        self.assertEqual(self.state.lateral_command(), .12)
         self.drive(['KeyS','KeyA','KeyE'], seq=2)
         self.assertEqual(self.state.command(), (-.12, -.6))
+        self.assertEqual(self.state.lateral_command(), .12)
 
     def test_missing_heartbeat_and_disabled_simulation_stop_motion(self):
         self.drive(['KeyW'])
@@ -50,13 +52,15 @@ class ControlsTest(unittest.TestCase):
 
     def test_pwm_combinations_match_real_wheel_mix_and_deadman(self):
         self.state.drive('panel',1,['KeyW','KeyA'],.12,pwm=1800)
-        self.assertEqual(self.state.duty_command(),(0,1800/4095))
+        self.assertEqual(self.state.duty_command(),(0,1800/4095,1800/4095,0))
         self.state.drive('panel',2,['KeyS','KeyE'],.12,pwm=1300)
-        self.assertEqual(self.state.duty_command(),(0,-1300/4095))
+        self.assertEqual(self.state.duty_command(),(0,-1300/4095,0,-1300/4095))
         self.now+=.401
-        self.assertEqual(self.state.duty_command(),(0,0))
+        self.assertEqual(self.state.duty_command(),(0,0,0,0))
+        self.state.drive('panel',3,['KeyW'],.12,pwm=4095)
+        self.assertEqual(self.state.duty_command(),(1,1,1,1))
         with self.assertRaises(ValueError):
-            self.state.drive('panel',3,['KeyW'],.12,pwm=4095)
+            self.state.drive('panel',4,['KeyW'],.12,pwm=4096)
 
 if __name__ == '__main__':
     unittest.main()

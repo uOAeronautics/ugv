@@ -80,7 +80,7 @@ def test_fresh_decode_skips_trackers_and_missed_decode_uses_flow():
     with patch.object(follower, "create_tracker", side_effect=AssertionError("unnecessary correlation")):
         with patch.object(cv2, "calcOpticalFlowPyrLK", side_effect=AssertionError("unnecessary flow")):
             for _ in range(2):
-                assert follower.track_all(frame)[0].source == "decode"
+                assert follower.track_all(frame)[0].source.startswith("decode")
         with patch.object(follower, "detect_gray", return_value=[]):
             assert follower.track_all(frame)[0].source == "flow"
             follower.tracks[2].decoded_at -= 2
@@ -183,3 +183,65 @@ def test_image_edge_gate_applies_to_native_and_fallback():
     image[:] = 255
     image[20:212, 400:592] = cv2.aruco.generateImageMarker(dictionary, 2, 192)
     assert [item.tag_id for item in ArucoFollower.detect_gray(image)] == [2]
+
+
+def test_dark_drone_screenshot_decodes_underbody_marker():
+    from pathlib import Path
+    image = cv2.imread(str(Path(__file__).parent / 'fixtures/drone-dark.png'), 0)
+    detections = ArucoFollower.detect_gray(image)
+    assert {d.tag_id for d in detections} == {12}
+    marker = detections[0]
+    assert 715 < marker.center_x < 750 and 275 < marker.center_y < 315
+    assert marker.source == 'decode-low-light'
+
+
+def test_live_drone_frame_retains_large_and_small_markers():
+    from pathlib import Path
+    image = cv2.imread(str(Path(__file__).parent / 'fixtures/drone-live.png'), 0)
+    assert {d.tag_id for d in ArucoFollower.detect_gray(image)} == {12, 13}
+
+
+def test_low_light_passes_reject_blank_frames():
+    for value in (0, 30, 128, 255):
+        assert ArucoFollower.detect_gray(np.full((720, 1280), value, np.uint8)) == []
+
+
+def test_small_live_marker_upsampling_preserves_full_frame_coordinates():
+    from pathlib import Path
+    image = cv2.imread(str(Path(__file__).parent / 'fixtures/drone-bright.png'), 0)
+    markers = {d.tag_id: d for d in ArucoFollower.detect_gray(image)}
+    assert 12 in markers
+    assert 715 < markers[12].center_x < 750
+    assert 265 < markers[12].center_y < 305
+
+
+def test_low_light_new_identity_requires_repeat_read():
+    from pathlib import Path
+    follower = ArucoFollower(None, SimpleNamespace(state=SimpleNamespace()))
+    jpeg = cv2.imencode('.jpg', cv2.imread(str(Path(__file__).parent / 'fixtures/drone-dark.png')), [cv2.IMWRITE_JPEG_QUALITY, 100])[1].tobytes()
+    image = cv2.imread(str(Path(__file__).parent / 'fixtures/drone-dark.png'), 0)
+    detections = ArucoFollower.detect_gray(image)
+    with patch.object(follower, 'detect_gray', return_value=detections):
+        assert follower.track_all(jpeg) == []
+        assert [d.tag_id for d in follower.track_all(jpeg)] == [12]
+
+
+def test_live_acquisition_spreads_dark_marker_passes_across_frames():
+    from pathlib import Path
+    for name in ('drone-dark.png', 'drone-bright.png'):
+        image = cv2.imread(str(Path(__file__).parent / 'fixtures' / name), 0)
+        results = [d for phase in range(5) for d in ArucoFollower.detect_gray(image, live_pass=phase)]
+        assert 12 in {d.tag_id for d in results}
+        marker = next(d for d in results if d.tag_id == 12)
+        assert 715 < marker.center_x < 750
+        assert 265 < marker.center_y < 315
+
+
+def test_live_bent_drone_tag_uses_contrast_and_border_rectification():
+    from pathlib import Path
+    image = cv2.imread(str(Path(__file__).parent / 'fixtures/drone-curved-live.png'), 0)
+    found = ArucoFollower.detect_gray(image, live_pass=0)
+    assert {d.tag_id for d in found} == {13}
+    assert found[0].source == 'decode-curved'
+    assert 550 < found[0].center_x < 700
+    assert 80 < found[0].center_y < 200

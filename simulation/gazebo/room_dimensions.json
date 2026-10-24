@@ -1,0 +1,102 @@
+{
+  "length_x": 12.0,
+  "width_y": 24.0,
+  "ceiling_height": 3.8,
+  "wall_thickness": 0.18,
+  "table_height": 0.75,
+  "window_sill": 0.38,
+  "window_head": 3.1,
+  "free_demonstration_area": {
+    "x": [
+      1.55,
+      2.05
+    ],
+    "y": [
+      -4.9,
+      -0.5
+    ]
+  },
+  "source": "19.8 second panorama, 17.43 second walking reference and seven drone photos",
+  "scale": "User supplied approximate 12 by 24m; other dimensions and placements estimated from normal furniture sizes",
+  "layout_confidence": "Object classes high; exact room footprint, separations, blind wall extensions and ceiling dimensions low",
+  "panorama_camera_estimate": [
+    2,
+    -2,
+    1.62
+  ],
+  "orientation_inferred_from_video": {
+    "east": "whiteboards, teaching tables, steering workstation and black lockers",
+    "south": "glazed short end, two exits, mobile whiteboard and stored tables",
+    "west": "glazed long wall, wing stand, folding tables, aircraft equipment",
+    "north": "back workshop, two benches, shelves and two-panel flag divider"
+  },
+  "axis_convention": "X east/west (12m), Y north/south (24m), Z up",
+  "direction_anchors_seconds": {
+    "4": "east long teaching wall",
+    "8": "south short glazed end",
+    "11": "west long window wall",
+    "17": "north back workshop"
+  },
+  "drone_pose": [
+    1.7,
+    -3.6,
+    0,
+    0,
+    0,
+    1.1344640137963142
+  ],
+  "ugv_pose": [
+    1.8,
+    -1,
+    0.001,
+    0,
+    0,
+    -1.5707963267948966
+  ],
+  "length_y": 24.0,
+  "width_x": 12.0,
+  "panorama_yaws_deg": [
+    73.33859777674537,
+    57.29577951308232,
+    36.66929888837269,
+    17.188733853924695,
+    0.0,
+    -19.48056503444799,
+    -40.10704565915762,
+    -64.1712730546522,
+    -90.0,
+    -130,
+    -155,
+    -180.0,
+    -193.65973475421825,
+    -209.12959522275048,
+    -228.03720246206765,
+    -244.0800207257307,
+    -257.8310078088705,
+    -270.0,
+    -299.0839690582897,
+    -323.7211542489151
+  ],
+  "panorama_pitches_deg": [
+    5.729577951308233,
+    4.583662361046586,
+    0.5729577951308232,
+    -0.9740282517223996,
+    -7.448451336700702,
+    -4.010704565915763,
+    -1.1459155902616465,
+    -3.437746770784939,
+    -11.459155902616466,
+    -10.313240312354818,
+    -5.729577951308233,
+    -1.7188733853924696,
+    -1.8907607239317168,
+    -2.291831180523293,
+    -0.5729577951308232,
+    2.291831180523293,
+    -1.7188733853924696,
+    -4.583662361046586,
+    -20.05352282957881,
+    -68.75493541569878
+  ]
+}

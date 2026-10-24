@@ -5,6 +5,7 @@
 #include <mutex>
 #include <vector>
 #include <sstream>
+#include <random>
 #include <gz/msgs/twist.pb.h>
 #include <gz/msgs/double_v.pb.h>
 #include <gz/plugin/Register.hh>
@@ -29,6 +30,35 @@ class TTMotorSystem final : public gz::sim::System,
   const std::array<std::string,4> names{{"front_left_wheel_joint",
       "front_right_wheel_joint", "rear_left_wheel_joint", "rear_right_wheel_joint"}};
   std::mutex mutex;
+  double lateral{0}, wheelbase{.1397};
+  std::array<double,4> wheelDuty{};
+  bool mecanum{false}, fourDuty{false};
+  std::array<double,4> wheelGain{{1,1,1,1}}, wheelReverseGain{{1,1,1,1}};
+  std::array<double,4> wheelExponent{{1,1,1,1}};
+  std::array<double,4> wheelDeadzone{}, wheelDriveTau{}, wheelBrakeTau{}, gainStddev{};
+  std::array<double,4> sampledGain{{1,1,1,1}};
+  std::mt19937 random{0};
+
+  void SampleParameters()
+  {
+    std::normal_distribution<double> normal(0.,1.);
+    for(size_t i=0;i<4;++i)
+      sampledGain[i]=std::max(.05,1.+gainStddev[i]*normal(random));
+  }
+
+  void ReadFour(const std::shared_ptr<const sdf::Element> &sdf,
+                const std::string &key, std::array<double,4> &values,
+                double maximum)
+  {
+    if(!sdf->HasElement(key)) return;
+    std::istringstream stream(sdf->Get<std::string>(key));
+    for(auto &value:values)
+      if(!(stream>>value) || !std::isfinite(value) || value<0 || value>maximum)
+        throw std::runtime_error(key+" needs four bounded nonnegative values: FL FR RL RR");
+    double extra;
+    if(stream>>extra) throw std::runtime_error(key+" needs exactly four values");
+  }
+
   double linear{0}, angular{0}, radius{.03175}, track{.12065};
   double stall{.0784532}, omega0{26.17994}, feedback{.06};
   double integralGain{.6}, brakeDamping{.06}, brakeResistance{.01}, steeringBrakeTau{0};
@@ -48,6 +78,18 @@ class TTMotorSystem final : public gz::sim::System,
       gz::sim::EntityComponentManager &, gz::sim::EventManager &) override
   {
     model = gz::sim::Model(entity);
+    mecanum=sdf->Get<bool>("mecanum",false).first;
+    wheelbase=sdf->Get<double>("wheelbase",wheelbase).first;
+    ReadFour(sdf,"wheel_voltage_gain",wheelGain,5.);
+    ReadFour(sdf,"wheel_reverse_voltage_gain",wheelReverseGain,5.);
+    ReadFour(sdf,"wheel_deadzone",wheelDeadzone,.95);
+    ReadFour(sdf,"wheel_duty_exponent",wheelExponent,3.);
+    for(auto exponent:wheelExponent) if(exponent<=0) throw std::runtime_error("Duty exponent must be positive");
+    ReadFour(sdf,"wheel_drive_tau",wheelDriveTau,5.);
+    ReadFour(sdf,"wheel_brake_tau",wheelBrakeTau,5.);
+    ReadFour(sdf,"wheel_gain_stddev",gainStddev,1.);
+    random.seed(sdf->Get<unsigned int>("random_seed",0u).first);
+    SampleParameters();
     radius = sdf->Get<double>("wheel_radius", radius).first;
     track = sdf->Get<double>("wheel_separation", track).first;
     stall = sdf->Get<double>("stall_torque", stall).first;
@@ -110,19 +152,25 @@ class TTMotorSystem final : public gz::sim::System,
   {
     std::lock_guard<std::mutex> guard(mutex);
     pwmMode=true;lastCommand=std::chrono::steady_clock::now();
-    pwmLeft=pwmRight=0;
-    if(msg.data_size()!=2 || !std::isfinite(msg.data(0)) || !std::isfinite(msg.data(1))) return;
-    pwmLeft=std::clamp(msg.data(0),-1800./4095.,1800./4095.);
-    pwmRight=std::clamp(msg.data(1),-1800./4095.,1800./4095.);
+    pwmLeft=pwmRight=0;wheelDuty.fill(0);fourDuty=msg.data_size()==4;
+    if(msg.data_size()!=2 && msg.data_size()!=4) return;
+    for(int i=0;i<msg.data_size();++i) if(!std::isfinite(msg.data(i))) return;
+    if(fourDuty) for(int i=0;i<4;++i) wheelDuty[i]=std::clamp(msg.data(i),-1.,1.);
+    else {
+      pwmLeft=std::clamp(msg.data(0),-1.,1.);
+      pwmRight=std::clamp(msg.data(1),-1.,1.);
+      for(int i=0;i<4;++i) wheelDuty[i]=i%2==0?pwmLeft:pwmRight;
+    }
   }
 
   void Command(const gz::msgs::Twist &msg)
   {
     std::lock_guard<std::mutex> guard(mutex);
     pwmMode=false;lastCommand=std::chrono::steady_clock::now();
-    if (!std::isfinite(msg.linear().x()) || !std::isfinite(msg.angular().z()))
-    { linear = angular = 0; return; }
+    if (!std::isfinite(msg.linear().y()) || !std::isfinite(msg.linear().x()) || !std::isfinite(msg.angular().z()))
+    { linear = lateral = angular = 0; return; }
     linear = std::clamp(msg.linear().x(), -.3, .3);
+    lateral = std::clamp(msg.linear().y(), -.3, .3);
     angular = std::clamp(msg.angular().z(), -1., 1.);
   }
 
@@ -130,9 +178,11 @@ class TTMotorSystem final : public gz::sim::System,
       gz::sim::EntityComponentManager &ecm) override
   {
     std::lock_guard<std::mutex> guard(mutex);
-    linear = angular = pwmLeft = pwmRight = 0;
+    linear = lateral = angular = pwmLeft = pwmRight = 0;
+    wheelDuty.fill(0);
     pwmMode=false;
     integral.fill(0);filteredDuty.fill(0);brakeEngagement.fill(0);
+    SampleParameters();
     lastPub = {};
     for (auto j : joints)
       if (j != gz::sim::kNullEntity && ecm.HasEntity(j))
@@ -149,10 +199,11 @@ class TTMotorSystem final : public gz::sim::System,
       gz::sim::EntityComponentManager &ecm) override
   {
     if (info.paused) return;
-    double v,w,pl,pr;bool direct;
-    { std::lock_guard<std::mutex> guard(mutex); v=linear;w=angular;pl=pwmLeft;pr=pwmRight;direct=pwmMode;
-      if(std::chrono::steady_clock::now()-lastCommand > std::chrono::milliseconds(400))
-        v=w=pl=pr=0; }
+    double v,vy,w,pl,pr;bool direct,four,expired;std::array<double,4> duties;
+    { std::lock_guard<std::mutex> guard(mutex); v=linear;vy=lateral;w=angular;pl=pwmLeft;pr=pwmRight;direct=pwmMode;four=fourDuty;duties=wheelDuty;
+      expired=std::chrono::steady_clock::now()-lastCommand > std::chrono::milliseconds(400);
+      if(expired)
+        {v=vy=w=pl=pr=0;duties.fill(0);} }
     gz::msgs::Double_V output;
     for (size_t i=0; i<joints.size(); ++i)
     {
@@ -175,7 +226,8 @@ class TTMotorSystem final : public gz::sim::System,
       }
       double omega = velocity->Data()[0];
       double side = i % 2 == 0 ? -1 : 1;
-      double target = std::clamp((v + side*w*track/2)/radius, -omega0, omega0);
+      double hand=(i==0 || i==3)?1:-1;
+      double target = std::clamp((v - (mecanum?hand*vy:0) + side*w*(track+(mecanum?wheelbase:0))/2)/radius, -omega0, omega0);
       // A velocity servo chooses effective voltage. The DC back-EMF relation
       // then produces finite output torque, decreasing with shaft speed.
       // At zero target, terminals are shorted (dynamic braking), not PID hold.
@@ -193,20 +245,26 @@ class TTMotorSystem final : public gz::sim::System,
       if(direct)
       {
         integral[i]=0;
-        double effort=EffectiveDuty(pl,pr),magnitude=std::max(std::abs(pl),std::abs(pr));
+        double effort=(mecanum || four)?-1:EffectiveDuty(pl,pr),magnitude=std::max(std::abs(pl),std::abs(pr));
         duty=effort>=0 ? (magnitude>1e-9 ? (i%2==0 ? pl : pr)/magnitude*effort : 0) :
-            std::clamp(i%2==0 ? pl*leftVoltageGain : pr*rightVoltageGain,-1.,1.);
+            std::clamp((mecanum || four)?duties[i]:(i%2==0 ? pl*leftVoltageGain : pr*rightVoltageGain),-1.,1.);
         auto sign=[](double x){return int(x>1e-9)-int(x < -1e-9);};
-        double tau=riseTau[(sign(pl+pr)+1)*3+sign(pr-pl)+1];
-        // Fit describes spin-up only. A load/effort reduction must not retain
-        // the previous straight-line effort and surge into a steering chord.
-        if(duty==0 || tau<=0 || std::abs(duty)<std::abs(filteredDuty[i])) filteredDuty[i]=duty;
+        if(mecanum || four)
+        {
+          double magnitude=std::max(0.,(std::abs(duty)-wheelDeadzone[i])/(1.-wheelDeadzone[i]));
+          duty=std::clamp(std::copysign(std::pow(magnitude,wheelExponent[i]),duty)*(duty<0?wheelReverseGain[i]:wheelGain[i])*sampledGain[i],-1.,1.);
+        }
+        double tau=(mecanum || four)?wheelDriveTau[i]:riseTau[(sign(pl+pr)+1)*3+sign(pr-pl)+1];
+        // Legacy skid-steer fit describes spin-up only. Mecanum drive_tau
+        // is an aggregate effort-response lag for continuous commands.
+        // Zero input still enters braking immediately; watchdog bypasses lag.
+        if(duty==0 || tau<=0 || (!(mecanum || four) && std::abs(duty)<std::abs(filteredDuty[i]))) filteredDuty[i]=duty;
         else filteredDuty[i]+=(1-std::exp(-dt/tau))*(duty-filteredDuty[i]);
         duty=filteredDuty[i];
         target=duty*omega0;
       }
       double torque = std::clamp(stall*(duty-omega/omega0), -stall, stall);
-      bool braking=direct ? std::abs(i%2==0 ? pl : pr)<1e-9 : target==0;
+      bool braking=direct ? std::abs(duties[i])<1e-9 : target==0;
       if(!braking) brakeEngagement[i]=0;
       if(braking && dt>0)
       {
@@ -218,8 +276,10 @@ class TTMotorSystem final : public gz::sim::System,
         // Aggregate loaded brake take-up fitted to continuous W -> WD IMU
         // response, not a claimed electrical H-bridge delay. Full release and
         // watchdog expiry bypass this lag and brake all wheels immediately.
-        if(direct && (std::abs(pl)+std::abs(pr)>1e-9) && steeringBrakeTau>0)
-          brakeEngagement[i]+=(1-std::exp(-dt/steeringBrakeTau))*(1-brakeEngagement[i]);
+        double brakeTau=expired?0:(mecanum || four)?wheelBrakeTau[i]:
+            ((direct && (std::abs(pl)+std::abs(pr)>1e-9))?steeringBrakeTau:0);
+        if(brakeTau>0)
+          brakeEngagement[i]+=(1-std::exp(-dt/brakeTau))*(1-brakeEngagement[i]);
         else brakeEngagement[i]=1;
         torque=-brakeEngagement[i]*std::copysign(resistance,omega);
       }

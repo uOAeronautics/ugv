@@ -38,7 +38,7 @@ def properties(dimensions, groups):
     rigid = combine(parts)
     # Annular rubber tread plus a plastic hub; rotation axis is link Y.
     radius = dimensions['wheel_diameter_in']*.0254/2
-    width = (dimensions['overall_width_in']-dimensions['chassis_width_in'])*.0254/2
+    width = dimensions.get('wheel_width_mm_assumed',(dimensions['overall_width_in']-dimensions['chassis_width_in'])*.0254*500)/1000
     wheel = budget['wheel']
     inner = wheel['rubber_inner_radius_m_assumed']
     rubber, plastic = wheel['rubber_mass_g']/1000, wheel['plastic_mass_g']/1000
@@ -51,12 +51,21 @@ def properties(dimensions, groups):
     for name, group in groups.items():
         if name == 'chassis':
             continue
-        result[name] = dict(mass=wheel_mass, center=[0, 0, 0],
-                            inertia=[radial, spin, radial, 0, 0, 0])
+        roller_mass=.016 if dimensions.get('wheel_type')=='mecanum' else 0
+        hub_mass=wheel_mass-roller_mass
+        hub_radius=.0235
+        result[name] = dict(mass=hub_mass, center=[0, 0, 0],
+                            inertia=[hub_mass*(3*hub_radius**2+width**2)/12,
+                                     hub_mass*hub_radius**2/2,
+                                     hub_mass*(3*hub_radius**2+width**2)/12,0,0,0] if roller_mass else [radial, spin, radial, 0, 0, 0])
         carrier = box(budget['each_carrier_mass_g']/1000, [0, 0, 0], [.01]*3)
         result[name+'_carrier'] = carrier
         for component in (result[name], carrier):
             assembly_parts.append(dict(component, center=group['origin']))
+        if roller_mass:
+            assembly_parts.append(dict(mass=roller_mass,center=group['origin'],
+                inertia=[roller_mass*(radius**2/2+width**2/12),roller_mass*radius**2,
+                         roller_mass*(radius**2/2+width**2/12),0,0,0]))
     total = combine(assembly_parts)
     if abs(total['mass']-budget['measured_total_mass_g']/1000) > 1e-10:
         raise ValueError('Component budget does not match the measured car mass')

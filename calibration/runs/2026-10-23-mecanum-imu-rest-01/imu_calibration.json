@@ -1,0 +1,397 @@
+{
+  "schema_version": 1,
+  "sensor": "Nano 33 BLE Sense Rev2 BMI270",
+  "seed": 5774,
+  "update_rate_hz": 100,
+  "ideal_physics_rate_hz": 1000,
+  "anti_alias_cutoff_hz_assumed": 25,
+  "bandwidth_note": "Two-pole 25Hz low-pass and 10ms average of physics-rate ideal samples before adding 100Hz recorded noise; anti-alias approximation, not an identified BMI270 filter.",
+  "source_recordings": [
+    {
+      "session": "2026-10-23-mecanum-imu-rest-01",
+      "sha256": "faaf328213ea63629f7804274503412efae1b14403fcfef7ae1bb7b1f7795bd2",
+      "rest_samples": 6062,
+      "role": "current_stationary_noise"
+    },
+    {
+      "session": "2026-10-23-mecanum-probe-01",
+      "sha256": "87ce47cddab684edf0c507c92becb2dbdb03a5e94bfc784059733ad0cefcea40",
+      "rest_samples": 0,
+      "role": "signed_forward_launch_mount"
+    }
+  ],
+  "rest_spans": 1,
+  "rest_samples": 6062,
+  "settled_rest_s": 60.58862357500038,
+  "selection": "Dedicated stationary recording: stopped and all actual wheel PWMzero. No moving samples used as sensornoise.",
+  "channels": {
+    "accel_g": {
+      "mean": [
+        0.1935710607060374,
+        -0.13607068294292377,
+        0.9749680138568014
+      ],
+      "white_covariance": [
+        [
+          3.947533871737633e-07,
+          5.2184885550733345e-08,
+          1.2628346327350112e-07
+        ],
+        [
+          5.2184885550733345e-08,
+          4.867837275393983e-07,
+          9.992933135905011e-08
+        ],
+        [
+          1.2628346327350112e-07,
+          9.992933135905011e-08,
+          1.0825989913934973e-06
+        ]
+      ],
+      "white_std": [
+        0.0006282940292361239,
+        0.0006976988802767268,
+        0.0010404801734744864
+      ],
+      "rest_window_mean_std": [
+        6.794400988018117e-05,
+        0.00014480450120643354,
+        5.6178027602758346e-05
+      ],
+      "short_term_bias_std": [
+        9.443615717272206e-05,
+        0.0001759683264962122,
+        5.367128306910795e-05
+      ],
+      "short_term_bias_tau_s": [
+        0.31933639080926435,
+        0.8080379276549916,
+        0.2631233693870934
+      ],
+      "half_second_lag1": [
+        0.2089318800671968,
+        0.5385996031522301,
+        0.14953133555606765
+      ],
+      "tau_note": "Empirical lag of 0.5s stationary block means; values at0.5s are unresolved, not measured longterm drift.",
+      "allan_deviation": [
+        {
+          "tau_s": 0.010055185999590321,
+          "averaging_samples": 1,
+          "difference_count": 6061,
+          "deviation": [
+            0.00035945085433254756,
+            0.0003964293380856059,
+            0.000633452082640104
+          ]
+        },
+        {
+          "tau_s": 0.020110371999180643,
+          "averaging_samples": 2,
+          "difference_count": 6059,
+          "deviation": [
+            0.0005110349815345492,
+            0.0005853017423860611,
+            0.0009685646622476888
+          ]
+        },
+        {
+          "tau_s": 0.05027592999795161,
+          "averaging_samples": 5,
+          "difference_count": 6053,
+          "deviation": [
+            0.00038346034145868144,
+            0.0003905980270903618,
+            0.0004935436591301669
+          ]
+        },
+        {
+          "tau_s": 0.10055185999590321,
+          "averaging_samples": 10,
+          "difference_count": 6043,
+          "deviation": [
+            0.0002895417507902584,
+            0.0002905268968478408,
+            0.0003974318771473039
+          ]
+        },
+        {
+          "tau_s": 0.20110371999180643,
+          "averaging_samples": 20,
+          "difference_count": 6023,
+          "deviation": [
+            0.00020109378080667342,
+            0.0001873710677403917,
+            0.00022063401578145342
+          ]
+        },
+        {
+          "tau_s": 0.5027592999795161,
+          "averaging_samples": 50,
+          "difference_count": 5963,
+          "deviation": [
+            0.00011831237280315662,
+            0.0001260355180603001,
+            0.00014213678210320157
+          ]
+        },
+        {
+          "tau_s": 0.9954634139594418,
+          "averaging_samples": 99,
+          "difference_count": 5865,
+          "deviation": [
+            8.710770576818939e-05,
+            9.76663637075325e-05,
+            0.00010890874860316644
+          ]
+        },
+        {
+          "tau_s": 2.000982013918474,
+          "averaging_samples": 199,
+          "difference_count": 5665,
+          "deviation": [
+            5.3907151914254204e-05,
+            7.034632211971573e-05,
+            7.439132001984527e-05
+          ]
+        },
+        {
+          "tau_s": 4.99742744179639,
+          "averaging_samples": 497,
+          "difference_count": 5069,
+          "deviation": [
+            3.686823620099808e-05,
+            6.232810117306045e-05,
+            4.225039175615318e-05
+          ]
+        }
+      ],
+      "first_difference_covariance": [
+        [
+          1.292262086063417e-07,
+          2.4784998512101574e-08,
+          5.536046025201408e-08
+        ],
+        [
+          2.4784998512101574e-08,
+          1.5718215019687052e-07,
+          3.688587127269875e-08
+        ],
+        [
+          5.536046025201408e-08,
+          3.688587127269875e-08,
+          4.0132774832110886e-07
+        ]
+      ]
+    },
+    "gyro_dps": {
+      "mean": [
+        0.04538187066974745,
+        0.83157396898716,
+        -0.04925127020785223
+      ],
+      "white_covariance": [
+        [
+          0.0015295717204399616,
+          -0.0001343049052645297,
+          0.00017424807711667324
+        ],
+        [
+          -0.0001343049052645297,
+          0.001690165657862758,
+          -0.00014542996047497097
+        ],
+        [
+          0.00017424807711667324,
+          -0.00014542996047497097,
+          0.0019358313125258856
+        ]
+      ],
+      "white_std": [
+        0.03910973945758219,
+        0.04111162436419605,
+        0.04399808305512736
+      ],
+      "rest_window_mean_std": [
+        0.002330039353427239,
+        0.0020371710766201217,
+        0.003545463673361746
+      ],
+      "short_term_bias_std": [
+        0.007316018426732381,
+        0.006597602637882863,
+        0.007741480899107824
+      ],
+      "short_term_bias_tau_s": [
+        0.5,
+        0.5,
+        0.2151402251905727
+      ],
+      "half_second_lag1": [
+        0.0,
+        0.047011954777842424,
+        0.09787485402897834
+      ],
+      "tau_note": "Empirical lag of 0.5s stationary block means; values at0.5s are unresolved, not measured longterm drift.",
+      "allan_deviation": [
+        {
+          "tau_s": 0.010055185999590321,
+          "averaging_samples": 1,
+          "difference_count": 6061,
+          "deviation": [
+            0.02535880326082621,
+            0.025891430192243752,
+            0.027276647413911396
+          ]
+        },
+        {
+          "tau_s": 0.020110371999180643,
+          "averaging_samples": 2,
+          "difference_count": 6059,
+          "deviation": [
+            0.029753193792403362,
+            0.030518700858320768,
+            0.03331687202707599
+          ]
+        },
+        {
+          "tau_s": 0.05027592999795161,
+          "averaging_samples": 5,
+          "difference_count": 6053,
+          "deviation": [
+            0.024138118755801886,
+            0.026544981888103125,
+            0.02858659345322854
+          ]
+        },
+        {
+          "tau_s": 0.10055185999590321,
+          "averaging_samples": 10,
+          "difference_count": 6043,
+          "deviation": [
+            0.017655379037584455,
+            0.019008655763062092,
+            0.019671133139927452
+          ]
+        },
+        {
+          "tau_s": 0.20110371999180643,
+          "averaging_samples": 20,
+          "difference_count": 6023,
+          "deviation": [
+            0.01279727950983395,
+            0.01367769732997095,
+            0.014331352722818613
+          ]
+        },
+        {
+          "tau_s": 0.5027592999795161,
+          "averaging_samples": 50,
+          "difference_count": 5963,
+          "deviation": [
+            0.00843022461262375,
+            0.009367017241611408,
+            0.00936148908086546
+          ]
+        },
+        {
+          "tau_s": 0.9954634139594418,
+          "averaging_samples": 99,
+          "difference_count": 5865,
+          "deviation": [
+            0.006395823306690363,
+            0.006338713507608817,
+            0.00683615655226082
+          ]
+        },
+        {
+          "tau_s": 2.000982013918474,
+          "averaging_samples": 199,
+          "difference_count": 5665,
+          "deviation": [
+            0.004737945088885222,
+            0.004360948078612702,
+            0.0048801481106971484
+          ]
+        },
+        {
+          "tau_s": 4.99742744179639,
+          "averaging_samples": 497,
+          "difference_count": 5069,
+          "deviation": [
+            0.0030840226875009044,
+            0.0033767899760055358,
+            0.004046839675660442
+          ]
+        }
+      ],
+      "first_difference_covariance": [
+        [
+          0.0006431749691480943,
+          -3.471309126030572e-05,
+          4.395026022484279e-05
+        ],
+        [
+          -3.471309126030572e-05,
+          0.0006704767282240024,
+          -3.4399119135733905e-05
+        ],
+        [
+          4.395026022484279e-05,
+          -3.4399119135733905e-05,
+          0.0007441382183230126
+        ]
+      ]
+    }
+  },
+  "body_to_sensor_matrix": [
+    [
+      0.20236645436558995,
+      0.960115516064388,
+      0.19294044148366865
+    ],
+    [
+      -0.9636080948697442,
+      0.23035765827895757,
+      -0.13562738946738218
+    ],
+    [
+      -0.1746632693184276,
+      -0.15847253732003022,
+      0.9717917458315593
+    ]
+  ],
+  "accel_bias_g": [
+    0.0006306192223687612,
+    -0.0004432934755415896,
+    0.0031762680252421793
+  ],
+  "gyro_bias_dps": [
+    0.04538187066974745,
+    0.83157396898716,
+    -0.04925127020785223
+  ],
+  "position_body_m": [
+    -0.054,
+    0.003,
+    0.08245
+  ],
+  "position_note": "Approximate Nano board centre from visual assembly, not a measured sensor lever arm.",
+  "bias_model": "Measured stationary mean gyro offset; full residual samplecovariance plus empirical shortterm OU blockmeans. No independent powercycle biasdistribution inferred.",
+  "limits": [
+    "Single stationary60s record; temperature drift, powercycle repeatability, longterm biasinstability and sixpose accelerometer gains/offsets remain uncalibrated.",
+    "Overlapping Allan deviations cover10ms\u20135s; overlapping differences are correlated and do not supply independent confidenceintervals.",
+    "Rest covariance contains firmwarefiltering and environmentalvibration, not identified intrinsic sensornoisedensity.",
+    "Motoron fluctuations combine true chassisacceleration, wheelroller ripple, mountingflex and sensornoise; they must not all be labeled measurementnoise.",
+    "Gravity norm residual is assigned alonggravity for simulatorcompatibility; accelerometer scale/offset are not independently identifiable in onepose.",
+    "Forwarddirection from earlierlaunch projected onto newgravity; mountshift uncertainty remains."
+  ],
+  "sample_period_median_s": 0.010055185999590321,
+  "max_sample_gap_s": 0.022440518999246706,
+  "mount_calibration": {
+    "forward_launch_signal_g": 0.2249705132068423,
+    "forward_axis_origin": "Probe signed launch direction, reorthogonalized against newer stationarygravity",
+    "gravity_norm_g": 1.0032684657375066,
+    "mount_change_note": "Stationarygravity differs from probe; reorthogonalization updates tilt but cannot distinguish sensorfixture shift from chassis pitch."
+  }
+}

@@ -3,15 +3,15 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync('src/ugv/static/app.js', 'utf8');
 const functions = source.slice(source.indexOf('function vector()'), source.indexOf('function stop('));
-for (const [pressed, type, forward, turn] of [
-  [['KeyW','KeyA'], 'drive', 1, 1],
-  [['KeyW','KeyD'], 'drive', 1, -1],
-  [['KeyS','KeyA'], 'drive', -1, 1],
-  [['KeyS','KeyD'], 'drive', -1, -1],
-  [['KeyQ'], 'drive', 0, 1],
-  [['KeyE'], 'drive', 0, -1],
-  [['KeyA'], 'drive', 0, 1],
-  [[], 'drive', 0, 0],
+for (const [pressed, type, forward, strafe, turn] of [
+  [['KeyW','KeyA'], 'drive', 1, -1, 0],
+  [['KeyW','KeyD'], 'drive', 1, 1, 0],
+  [['KeyS','KeyA'], 'drive', -1, -1, 0],
+  [['KeyS','KeyD'], 'drive', -1, 1, 0],
+  [['KeyQ'], 'drive', 0, 0, 1],
+  [['KeyE'], 'drive', 0, 0, -1],
+  [['KeyA'], 'drive', 0, -1, 0],
+  [[], 'drive', 0, 0, 0],
 ]) {
   const messages = [];
   const context = { keys: new Set(pressed), state: { armed:true, you_are_owner:true },
@@ -21,6 +21,7 @@ for (const [pressed, type, forward, turn] of [
   vm.runInNewContext(functions + '\ndrive();', context);
   assert.equal(messages[0].type, type);
   assert.equal(messages[0].forward, forward);
+  assert.equal(messages[0].strafe, strafe);
   assert.equal(messages[0].turn, turn);
 }
 console.log('8 keyboard mappings passed');

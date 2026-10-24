@@ -60,10 +60,16 @@
         <div><span>CAMERA</span><i data-key="ArrowUp">↑</i><i data-key="ArrowLeft">←</i><i data-key="ArrowDown">↓</i><i data-key="ArrowRight">→</i></div>
       </div>
 
+      <div id="joystick" class="joystick" role="application" aria-label="Movement joystick. Drag to move, release to stop." tabindex="0">
+        <span class="joy-up">▲</span><span class="joy-right">▶</span><span class="joy-down">▼</span><span class="joy-left">◀</span>
+        <i id="joystick-knob"></i><small>MOVE</small>
+      </div>
+
       <div class="control-bar">
         <button id="arm">ARM</button>
         <button id="detect-toggle" aria-pressed="false">DETECT OFF</button>
         <button id="stabilize-toggle" aria-pressed="false">STABILIZE OFF</button>
+        <button id="camera-toggle" aria-pressed="true" title="Pause capture, streaming and Pi vision; applies to all viewers">CAMERA ON</button>
         <button id="aruco-toggle" aria-pressed="false">ARUCO OFF</button>
         <button id="follow-toggle" aria-pressed="false">FOLLOW OFF</button>
         <button id="map-toggle">MAP</button>

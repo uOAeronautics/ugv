@@ -31,8 +31,8 @@ def test_forward_uses_classical_four_wheel_drive() -> None:
 def test_rotate_left_pattern() -> None:
     assert drive_vector(0, 0, 1) == {
         "front-left": 1000,
-        "rear-left": 1000,
         "front-right": -1000,
+        "rear-left": 1000,
         "rear-right": -1000,
     }
 
@@ -84,15 +84,11 @@ def test_disconnect_releases_session_and_brakes():
     assert controller.state.owner is None
 
 
-def test_sidestep_is_disabled():
-    controller = mock_controller()
-    try:
-        asyncio.run(controller.sidestep("test", 1, 1000))
-    except PermissionError:
-        pass
-    else:
-        raise AssertionError("side-step must be disabled")
-    assert controller.state.stopped
+def test_mecanum_strafe_pattern():
+    assert drive_vector(0, 1, 0) == {
+        "front-left": -1000, "front-right": 1000,
+        "rear-left": 1000, "rear-right": -1000,
+    }
 
 
 def test_rate_loop_converges_with_both_turn_directions():

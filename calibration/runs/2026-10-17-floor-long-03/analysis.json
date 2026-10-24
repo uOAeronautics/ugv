@@ -1,0 +1,947 @@
+{
+  "schema_version": 1,
+  "source": "calibration/runs/2026-10-17-floor-long-03",
+  "sample_count": 9833,
+  "sample_rate_hz": 99.43543048417105,
+  "max_sample_gap_s": 0.021394610999777797,
+  "method": "Bracket each short trial with rest bias/gravity; interpolate gyro bias; project gyro onto measured gravity. Linear estimates use planar rotation, assumed IMU lever arm and endpoint zero-velocity constraints.",
+  "limits": [
+    "Absolute translation and tire slip remain uncalibrated without external distance/pose reference.",
+    "No wheel encoders/current measurements: torque constant, motor friction and tire friction are not separately identifiable.",
+    "Short pulses do not guarantee steady speed; reported yaw plateau is the last 35% of each pulse.",
+    "Rest windows assume the operator did not move the robot; long-term bias instability needs a longer stationary capture.",
+    "Accelerometer-derived speed is a provisional short-burst estimate, not navigation truth."
+  ],
+  "sensor": {
+    "gravity_g": [
+      -0.26562,
+      -0.15796,
+      0.9502
+    ],
+    "gyro_bias_dps": [
+      0.0,
+      0.7935,
+      0.0
+    ],
+    "gyro_sample_std_dps": [
+      0.03979941584294934,
+      0.04320370382721847,
+      0.042830890932129544
+    ],
+    "accel_sample_std_g": [
+      0.0006215796685864123,
+      0.0005541743927681967,
+      0.000725517765392417
+    ],
+    "body_forward_axis_sensor": [
+      -0.9575590558568478,
+      0.16508178153895312,
+      -0.23628089205534125
+    ],
+    "forward_axis_launch_signal_g": 0.3277444878886533
+  },
+  "groups": [
+    {
+      "keys": "A",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": 138.69098184520374,
+      "yaw_dps_min": 138.69098184520374,
+      "yaw_dps_max": 138.69098184520374,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.09999999999999999,
+      "linear_mps_median_UNVERIFIED": 0.15131129520595415,
+      "angular_coast_abs_deg_median": 8.322917376150553
+    },
+    {
+      "keys": "D",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": -208.9151187118366,
+      "yaw_dps_min": -208.9151187118366,
+      "yaw_dps_max": -208.9151187118366,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.13999999999999999,
+      "linear_mps_median_UNVERIFIED": -0.015758939540587533,
+      "angular_coast_abs_deg_median": 14.096341371888299
+    },
+    {
+      "keys": "E",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": -206.75282632645954,
+      "yaw_dps_min": -206.75282632645954,
+      "yaw_dps_max": -206.75282632645954,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.15999999999999998,
+      "linear_mps_median_UNVERIFIED": 0.07422762894590136,
+      "angular_coast_abs_deg_median": 13.021416231597156
+    },
+    {
+      "keys": "Q",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": 142.21826001826454,
+      "yaw_dps_min": 142.21826001826454,
+      "yaw_dps_max": 142.21826001826454,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.06,
+      "linear_mps_median_UNVERIFIED": 0.3075234691144294,
+      "angular_coast_abs_deg_median": 6.123049543139348
+    },
+    {
+      "keys": "S",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": -1.0087262996239827,
+      "yaw_dps_min": -1.0087262996239827,
+      "yaw_dps_max": -1.0087262996239827,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": null,
+      "linear_mps_median_UNVERIFIED": -0.8010702492485162,
+      "angular_coast_abs_deg_median": 2.240192467326134
+    },
+    {
+      "keys": "SA",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": 82.5900176704619,
+      "yaw_dps_min": 82.5900176704619,
+      "yaw_dps_max": 82.5900176704619,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.15999999999999998,
+      "linear_mps_median_UNVERIFIED": -0.07421026792453804,
+      "angular_coast_abs_deg_median": 5.551578895412019
+    },
+    {
+      "keys": "SD",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": -112.23768142097866,
+      "yaw_dps_min": -112.23768142097866,
+      "yaw_dps_max": -112.23768142097866,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.18999999999999997,
+      "linear_mps_median_UNVERIFIED": -0.2982168625662489,
+      "angular_coast_abs_deg_median": 9.62738964700319
+    },
+    {
+      "keys": "SE",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": -114.11426638925707,
+      "yaw_dps_min": -114.11426638925707,
+      "yaw_dps_max": -114.11426638925707,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.18999999999999997,
+      "linear_mps_median_UNVERIFIED": -0.23254339732008752,
+      "angular_coast_abs_deg_median": 9.731438698968013
+    },
+    {
+      "keys": "SQ",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": 102.50007522765463,
+      "yaw_dps_min": 102.50007522765463,
+      "yaw_dps_max": 102.50007522765463,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.20999999999999996,
+      "linear_mps_median_UNVERIFIED": -0.13402026488935703,
+      "angular_coast_abs_deg_median": 7.272369044914322
+    },
+    {
+      "keys": "W",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": 0.1061261141631914,
+      "yaw_dps_min": 0.1061261141631914,
+      "yaw_dps_max": 0.1061261141631914,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": null,
+      "linear_mps_median_UNVERIFIED": 0.8469755020694802,
+      "angular_coast_abs_deg_median": 3.291643460754574
+    },
+    {
+      "keys": "WA",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": 82.1749697462056,
+      "yaw_dps_min": 82.1749697462056,
+      "yaw_dps_max": 82.1749697462056,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.14999999999999997,
+      "linear_mps_median_UNVERIFIED": 0.2921068825728502,
+      "angular_coast_abs_deg_median": 5.074404105769471
+    },
+    {
+      "keys": "WD",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": -94.63749329078686,
+      "yaw_dps_min": -94.63749329078686,
+      "yaw_dps_max": -94.63749329078686,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.09999999999999999,
+      "linear_mps_median_UNVERIFIED": 0.2129456762986624,
+      "angular_coast_abs_deg_median": 5.036941272850169
+    },
+    {
+      "keys": "WE",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": -90.63431577918371,
+      "yaw_dps_min": -90.63431577918371,
+      "yaw_dps_max": -90.63431577918371,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.09999999999999999,
+      "linear_mps_median_UNVERIFIED": 0.19058885550567098,
+      "angular_coast_abs_deg_median": 6.839864181178501
+    },
+    {
+      "keys": "WQ",
+      "pwm": 1800,
+      "repetitions": 1,
+      "yaw_dps_median": 80.90502255888369,
+      "yaw_dps_min": 80.90502255888369,
+      "yaw_dps_max": 80.90502255888369,
+      "yaw_dps_MAD": 0.0,
+      "rise_time_constant_s_median": 0.14999999999999997,
+      "linear_mps_median_UNVERIFIED": 0.31053185657688304,
+      "angular_coast_abs_deg_median": 5.17616376871756
+    }
+  ],
+  "trials": [
+    {
+      "trial": 16,
+      "keys": "W",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2138.642730076,
+      "actual_drive_duration_s": 2.0114468130000205,
+      "yaw_plateau_dps": 0.1061261141631914,
+      "first_order": null,
+      "yaw_angle_deg": 2.8656989396317454,
+      "angular_coast_abs_deg": 3.291643460754574,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26575,
+        -0.15845,
+        0.95032
+      ],
+      "gravity_after_g": [
+        -0.25635,
+        -0.14514,
+        0.95471
+      ],
+      "baseline_gyro_std_dps": [
+        0.04386612141806549,
+        0.04143011297543157,
+        0.0433127410109808
+      ],
+      "baseline_gravity_change_g": 0.01687566887563272,
+      "short_burst_linear_mps_UNVERIFIED": 0.8469755020694802,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        1.683390907500869,
+        0.040524960282702464
+      ],
+      "zero_velocity_correction_mps": [
+        0.042457856305854,
+        -0.1550519807467845
+      ],
+      "max_sample_gap_s": 0.015646611000192934
+    },
+    {
+      "trial": 17,
+      "keys": "S",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2143.914396128,
+      "actual_drive_duration_s": 2.0126145730000644,
+      "yaw_plateau_dps": -1.0087262996239827,
+      "first_order": null,
+      "yaw_angle_deg": 1.6169714651551446,
+      "angular_coast_abs_deg": 2.240192467326134,
+      "gyro_bias_before_dps": [
+        -0.061,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.25647,
+        -0.14502,
+        0.95447
+      ],
+      "gravity_after_g": [
+        -0.27173,
+        -0.13879,
+        0.95117
+      ],
+      "baseline_gyro_std_dps": [
+        0.041597813253485875,
+        0.042652071270613205,
+        0.04919329847526017
+      ],
+      "baseline_gravity_change_g": 0.016809833431655482,
+      "short_burst_linear_mps_UNVERIFIED": -0.8010702492485162,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -1.5219402971906832,
+        0.01361295748700348
+      ],
+      "zero_velocity_correction_mps": [
+        0.19105306226645827,
+        0.043091044122049525
+      ],
+      "max_sample_gap_s": 0.016257018000032986
+    },
+    {
+      "trial": 18,
+      "keys": "Q",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2149.187165366,
+      "actual_drive_duration_s": 2.022617239000283,
+      "yaw_plateau_dps": 142.21826001826454,
+      "first_order": {
+        "steady_dps": 160.29046464701554,
+        "delay_s": 0.04,
+        "time_constant_s": 0.06,
+        "mse_dps2": 394.11435181792814
+      },
+      "yaw_angle_deg": 314.5347679431339,
+      "angular_coast_abs_deg": 6.123049543139348,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.27173,
+        -0.13892,
+        0.95117
+      ],
+      "gravity_after_g": [
+        -0.26764,
+        -0.15936,
+        0.9491
+      ],
+      "baseline_gyro_std_dps": [
+        0.04273780512353036,
+        0.041740200095351704,
+        0.046192838556255625
+      ],
+      "baseline_gravity_change_g": 0.02094771109214562,
+      "short_burst_linear_mps_UNVERIFIED": 0.3075234691144294,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.1875674624870355,
+        -0.3448861955547668
+      ],
+      "zero_velocity_correction_mps": [
+        0.09972300139210717,
+        0.020539171307760846
+      ],
+      "max_sample_gap_s": 0.019105259000298247
+    },
+    {
+      "trial": 19,
+      "keys": "E",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2154.472166048,
+      "actual_drive_duration_s": 2.0203076840002723,
+      "yaw_plateau_dps": -206.75282632645954,
+      "first_order": {
+        "steady_dps": -203.39417517571871,
+        "delay_s": 0.01,
+        "time_constant_s": 0.15999999999999998,
+        "mse_dps2": 163.43842287286128
+      },
+      "yaw_angle_deg": -388.47309901041575,
+      "angular_coast_abs_deg": 13.021416231597156,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.8545,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26758,
+        -0.15955,
+        0.94897
+      ],
+      "gravity_after_g": [
+        -0.27417,
+        -0.14563,
+        0.9491
+      ],
+      "baseline_gyro_std_dps": [
+        0.03311141904885037,
+        0.03786725534579275,
+        0.04773905425460931
+      ],
+      "baseline_gravity_change_g": 0.01540166874075664,
+      "short_burst_linear_mps_UNVERIFIED": 0.07422762894590136,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        0.15459720052145243,
+        0.011652853290565902
+      ],
+      "zero_velocity_correction_mps": [
+        0.24851231668798723,
+        -0.13675278203595195
+      ],
+      "max_sample_gap_s": 0.018406628999855457
+    },
+    {
+      "trial": 20,
+      "keys": "WA",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2159.746108748,
+      "actual_drive_duration_s": 2.009435018000204,
+      "yaw_plateau_dps": 82.1749697462056,
+      "first_order": {
+        "steady_dps": 84.56965219963037,
+        "delay_s": 0.03,
+        "time_constant_s": 0.14999999999999997,
+        "mse_dps2": 14.6326450130801
+      },
+      "yaw_angle_deg": 159.43984040678995,
+      "angular_coast_abs_deg": 5.074404105769471,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.8240000000000001,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.27393,
+        -0.14526,
+        0.9491
+      ],
+      "gravity_after_g": [
+        -0.2569,
+        -0.155335,
+        0.95276
+      ],
+      "baseline_gyro_std_dps": [
+        0.03974199435990197,
+        0.04780237609502877,
+        0.04417400581883699
+      ],
+      "baseline_gravity_change_g": 0.02012267688454992,
+      "short_burst_linear_mps_UNVERIFIED": 0.2921068825728502,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.1895834783507876,
+        0.42040771560363377
+      ],
+      "zero_velocity_correction_mps": [
+        0.19228427639310086,
+        -0.13095147614800573
+      ],
+      "max_sample_gap_s": 0.01586838799994439
+    },
+    {
+      "trial": 21,
+      "keys": "SD",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2165.028110356,
+      "actual_drive_duration_s": 2.0101304990002973,
+      "yaw_plateau_dps": -112.23768142097866,
+      "first_order": {
+        "steady_dps": -112.03468408421213,
+        "delay_s": 0.01,
+        "time_constant_s": 0.18999999999999997,
+        "mse_dps2": 27.92076824650998
+      },
+      "yaw_angle_deg": -211.04708237144118,
+      "angular_coast_abs_deg": 9.62738964700319,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        -0.061
+      ],
+      "gravity_before_g": [
+        -0.25708,
+        -0.15515,
+        0.95288
+      ],
+      "gravity_after_g": [
+        -0.26953,
+        -0.14539,
+        0.95068
+      ],
+      "baseline_gyro_std_dps": [
+        0.03449962424871886,
+        0.04445673429852665,
+        0.04315961817859739
+      ],
+      "baseline_gravity_change_g": 0.01597185336772163,
+      "short_burst_linear_mps_UNVERIFIED": -0.2982168625662489,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.21972954462442745,
+        0.18072889406193718
+      ],
+      "zero_velocity_correction_mps": [
+        -0.19200791215096527,
+        -0.034737689965411836
+      ],
+      "max_sample_gap_s": 0.018340093000006163
+    },
+    {
+      "trial": 22,
+      "keys": "WD",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2170.298619687,
+      "actual_drive_duration_s": 2.0226227020002625,
+      "yaw_plateau_dps": -94.63749329078686,
+      "first_order": {
+        "steady_dps": -95.16842769404663,
+        "delay_s": 0.05,
+        "time_constant_s": 0.09999999999999999,
+        "mse_dps2": 66.0822807761263
+      },
+      "yaw_angle_deg": -182.74386317441054,
+      "angular_coast_abs_deg": 5.036941272850169,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26929,
+        -0.14539,
+        0.95081
+      ],
+      "gravity_after_g": [
+        -0.26306,
+        -0.14978,
+        0.95166
+      ],
+      "baseline_gyro_std_dps": [
+        0.038981513682722124,
+        0.05232619567532652,
+        0.04558067455122589
+      ],
+      "baseline_gravity_change_g": 0.007668604827476727,
+      "short_burst_linear_mps_UNVERIFIED": 0.2129456762986624,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.3227368649504991,
+        -0.15345816111856259
+      ],
+      "zero_velocity_correction_mps": [
+        0.01860940084607201,
+        0.03494386653082245
+      ],
+      "max_sample_gap_s": 0.017954814999939117
+    },
+    {
+      "trial": 23,
+      "keys": "SA",
+      "pwm": 1800,
+      "repeat": 2,
+      "actual_start_s": 2175.571608165,
+      "actual_drive_duration_s": 2.0224040730004162,
+      "yaw_plateau_dps": 82.5900176704619,
+      "first_order": {
+        "steady_dps": 84.71078095553595,
+        "delay_s": 0.01,
+        "time_constant_s": 0.15999999999999998,
+        "mse_dps2": 86.09030186246181
+      },
+      "yaw_angle_deg": 162.75408888915936,
+      "angular_coast_abs_deg": 5.551578895412019,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26343,
+        -0.1499,
+        0.9519
+      ],
+      "gravity_after_g": [
+        -0.26416,
+        -0.15625,
+        0.95056
+      ],
+      "baseline_gyro_std_dps": [
+        0.03865202679476985,
+        0.03426891302623998,
+        0.05301110804359778
+      ],
+      "baseline_gravity_change_g": 0.006530773307962845,
+      "short_burst_linear_mps_UNVERIFIED": -0.07421026792453804,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.29594307799443925,
+        -0.0415260221560607
+      ],
+      "zero_velocity_correction_mps": [
+        -0.005501543275668625,
+        -0.01846156898001022
+      ],
+      "max_sample_gap_s": 0.018585980999887397
+    },
+    {
+      "trial": 24,
+      "keys": "A",
+      "pwm": 1800,
+      "repeat": 0,
+      "actual_start_s": 2180.844372458,
+      "actual_drive_duration_s": 2.032805999000175,
+      "yaw_plateau_dps": 138.69098184520374,
+      "first_order": {
+        "steady_dps": 149.111643118083,
+        "delay_s": 0.02,
+        "time_constant_s": 0.09999999999999999,
+        "mse_dps2": 132.56682079083373
+      },
+      "yaw_angle_deg": 292.9182462955997,
+      "angular_coast_abs_deg": 8.322917376150553,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26453,
+        -0.15649,
+        0.95068
+      ],
+      "gravity_after_g": [
+        -0.25867,
+        -0.16455,
+        0.95093
+      ],
+      "baseline_gyro_std_dps": [
+        0.03767744910104958,
+        0.034925342523921266,
+        0.042808900642009325
+      ],
+      "baseline_gravity_change_g": 0.00996823454780233,
+      "short_burst_linear_mps_UNVERIFIED": 0.15131129520595415,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.10198831770139888,
+        0.01216261797986623
+      ],
+      "zero_velocity_correction_mps": [
+        0.05691273165035265,
+        0.21345756404850055
+      ],
+      "max_sample_gap_s": 0.021394610999777797
+    },
+    {
+      "trial": 25,
+      "keys": "D",
+      "pwm": 1800,
+      "repeat": 0,
+      "actual_start_s": 2186.128060807,
+      "actual_drive_duration_s": 2.0214740360001997,
+      "yaw_plateau_dps": -208.9151187118366,
+      "first_order": {
+        "steady_dps": -205.4535448422372,
+        "delay_s": 0.02,
+        "time_constant_s": 0.13999999999999999,
+        "mse_dps2": 153.18486815207712
+      },
+      "yaw_angle_deg": -396.4760008239735,
+      "angular_coast_abs_deg": 14.096341371888299,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        -0.061
+      ],
+      "gravity_before_g": [
+        -0.25879,
+        -0.16461,
+        0.9508700000000001
+      ],
+      "gravity_after_g": [
+        -0.26099,
+        -0.15051,
+        0.95276
+      ],
+      "baseline_gyro_std_dps": [
+        0.04534305435336775,
+        0.038362513853184906,
+        0.041724515110180715
+      ],
+      "baseline_gravity_change_g": 0.014395211009221079,
+      "short_burst_linear_mps_UNVERIFIED": -0.015758939540587533,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.2460765686871839,
+        0.11795502772288916
+      ],
+      "zero_velocity_correction_mps": [
+        -0.21980803674552113,
+        0.06097430909259099
+      ],
+      "max_sample_gap_s": 0.015752889000395953
+    },
+    {
+      "trial": 26,
+      "keys": "WQ",
+      "pwm": 1800,
+      "repeat": 0,
+      "actual_start_s": 2191.400271526,
+      "actual_drive_duration_s": 2.0122234250002293,
+      "yaw_plateau_dps": 80.90502255888369,
+      "first_order": {
+        "steady_dps": 83.59013381087166,
+        "delay_s": 0.04,
+        "time_constant_s": 0.14999999999999997,
+        "mse_dps2": 35.54179542276129
+      },
+      "yaw_angle_deg": 157.43509064180614,
+      "angular_coast_abs_deg": 5.17616376871756,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26074,
+        -0.15033,
+        0.95227
+      ],
+      "gravity_after_g": [
+        -0.26428,
+        -0.16309,
+        0.94958
+      ],
+      "baseline_gyro_std_dps": [
+        0.03804584139535118,
+        0.03962214311424493,
+        0.0389769487297071
+      ],
+      "baseline_gravity_change_g": 0.013512412811929641,
+      "short_burst_linear_mps_UNVERIFIED": 0.31053185657688304,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.20163368837012338,
+        0.5219541880297366
+      ],
+      "zero_velocity_correction_mps": [
+        -0.05482261164242968,
+        -0.047734546725214884
+      ],
+      "max_sample_gap_s": 0.01671898099993996
+    },
+    {
+      "trial": 27,
+      "keys": "SE",
+      "pwm": 1800,
+      "repeat": 0,
+      "actual_start_s": 2196.672414115,
+      "actual_drive_duration_s": 2.022845332000543,
+      "yaw_plateau_dps": -114.11426638925707,
+      "first_order": {
+        "steady_dps": -113.06194700384957,
+        "delay_s": 0.01,
+        "time_constant_s": 0.18999999999999997,
+        "mse_dps2": 49.385978920905174
+      },
+      "yaw_angle_deg": -214.88801992912303,
+      "angular_coast_abs_deg": 9.731438698968013,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26428,
+        -0.16296,
+        0.94958
+      ],
+      "gravity_after_g": [
+        -0.26501,
+        -0.14087,
+        0.95251
+      ],
+      "baseline_gyro_std_dps": [
+        0.030494958260978866,
+        0.037452034177064386,
+        0.043997713395129985
+      ],
+      "baseline_gravity_change_g": 0.022295423297170203,
+      "short_burst_linear_mps_UNVERIFIED": -0.23254339732008752,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.3028830024145307,
+        0.27901167603646915
+      ],
+      "zero_velocity_correction_mps": [
+        -0.013378067404469477,
+        0.15838527437573377
+      ],
+      "max_sample_gap_s": 0.01657922200001849
+    },
+    {
+      "trial": 28,
+      "keys": "WE",
+      "pwm": 1800,
+      "repeat": 0,
+      "actual_start_s": 2201.955543408,
+      "actual_drive_duration_s": 2.012621573000615,
+      "yaw_plateau_dps": -90.63431577918371,
+      "first_order": {
+        "steady_dps": -94.31887404733516,
+        "delay_s": 0.02,
+        "time_constant_s": 0.09999999999999999,
+        "mse_dps2": 88.8035832346246
+      },
+      "yaw_angle_deg": -184.77571786848657,
+      "angular_coast_abs_deg": 6.839864181178501,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.26514,
+        -0.14063,
+        0.95239
+      ],
+      "gravity_after_g": [
+        -0.2666,
+        -0.15784,
+        0.94958
+      ],
+      "baseline_gyro_std_dps": [
+        0.04609079447717504,
+        0.04021316213624899,
+        0.03832992095586857
+      ],
+      "baseline_gravity_change_g": 0.017498908537391698,
+      "short_burst_linear_mps_UNVERIFIED": 0.19058885550567098,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.19903389320453668,
+        -0.29263061813388336
+      ],
+      "zero_velocity_correction_mps": [
+        -0.026234182810257044,
+        -0.22291115597225625
+      ],
+      "max_sample_gap_s": 0.017659981999713636
+    },
+    {
+      "trial": 29,
+      "keys": "SQ",
+      "pwm": 1800,
+      "repeat": 0,
+      "actual_start_s": 2207.229567239,
+      "actual_drive_duration_s": 2.0213942020000104,
+      "yaw_plateau_dps": 102.50007522765463,
+      "first_order": {
+        "steady_dps": 104.56685326968274,
+        "delay_s": 0.02,
+        "time_constant_s": 0.20999999999999996,
+        "mse_dps2": 73.61960026388164
+      },
+      "yaw_angle_deg": 195.4153540773303,
+      "angular_coast_abs_deg": 7.272369044914322,
+      "gyro_bias_before_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gyro_bias_after_dps": [
+        0.0,
+        0.7935,
+        0.0
+      ],
+      "gravity_before_g": [
+        -0.2666,
+        -0.15784,
+        0.94971
+      ],
+      "gravity_after_g": [
+        -0.25842,
+        -0.15149,
+        0.95264
+      ],
+      "baseline_gyro_std_dps": [
+        0.047244980178492164,
+        0.05128720801315983,
+        0.05027514905243841
+      ],
+      "baseline_gravity_change_g": 0.010761960787886202,
+      "short_burst_linear_mps_UNVERIFIED": -0.13402026488935703,
+      "short_burst_displacement_xy_m_UNVERIFIED": [
+        -0.19146038163123485,
+        -0.1471525773477799
+      ],
+      "zero_velocity_correction_mps": [
+        0.1374469494296094,
+        0.2134129719439328
+      ],
+      "max_sample_gap_s": 0.01829259300029662
+    }
+  ]
+}

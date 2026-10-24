@@ -1,0 +1,687 @@
+{
+  "schema_version": 1,
+  "mount": {
+    "body_axes_sensor": [
+      [
+        0.2078990564137574,
+        0.9759231219585599,
+        0.06597001113329752
+      ],
+      [
+        -0.9671489176454574,
+        0.21517951359138704,
+        -0.13535415777800988
+      ],
+      [
+        -0.1462906471360682,
+        -0.03566282318090038,
+        0.9885986089426175
+      ]
+    ],
+    "forward_launch_signal_g": 0.2249705132068423,
+    "skipped_trials": [
+      29
+    ]
+  },
+  "trial_summaries": [
+    {
+      "trial": 0,
+      "pwm": 700,
+      "command": [
+        1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        0.5164078683746554,
+        0.10625873591509062,
+        0.015275734888200446
+      ],
+      "peak_signed_yaw_dps": -16.821387604291978,
+      "peak_tilt_rate_dps": 10.19001360774202,
+      "visual_active_velocity_median": [
+        0.11343649216323205,
+        0.020545902823936965,
+        -0.06723173377045405
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 1,
+      "pwm": 700,
+      "command": [
+        -1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -0.8537043436074904,
+        0.036721817630590646,
+        -0.005917997352261434
+      ],
+      "peak_signed_yaw_dps": 24.122639505876723,
+      "peak_tilt_rate_dps": 19.118281439625697,
+      "visual_active_velocity_median": [
+        -0.0703312810276824,
+        -0.015423479226368185,
+        0.0758782824170337
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 2,
+      "pwm": 700,
+      "command": [
+        0,
+        1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        0.2942829104527667,
+        -0.616762985585879,
+        0.11839832774693085
+      ],
+      "peak_signed_yaw_dps": -9.773292746270583,
+      "peak_tilt_rate_dps": 11.533004554769258,
+      "visual_active_velocity_median": [
+        0.012195114782286853,
+        -0.04605265713077254,
+        -0.037582200773229
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 3,
+      "pwm": 700,
+      "command": [
+        0,
+        -1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -0.17979143500751574,
+        0.4322228538355614,
+        0.1831412034384289
+      ],
+      "peak_signed_yaw_dps": 23.273287228079536,
+      "peak_tilt_rate_dps": 21.978464749201,
+      "visual_active_velocity_median": [
+        -0.0055757529641392856,
+        0.021094977163307414,
+        0.05822989541984132
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 4,
+      "pwm": 700,
+      "command": [
+        0,
+        0,
+        1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.10577649514587309,
+        -0.9957240757771706,
+        0.16796702652947582
+      ],
+      "peak_signed_yaw_dps": 66.67488630666902,
+      "peak_tilt_rate_dps": 17.900556292472476,
+      "visual_active_velocity_median": [
+        -0.011147855883293976,
+        -0.023896588257666565,
+        0.5489549236518366
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 5,
+      "pwm": 700,
+      "command": [
+        0,
+        0,
+        -1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.023872571385853397,
+        0.7300182203177586,
+        -0.03449762528961134
+      ],
+      "peak_signed_yaw_dps": -63.10624325271216,
+      "peak_tilt_rate_dps": 18.478677910152467,
+      "visual_active_velocity_median": [
+        0.00610817979372191,
+        0.02465069619571985,
+        -0.6756350327344991
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 6,
+      "pwm": 1400,
+      "command": [
+        1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        1.844064579206258,
+        -0.26270097175742346,
+        0.0822072993527406
+      ],
+      "peak_signed_yaw_dps": -44.35391714070235,
+      "peak_tilt_rate_dps": 30.9177525670416,
+      "visual_active_velocity_median": [
+        0.27712439567085906,
+        -0.002429660366482421,
+        -0.21824829667476017
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 7,
+      "pwm": 1400,
+      "command": [
+        -1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -2.2071424777040156,
+        0.43345259150860593,
+        -0.05383937572093061
+      ],
+      "peak_signed_yaw_dps": -19.862665542616917,
+      "peak_tilt_rate_dps": 29.6950874253763,
+      "visual_active_velocity_median": [
+        -0.243341061222082,
+        0.0032963428120064593,
+        -0.14088220408237087
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 8,
+      "pwm": 1400,
+      "command": [
+        0,
+        1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        0.6833268498462114,
+        -0.8603948325467629,
+        0.06404057170461985
+      ],
+      "peak_signed_yaw_dps": 52.56517633020266,
+      "peak_tilt_rate_dps": 61.208313762667295,
+      "visual_active_velocity_median": [
+        0.07843117725081833,
+        -0.13728823883824007,
+        -0.15048968208402103
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 9,
+      "pwm": 1400,
+      "command": [
+        0,
+        -1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -0.7306566933024483,
+        0.9685039101699993,
+        -0.03416123293733395
+      ],
+      "peak_signed_yaw_dps": 40.20823819954359,
+      "peak_tilt_rate_dps": 65.94226701439868,
+      "visual_active_velocity_median": [
+        -0.06927397068863055,
+        0.11192598143851291,
+        0.23806787745763905
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 10,
+      "pwm": 1400,
+      "command": [
+        0,
+        0,
+        1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.2215387799769289,
+        -2.494715807284014,
+        0.1359327454046557
+      ],
+      "peak_signed_yaw_dps": 198.12894473914938,
+      "peak_tilt_rate_dps": 58.940143684770234,
+      "visual_active_velocity_median": null,
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 11,
+      "pwm": 1400,
+      "command": [
+        0,
+        0,
+        -1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.04422076564692476,
+        2.631421261894358,
+        -0.12575435554651387
+      ],
+      "peak_signed_yaw_dps": -200.6431025361311,
+      "peak_tilt_rate_dps": 46.36189489469754,
+      "visual_active_velocity_median": [
+        -0.0067335424302400184,
+        -0.0005951598913467241,
+        0.000998406785900559
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 12,
+      "pwm": 2200,
+      "command": [
+        1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        2.458822790388184,
+        0.2149604391704227,
+        0.18136970994588028
+      ],
+      "peak_signed_yaw_dps": -79.93198137632231,
+      "peak_tilt_rate_dps": 39.68905060380952,
+      "visual_active_velocity_median": [
+        0.2268197761459938,
+        -0.0142494077605049,
+        -0.4857589817173161
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 13,
+      "pwm": 2200,
+      "command": [
+        -1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -2.552120132041503,
+        0.6119940733695707,
+        -0.48510355458818677
+      ],
+      "peak_signed_yaw_dps": -72.66759583338921,
+      "peak_tilt_rate_dps": 27.58368793278674,
+      "visual_active_velocity_median": [
+        -0.21581547053479763,
+        0.002143697053247142,
+        -0.4380774484291305
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 14,
+      "pwm": 2200,
+      "command": [
+        0,
+        1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        0.7348597926958258,
+        -1.223448485887424,
+        -0.08854041396691406
+      ],
+      "peak_signed_yaw_dps": 24.675569331200496,
+      "peak_tilt_rate_dps": 19.819031565672372,
+      "visual_active_velocity_median": [
+        0.055573506298264,
+        -0.09501984412842004,
+        0.12769886363700444
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 15,
+      "pwm": 2200,
+      "command": [
+        0,
+        -1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -0.8370604534426033,
+        0.8100641760925896,
+        -0.34364211135682077
+      ],
+      "peak_signed_yaw_dps": 18.461911387481837,
+      "peak_tilt_rate_dps": 39.34919230330146,
+      "visual_active_velocity_median": [
+        -0.07514962077464708,
+        0.06094863752338795,
+        0.12440682565058384
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 16,
+      "pwm": 2200,
+      "command": [
+        0,
+        0,
+        1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.23244449970679917,
+        -3.7133365974788552,
+        0.09388878587443016
+      ],
+      "peak_signed_yaw_dps": 234.34328302145087,
+      "peak_tilt_rate_dps": 38.03491172229926,
+      "visual_active_velocity_median": [
+        -0.01018606829862778,
+        -0.012655132610129488,
+        0.11677055952727126
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 17,
+      "pwm": 2200,
+      "command": [
+        0,
+        0,
+        -1
+      ],
+      "launch_body_acceleration_mps2": [
+        -0.3884880511447913,
+        3.5439165469012375,
+        -0.6705623900767347
+      ],
+      "peak_signed_yaw_dps": -224.73927226299324,
+      "peak_tilt_rate_dps": 18.207862760333704,
+      "visual_active_velocity_median": [
+        0.019807824791003893,
+        0.009879024148030845,
+        -0.25226320421921045
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 18,
+      "pwm": 3200,
+      "command": [
+        1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        2.3404064237128868,
+        -0.2200955803640463,
+        0.44805834947989426
+      ],
+      "peak_signed_yaw_dps": -19.81999875016384,
+      "peak_tilt_rate_dps": 60.06361991283257,
+      "visual_active_velocity_median": [
+        0.29245996041721795,
+        -0.0026137426136630094,
+        -0.06503604607598339
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 19,
+      "pwm": 3200,
+      "command": [
+        -1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -2.712479319942528,
+        0.3411012692291107,
+        -0.8559902058848794
+      ],
+      "peak_signed_yaw_dps": -34.12045639843863,
+      "peak_tilt_rate_dps": 47.02672107529296,
+      "visual_active_velocity_median": [
+        -0.17149355006493205,
+        -0.028999433418726614,
+        -0.2341317038206192
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 20,
+      "pwm": 3200,
+      "command": [
+        0,
+        1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        0.6851365034104889,
+        -1.0993000824645847,
+        0.052949733363237945
+      ],
+      "peak_signed_yaw_dps": -31.696200552256233,
+      "peak_tilt_rate_dps": 38.68903763464631,
+      "visual_active_velocity_median": [
+        0.07411932208379646,
+        -0.0667892003444456,
+        -0.19264829554317464
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 21,
+      "pwm": 3200,
+      "command": [
+        0,
+        -1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -0.9725687118704356,
+        1.2476521246284715,
+        -0.5252897793244422
+      ],
+      "peak_signed_yaw_dps": -26.090910330161798,
+      "peak_tilt_rate_dps": 33.18043565300878,
+      "visual_active_velocity_median": [
+        -0.08100882803474344,
+        0.12991834138347205,
+        0.01795542919597257
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 22,
+      "pwm": 3200,
+      "command": [
+        0,
+        0,
+        1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.31952099295248126,
+        -4.149018060718584,
+        -0.700735239635969
+      ],
+      "peak_signed_yaw_dps": 295.5317469986999,
+      "peak_tilt_rate_dps": 48.80092061417639,
+      "visual_active_velocity_median": [
+        -0.03783695979541229,
+        -0.00493606986576119,
+        0.16450704413424935
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 23,
+      "pwm": 3200,
+      "command": [
+        0,
+        0,
+        -1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.2935967035787506,
+        4.471691257281514,
+        -0.28663790647199705
+      ],
+      "peak_signed_yaw_dps": -298.8770488406079,
+      "peak_tilt_rate_dps": 54.35154819677023,
+      "visual_active_velocity_median": [
+        -0.002296944823695354,
+        0.0014944739166984009,
+        -0.24589209742345386
+      ],
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 24,
+      "pwm": 4095,
+      "command": [
+        1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        2.2744349617430304,
+        -0.19514155018327034,
+        0.32205816844451324
+      ],
+      "peak_signed_yaw_dps": -29.646951652613176,
+      "peak_tilt_rate_dps": 33.0297516925392,
+      "visual_active_velocity_median": [
+        0.14028718322164788,
+        -0.011565149140342856,
+        0.0023293303192765155
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 25,
+      "pwm": 4095,
+      "command": [
+        -1,
+        0,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -2.129582686399797,
+        0.5037983303742822,
+        -1.097197197868182
+      ],
+      "peak_signed_yaw_dps": -33.38202616609664,
+      "peak_tilt_rate_dps": 76.41499693959922,
+      "visual_active_velocity_median": [
+        -0.2333632793967959,
+        0.004115679324974322,
+        -0.2220901583437445
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 26,
+      "pwm": 4095,
+      "command": [
+        0,
+        1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        0.7074727213132835,
+        -1.0616449129277665,
+        0.42706025286941945
+      ],
+      "peak_signed_yaw_dps": 30.064779099030623,
+      "peak_tilt_rate_dps": 87.6156373146955,
+      "visual_active_velocity_median": [
+        0.04767736109429567,
+        -0.10877853053917337,
+        -0.13608055179441883
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 27,
+      "pwm": 4095,
+      "command": [
+        0,
+        -1,
+        0
+      ],
+      "launch_body_acceleration_mps2": [
+        -0.8967992389483216,
+        1.272412411087615,
+        -0.4840911673939665
+      ],
+      "peak_signed_yaw_dps": 36.997822995256534,
+      "peak_tilt_rate_dps": 60.03823162100571,
+      "visual_active_velocity_median": [
+        -0.055693716632043935,
+        0.10869928524927083,
+        0.11242091130113925
+      ],
+      "translation_source": "visual_inertial_train_scaled"
+    },
+    {
+      "trial": 28,
+      "pwm": 4095,
+      "command": [
+        0,
+        0,
+        1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.5176547047351534,
+        -3.90596488058045,
+        0.5464685068210986
+      ],
+      "peak_signed_yaw_dps": 336.42210414454297,
+      "peak_tilt_rate_dps": 97.69576837114867,
+      "visual_active_velocity_median": null,
+      "translation_source": "imu_endpoint_constrained_PROVISIONAL"
+    },
+    {
+      "trial": 29,
+      "pwm": 4095,
+      "command": [
+        0,
+        0,
+        -1
+      ],
+      "launch_body_acceleration_mps2": [
+        0.3581829278721137,
+        3.937574285361595,
+        -1.3336972660832629
+      ],
+      "peak_signed_yaw_dps": -542.2570568859655,
+      "peak_tilt_rate_dps": 726.7451988211278,
+      "visual_active_velocity_median": [
+        0.0021342684053534964,
+        -0.001704031238112358,
+        -0.055050936804427235
+      ],
+      "translation_source": "aborted"
+    }
+  ],
+  "findings": [
+    "Positive API strafe means RIGHT; negative strafe correctly means LEFT. IMU and floor vision agree.",
+    "Camera scale 66.35mm, bootstrap95%64.84\u201368.16mm; shared visual-inertial scale, not surveyed external metric truth.",
+    "Trial29 abnormal724dps tilt and~542dps yaw; aborted and excluded. Camera blur and yaw confirm physical disturbance but do not distinguish IMU flex from chassis lurch.",
+    "Probes contain no heldout trajectories and do not establish faithful sim2real acceptance.",
+    "Bayesianpredictive covariance PWM-double-scaling bug corrected; conditional residual covariance must not be multiplied by PWM again."
+  ]
+}

@@ -1,0 +1,91 @@
+{"event": "baseline_start", "t": 4780.264883427}
+{"event": "baseline_end", "t": 4786.31925459}
+{"event": "trial_start", "t": 4787.338888386, "trial": 0, "forward": 1, "strafe": 0, "turn": 0, "pwm": 700, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4787.499865164, "trial": 0}
+{"event": "trial_end", "t": 4788.63897657, "trial": 0}
+{"event": "trial_start", "t": 4789.358245366, "trial": 1, "forward": -1, "strafe": 0, "turn": 0, "pwm": 700, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4789.519227977, "trial": 1}
+{"event": "trial_end", "t": 4790.66046218, "trial": 1}
+{"event": "trial_start", "t": 4791.376786013, "trial": 2, "forward": 0, "strafe": 1, "turn": 0, "pwm": 700, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4791.537619661, "trial": 2}
+{"event": "trial_end", "t": 4792.677138457, "trial": 2}
+{"event": "trial_start", "t": 4793.394846586, "trial": 3, "forward": 0, "strafe": -1, "turn": 0, "pwm": 700, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4793.555687549, "trial": 3}
+{"event": "trial_end", "t": 4794.694459659, "trial": 3}
+{"event": "trial_start", "t": 4795.410990622, "trial": 4, "forward": 0, "strafe": 0, "turn": 1, "pwm": 700, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4795.57237877, "trial": 4}
+{"event": "trial_end", "t": 4796.708410917, "trial": 4}
+{"event": "trial_start", "t": 4797.424327287, "trial": 5, "forward": 0, "strafe": 0, "turn": -1, "pwm": 700, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4797.585488954, "trial": 5}
+{"event": "trial_end", "t": 4798.726100953, "trial": 5}
+{"event": "trial_start", "t": 4799.442490434, "trial": 6, "forward": 1, "strafe": 0, "turn": 0, "pwm": 1400, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4799.603513212, "trial": 6}
+{"event": "trial_end", "t": 4800.743560248, "trial": 6}
+{"event": "trial_start", "t": 4801.462518118, "trial": 7, "forward": -1, "strafe": 0, "turn": 0, "pwm": 1400, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4801.624043303, "trial": 7}
+{"event": "trial_end", "t": 4802.763132543, "trial": 7}
+{"event": "trial_start", "t": 4803.479663358, "trial": 8, "forward": 0, "strafe": 1, "turn": 0, "pwm": 1400, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4803.640864598, "trial": 8}
+{"event": "trial_end", "t": 4804.780723431, "trial": 8}
+{"event": "trial_start", "t": 4805.50059756, "trial": 9, "forward": 0, "strafe": -1, "turn": 0, "pwm": 1400, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4805.661381412, "trial": 9}
+{"event": "trial_end", "t": 4806.799893985, "trial": 9}
+{"event": "trial_start", "t": 4807.518943652, "trial": 10, "forward": 0, "strafe": 0, "turn": 1, "pwm": 1400, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4807.680419781, "trial": 10}
+{"event": "trial_end", "t": 4808.816312503, "trial": 10}
+{"event": "trial_start", "t": 4809.53383341, "trial": 11, "forward": 0, "strafe": 0, "turn": -1, "pwm": 1400, "duration": 0.16, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4809.695754058, "trial": 11}
+{"event": "trial_end", "t": 4810.835451798, "trial": 11}
+{"event": "trial_start", "t": 4811.554337075, "trial": 12, "forward": 1, "strafe": 0, "turn": 0, "pwm": 2200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4811.655595427, "trial": 12}
+{"event": "trial_end", "t": 4812.791926537, "trial": 12}
+{"event": "trial_start", "t": 4814.230726981, "trial": 13, "forward": -1, "strafe": 0, "turn": 0, "pwm": 2200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4814.332527907, "trial": 13}
+{"event": "trial_end", "t": 4815.474035758, "trial": 13}
+{"event": "trial_start", "t": 4816.193028609, "trial": 14, "forward": 0, "strafe": 1, "turn": 0, "pwm": 2200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4816.294598184, "trial": 14}
+{"event": "trial_end", "t": 4817.431531035, "trial": 14}
+{"event": "trial_start", "t": 4818.149174275, "trial": 15, "forward": 0, "strafe": -1, "turn": 0, "pwm": 2200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4818.250808682, "trial": 15}
+{"event": "trial_end", "t": 4819.388780608, "trial": 15}
+{"event": "trial_start", "t": 4820.109935829, "trial": 16, "forward": 0, "strafe": 0, "turn": 1, "pwm": 2200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4820.210912663, "trial": 16}
+{"event": "trial_end", "t": 4821.351336199, "trial": 16}
+{"event": "trial_start", "t": 4822.072565087, "trial": 17, "forward": 0, "strafe": 0, "turn": -1, "pwm": 2200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4822.173905976, "trial": 17}
+{"event": "trial_end", "t": 4823.313714642, "trial": 17}
+{"event": "trial_start", "t": 4824.04085992, "trial": 18, "forward": 1, "strafe": 0, "turn": 0, "pwm": 3200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4824.142694716, "trial": 18}
+{"event": "trial_end", "t": 4825.280248678, "trial": 18}
+{"event": "trial_start", "t": 4826.000081233, "trial": 19, "forward": -1, "strafe": 0, "turn": 0, "pwm": 3200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4826.101181955, "trial": 19}
+{"event": "trial_end", "t": 4827.238788936, "trial": 19}
+{"event": "trial_start", "t": 4827.958194417, "trial": 20, "forward": 0, "strafe": 1, "turn": 0, "pwm": 3200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4828.059335454, "trial": 20}
+{"event": "trial_end", "t": 4829.199925361, "trial": 20}
+{"event": "trial_start", "t": 4829.924386675, "trial": 21, "forward": 0, "strafe": -1, "turn": 0, "pwm": 3200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4830.026394898, "trial": 21}
+{"event": "trial_end", "t": 4831.166885675, "trial": 21}
+{"event": "trial_start", "t": 4831.886069563, "trial": 22, "forward": 0, "strafe": 0, "turn": 1, "pwm": 3200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4831.986920896, "trial": 22}
+{"event": "trial_end", "t": 4833.126814303, "trial": 22}
+{"event": "trial_start", "t": 4833.849981136, "trial": 23, "forward": 0, "strafe": 0, "turn": -1, "pwm": 3200, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4833.951357617, "trial": 23}
+{"event": "trial_end", "t": 4835.093554728, "trial": 23}
+{"event": "trial_start", "t": 4835.814666153, "trial": 24, "forward": 1, "strafe": 0, "turn": 0, "pwm": 4095, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4835.915723357, "trial": 24}
+{"event": "trial_end", "t": 4837.057935264, "trial": 24}
+{"event": "trial_start", "t": 4837.782834523, "trial": 25, "forward": -1, "strafe": 0, "turn": 0, "pwm": 4095, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4837.884312948, "trial": 25}
+{"event": "trial_end", "t": 4839.02603104, "trial": 25}
+{"event": "trial_start", "t": 4839.748324466, "trial": 26, "forward": 0, "strafe": 1, "turn": 0, "pwm": 4095, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4839.850409669, "trial": 26}
+{"event": "trial_end", "t": 4840.987514891, "trial": 26}
+{"event": "trial_start", "t": 4841.712058502, "trial": 27, "forward": 0, "strafe": -1, "turn": 0, "pwm": 4095, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4841.813401631, "trial": 27}
+{"event": "trial_end", "t": 4842.955769112, "trial": 27}
+{"event": "trial_start", "t": 4843.675956723, "trial": 28, "forward": 0, "strafe": 0, "turn": 1, "pwm": 4095, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4843.777269926, "trial": 28}
+{"event": "trial_end", "t": 4844.915753037, "trial": 28}
+{"event": "trial_start", "t": 4845.63994287, "trial": 29, "forward": 0, "strafe": 0, "turn": -1, "pwm": 4095, "duration": 0.1, "repeat": 0, "split": "probe"}
+{"event": "drive_end", "t": 4845.741682147, "trial": 29}

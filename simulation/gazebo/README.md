@@ -1,5 +1,97 @@
 # UGV Gazebo simulation
 
+## Reconstructed lab room
+
+`launch_lab.command` opens the combined video-informed **24 × 12m robotics
+workshop**, corrected two-leg drone, and existing UGV. The lab has frosted
+glazing, exits, whiteboards, cupboards, exposed beams and ducts, ceiling lights,
+red sled chairs, computer desks, monitors, workbenches, storage, tool chests,
+the Canadian flag partition, aircraft parts and smaller equipment clutter.
+Individual furniture collisions preserve the approach corridor to the drone.
+Exact placements beyond the supplied room dimensions are estimates.
+
+```sh
+./launch_lab.command
+# Generate/validate without launching the GUI:
+python3 generate.py --room --drone --output lab_docking_world.sdf
+gz sdf -k lab_docking_world.sdf
+# Render a roof-removed overview and a complete interior view:
+blender -b --python render_drone.py -- "$PWD/preview/room" --room
+# Portrait camera views at the user's direction anchors, 4s/8s/11s/17s:
+blender -b --python render_drone.py -- "$PWD/preview/room/matched" --match-video
+```
+
+The physical simulation retains the ceiling and all walls; the roof is hidden
+only for the overview render. [ROOM_MODEL.md](ROOM_MODEL.md) describes the
+inferred layout and dimensions. The room and drone assets are local and
+require no network downloads at runtime.
+
+The layout uses the user's direction anchors: 4s east teaching wall, 8s south
+glazed end, 11s west window wall, and 17s north/back workshop. The room uses
+X east/west across 12m and Y north/south along 24m, with L-shaped south/west
+glazing. Camera positions, lens and object placements remain
+approximate; these views provide visual comparison rather than calibrated
+photogrammetry.
+
+For an integer-second comparison covering the supplied 19.8s panorama, render
+the fitted camera sweep, then assemble the reference/model video and contact sheet:
+
+```sh
+blender -b preview/room/lab-docking.blend --python render_video_comparison.py -- "$PWD/preview/room/every-second" --engine BLENDER_EEVEE
+uv run --no-project --with pillow python make_room_comparison.py /path/to/reference.mp4
+```
+
+The comparison uses continuous reference footage on the left and one estimated
+model viewpoint per second on the right. `camera_poses.json` records the camera
+fit; `pairs/` holds 20 labeled still comparisons and `all-seconds.png` their
+contact sheet. The fit includes the phone's final downward tilt and remains
+an approximate visual alignment.
+
+## Drone docking scene
+
+The seven reference photographs now have a detailed stationary quadcopter model:
+carbon booms and stacked plates, motor windings and silver spinners, shaped
+white propellers, a GPS mast, exposed wiring, hanging electronics, splayed
+two central landing legs, and black foam skids with red rings. Four separate,
+valid 50mm ArUco markers use `DICT_4X4_50`: IDs 0/1 on opposite payload faces
+and IDs 9/12 on the two legs.
+
+Open `launch_drone.command` in Finder, or run from this directory:
+
+```sh
+./launch_drone.command
+```
+
+This generates `drone_docking_world.sdf` and starts Gazebo with a wider scene
+view. The existing UGV starts at the origin facing +X; the drone is 0.75m ahead,
+with its skids along X. The center approach is open. The default car-only world
+and control launcher remain available. To generate and validate without opening
+the GUI:
+
+```sh
+python3 generate.py --drone --output drone_docking_world.sdf
+gz sdf -k drone_docking_world.sdf
+python3 -m unittest discover -s . -p test_drone_model.py
+```
+
+Dimensions are estimates from the photographs, including a roughly 0.34m skid
+center spacing, 0.46m foam-covered skid length and 0.43m frame height. Separate
+collisions model the skids, legs, frame and payload; a solid bounding box does
+not fill the docking space. Geometry checks use the current UGV track and tire
+width, add 5mm clearance per side, and reserve 125mm of vertical room.
+These estimates require measurement
+before being used as physical clearance guarantees. The drone is a static
+perception/obstacle target; autonomous docking and aerial flight are not added
+by this scene. The car geometry and drive dynamics come from the existing
+UGV modules independently of the room and drone assets.
+
+See [DRONE_MODEL.md](DRONE_MODEL.md) for assumptions. To render the same parts
+as an editable Blender scene with overview, approach and top previews:
+
+```sh
+blender -b --python render_drone.py -- "$PWD/preview/drone"
+```
+
 The local drive console now uses the real car's 500–1800 PWM scale, matching
 WASDQE mixing and combined inputs. The real-car effort/contact fit comes from
 116 floor trials plus six continuous lap half-turns; see [dynamics calibration](../../docs/DYNAMICS.md) and

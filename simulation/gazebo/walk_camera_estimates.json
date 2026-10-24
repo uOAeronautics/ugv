@@ -1,0 +1,218 @@
+[
+  {
+    "second": 0,
+    "position": [
+      -0.8,
+      8.2,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 1,
+    "position": [
+      -0.8,
+      7.566666666666666,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 2,
+    "position": [
+      -0.8,
+      6.933333333333333,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 3,
+    "position": [
+      -0.8,
+      6.3,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 4,
+    "position": [
+      -0.8,
+      5.766666666666667,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 5,
+    "position": [
+      -0.8,
+      5.233333333333333,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 6,
+    "position": [
+      -0.8,
+      4.7,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 7,
+    "position": [
+      -0.8,
+      3.466666666666667,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 8,
+    "position": [
+      -0.8,
+      2.2333333333333334,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 9,
+    "position": [
+      -0.8,
+      0.9999999999999996,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 10,
+    "position": [
+      -0.8,
+      -0.19999999999999996,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 11,
+    "position": [
+      -0.8,
+      -1.4,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 12,
+    "position": [
+      -0.8,
+      -2.6,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 13,
+    "position": [
+      -0.8,
+      -3.7333333333333334,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 14,
+    "position": [
+      -0.8,
+      -4.866666666666667,
+      1.62
+    ],
+    "yaw_rad": 3.141592653589793,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 15,
+    "position": [
+      -1.4500000000000002,
+      -6.0,
+      1.62
+    ],
+    "yaw_rad": 3.4033920413889427,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 16,
+    "position": [
+      -2.1,
+      -7.65,
+      1.62
+    ],
+    "yaw_rad": 3.6651914291880923,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  },
+  {
+    "second": 17,
+    "position": [
+      -2.75,
+      -9.3,
+      1.62
+    ],
+    "yaw_rad": 3.9269908169872414,
+    "pitch_rad": -0.12,
+    "lens_mm": 28,
+    "estimated": true
+  }
+]

@@ -1,0 +1,50 @@
+{"event": "baseline_start", "t": 1771.66850572}
+{"event": "baseline_end", "t": 1783.69196851}
+{"event": "trial_start", "t": 1784.709687453, "trial": 0, "keys": "W", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": -1800, "rear-left": -1800, "front-right": -1800, "rear-right": -1800}}
+{"event": "drive_end", "t": 1786.736601137, "trial": 0}
+{"event": "trial_end", "t": 1789.181665303, "trial": 0}
+{"event": "trial_start", "t": 1790.001061524, "trial": 1, "keys": "S", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": 1800, "rear-left": 1800, "front-right": 1800, "rear-right": 1800}}
+{"event": "drive_end", "t": 1792.019844653, "trial": 1}
+{"event": "trial_end", "t": 1794.457593188, "trial": 1}
+{"event": "trial_start", "t": 1795.274616632, "trial": 2, "keys": "Q", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": 1800, "rear-left": 1800, "front-right": -1800, "rear-right": -1800}}
+{"event": "drive_end", "t": 1797.296727835, "trial": 2}
+{"event": "trial_end", "t": 1799.728881537, "trial": 2}
+{"event": "trial_start", "t": 1800.548640777, "trial": 3, "keys": "E", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": -1800, "rear-left": -1800, "front-right": 1800, "rear-right": 1800}}
+{"event": "drive_end", "t": 1802.564890646, "trial": 3}
+{"event": "trial_end", "t": 1804.997560626, "trial": 3}
+{"event": "trial_start", "t": 1805.81567107, "trial": 4, "keys": "WA", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": 0, "rear-left": 0, "front-right": -1800, "rear-right": -1800}}
+{"event": "drive_end", "t": 1807.833408717, "trial": 4}
+{"event": "trial_end", "t": 1810.269893383, "trial": 4}
+{"event": "trial_start", "t": 1811.094145401, "trial": 5, "keys": "SD", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": 0, "rear-left": 0, "front-right": 1800, "rear-right": 1800}}
+{"event": "drive_end", "t": 1813.11380477, "trial": 5}
+{"event": "trial_end", "t": 1815.554218731, "trial": 5}
+{"event": "trial_start", "t": 1816.374086786, "trial": 6, "keys": "WD", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": -1800, "rear-left": -1800, "front-right": 0, "rear-right": 0}}
+{"event": "drive_end", "t": 1818.394346137, "trial": 6}
+{"event": "trial_end", "t": 1820.836850913, "trial": 6}
+{"event": "trial_start", "t": 1821.658131246, "trial": 7, "keys": "SA", "pwm": 1800, "repeat": 0, "duration_s": 2.0, "expected_wheels": {"front-left": 1800, "rear-left": 1800, "front-right": 0, "rear-right": 0}}
+{"event": "drive_end", "t": 1823.677893375, "trial": 7}
+{"event": "trial_end", "t": 1826.115132632, "trial": 7}
+{"event": "trial_start", "t": 1826.942620984, "trial": 8, "keys": "W", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": -1800, "rear-left": -1800, "front-right": -1800, "rear-right": -1800}}
+{"event": "drive_end", "t": 1828.959442038, "trial": 8}
+{"event": "trial_end", "t": 1831.397193574, "trial": 8}
+{"event": "trial_start", "t": 1832.221525814, "trial": 9, "keys": "S", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": 1800, "rear-left": 1800, "front-right": 1800, "rear-right": 1800}}
+{"event": "drive_end", "t": 1834.243267628, "trial": 9}
+{"event": "trial_end", "t": 1836.682905682, "trial": 9}
+{"event": "trial_start", "t": 1837.512255311, "trial": 10, "keys": "Q", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": 1800, "rear-left": 1800, "front-right": -1800, "rear-right": -1800}}
+{"event": "drive_end", "t": 1839.533251069, "trial": 10}
+{"event": "trial_end", "t": 1841.967823141, "trial": 10}
+{"event": "trial_start", "t": 1842.796668993, "trial": 11, "keys": "E", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": -1800, "rear-left": -1800, "front-right": 1800, "rear-right": 1800}}
+{"event": "drive_end", "t": 1844.821840806, "trial": 11}
+{"event": "trial_end", "t": 1847.264838861, "trial": 11}
+{"event": "trial_start", "t": 1848.089252693, "trial": 12, "keys": "WA", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": 0, "rear-left": 0, "front-right": -1800, "rear-right": -1800}}
+{"event": "drive_end", "t": 1850.109208988, "trial": 12}
+{"event": "trial_end", "t": 1852.545578876, "trial": 12}
+{"event": "trial_start", "t": 1853.369580135, "trial": 13, "keys": "SD", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": 0, "rear-left": 0, "front-right": 1800, "rear-right": 1800}}
+{"event": "drive_end", "t": 1855.38488993, "trial": 13}
+{"event": "trial_end", "t": 1857.821164484, "trial": 13}
+{"event": "trial_start", "t": 1858.651041557, "trial": 14, "keys": "WD", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": -1800, "rear-left": -1800, "front-right": 0, "rear-right": 0}}
+{"event": "drive_end", "t": 1860.679429556, "trial": 14}
+{"event": "trial_end", "t": 1863.117938203, "trial": 14}
+{"event": "trial_start", "t": 1863.954859851, "trial": 15, "keys": "SA", "pwm": 1800, "repeat": 1, "duration_s": 2.0, "expected_wheels": {"front-left": 1800, "rear-left": 1800, "front-right": 0, "rear-right": 0}}
+{"event": "drive_end", "t": 1865.974109998, "trial": 15}
+{"event": "trial_end", "t": 1868.409322255, "trial": 15}

@@ -1,0 +1,404 @@
+{
+  "clock": "Pi monotonic seconds",
+  "schema_version": 1,
+  "started_utc": 1790572008.8825479,
+  "operator": "clear floor and supervised; all trials authorized",
+  "surface": "unspecified",
+  "measured_mass_kg": 0.5774,
+  "initial_state": {
+    "type": "state",
+    "state": {
+      "connected": true,
+      "owner": null,
+      "armed": false,
+      "forward": 0,
+      "strafe": 0,
+      "turn": 0,
+      "turn_target_dps": 0,
+      "motion_mode": "idle",
+      "speed_limit": 1300,
+      "pan_us": 1500,
+      "tilt_us": 1500,
+      "aruco_enabled": false,
+      "aruco_follow": false,
+      "aruco_visible": false,
+      "aruco_id": null,
+      "aruco_distance_m": null,
+      "aruco_error_x": null,
+      "aruco_corners": [],
+      "aruco_markers": [],
+      "aruco_status": "aruco-disabled",
+      "imu_connected": true,
+      "imu_status": "streaming",
+      "imu_age_ms": 3,
+      "imu_rate_hz": 100.0,
+      "imu_accel_g": {
+        "x": -0.26245,
+        "y": -0.1499,
+        "z": 0.9519
+      },
+      "imu_gyro_dps": {
+        "x": -0.1221,
+        "y": 0.8545,
+        "z": -0.061
+      },
+      "heading_deg": 233.8388448278211,
+      "heading_rate_dps": 0.0,
+      "heading_calibrated": true,
+      "heading_stationary": true,
+      "heading_status": "relative \u00b7 rest",
+      "heading_progress": 0.0,
+      "wheels": {
+        "front-left": 0,
+        "rear-left": 0,
+        "front-right": 0,
+        "rear-right": 0
+      },
+      "stopped": true,
+      "reason": "client-stop",
+      "revision": 843,
+      "clients": 1,
+      "you_are_owner": false,
+      "watchdog_ms": 600,
+      "camera_fps": 30.0,
+      "camera_frame_age_ms": 25,
+      "camera_sequence": 8942,
+      "aruco_fps": 0.0,
+      "aruco_processing_ms": 0.0,
+      "aruco_decode_ms": 0.0,
+      "aruco_skipped_frames": 0,
+      "aruco_result_age_ms": null,
+      "parking": {
+        "status": "waiting for drone tags",
+        "odometry": {
+          "status": "needs translated tag observations",
+          "mapped_features": 0,
+          "inliers": 0,
+          "reprojection_error_px": null
+        },
+        "pose_source": "none",
+        "camera_pose": null,
+        "pose_age_ms": null,
+        "position_sigma_m": null,
+        "tags": [],
+        "seen_tag_ids": [],
+        "entry_ready": false,
+        "blockers": [
+          "motion response and stopping bounds unverified",
+          "localization error bound unverified",
+          "tag size unverified",
+          "camera intrinsics unverified",
+          "camera-to-car mounting unverified",
+          "camera-to-car transform missing",
+          "drone-to-tag transform missing",
+          "full car envelope unknown",
+          "landing-gear clearance unverified",
+          "drone centre/parking pose uncalibrated",
+          "fresh localized pose unavailable",
+          "position uncertainty too large for exact parking",
+          "car centre not localized in drone frame"
+        ],
+        "gear": {
+          "clear_width_m": 0.254,
+          "bar_length_m": 0.3048,
+          "bar_radius_m": 0.03,
+          "height_clearance_m": null,
+          "inward_slope": null,
+          "confirmed": false
+        },
+        "vehicle": {
+          "width_m": null,
+          "length_m": null,
+          "height_m": null,
+          "wheelbase_m": 0.21,
+          "track_m": 0.149
+        },
+        "motion_model": {
+          "forward_mps": 0.64,
+          "reverse_mps": 0.5,
+          "left_dps": 91.0,
+          "right_dps": 127.0,
+          "confirmed": false,
+          "max_forward_mps": 1.2,
+          "max_reverse_mps": 1.2,
+          "max_left_dps": 160.0,
+          "max_right_dps": 200.0,
+          "stopping_distance_m": 0.02,
+          "angular_stop_deg": 5.0
+        },
+        "rejected_poses": 0,
+        "distance_sensor": "not verified; no obstacle-range authority",
+        "car_pose": null,
+        "car_pose_proxy": null,
+        "map_reference": "first mapped drone tag; not yet drone centre",
+        "active": false,
+        "execution_status": "client-stop"
+      },
+      "motion_input_age_ms": null
+    }
+  },
+  "combinations": {
+    "": {
+      "forward": 0,
+      "turn": 0
+    },
+    "W": {
+      "forward": 1,
+      "turn": 0
+    },
+    "A": {
+      "forward": 0,
+      "turn": 1
+    },
+    "S": {
+      "forward": -1,
+      "turn": 0
+    },
+    "D": {
+      "forward": 0,
+      "turn": -1
+    },
+    "Q": {
+      "forward": 0,
+      "turn": 1
+    },
+    "E": {
+      "forward": 0,
+      "turn": -1
+    },
+    "WA": {
+      "forward": 1,
+      "turn": 1
+    },
+    "WS": {
+      "forward": 0,
+      "turn": 0
+    },
+    "WD": {
+      "forward": 1,
+      "turn": -1
+    },
+    "WQ": {
+      "forward": 1,
+      "turn": 1
+    },
+    "WE": {
+      "forward": 1,
+      "turn": -1
+    },
+    "AS": {
+      "forward": -1,
+      "turn": 1
+    },
+    "AD": {
+      "forward": 0,
+      "turn": 0
+    },
+    "AQ": {
+      "forward": 0,
+      "turn": 1
+    },
+    "AE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "SD": {
+      "forward": -1,
+      "turn": -1
+    },
+    "SQ": {
+      "forward": -1,
+      "turn": 1
+    },
+    "SE": {
+      "forward": -1,
+      "turn": -1
+    },
+    "DQ": {
+      "forward": 0,
+      "turn": 1
+    },
+    "DE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "QE": {
+      "forward": 0,
+      "turn": 0
+    },
+    "WAS": {
+      "forward": 0,
+      "turn": 1
+    },
+    "WAD": {
+      "forward": 1,
+      "turn": 0
+    },
+    "WAQ": {
+      "forward": 1,
+      "turn": 1
+    },
+    "WAE": {
+      "forward": 1,
+      "turn": -1
+    },
+    "WSD": {
+      "forward": 0,
+      "turn": -1
+    },
+    "WSQ": {
+      "forward": 0,
+      "turn": 1
+    },
+    "WSE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "WDQ": {
+      "forward": 1,
+      "turn": 1
+    },
+    "WDE": {
+      "forward": 1,
+      "turn": -1
+    },
+    "WQE": {
+      "forward": 1,
+      "turn": 0
+    },
+    "ASD": {
+      "forward": -1,
+      "turn": 0
+    },
+    "ASQ": {
+      "forward": -1,
+      "turn": 1
+    },
+    "ASE": {
+      "forward": -1,
+      "turn": -1
+    },
+    "ADQ": {
+      "forward": 0,
+      "turn": 1
+    },
+    "ADE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "AQE": {
+      "forward": 0,
+      "turn": 1
+    },
+    "SDQ": {
+      "forward": -1,
+      "turn": 1
+    },
+    "SDE": {
+      "forward": -1,
+      "turn": -1
+    },
+    "SQE": {
+      "forward": -1,
+      "turn": 0
+    },
+    "DQE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "WASD": {
+      "forward": 0,
+      "turn": 0
+    },
+    "WASQ": {
+      "forward": 0,
+      "turn": 1
+    },
+    "WASE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "WADQ": {
+      "forward": 1,
+      "turn": 1
+    },
+    "WADE": {
+      "forward": 1,
+      "turn": -1
+    },
+    "WAQE": {
+      "forward": 1,
+      "turn": 1
+    },
+    "WSDQ": {
+      "forward": 0,
+      "turn": 1
+    },
+    "WSDE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "WSQE": {
+      "forward": 0,
+      "turn": 0
+    },
+    "WDQE": {
+      "forward": 1,
+      "turn": -1
+    },
+    "ASDQ": {
+      "forward": -1,
+      "turn": 1
+    },
+    "ASDE": {
+      "forward": -1,
+      "turn": -1
+    },
+    "ASQE": {
+      "forward": -1,
+      "turn": 1
+    },
+    "ADQE": {
+      "forward": 0,
+      "turn": 0
+    },
+    "SDQE": {
+      "forward": -1,
+      "turn": -1
+    },
+    "WASDQ": {
+      "forward": 0,
+      "turn": 1
+    },
+    "WASDE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "WASQE": {
+      "forward": 0,
+      "turn": 1
+    },
+    "WADQE": {
+      "forward": 1,
+      "turn": 0
+    },
+    "WSDQE": {
+      "forward": 0,
+      "turn": -1
+    },
+    "ASDQE": {
+      "forward": -1,
+      "turn": 0
+    },
+    "WASDQE": {
+      "forward": 0,
+      "turn": 0
+    }
+  },
+  "translational_scale": "unverified: no externally measured distance",
+  "status": "aborted",
+  "error": "RuntimeError('No stable pre-trial baseline')",
+  "sample_count": 9884,
+  "dropped_samples": 0,
+  "ended_utc": 1790572108.000176
+}
