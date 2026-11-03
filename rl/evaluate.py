@@ -26,7 +26,8 @@ def load_policy(spec: str, device):
         return spec, None
     ckpt = torch.load(spec, map_location=device)
     if "student" in ckpt:
-        m = Student().to(device); m.load_state_dict(ckpt["student"]); m.eval()
+        m = Student(h=ckpt.get("hidden", 64), head_w=ckpt.get("head_w", 64)).to(device)
+        m.load_state_dict(ckpt["student"]); m.eval()
         return "student", m
     return "teacher", load_teacher(spec, device)[0]
 

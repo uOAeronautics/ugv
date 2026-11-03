@@ -4,50 +4,38 @@ Spec and gates: `docs/RL_PARKING.md`. This file is the work queue. Execute phase
 a phase is done only when its acceptance checks pass. Update the "State" section when a
 measured result changes.
 
-## State (2026-11-03, measured)
+## State (2026-11-03, measured; eval = evaluate.py --episodes 1000 --seed 11)
+
+Current truth only. Replace a line when its result changes; do not append history.
+Superseded experiment notes live in `runs/*.log`.
 
 ```text
-teacher L0    := RETRAINED post-Phase-0 (all fixes): 0/1000 success, 0 coll, 1000 timeout,
-                 seed 11, runs/teacher_L0.pt/json. Policy stalls ~20cm out (pos p95 215mm).
-                 --ent-anneal retrain: 0/1000, 3 coll, 997 timeout (pos p95 286mm),
-                 runs/teacher_L0_anneal.pt/json. Exploration is not the blocker; the
-                 3cm still-pay box gives no entry gradient (mouth = risk, no gain).
-                 Fix: graded 25cm slow-zone pay (reward.py). Retrain running
-horizon result    := 911/1000 success (lb 0.892), 89 coll, 0 timeout, med 3.2s,
-                 seed 11, runs/teacher_L0_horizon.pt/json. Horizon theory confirmed:
-                 collision phase iters ~30-90, collapse by ~120.
-horizon2        := 881/1000 (lb 0.859), 119 coll. More training hurt: tail is
-                 structural, not a refinement deficit.
-creep result      := 933/1000 (lb 0.916), 67 coll. Better, not gate.
-                 Clip speed ROSE to 0.68 m/s: rushing past the pay beats it.
-                 Fix: -0.15/step rush penalty in band (unharvestable), keep pay.
-                 Retrain running (--init creep, runs/teacher_L0_rush.pt).
-zone pay result := 0/1000, 13 coll, 987 timeout (pos p95 39mm, yaw 2.9deg).
-                 Policy enters to 4cm but fidgets (mean acts +-0.1, vel never
-                 <1cm/s): 50 slow steps undiscoverable under sampling noise.
-                 Fix: +2 first-slow seeding bonus. Retrain running
-                 (runs/teacher_L0_seed.pt, 150 iters).
-seed result     := 0/1000, 7 coll (pos p95 90mm). Training never completed a
-                 hold once in 4 runs. Mean probe: spawned AT goal, full-throttle
-                 escape — learned fear of goal region.
-fear result     := 0/1000, 2 coll (pos p95 128mm). Antidote insufficient.
-                 Structural cause found: gamma*lam = 0.9405 at 50 Hz discounts the
-                 +10 bonus 190 steps out by 1e-5; effective horizon (2 s) < task
-                 (4 s). v3 only worked because leak+crash-bonus smuggled goal
-                 value backward. Fix: gamma 0.997, lam 0.99, steps 256 (flags,
-                 no code change). Retrain running (runs/teacher_L0_horizon.pt).classical     := 0/128 L0 and L1, ~95% skid contact (runs/classical_L*.json)
-student DAgger:= 0% L0, val MSE plateau ~0.07
-student PPO   := train_student.py crashes before iter 0 (build_hists, Phase 0.1)
-deploy        := src/ugv/policy.py NumPy forward 0.90 ms/step desktop; parity 1.4e-7 vs torch
-L6            := fake-bridge plumbing only; student 0/10 there; live Gazebo bridge not built
-tests         := root 130 passed (incl. simulation/gazebo), rl 4 passed
+teacher L0   ✓ GATE PASS  runs/teacher_L0_gate.pt  1000/1000, 0 coll, med 3.5s, p95 1mm/4.7deg
+             (Phase-0 reward with yaw weight 0.3 [now 1.0], rate_w 0, gamma 0.99/lam 0.95, 512 envs, 120 iters)
+             teacher alone on harder starts (256 eps): L1 103/256, L4 16/256 -> needs L1+ training
+student L0   ✓ GATE PASS  runs/student_L0_lat_s1.pt  1000/1000, 0 coll, med 6.0s,
+             p95 10mm/0.3deg. GRU-64, from scratch, 300 iters, lat_w 2.0.
+             Mechanism confirmed: pricing lateral error 3x fixed the tolerated
+             +x coupling drift (928 -> 1000 same seed 1). Slower than teacher.
+             runs/student_L0_H.pt (GRU-128, gamma 0.997/lam 0.99, steps 256): 976/1000,
+             24 coll, med 6.7s. "Capacity was the wall" is contradicted: GRU-64 got 991.
+classical    ✓ L0 128/128 med 10.4s; L1 56/128; L4 17/256 (105 coll). RL bar: beat it at L1+.
+DAgger       × not needed; direct student PPO works. Old 0/1000 runs predate the sim fix.
+deploy       ~ ugv.policy NumPy forward 0.90 ms/step desktop; parity 1.4e-7. Pi not measured.
+L6 Gazebo    × fake-bridge plumbing only; live bridge not built
+tests        ✓ root 131, rl 13
 ```
 
-Key observation: at L0 the student tag is invalid on 71% of live steps of a teacher rollout.
-`sim.py` drops the tag whenever `dist < 0.30` (under-drone loss) at every level, so the
-student crosses the entire 0.30 m slot and the 1 s hold blind. The spec defines L0 as
-perfect state and lists under-drone tag loss only from L3. The earlier "POMDP clonability
-floor" explanation is unverified; this sensor gating is the more likely cause.
+Fixes that made the student work (keep them):
+
+```text
+sim      tag min-range (dist > 0.10) blinded the 1 s hold at every level; now part of
+         under_drone_loss (L0-L2 visible < 0.30 m, L3+ lost). Test: test_under_drone_loss_only_from_l3
+student  envs persist across iterations (per-iter reset made rollouts 2.56 s < approach+hold);
+         learned logstd (fixed 0.3 made the hold unreachable); rate_w default 0.0
+phase 0  all items 0.1-0.8 done (GAE, idx-scoped reset, seeding, rate term, success-only
+         bonus, frame spec). Entropy: constant 0.001 (gate teacher); --ent-anneal never helped.
+```
 
 ## Guardrails (all phases)
 
@@ -55,12 +43,16 @@ floor" explanation is unverified; this sensor gating is the more likely cause.
 - Checkpoints and logs go to `rl/runs/` (gitignored). Never leave results only in `/tmp`.
 - Every reported number comes from `evaluate.py` with a fixed `--seed` and episode count
   stated. Compare policies on the same seeds.
+- One seed per experiment. Pass the gate -> keep it and move on. Fail -> one more seed
+  before concluding the idea does not work (seed variance spans 0-256/256 on identical code).
+- One GPU job at a time (student PPO at 1024 envs uses ~10 GB). Do not edit a file while a
+  job that imports it is starting.
 - A change to `sim.py` or `reward.py` invalidates earlier results. Re-measure the
   teacher before comparing students.
 - No real-robot motion (L7) without explicit operator authorisation, measured gear
   clearance in `config/parking.json`, and the SAFETY.md flags.
 
-## Phase 0: correctness bugs (fix before any further training)
+## Phase 0: correctness bugs ✓ done
 
 Each item is a confirmed code defect. Fix it, add a focused test in `rl/test_rl.py`, then
 retrain the L0 teacher once at the end of the phase and record the new numbers.
@@ -110,7 +102,7 @@ Phase 0 exit: rl tests pass; teacher L0 retrained; L0 gate (>=99%, 0 collisions 
 seeded episodes) reported pass or fail with numbers. If the teacher fails the gate, tune
 reward or collision margin until it passes. A student cannot exceed its teacher's gate.
 
-## Phase 1: make L0 match its spec, then get a working student
+## Phase 1: make L0 match its spec, then get a working student (1.1 ✓, 1.2 skipped, 1.3 in progress, 1.4 open, 1.5 ✓)
 
 1.1 Make sensor degradations per-level parameters in `LEVELS`: `under_drone_loss`
     (False for L0-L2, True from L3), `fov` limit, and whether tag noise is on. L0 = perfect
@@ -120,9 +112,9 @@ reward or collision margin until it passes. A student cannot exceed its teacher'
     Hypothesis: with the tag visible through the slot, the student clones the teacher.
     Report val MSE at the slot mouth versus the earlier 0.07, and success on 1000 eps.
 
-1.3 Student PPO at L0 (`train_student.py`, optionally `--init` from 1.2). Learned
-    `logstd` instead of fixed 0.3. Log success/collision per iteration to `runs/*.log`.
-    Accept: L0 gate passes with the student.
+1.3 Student PPO at L0 (`train_student.py`). Learned `logstd` ✓. Best 991/1000, 6 coll.
+    Next: inspect the collision episodes (`visualize.py`), one targeted change, also aim
+    for time near the teacher's 3.5 s. Accept: L0 gate passes with the student.
 
 1.4 Tag-rate realism before L1: the camera/estimator delivers pose at about 30 Hz while
     the policy runs at 50 Hz. Emulate the estimator rate in the sim (hold last tag, age
@@ -139,9 +131,9 @@ reward or collision margin until it passes. A student cannot exceed its teacher'
 For each level: teacher (if needed), student, `evaluate.py --episodes 1000 --seed <fixed>`,
 JSON into `runs/`, and a result row in the State section above. Promote only on gate pass.
 
-- Training horizon: `train_teacher.py` resets all envs every iteration (256 steps = 5 s),
-  so L1+ episodes (up to 45 s) never reach late-episode states. Switch to persistent envs
-  across iterations with bootstrapped truncation.
+- Training horizon: `train_teacher.py` still resets all envs every iteration (256 steps
+  = 5 s), so L1+ episodes (up to 45 s) never reach late-episode states. Port the
+  persistent-env loop from `train_student.py` before L1 teacher training.
 - Curriculum: warm-start each level from the previous level's checkpoint.
 - L2 must also beat the ContinuousDocking baseline (`src/ugv/continuous.py`). Add it as
   an `evaluate.py` baseline driven from the sim tag stream.

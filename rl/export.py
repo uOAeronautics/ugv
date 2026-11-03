@@ -36,7 +36,8 @@ def main():
     ap.add_argument("--onnx", default=None)
     args = ap.parse_args()
     ckpt = torch.load(args.ckpt, map_location="cpu")
-    model = Student()
+    model = Student(h=ckpt.get("hidden", 64) or 64,
+                    head_w=ckpt.get("head_w", 64) or 64)
     model.load_state_dict(ckpt["student"] if "student" in ckpt else ckpt)
     model.eval()
     arrays = {k: v.detach().cpu().numpy() for k, v in model.state_dict().items()}

@@ -30,10 +30,18 @@ def main():
                          "then spec spawns (final gate always uses spec spawns)")
     ap.add_argument("--init", default=None,
                     help="warm-start actor+critic from a checkpoint (curriculum/continuation)")
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--lat-weight", type=float, default=2.0,
+                    help="extra lateral-error weight in progress potential")
+    ap.add_argument("--rate-weight", type=float, default=0.0,
+                    help="action-rate penalty weight (L0-gate run used 0.0)")
+    ap.add_argument("--ckpt-every", type=int, default=25,
+                    help="overwrite --out every N iters so kills don't lose runs")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
-    env = MecanumVecEnv(args.envs, EnvConfig(level=args.level, device=dev))
+    env = MecanumVecEnv(args.envs, EnvConfig(level=args.level, device=dev,
+                                         seed=args.seed, rate_w=args.rate_weight, lat_w=args.lat_weight))
     actor = Actor().to(dev)
     critic = Critic().to(dev)
     if args.init:
@@ -44,6 +52,22 @@ def main():
         print(f"warm-started from {args.init}")
     opt = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()), lr=args.lr)
     sched = torch.optim.lr_scheduler.LinearLR(opt, 1.0, 0.1, total_iters=args.iters)
+    if args.init:
+        # Continue optimization where it left off (fresh schedule churns
+        # converged policies; observed 911->881 and 976->720 on continuation).
+        for key, obj in (("opt", opt), ("sched", sched)):
+            if key in ckpt:
+                try:
+                    obj.load_state_dict(ckpt[key])
+                except (RuntimeError, ValueError, KeyError):
+                    pass
+    RUNS.mkdir(exist_ok=True)
+    out = args.out or str(RUNS / f"teacher_{args.level}.pt")
+
+    def save_ckpt():
+        torch.save({"actor": actor.state_dict(), "critic": critic.state_dict(),
+                    "opt": opt.state_dict(), "sched": sched.state_dict(),
+                    "level": args.level, "obs_dim": TEACHER_OBS}, out)
     n = args.envs
     ent = args.ent
 
@@ -98,14 +122,13 @@ def main():
                 (loss_p + loss_v + ent * loss_e).backward()
                 nn.utils.clip_grad_norm_(list(actor.parameters()) + list(critic.parameters()), 0.5)
                 opt.step(); opt.zero_grad()
-                pl, vl, el = float(loss_p), float(loss_v), float(-loss_e)
+                pl, vl, el = float(loss_p.detach()), float(loss_v.detach()), float(-loss_e.detach())
         sched.step()
         print(f"iter {it} pol {pl:.4f} val {vl:.4f} ent {el:.3f} "
               f"succ {ep_succ} coll {ep_coll} {time.time()-t0:.1f}s", flush=True)
-    RUNS.mkdir(exist_ok=True)
-    out = args.out or str(RUNS / f"teacher_{args.level}.pt")
-    torch.save({"actor": actor.state_dict(), "critic": critic.state_dict(),
-                "level": args.level, "obs_dim": TEACHER_OBS}, out)
+        if args.ckpt_every > 0 and (it + 1) % args.ckpt_every == 0:
+            save_ckpt()
+    save_ckpt()
     print(f"saved {out}")
 
 

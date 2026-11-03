@@ -59,11 +59,10 @@ mixer    := hardware PWM polarity retained by fit: translation channels negated,
 imu      := simulation/gazebo/imu_noise_profile.json (BMI270 rest, body_to_sensor, bias)
 camera   := simulation/gazebo/camera_profile.json (1280x720, 67x41deg nominal, L8 30Hz) + ArUco DICT_4X4_50
 geom     := src/ugv/parking.py gear_obstacles/footprint_corners/swept_clear + room_dimensions.json
-baseline := rl/evaluate.py `classical` (staged PD+I crab on true pose). MEASURED, 128 seeded eps each:
-            L0 0% success / 124 coll / 4 timeout; L1 0% / 121 / 7.
-            Yaw aligns (p95 4.3deg) but 47mm/side slot + turn-shoves-x (-0.83m/s per unit)
-            and vx-yaws (+0.64rad/s per unit) defeat decentralized PID. RL must clear this bar.
-deploy   := NumPy student 0.90ms/step desktop CPU (Pi pending), sha-pinned .npz
+baseline := rl/evaluate.py `classical` (staged PD+I crab on true pose), current sim:
+            L0 128/128 med 10.4s; L1 56/128; L4 17/256 (105 coll).
+            (The earlier 0/128 predates the rest-noise gate.) RL must beat it at L1+.
+deploy   := NumPy student 0.90ms/step desktop CPU (Pi pending), sha-pinned .npz; GRU width read from weights
 ```
 
 ## Known gaps
@@ -80,20 +79,21 @@ rule      := sim success != real success; L7 needs measured clearance + SAFETY f
 
 ```text
 train := RTX 3090 CUDA, rl/ subproject (torch), 4096-8192 vec envs, teacher 3x256 (never ships)
-deploy:= Pi 4B CPU, NumPy .npz student 20-40k (GRU-64 + 2x64 MLP, ~0.1ms), no torch/onnxruntime; .onnx optional fallback
+deploy:= Pi 4B CPU, NumPy .npz student (default GRU-64 + 2x64 MLP ~23k params; --hidden/--head-w configurable), no torch/onnxruntime; .onnx optional fallback
 ```
 
 ## Run
 
-Status and work queue: `rl/PLAN.md`. Checkpoints and logs go to `rl/runs/` (gitignored). `runs/teacher_L0.pt` is the measured L0 teacher.
+Status and work queue: `rl/PLAN.md`. Agent rules: `rl/AGENTS.md`. Checkpoints and logs go to `rl/runs/` (gitignored). `runs/teacher_L0_gate.pt` is the L0-gate teacher (1000/1000, 0 collisions); `runs/student_L0_ppo_v2_s0.pt` the best L0 student (991/1000, 6 collisions). One seed per experiment; on failure retry one more seed before dropping the idea. The 1000-episode eval is the judge.
 
 ```text
-train teacher := cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120
-student ppo   := cd rl && uv run python train_student.py --level L0 [--init runs/student_dagger_L0.pt]
-dagger        := cd rl && uv run python distill.py --teacher runs/teacher_L0.pt --level L0
-eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt  # or classical|brake|random
+train teacher := cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120 --seed <s>   # gate-teacher recipe (defaults: rate 0, gamma 0.99, lam 0.95; it used reward yaw weight 0.3, now 1.0)
+student ppo   := cd rl && uv run python train_student.py --level L0 --iters 300 --seed <s>             # best-student recipe; --init <ckpt> to continue
+dagger        := cd rl && uv run python distill.py --teacher runs/teacher_L0_gate.pt --level L0      # optional; not needed for L0
+eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt --seed 11  # or classical|brake|random
 export        := cd rl && uv run python export.py --ckpt runs/<student>.pt --out runs/policy_L0.npz
 pi bench      := uv run python -m ugv.policy --weights <policy.npz> --benchmark  # no motors
 L6 plumbing   := uv run python simulation/gazebo/run_policy_episodes.py --weights <policy.npz>  # fake bridge; live Gazebo bridge not built
+visualize     := cd rl && uv run python visualize.py --policy runs/<ckpt>.pt --level L0 --episodes 6 --seed 11
 rl tests      := cd rl && uv run pytest test_rl.py
 ```

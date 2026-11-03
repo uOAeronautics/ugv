@@ -42,13 +42,14 @@ class Critic(nn.Module):
 
 
 class Student(nn.Module):
-    """GRU-64 history encoder + 2x64 MLP head. Deploy architecture."""
+    """GRU history encoder + MLP head. Deploy architecture (default h=64)."""
 
-    def __init__(self, obs_dim=STUDENT_DIM, act_dim=3, h=64):
+    def __init__(self, obs_dim=STUDENT_DIM, act_dim=3, h=64, head_w=64):
         super().__init__()
         self.gru = nn.GRU(obs_dim, h, batch_first=True)
-        self.head = nn.Sequential(nn.Linear(h, 64), nn.Tanh(), nn.Linear(64, 64),
-                                  nn.Tanh(), nn.Linear(64, act_dim), nn.Tanh())
+        self.head = nn.Sequential(nn.Linear(h, head_w), nn.Tanh(),
+                                  nn.Linear(head_w, head_w),
+                                  nn.Tanh(), nn.Linear(head_w, act_dim), nn.Tanh())
 
     def forward(self, hist):
         _, h = self.gru(hist)

@@ -76,14 +76,16 @@ def test_action_rate_penalty_nonzero_on_step_change():
     n = 4
     kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
               vel=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
-              first_slow=torch.zeros(n, dtype=torch.bool),
-              timeout=torch.zeros(n, dtype=torch.bool),
+              near=torch.zeros(n, dtype=torch.bool),
               collision=torch.zeros(n, dtype=torch.bool),
               false_park=torch.zeros(n, dtype=torch.bool))
     flat = step_reward(act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3), **kw)
     step = step_reward(act=torch.ones(n, 3), prev_act=torch.zeros(n, 3), **kw)
-    # rate -0.01*3 = -0.03 plus act_pen -0.02*prox(=1 at origin)*1 = -0.02
-    assert torch.allclose(flat - step, torch.full((n,), 0.05), atol=1e-4)
+    # rate -0.01*3 = -0.03 (near false, so no act_pen)
+    assert torch.allclose(flat - step, torch.full((n,), 0.03), atol=1e-4)
+    off = step_reward(act=torch.ones(n, 3), prev_act=torch.zeros(n, 3),
+                      rate_w=0.0, **kw)
+    assert torch.allclose(flat - off, torch.zeros(n), atol=1e-6)
 
 
 def test_terminal_bonus_only_on_success():
@@ -92,73 +94,15 @@ def test_terminal_bonus_only_on_success():
     n = 3
     kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
               act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3),
-              vel=torch.zeros(n, 3),
-              first_slow=torch.zeros(n, dtype=torch.bool),
-              timeout=torch.zeros(n, dtype=torch.bool),
+              vel=torch.zeros(n, 3), near=torch.ones(n, dtype=torch.bool),
               collision=torch.tensor([True, False, False]),
               false_park=torch.zeros(n, dtype=torch.bool))
     r = step_reward(success=torch.tensor([False, True, False]), **kw)
     assert r[0] < r[1] and abs(r[1] - r[0] - 15.0) < 1e-5  # 10 bonus + 5 collision avoided
 
 
-def test_first_slow_bonus_paid_once():
-    # The +2 seeding bonus fires on the first slow&near step, not after.
-    from reward import step_reward
-    n = 2
-    kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
-              act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3),
-              vel=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
-              collision=torch.zeros(n, dtype=torch.bool),
-              timeout=torch.zeros(n, dtype=torch.bool),
-              false_park=torch.zeros(n, dtype=torch.bool))
-    r = step_reward(first_slow=torch.tensor([True, False]), **kw)
-    assert abs(r[0] - r[1] - 2.0) < 1e-5
 
 
-def test_terminal_proximity_pays_survival_not_crash():
-    # Surviving 45 s at the goal pays closeness; crashing there pays nothing.
-    from reward import step_reward
-    n = 2
-    kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
-              act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3),
-              vel=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
-              first_slow=torch.zeros(n, dtype=torch.bool),
-              timeout=torch.ones(n, dtype=torch.bool),
-              false_park=torch.zeros(n, dtype=torch.bool))
-    r = step_reward(collision=torch.tensor([False, True]), **kw)
-    assert r[0] > 4.9 and r[1] < 0  # +5 closeness vs -5 crash, same pose
-
-
-def test_mouth_creep_pays_slow_not_fast():
-    # Creeping (0.05 m/s) through the mouth band pays; rushing (0.5) doesn't.
-    from reward import step_reward
-    n = 2
-    pose = torch.tensor([[0.0, 0.2, 0.0], [0.0, 0.2, 0.0]])
-    vel = torch.tensor([[0.05, 0.0, 0.0], [0.5, 0.0, 0.0]])
-    kw = dict(prev_pose=pose, pose=pose, act=torch.zeros(n, 3),
-              prev_act=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
-              first_slow=torch.zeros(n, dtype=torch.bool),
-              timeout=torch.zeros(n, dtype=torch.bool),
-              collision=torch.zeros(n, dtype=torch.bool),
-              false_park=torch.zeros(n, dtype=torch.bool))
-    r = step_reward(vel=vel, **kw)
-    assert r[0] - r[1] > 0.03
-
-
-def test_mouth_rush_penalized():
-    # 0.5 m/s in the mouth band costs >= 0.1/step vs creeping; outside band no effect.
-    from reward import step_reward
-    n = 3
-    pose = torch.tensor([[0.0, 0.2, 0.0], [0.0, 0.2, 0.0], [0.0, 2.0, 0.0]])
-    vel = torch.tensor([[0.05, 0.0, 0.0], [0.5, 0.0, 0.0], [0.5, 0.0, 0.0]])
-    kw = dict(prev_pose=pose, pose=pose, act=torch.zeros(n, 3),
-              prev_act=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
-              first_slow=torch.zeros(n, dtype=torch.bool),
-              timeout=torch.zeros(n, dtype=torch.bool),
-              collision=torch.zeros(n, dtype=torch.bool),
-              false_park=torch.zeros(n, dtype=torch.bool))
-    r = step_reward(vel=vel, **kw)
-    assert r[0] - r[1] > 0.1 and r[2] - r[1] > 0.1  # rush penalized only in band
 
 
 def test_gae_resets_at_terminal():
@@ -171,3 +115,66 @@ def test_gae_resets_at_terminal():
     adv, ret = gae_advantages(R, V, D, torch.zeros(2), 1.0, 1.0)
     assert torch.allclose(adv, torch.tensor([[2, 2], [1, 1], [2, 2], [1, 1]], dtype=torch.float32))
     assert torch.allclose(ret, adv)
+
+
+def test_yaw_priced_in_potential():
+    # Failures cluster at ~5.8 deg while the limit is 5 deg; the potential must
+    # price yaw materially (old weight 0.3 made 5 deg worth ~0.026).
+    import math
+    from reward import progress_potential
+    flat = progress_potential(torch.zeros(1, 3))
+    tilted = progress_potential(torch.tensor([[0.0, 0.0, math.radians(5)]]))
+    assert abs((flat - tilted).item() - math.radians(5)) < 1e-6
+
+
+def test_lateral_weight_prices_offset():
+    # s1 failures held +52 mm mean lateral offset; lat_w prices it explicitly.
+    from reward import progress_potential
+    centered = progress_potential(torch.zeros(1, 3))
+    off = progress_potential(torch.tensor([[0.08, 0.0, 0.0]]))
+    gap_default = (centered - off).item()
+    gap_zero = (progress_potential(torch.zeros(1, 3), lat_w=0.0)
+                - progress_potential(torch.tensor([[0.08, 0.0, 0.0]]), lat_w=0.0)).item()
+    assert abs(gap_default - (gap_zero + 2.0 * 0.08)) < 1e-6
+
+
+def test_fov_facing_and_sign():
+    # 1.5: sim yaw=0 faces -y (front camera). Car at +y facing the drone sees
+    # it; facing away it doesn't; a tag on the +x side comes into view on a
+    # right turn (yaw -), not a left turn (old sign was flipped).
+    env = MecanumVecEnv(1, EnvConfig(level="L0", device="cpu"))
+    env.reset()
+    env.pose[0] = torch.tensor([0.0, 0.75, 0.0])
+    obs, _, _, _ = env.step(torch.zeros(1, 3))
+    assert bool(obs["valid"][0])
+    env.pose[0] = torch.tensor([0.0, 0.75, 3.14159])
+    obs, _, _, _ = env.step(torch.zeros(1, 3))
+    assert not bool(obs["valid"][0])
+    env.pose[0] = torch.tensor([0.5, 0.75, 0.0])
+    obs, _, _, _ = env.step(torch.zeros(1, 3))
+    assert not bool(obs["valid"][0])  # bearing +0.588 just outside 0.585 half-FOV
+    env.pose[0] = torch.tensor([0.5, 0.75, 0.1])
+    obs, _, _, _ = env.step(torch.zeros(1, 3))
+    assert not bool(obs["valid"][0])
+    env.pose[0] = torch.tensor([0.5, 0.75, -0.1])
+    obs, _, _, _ = env.step(torch.zeros(1, 3))
+    assert bool(obs["valid"][0])
+
+
+def test_under_drone_loss_only_from_l3():
+    # 1.1: L0-L2 keep the tag everywhere inside 0.30 m, including at the goal,
+    # inside the camera minimum range and slightly past the goal (y < 0);
+    # L3 loses it. Regression: a dist > 0.10 FOV clause blinded every level
+    # for the whole 1 s hold.
+    for level, expect in (("L0", True), ("L1", True), ("L3", False)):
+        for pose in ([0.0, 0.20, 0.0], [0.0, 0.0, 0.0], [0.02, -0.03, 0.05]):
+            env = MecanumVecEnv(1, EnvConfig(level=level, device="cpu", seed=5))
+            env.reset()
+            env.drop_p.zero_()
+            env.blackout_start.fill_(1e9)
+            obs = None
+            for _ in range(15):  # flush the latency ring past L3's 80-200 ms
+                env.pose[0] = torch.tensor(pose)
+                env.vel.zero_()
+                obs, _, _, _ = env.step(torch.zeros(1, 3))
+            assert bool(obs["valid"][0]) == expect, (level, pose)

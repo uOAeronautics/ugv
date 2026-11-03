@@ -19,4 +19,7 @@ explicit = true
 torch = [{ index = "pytorch-cu126" }]
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = [
+    "matplotlib>=3.11.2",
+    "pytest>=8",
+]

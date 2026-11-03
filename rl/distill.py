@@ -62,13 +62,15 @@ def main():
     ap.add_argument("--buffer", type=int, default=120000,
                     help="rolling buffer; large enough to retain teacher demos")
     ap.add_argument("--envs", type=int, default=256)
+    ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     teacher, _ = load_teacher(args.teacher, dev)
     student = Student().to(dev)
     print(f"student params: {student.n_params()}")
-    env = MecanumVecEnv(args.envs, EnvConfig(level=args.level, device=dev))
+    env = MecanumVecEnv(args.envs, EnvConfig(level=args.level, device=dev,
+                                         seed=args.seed))
     opt = torch.optim.Adam(student.parameters(), lr=args.lr)
     buf_h, buf_y = None, None
     for it in range(args.iters):

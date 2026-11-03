@@ -20,17 +20,23 @@ PROFILE = REPO / "simulation" / "gazebo" / "mecanum_bayesian_profile.json"
 
 LEVELS = {
     "L0": dict(dist=0.75, bearing=0.0, yaw=0.0, noise=0.0, latency=0.0, drops=0.0,
-               outliers=0.0, blackout=0.0, full_posterior=False, area=1.0),
+               outliers=0.0, blackout=0.0, under_drone_loss=False,
+               full_posterior=False, area=1.0),
     "L1": dict(dist=(0.5, 1.5), bearing=30.0, yaw=60.0, noise=1.0, latency=0.08,
-               drops=0.0, outliers=0.0, blackout=0.0, full_posterior=False, area=1.5),
+               drops=0.0, outliers=0.0, blackout=0.0, under_drone_loss=False,
+               full_posterior=False, area=1.5),
     "L2": dict(dist=(0.5, 1.5), bearing=30.0, yaw=60.0, noise=1.0, latency=0.08,
-               drops=0.0, outliers=0.0, blackout=0.0, full_posterior=True, area=1.5),
+               drops=0.0, outliers=0.0, blackout=0.0, under_drone_loss=False,
+               full_posterior=True, area=1.5),
     "L3": dict(dist=(0.5, 1.5), bearing=30.0, yaw=60.0, noise=1.0, latency=(0.08, 0.20),
-               drops=(0.25, 0.45), outliers=0.02, blackout=3.0, full_posterior=True, area=1.5),
+               drops=(0.25, 0.45), outliers=0.02, blackout=3.0, under_drone_loss=True,
+               full_posterior=True, area=1.5),
     "L4": dict(dist=(0.5, 4.0), bearing=180.0, yaw=180.0, noise=1.0, latency=(0.08, 0.20),
-               drops=(0.25, 0.45), outliers=0.02, blackout=3.0, full_posterior=True, area=4.0),
+               drops=(0.25, 0.45), outliers=0.02, blackout=3.0, under_drone_loss=True,
+               full_posterior=True, area=4.0),
     "L5": dict(dist=(0.5, 8.0), bearing=180.0, yaw=180.0, noise=1.0, latency=(0.08, 0.20),
-               drops=(0.25, 0.45), outliers=0.02, blackout=3.0, full_posterior=True, area=12.0),
+               drops=(0.25, 0.45), outliers=0.02, blackout=3.0, under_drone_loss=True,
+               full_posterior=True, area=12.0),
 }
 
 # Provisional geometry (config/parking.json unverified): car 0.16 x 0.22 m,
@@ -66,6 +72,8 @@ class EnvConfig:
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     seed: int = 0
     spawn_dist: tuple | float | None = None  # override LEVELS dist (curriculum)
+    rate_w: float = 0.0  # action-rate penalty weight; L0-gate teacher used 0.0
+    lat_w: float = 2.0  # extra lateral-error weight in progress potential
 
 
 class MecanumVecEnv:
@@ -114,7 +122,6 @@ class MecanumVecEnv:
         self.tag_raw = torch.zeros(n, 3, device=dev)
         self.tag_valid = torch.zeros(n, dtype=torch.bool, device=dev)
         self.imu_w = torch.zeros(n, device=dev)
-        self.entered = torch.zeros(n, dtype=torch.bool, device=dev)
         self.coef = torch.zeros(n, 16, 3, device=dev)
         self.dz = torch.zeros(n, device=dev)
         self.drive_tau = torch.ones(n, 3, device=dev)
@@ -214,7 +221,6 @@ class MecanumVecEnv:
         self.prev_valid[di] = False
         self.imu_bias[di] = 0.002 * torch.randn(len(di), device=dev, generator=self.gen)
         self.imu_yaw[di] = self.pose[di, 2].clone()
-        self.entered[di] = False
         # latency ring: prefill with the spawn pose so delayed reads are valid
         self.pose_ring[di] = self.pose[di].unsqueeze(1).expand(-1, _RING_K, -1)
         self.ring_count[di] = 1
@@ -243,8 +249,7 @@ class MecanumVecEnv:
                  "still": self.still.clone(), "hist": self.hist.clone(),
                  "age": self.hist_age.clone(), "imu_yaw": self.imu_yaw.clone(),
                  "prev_act": self.prev_act.clone(), "ema": self.tag_ema.clone(),
-                 "ptag": self.prev_tag.clone(), "pvalid": self.prev_valid.clone(),
-                 "entered": self.entered.clone()}
+                 "ptag": self.prev_tag.clone(), "pvalid": self.prev_valid.clone()}
         # mecanum inverse mixer -> normalized wheel PWM [-1,1]. NOTE: the fitted
         # coefficients retain hardware PWM polarity (mecanum_dynamics.py):
         # translation needs negation (+cmd -> +body vel) while the turn
@@ -293,13 +298,25 @@ class MecanumVecEnv:
         noise = float(self.level["noise"])
         delayed = self._delayed_pose()
         dist = delayed[:, :2].norm(dim=1)
-        bearing = torch.atan2(delayed[:, 0], delayed[:, 1].clamp_min(1e-6)) - self.pose[:, 2]
+        # Bearing: sim yaw=0 faces -y (SDF front camera + Q/left convention);
+        # facing rotates +yaw from the tag direction, so relative bearing ADDS
+        # yaw (subtracted before: same result at yaw 0, wrong whenever turned).
+        bearing = torch.atan2(delayed[:, 0], delayed[:, 1].clamp_min(1e-6)) + self.pose[:, 2]
         bearing = torch.atan2(torch.sin(bearing), torch.cos(bearing))
-        in_fov = (bearing.abs() < FOV_HALF) & (dist > 0.10) & (dist < 5.0)
-        under_drone = dist < 0.30  # tag loss geometry near/under deck
+        # Near/under the deck (< 0.30 m) the point-bearing model is meaningless
+        # (y -> 0 or negative), so the per-level switch alone decides there:
+        # L0-L2 keep the tag (spec: perfect state / tags visible), L3+ lose it.
+        # The camera minimum range (~0.10 m) lies inside this zone, so it is
+        # covered by under_drone_loss rather than applied at every level.
+        near_deck = dist < 0.30
+        in_fov = (bearing.abs() < FOV_HALF) & (dist < 5.0)
+        if self.level["under_drone_loss"]:
+            seen = in_fov & ~near_deck
+        else:
+            seen = in_fov | near_deck
         in_blackout = (self.time > self.blackout_start) & (self.time < self.blackout_start + self.blackout_total)
         dropped = torch.rand(self.n, device=dev, generator=self.gen) < self.drop_p
-        valid = in_fov & (~under_drone) & (~in_blackout) & (~dropped)
+        valid = seen & (~in_blackout) & (~dropped)
         pos_std = noise * (0.008 + 0.020 * dist)
         yaw_std = noise * (math.radians(2) + math.radians(2) * dist)
         tag = delayed + torch.randn(delayed.shape, device=dev, generator=self.gen) * torch.stack([pos_std, pos_std, yaw_std], dim=1)
@@ -346,8 +363,6 @@ class MecanumVecEnv:
         out = (self.pose[:, 0].abs() > area) | (self.pose[:, 1].abs() > area)
         timeout = (self.time >= self.cfg.max_time) | out
         done = success | collision | timeout
-        first_slow = slow & near & ~self.entered & ~prev_done
-        self.entered |= slow & near
 
         # student history frame (angles wrapped: the raw integrated IMU yaw
         # drifts unboundedly over long episodes, saturating recurrent gates)
@@ -361,8 +376,8 @@ class MecanumVecEnv:
         self.prev_act = cmd.detach()
 
         reward = step_reward(prev_pose, self.pose, cmd, rate_prev, self.vel, success,
-                             first_slow, timeout,
-                             collision, torch.zeros_like(collision), self.dt)
+                             near, collision, torch.zeros_like(collision), self.dt,
+                             rate_w=self.cfg.rate_w, lat_w=self.cfg.lat_w)
         # out-of-bounds penalty
         reward = reward - out.float() * 2.0
         # latch terminal outcomes; freeze previously-done envs so flags can't be overwritten
@@ -383,7 +398,6 @@ class MecanumVecEnv:
             self.tag_ema[prev_done] = saved["ema"][prev_done]
             self.prev_tag[prev_done] = saved["ptag"][prev_done]
             self.prev_valid[prev_done] = saved["pvalid"][prev_done]
-            self.entered[prev_done] = saved["entered"][prev_done]
             reward = torch.where(prev_done, 0.0, reward)
             success, collision, timeout, done = (self.latched_success, self.latched_coll,
                                                 self.latched_timeout, self.done)
