@@ -25,3 +25,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "simulation/gazebo"]  # rl/ has its own CUDA env + tests; root stays torch-free

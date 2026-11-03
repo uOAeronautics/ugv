@@ -34,4 +34,6 @@ L3 PROTOCOL.md
 
 `PARKING.md := provisional tag/IMU/scene map + swept-footprint planner + calibrated entry gates`
 
+`RL_PARKING.md := goal + parked definition + L0-L7 ladder + obs/act contracts + train-on-3090 / deploy-on-Pi4 pipeline`
+
 `DYNAMICS.md := raw 100Hz IMU/PWM capture + drift-bracketed real-car identification + Gazebo effort fit`

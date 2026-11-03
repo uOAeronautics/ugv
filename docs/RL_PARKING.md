@@ -1,0 +1,99 @@
+# RL drone parking
+
+`goal := UGV finds drone anywhere in lab and parks centred under deck without touching gear, onboard sensing only, Pi 4B deploy`
+
+## Parked (success)
+
+Default thresholds, confirm against measured gear clearance (`config/parking.json` unverified):
+
+```text
+lateral   := |dy| <= 30mm vs drone-centre goal
+long      := |dx| <= 50mm
+yaw       := <= 5deg vs skid axis
+corners   := all 4 footprint corners inside skid corridor
+still     := |v| < 1cm/s and |w| < 2deg/s for 1.0s
+contact   := zero over episode
+false-park:= declared parked while outside above = failure, counted separately
+```
+
+## Metrics per level (>= 1000 seeded episodes, held-out seeds, Wilson 95%)
+
+`success-lb, collision-rate, false-parked-rate, timeout-rate, median/p95 time-to-park, p95 final pos/yaw err, action jerk, Pi per-step latency`
+
+## Ladder (each gate must pass before next counts)
+
+```text
+L0 aligned 0.75m ahead / posterior mean / perfect state
+   gate := >=99% success, 0 collisions
+L1 0.5-1.5m, +-30deg bearing, +-60deg yaw, tags visible / mean / nominal noise 80ms
+   gate := >=98%, collisions <=0.5%
+L2 as L1 / full 60-draw posterior + extra DR (yaw couple, deadzone, lag, gain, sag) / nominal
+   gate := >=95%, <=1%, beats ContinuousDocking baseline
+L3 as L1 / as L2 / drops 25-45%, outliers, 3s blackout, tag loss under drone, 80-200ms
+   gate := >=95%, <=1%, false-parked <=0.5%
+L4 4x4m open, any heading, drone may start out of view, random drone yaw / as L2 / as L3
+   gate := >=90%, <=1%, median <=45s
+L5 full 24x12m lab + furniture (`simulation/gazebo/room_dimensions.json`) / as L2 / as L3 + scene-bridge only
+   gate := >=85%, <=1%
+L6 Gazebo sim-to-sim: native rollers, rendered camera, real ParkingEstimator + RelativeHeading
+   gate := >=90% of L3/L4 rate over >=100 episodes
+L7 real robot, operator-authorised, drone powered off
+   gate := staged >=8/10 L1 starts, then >=18/20 L4 starts, 0 contacts
+```
+
+## Contracts
+
+```text
+obs student := history ~1s of [tag rel pose x,y,yaw + age + valid, imu yaw-rate + heading, prev action, smoothed tag velocity] (13-dim, noisy, delayed, valid-gated)
+obs teacher := true rel pose + true dynamics draw + true obstacle geometry (privileged, train only)
+act := (vx, vy, w) -> wheel duty via MECANUM_MECHANICS.md mixer -> swept_clear shield -> SAFETY.md gates
+shield := watchdog + sensor-expiry brake + ownership/STOP + parking.swept_clear vs inflated gear; policy never bypasses
+```
+
+## Provenance
+
+```text
+dynamics := simulation/gazebo/mecanum_bayesian_profile.json (60 draws, schema v2) + src/ugv/mecanum_dynamics.py features/step
+mixer    := hardware PWM polarity retained by fit: translation channels negated, turn channel as-is;
+            verified per-channel (+vx->+1.27, +vy->+0.63, +w->+2.20 m/s,rad/s steady-state, posterior mean)
+imu      := simulation/gazebo/imu_noise_profile.json (BMI270 rest, body_to_sensor, bias)
+camera   := simulation/gazebo/camera_profile.json (1280x720, 67x41deg nominal, L8 30Hz) + ArUco DICT_4X4_50
+geom     := src/ugv/parking.py gear_obstacles/footprint_corners/swept_clear + room_dimensions.json
+baseline := rl/evaluate.py `classical` (staged PD+I crab on true pose). MEASURED, 128 seeded eps each:
+            L0 0% success / 124 coll / 4 timeout; L1 0% / 121 / 7.
+            Yaw aligns (p95 4.3deg) but 47mm/side slot + turn-shoves-x (-0.83m/s per unit)
+            and vx-yaws (+0.64rad/s per unit) defeat decentralized PID. RL must clear this bar.
+deploy   := NumPy student 0.90ms/step desktop CPU (Pi pending), sha-pinned .npz
+```
+
+## Known gaps
+
+```text
+tags      := real 9/12/13/14 vs sim drone 0/1/9/12; add 13/14 to sim before L6
+clearance := config/parking.json gear clearance unverified; thresholds above provisional
+intrinsic := fx=fy=968 nominal, no checkerboard calibration
+heldout   := no complete heldout full-power (4095) trajectory; MECANUM_REAL2SIM.md
+rule      := sim success != real success; L7 needs measured clearance + SAFETY flags
+```
+
+## Compute
+
+```text
+train := RTX 3090 CUDA, rl/ subproject (torch), 4096-8192 vec envs, teacher 3x256 (never ships)
+deploy:= Pi 4B CPU, NumPy .npz student 20-40k (GRU-64 + 2x64 MLP, ~0.1ms), no torch/onnxruntime; .onnx optional fallback
+```
+
+## Run
+
+Status and work queue: `rl/PLAN.md`. Checkpoints and logs go to `rl/runs/` (gitignored). `runs/teacher_L0.pt` is the measured L0 teacher.
+
+```text
+train teacher := cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120
+student ppo   := cd rl && uv run python train_student.py --level L0 [--init runs/student_dagger_L0.pt]
+dagger        := cd rl && uv run python distill.py --teacher runs/teacher_L0.pt --level L0
+eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt  # or classical|brake|random
+export        := cd rl && uv run python export.py --ckpt runs/<student>.pt --out runs/policy_L0.npz
+pi bench      := uv run python -m ugv.policy --weights <policy.npz> --benchmark  # no motors
+L6 plumbing   := uv run python simulation/gazebo/run_policy_episodes.py --weights <policy.npz>  # fake bridge; live Gazebo bridge not built
+rl tests      := cd rl && uv run pytest test_rl.py
+```
