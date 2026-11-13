@@ -40,6 +40,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [SCOUT] baseline-mean-flag | baselines --no-mean-dynamics (particle-0 plant) | done | rl/baselines.py:27,81-86; rl/test_rl.py flag-parsing test |
 | [SCOUT] baseline-enter-gating | staged_baseline lateral ENTER margin gating + test | done | src/ugv/staged_baseline.py:611-619 (ENTER→APPROACH+retreat when \|x_est\|>=margin); tests/test_staged_baseline.py margin-gating test + centered-hold control; .venv/bin/pytest tests/test_staged_baseline.py -q → 10 passed |
 | [SCOUT] reward-yaw-flag | reward yaw_w param + train_teacher --yaw-weight (default 1.0) | done | rl/reward.py:14,24; rl/train_teacher.py --yaw-weight; sim.py pass-through pending (EnvConfig.yaw_w + step_reward call) |
+| [SCOUT] sim-yaw-wiring | EnvConfig.yaw_w (default 1.0) passed to step_reward | done | rl/sim.py EnvConfig.yaw_w + step_reward call; rl/test_rl.py yaw test; pytest test_rl.py -q |
 
 ## [EXP]
 

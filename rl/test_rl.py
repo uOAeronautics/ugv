@@ -314,6 +314,8 @@ def test_yaw_weight_plumbing_and_default():
               collision=torch.zeros(n, dtype=torch.bool),
               false_park=torch.zeros(n, dtype=torch.bool))
     assert torch.equal(step_reward(**kw), step_reward(yaw_w=1.0, **kw))
+    from sim import EnvConfig
+    assert EnvConfig().yaw_w == 1.0 and EnvConfig(yaw_w=0.3).yaw_w == 0.3
     r = subprocess.run([sys.executable, "train_teacher.py", "--help"],
                        capture_output=True, text=True)
     assert r.returncode == 0 and "--yaw-weight" in r.stdout

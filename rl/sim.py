@@ -74,6 +74,7 @@ class EnvConfig:
     spawn_dist: tuple | float | None = None  # override LEVELS dist (curriculum)
     rate_w: float = 0.0  # action-rate penalty weight; L0-gate teacher used 0.0
     lat_w: float = 2.0  # extra lateral-error weight in progress potential
+    yaw_w: float = 1.0  # yaw-error weight in progress potential
     cam_hz: float | None = None  # override LEVELS cam_hz (50 Hz L0, 30 Hz L1+)
     use_mean_dynamics: bool = True  # L0/L1 use posterior mean unless False (particles[0])
     full_posterior: bool | None = None  # override LEVELS full_posterior if set
@@ -428,7 +429,8 @@ class MecanumVecEnv:
 
         reward = step_reward(prev_pose, self.pose, cmd, rate_prev, self.vel, success,
                              near, collision, false_park, self.dt,
-                             rate_w=self.cfg.rate_w, lat_w=self.cfg.lat_w)
+                             rate_w=self.cfg.rate_w, lat_w=self.cfg.lat_w,
+                             yaw_w=self.cfg.yaw_w)
         # out-of-bounds penalty
         reward = reward - out.float() * 2.0
         # latch terminal outcomes; freeze previously-done envs so flags can't be overwritten
