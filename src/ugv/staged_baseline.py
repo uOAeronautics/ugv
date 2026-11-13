@@ -149,7 +149,7 @@ class OnlineSysID:
     keeps A_hat bounded; determinant/condition-number guards live at inversion time.
     """
     GAMMA = 0.985
-    LAM_XY = 0.35
+    LAM_XY = 1.0
     LAM_W = 0.15
     TAU_FILT = 0.15
     DET_MIN = 0.03
@@ -337,8 +337,8 @@ class EKF:
         prolonged = (self.init & (self.age > 0.5)).astype(float)
         q_pos_infl = prolonged * ((0.25 + 0.45 * spd) ** 2) * dt
         q_yaw_infl = prolonged * ((0.20 + 0.15 * np.abs(gyro)) ** 2) * dt
-        q = np.stack([(0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
-                      (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
+        q = np.stack([9.0 * (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
+                      9.0 * (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
                       0.002 ** 2 * dt + (0.05 * np.abs(gyro) * dt) ** 2 + q_yaw_infl, qb, qb], 1)
         self.P = F @ self.P @ F.transpose(0, 2, 1) + q[:, :, None] * np.eye(5)
         self.x = x
@@ -632,7 +632,7 @@ class StagedBaseline:
         # 40mm->60mm, yaw 4.5deg->7deg, pos_std 45mm->60mm, age 0.35s->0.5s)
         # and settle now decays instead of hard-resetting to zero, so noisy
         # L1-L3 EKF estimates cannot livelock the APPROACH->ENTER transition.
-        lat_tol = min(0.035, 0.65 * M)
+        lat_tol = min(0.025, 0.55 * M)
         at_stage = ((ph == self.APPROACH) & in_front
                     & (np.abs(x) < lat_tol)
                     & (np.abs(y - stage_y) < 0.06)
@@ -663,17 +663,24 @@ class StagedBaseline:
         # World-x velocity estimate (also used for entry damping below).
         c_e, s_e = np.cos(yaw), np.sin(yaw)
         vwx = c_e * self.ekf.v[:, 0] - s_e * self.ekf.v[:, 1]
-        # Latency-ahead lateral position for trip decisions: the 80 ms tag
-        # latency + EKF lag puts the estimate ~1.2 cm (p90) behind truth at
-        # entry speed, so tripping on the raw estimate fires at true 0.048 m.
-        x_ahead = x + vwx * 0.08
+        # Per-env latency-ahead lateral position for trip decisions: the tag
+        # latency (80-200 ms by level) + EKF/filter lag puts the estimate
+        # ~1.2 cm (p90) behind truth at entry speed, so tripping on the raw
+        # estimate fires at true 0.048 m (touching). Leading by latency+70 ms
+        # closes most of the systematic lag.
+        lat = np.broadcast_to(np.asarray(self.latency, float), (self.n,))
+        x_ahead = x + vwx * (lat + 0.07)
         ax = np.abs(x_ahead)
+        # Micro-retreat interlock: while the latency-ahead lateral offset
+        # exceeds 30 mm, back out slowly (+0.04 m/s) while centering hard
+        # instead of advancing. Continuous (no phase change, no chatter).
+        micro = enter & (y < g.zone_y + 0.10) & (ax > 0.022)
         diverging = (x * vwx) > 0.0
         drift_outside = enter & tags_fresh & (y >= g.zone_y) & (ax > 0.64 * M) & diverging
         drift_inside = enter & (y < g.zone_y) & (ax > BACK_X) & diverging
-        # Hard safety trip: at 40 mm the wall (0.047 m) is one EKF-noise step
-        # away — retreat instantly regardless of velocity direction.
-        hard_trip = enter & (y < g.zone_y) & (ax > 0.040)
+        # Hard safety trip: at 38 mm ahead the wall (0.047 m) is one EKF-noise
+        # step away — retreat instantly regardless of velocity direction.
+        hard_trip = enter & (y < g.zone_y) & (ax > 0.030)
         ph = np.where(drift_outside, self.APPROACH, ph)
         self._retreat |= drift_outside
         ph = np.where(drift_inside | hard_trip, self.BACK, ph)
@@ -737,18 +744,23 @@ class StagedBaseline:
         ent_v = np.stack([np.clip(-8.0 * x - 4.0 * self.ix - 1.2 * vwx, -0.15, 0.15),
                           -ENTER_V * lat_scale], 1)
         ent_v[:, 1] = np.where((y > g.zone_y) & (np.abs(x) > 0.35 * M), 0.0, ent_v[:, 1])
-        # Crooked entry guard: rotate in place until roughly aligned before
-        # driving deeper into the slot (prevents flank clips from yaw error).
-        ent_v[:, 1] = np.where(np.abs(yaw) > math.radians(15.0), 0.0, ent_v[:, 1])
+        # Crooked entry guard: rotate in place until closely aligned before
+        # driving deeper into the slot (prevents flank clips from yaw error;
+        # entering at 10+ deg needs yaw corrections whose turn drag exceeds
+        # the lateral centering authority).
+        ent_v[:, 1] = np.where(np.abs(yaw) > math.radians(10.0), 0.0, ent_v[:, 1])
+        # Micro-retreat: back out slowly while off-center instead of advancing.
+        ent_v[:, 1] = np.where(micro, 0.04, ent_v[:, 1])
         v_w = np.where(enter[:, None], ent_v, v_w)
 
-        # BACK: center FIRST (creep +y at 0.05 while |x_est| > 20 mm), then
-        # exit at 0.15 m/s. Driving +y along the wall while off-center
-        # scrapes the flank (BACK-phase clips at |x| ~= 0.048 m); the slower
-        # exit keeps the lateral servo ahead of EKF lag.
+        # BACK: center first (creep +y slowly while off-center), then exit.
+        # Driving +y fast along the wall while off-center scrapes the flank
+        # (|x| ~= 0.048 m); exit speed scales with centering quality so the
+        # car never blasts +y while off-center.
         back_centered = np.abs(x) < 0.020
+        back_vy = np.where(back_centered, 0.05 + 0.15 * (1.0 - np.abs(x) / 0.020), 0.05)
         back_v = np.stack([np.clip(-6.0 * x - 1.0 * vwx, -0.15, 0.15),
-                           np.where(back_centered, 0.15, 0.05)], 1)
+                           back_vy], 1)
         v_w = np.where(back[:, None], back_v, v_w)
 
         # Swept-clear shield in APPROACH / FINAL (ENTER) / BACK, debounced:
@@ -786,14 +798,21 @@ class StagedBaseline:
         # yaw centering while backing out. All laws carry gyro-rate damping
         # (-0.4·gyro): the 80 ms tag latency + EKF lag destabilize pure-P yaw
         # on high-authority posterior draws (delay-induced spin-outs).
+        # ENTER uses gentle P (1.2) + integral: yaw corrections drag laterally
+        # via the forward/turn coupling (p0 A02 = +0.64!), so correcting a
+        # small yaw error injects more lateral disturbance than the error
+        # itself; the integral trims residual slowly and safely.
         gyro = self._last_gyro
-        w_enter = np.clip(2.4 * ye + 2.0 * self.iyaw - 0.4 * gyro, -1.0, 1.0)
+        w_enter = np.clip(1.2 * ye + 2.0 * self.iyaw - 0.4 * gyro, -0.8, 0.8)
         w = np.where(enter, w_enter,
                      np.where(back, np.clip(3.5 * ye - 0.4 * gyro, -1.2, 1.2),
-                              np.clip(2.5 * ye - 0.4 * gyro, -1.2, 1.2)))
+                              np.clip(2.5 * ye - 0.4 * gyro, -0.4, 0.4)))
         # Near the slot, cap turn authority: roller-coupled draws translate
         # ~0.3 m/s per unit turn, so a 1.0 yaw servo scrapes the flanks.
         # 0.35 still converges 15 deg in ~1.2 s while entering (~3 s).
+        # Far-field approach is capped at 0.4 for the same reason: a fast
+        # face-chase turn drags faster than approach transit re-centers,
+        # and the fleeing face setpoint runs away (OOB exits in APPROACH).
         tight = dist_drone < 0.6
         w = np.where(tight, np.clip(w, -0.35, 0.35), w)
         # Large yaw error: mostly rotate first (keeps the tag in view)

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import math
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -62,8 +62,6 @@ def marker_world_poses() -> dict[int, tuple[np.ndarray, np.ndarray]]:
     the world origin of the drone frame used by lockstep_env.to_drone).
     """
     out = {}
-    halves = TAG_SIZE_M / 2
-    _ = halves
     out[12] = (np.array([0.0, 0.168, 0.092]), _rx(-math.pi / 2))
     out[9] = (np.array([0.0, -0.168, 0.092]), _rx(math.pi / 2))
     out[13] = (np.array([-0.058, -0.005, 0.202]), _rz(-math.pi / 2) @ _rx(math.pi / 2))
@@ -105,8 +103,7 @@ def _marker_templates() -> dict[int, np.ndarray]:
 _TEMPLATES: dict[int, np.ndarray] | None = None
 
 
-def render_frame(pose: tuple[float, float, float],
-                 rng: np.random.Generator | None = None) -> np.ndarray:
+def render_frame(pose: tuple[float, float, float]) -> np.ndarray:
     """Render the 68 mm-white-card constellation as 1280x720 gray.
 
     Far-to-near painter's order; back-facing and behind-camera markers culled.
@@ -148,7 +145,6 @@ def render_frame(pose: tuple[float, float, float],
         cv2.warpPerspective(src, M, (FRAME_WIDTH, FRAME_HEIGHT), img,
                             flags=cv2.INTER_NEAREST,
                             borderMode=cv2.BORDER_TRANSPARENT)
-    _ = rng  # frame noise comes from apply_photometric_dr, not the renderer
     return img
 
 
@@ -210,23 +206,41 @@ def apply_photometric_dr(img: np.ndarray, p: DRParams,
     return out
 
 
-def decode_pose(img: np.ndarray) -> tuple[np.ndarray, bool]:
-    """Real aruco.py pixel decode + PnP inversion -> car (x, y, yaw) estimate."""
+def _local_ippe(d) -> list[tuple[np.ndarray, np.ndarray, float]]:
+    """Both IPPE_SQUARE solutions for one detection, as world-frame (R_cw, t).
+
+    Solved in marker-local coordinates (where IPPE is stable) and converted
+    with the known marker placement. Sorted by reprojection error.
+    """
     import cv2
-    dets = ArucoFollower.detect_gray(img)
-    cands = [d for d in dets if d.tag_id in MARKERS and d.rotation_vector
-             and d.translation_vector]
-    if not cands:
-        return np.zeros(3), False
-    d = max(cands, key=lambda c: c.size_px)
+    h = TAG_SIZE_M / 2
+    obj = np.array([[-h, h, 0], [h, h, 0], [h, -h, 0], [-h, -h, 0]],
+                   dtype=np.float64)
+    img_pts = np.asarray(d.corners, dtype=np.float64)
+    K = np.array([[FOCAL_PX, 0, CX], [0, FOCAL_PX, CY], [0, 0, 1]], dtype=np.float64)
+    try:
+        n, rvecs, tvecs, errs = cv2.solvePnPGeneric(
+            obj, img_pts, K, np.zeros(5), flags=cv2.SOLVEPNP_IPPE_SQUARE)
+    except cv2.error:
+        return []
     center, R_mw = MARKERS[d.tag_id]
-    R_cm, _ = cv2.Rodrigues(np.asarray(d.rotation_vector, dtype=np.float64))
-    t = np.asarray(d.translation_vector, dtype=np.float64).reshape(3)
-    R_cw = R_cm @ R_mw.T
-    cam_c = center - R_mw @ R_cm.T @ t
-    f_w = R_cw @ np.array([0.0, 0.0, 1.0])
+    out = []
+    for rv, tv, err in zip(rvecs, tvecs, errs.ravel()):
+        R_cm, _ = cv2.Rodrigues(rv)
+        R_cw = R_cm @ R_mw.T
+        t_w = tv.reshape(3) - R_cw @ center
+        out.append((R_cw, t_w, float(err)))
+    out.sort(key=lambda s: s[2])
+    return out
+
+
+def _pose_from_rt(R_cw: np.ndarray, t: np.ndarray) -> tuple[np.ndarray, bool]:
+    cam_c = (-R_cw.T @ t.reshape(3))
+    if not (-0.2 < cam_c[2] < 1.0):
+        return np.zeros(3), False
+    f_w = R_cw.T @ np.array([0.0, 0.0, 1.0])  # camera +z axis in world
     n = math.hypot(f_w[0], f_w[1])
-    if n < 1e-6 or cam_c[2] < -0.5 or cam_c[2] > 1.5:
+    if n < 1e-6:
         return np.zeros(3), False
     f_w = f_w / n
     yaw = math.atan2(f_w[0], -f_w[1])
@@ -234,6 +248,76 @@ def decode_pose(img: np.ndarray) -> tuple[np.ndarray, bool]:
                     cam_c[1] - CAM_FWD_M * f_w[1], yaw])
     est[2] = math.atan2(math.sin(est[2]), math.cos(est[2]))
     return est, True
+
+
+def _ang_diff(a: float, b: float) -> float:
+    return abs(math.atan2(math.sin(a - b), math.cos(a - b)))
+
+
+def decode_pose(img: np.ndarray, prev_yaw: float | None = None) -> tuple[np.ndarray, bool]:
+    """Real aruco.py pixel decode + PnP -> car (x, y, yaw).
+
+    Per-marker local IPPE_SQUARE gives both ambiguous solutions; the winner
+    is picked by cross-marker camera consistency (>=2 markers, then a joint
+    world-frame ITERATIVE refine) or by reprojection error with a temporal
+    yaw prior as tie-break (1 marker with near-equal errors).
+    """
+    import cv2
+    dets = [d for d in ArucoFollower.detect_gray(img) if d.tag_id in MARKERS]
+    if not dets:
+        return np.zeros(3), False
+    sols = [(d, _local_ippe(d)) for d in dets]
+    sols = [(d, s) for d, s in sols if s]
+    if not sols:
+        return np.zeros(3), False
+
+    def yaw_of(R_cw: np.ndarray) -> float:
+        f_w = R_cw.T @ np.array([0.0, 0.0, 1.0])  # camera +z axis in world
+        return math.atan2(f_w[0], -f_w[1])
+
+    def cam_c(R_cw: np.ndarray, t_w: np.ndarray) -> np.ndarray:
+        return -R_cw.T @ t_w
+
+    if len(sols) == 1:
+        s = sols[0][1]
+        if len(s) == 2 and prev_yaw is not None and s[0][2] > 0 and s[1][2] / s[0][2] < 3.0:
+            s = sorted(s, key=lambda c: _ang_diff(yaw_of(c[0]), prev_yaw))
+        R_cw, t_w, _ = s[0]
+        return _pose_from_rt(R_cw, t_w)
+
+    import itertools
+    best: tuple | None = None
+    for combo in itertools.product(*[[(d, c) for c in s] for d, s in sols]):
+        centers = [cam_c(c[0], c[1]) for _, c in combo]
+        spread = sum(float(np.linalg.norm(a - b))
+                     for i, a in enumerate(centers) for b in centers[i + 1:])
+        err = sum(c[2] for _, c in combo)
+        key = (spread, err)
+        if best is None or key < best[0]:
+            best = (key, combo)
+    assert best is not None
+    combo = best[1]
+    R0, t0, _ = min((c for _, c in combo), key=lambda c: c[2])
+    h = TAG_SIZE_M / 2
+    local = np.array([[-h, h, 0], [h, h, 0], [h, -h, 0], [-h, -h, 0]],
+                     dtype=np.float64)
+    obj, img_pts = [], []
+    for d, _ in combo:
+        center, R_mw = MARKERS[d.tag_id]
+        obj.append(center + local @ R_mw.T)
+        img_pts.append(np.asarray(d.corners, dtype=np.float64))
+    obj = np.vstack(obj)
+    img_pts = np.vstack(img_pts)
+    K = np.array([[FOCAL_PX, 0, CX], [0, FOCAL_PX, CY], [0, 0, 1]], dtype=np.float64)
+    rvec0, _ = cv2.Rodrigues(R0)
+    ok, rvec, tvec = cv2.solvePnP(obj, img_pts, K, np.zeros(5),
+                                  rvec=rvec0, tvec=t0.reshape(3, 1),
+                                  useExtrinsicGuess=True,
+                                  flags=cv2.SOLVEPNP_ITERATIVE)
+    if ok:
+        R_cw, _ = cv2.Rodrigues(rvec)
+        return _pose_from_rt(R_cw, tvec)
+    return _pose_from_rt(R0, t0)
 
 
 class VisionSensors:
@@ -253,9 +337,11 @@ class VisionSensors:
         self.enabled = True
         self.dr = sample_dr(rng) if photometric else DRParams()
         self.rng = rng
-        self.vring: list[tuple[np.ndarray, bool]] = []
+        self.ring: list[tuple[np.ndarray, bool]] = []
         self.frames = 0
         self.decodes = 0
+        init_yaw = float(init_pose[2]) if init_pose is not None else 0.0
+        self._prev_yaw: float | None = init_yaw
 
     @property
     def latency(self) -> float:
@@ -272,14 +358,16 @@ class VisionSensors:
     def tag(self, pose: tuple[float, float, float]) -> tuple[np.ndarray, bool]:
         img = render_frame(pose)
         img = apply_photometric_dr(img, self.dr, self.rng)
-        est, ok = decode_pose(img)
+        est, ok = decode_pose(img, self._prev_yaw)
+        if ok:
+            self._prev_yaw = float(est[2])
         self.frames += 1
         self.decodes += int(ok)
         _, seen = self.base.tag(pose)  # advances latency ring / age / FOV / drops
-        self.vring.append((est, ok))
-        self.vring = self.vring[-40:]
+        self.ring.append((est, ok))
+        self.ring = self.ring[-40:]
         k = int(round(self.base.latency / DT))
-        d_est, d_ok = self.vring[max(0, len(self.vring) - 1 - k)]
+        d_est, d_ok = self.ring[max(0, len(self.ring) - 1 - k)]
         if not seen or not d_ok:
             if seen and not d_ok:
                 self.base.age += DT  # decoded drop: frame arrived, tag missing
@@ -292,7 +380,6 @@ class VisionSensors:
 
 def selftest() -> dict:
     """Render/decode round-trip at known poses (no DR) + DR decode smoke."""
-    rng = np.random.default_rng(0)
     rep = []
     for pose in [(0.0, 0.8, 0.0), (0.3, 1.0, 0.2), (-0.25, 0.6, -0.3),
                  (0.1, 0.5, 0.9)]:
