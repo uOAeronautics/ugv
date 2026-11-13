@@ -37,6 +37,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 |---|---|---|---|
 | [SCOUT] ui-obs-01 | training-observatory | done | tools/training_ui.py summary output |
 | [SCOUT] dash-audit-01 | pi-dashboard/deploy-readiness | done | web.py audit + docs/L7_PREFLIGHT.md; py_compile OK |
+| [SCOUT] baseline-mean-flag | baselines --no-mean-dynamics (particle-0 plant) | done | rl/baselines.py:27,81-86; rl/test_rl.py flag-parsing test |
 
 ## [EXP]
 

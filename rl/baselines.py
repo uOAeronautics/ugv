@@ -24,8 +24,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from ugv.staged_baseline import StagedBaseline, MeanModel  # noqa: E402  (numpy-only deploy module)
 
 
-def run(episodes, level, device, seed=0):
-    env = MecanumVecEnv(min(episodes, 512), EnvConfig(level=level, device=device, seed=seed))
+def run(episodes, level, device, seed=0, use_mean_dynamics=True):
+    env = MecanumVecEnv(min(episodes, 512), EnvConfig(level=level, device=device, seed=seed,
+                                                      use_mean_dynamics=use_mean_dynamics))
     model = MeanModel()
     max_steps = int(env.cfg.max_time / env.cfg.dt) + 5
     succ = coll = tout = 0
@@ -82,8 +83,11 @@ def main():
     ap.add_argument("--episodes", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--json", default=None)
+    ap.add_argument("--no-mean-dynamics", action="store_true",
+                    help="use particles[0] instead of mean_coef on L0/L1")
     a = ap.parse_args()
-    out = run(a.episodes, a.level, "cuda" if torch.cuda.is_available() else "cpu", a.seed)
+    out = run(a.episodes, a.level, "cuda" if torch.cuda.is_available() else "cpu", a.seed,
+              use_mean_dynamics=not a.no_mean_dynamics)
     if a.json:
         Path(a.json).write_text(json.dumps(out, indent=2))
         print(f"wrote {a.json}")

@@ -245,6 +245,15 @@ def test_declare_parked_and_false_park():
     assert bool(info["false_park"][0]) and bool(done[0])
 
 
+def test_baselines_no_mean_dynamics_flag():
+    # baselines.py mirrors train_teacher/train_student: default mean_coef,
+    # --no-mean-dynamics selects the particle-0 plant.
+    import subprocess, sys
+    r = subprocess.run([sys.executable, "baselines.py", "--help"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "--no-mean-dynamics" in r.stdout
+
+
 def test_trainers_and_archive_smoke(tmp_path):
     import subprocess, sys
     from experiment_tree import record_run, load_archive, pareto_frontier
