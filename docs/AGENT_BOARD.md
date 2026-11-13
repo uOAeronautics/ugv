@@ -51,6 +51,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 | id | verdict | citations |
 |---|---|---|
 | [ADVERSARY] review-d8650b2 | CONDITIONAL FAIL (gate-blocker: resim collapse; 8 pass / 3 conditional / 1 fail — see body) | rl/sim.py:336,349-358,371-385,399-416; src/ugv/policy.py:11-14,26,134-151; rl/runs/archive.jsonl:13; rl/PLAN.md:29 |
+| [ADVERSARY] l0-refixed-failures | TEACHER: sim innocent (gate ckpt 200/200 on fixed sim p0) → retrain regression; mouth-clip x+0.05..0.11/y0.26/6deg/0.28m/s, pos_p95 270mm. BASELINE: refixed ran on mean-dyn (plant mismatch vs 975 p0 ref); matched-p0 rerun still regressed (160/200, coll x≈0.048=yaw-trim fail); 30Hz ruled out (L0 cam 50Hz). NEXT: teacher retrain yaw_w 0.3; baseline fix lateral ENTER gating then 1000ep --no-mean-dynamics | rl/sim.py:24; rl/reward.py:20; rl/evaluate.py:142; src/ugv/staged_baseline.py:609-645; probes 200/200,177/200,9/200,160/200 |
 
 ## [GATE]
 
