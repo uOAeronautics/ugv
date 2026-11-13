@@ -38,6 +38,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [SCOUT] ui-obs-01 | training-observatory | done | tools/training_ui.py summary output |
 | [SCOUT] dash-audit-01 | pi-dashboard/deploy-readiness | done | web.py audit + docs/L7_PREFLIGHT.md; py_compile OK |
 | [SCOUT] baseline-mean-flag | baselines --no-mean-dynamics (particle-0 plant) | done | rl/baselines.py:27,81-86; rl/test_rl.py flag-parsing test |
+| [SCOUT] reward-yaw-flag | reward yaw_w param + train_teacher --yaw-weight (default 1.0) | done | rl/reward.py:14,24; rl/train_teacher.py --yaw-weight; sim.py pass-through pending (EnvConfig.yaw_w + step_reward call) |
 
 ## [EXP]
 

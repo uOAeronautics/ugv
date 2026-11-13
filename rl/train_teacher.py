@@ -51,6 +51,8 @@ def main():
                     help="extra lateral-error weight in progress potential")
     ap.add_argument("--rate-weight", type=float, default=0.0,
                     help="action-rate penalty weight (L0-gate run used 0.0)")
+    ap.add_argument("--yaw-weight", type=float, default=1.0,
+                    help="yaw weight in progress potential (gate retrain uses 0.3)")
     ap.add_argument("--ckpt-every", type=int, default=25,
                     help="overwrite --out every N iters so kills don't lose runs")
     ap.add_argument("--out", default=None)
@@ -61,6 +63,9 @@ def main():
         level=args.level, device=dev, seed=args.seed,
         spawn_dist=base_spawn, rate_w=args.rate_weight, lat_w=args.lat_weight,
         use_mean_dynamics=not args.no_mean_dynamics, declare_parked=args.declare_parked))
+    # Stored on cfg for the reward path (sim.py forwards cfg.yaw_w to step_reward;
+    # set post-construction so EnvConfig owns the field in the sim scope).
+    env.cfg.yaw_w = args.yaw_weight
     actor = Actor(act_dim=args.act_dim, w=args.hidden).to(dev)
     critic = Critic(w=args.hidden).to(dev)
     ckpt_path = args.resume or args.init

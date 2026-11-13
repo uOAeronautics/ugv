@@ -11,18 +11,19 @@ from __future__ import annotations
 import torch
 
 
-def progress_potential(pose: torch.Tensor, lat_w: float = 2.0) -> torch.Tensor:
+def progress_potential(pose: torch.Tensor, lat_w: float = 2.0, yaw_w: float = 1.0) -> torch.Tensor:
     # Bounded dense shaping: metres + heading. Goal = origin, skid axis = yaw 0.
     # Lateral error priced extra (default 3x total): the slot allows +-47 mm/side
     # and policies otherwise tolerate the coupling-driven +x drift until the
     # mouth clips it (s1 failures: +52 mm mean offset by step 20).
     dist = torch.sqrt(pose[:, 0].pow(2) + pose[:, 1].pow(2) + 1e-6)
-    return -(dist + 1.0 * pose[:, 2].abs() + lat_w * pose[:, 0].abs())
+    return -(dist + yaw_w * pose[:, 2].abs() + lat_w * pose[:, 0].abs())
 
 
 def step_reward(prev_pose, pose, act, prev_act, vel, success, near,
-                collision, false_park, dt=0.02, rate_w=0.01, lat_w=2.0):
-    prog = (progress_potential(pose, lat_w) - progress_potential(prev_pose, lat_w)).clamp(-0.1, 0.1) * 5.0
+                collision, false_park, dt=0.02, rate_w=0.01, lat_w=2.0, yaw_w=1.0):
+    prog = (progress_potential(pose, lat_w, yaw_w)
+            - progress_potential(prev_pose, lat_w, yaw_w)).clamp(-0.1, 0.1) * 5.0
     bonus = success.float() * 10.0
     # settle shaping: dense gradient toward braking at the goal. The sparse 1 s
     # hold bonus alone is never discovered by chance (50 near-zero actions in

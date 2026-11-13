@@ -291,3 +291,29 @@ def test_trainers_and_archive_smoke(tmp_path):
                path=arch)
     front = pareto_frontier(load_archive(arch), level="L0")
     assert [e["run_id"] for e in front] == ["r2"]
+
+
+def test_yaw_weight_plumbing_and_default():
+    # yaw_w param defaults to 1.0 (current behavior unchanged); scales the yaw
+    # term in the potential; --yaw-weight flag defaults to 1.0.
+    import math
+    import subprocess, sys
+    from reward import progress_potential, step_reward
+    tilted = torch.tensor([[0.0, 0.0, math.radians(5)]])
+    flat = torch.zeros(1, 3)
+    assert abs((progress_potential(flat) - progress_potential(tilted)).item()
+               - math.radians(5)) < 1e-6  # default yaw_w=1.0
+    gap_03 = (progress_potential(flat, yaw_w=0.3)
+              - progress_potential(tilted, yaw_w=0.3)).item()
+    assert abs(gap_03 - 0.3 * math.radians(5)) < 1e-6
+    n = 2
+    kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
+              act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3),
+              vel=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
+              near=torch.zeros(n, dtype=torch.bool),
+              collision=torch.zeros(n, dtype=torch.bool),
+              false_park=torch.zeros(n, dtype=torch.bool))
+    assert torch.equal(step_reward(**kw), step_reward(yaw_w=1.0, **kw))
+    r = subprocess.run([sys.executable, "train_teacher.py", "--help"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "--yaw-weight" in r.stdout
