@@ -35,7 +35,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 
 | id | scope | status | evidence |
 |---|---|---|---|
-| _(empty)_ | | | |
+| [SCOUT] ui-obs-01 | training-observatory | done | tools/training_ui.py summary output |
 
 ## [EXP]
 
