@@ -11,6 +11,11 @@ Ladder L0->L5 (`rl/sim.py`), L6 Gazebo, L7 robot. Judge is
 `cd rl && uv run python evaluate.py --episodes 1000 --seed 11
 --json runs/<name>.json`. One GPU job at a time. Monotonic gating per
 `docs/RL_PARKING.md`. Scouts never commit; orchestrator commits per scope.
+Orchestrator is Gemini 4 Argon (Medium): zero direct file/log reading;
+delegates ALL file reads, log checks, diagnostics, implementations,
+experiments, and git status/commits to subagents, consuming only their clean
+synthesized reports. All subagents (Scout / EXP / Adversary / Ops) run on
+`opencode-go/muse-spark-1.3-contributor#medium` (medium reasoning).
 
 ## Spawning parallel low scouts
 
@@ -18,7 +23,8 @@ Ladder L0->L5 (`rl/sim.py`), L6 Gazebo, L7 robot. Judge is
 2. Give each scout a disjoint scope (file set + level + run_id prefix).
    Example scopes: `reward-shaping/L2`, `student-capacity/L1`,
    `gazebo-lockstep/L6`, `adversary/review-<run_id>`.
-3. Instruct: model Muse Spark, read-only except own scope files, one seed
+3. Instruct: model `opencode-go/muse-spark-1.3-contributor#medium`
+   (medium reasoning), read-only except own scope files, one seed
    per experiment, append `rl/runs/archive.jsonl`, never touch `rl/runs/`
    of another scout, stop if another session owns `rl/`.
 4. Cap at 3 scouts (1 GPU + 1 CPU/sim + 1 adversary/reviewer).

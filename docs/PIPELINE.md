@@ -5,12 +5,19 @@ High-Orchestrator / Low-Scout + Adversary workflow for the RL parking ladder
 
 ## Roles
 
-- **High-Orchestrator** (this session): owns `rl/PLAN.md` State, gates, merge order.
-  Splits work into disjoint scopes, spawns scouts, judges results, commits.
-- **Low-Scout** (subagent, Muse Spark): read-only explore or single-scope edit.
-  Never touches another scout's scope. Never merges, never pushes.
-- **Adversary**: reviews a scout claim or diff before it gates. Must cite file:line
+- **High-Orchestrator** (this session, Gemini 4 Argon Medium): owns `rl/PLAN.md`
+  State, gates, merge order. Splits work into disjoint scopes, spawns scouts,
+  judges results, commits. Zero direct file/log reading; delegates ALL file
+  reads, log checks, diagnostics, implementations, experiments, and git
+  status/commits to subagents, consuming only their clean synthesized reports.
+- **Low-Scout** (subagent, `opencode-go/muse-spark-1.3-contributor#medium`):
+  read-only explore or single-scope edit. Never touches another scout's scope.
+  Never merges, never pushes.
+- **Adversary** (subagent, `opencode-go/muse-spark-1.3-contributor#medium`):
+  reviews a scout claim or diff before it gates. Must cite file:line
   evidence. A gate pass without adversary review is not a pass.
+- **All subagents (Scout / EXP / Adversary / Ops)**: run on
+  `opencode-go/muse-spark-1.3-contributor#medium` (medium reasoning).
 
 ## 1-GPU-job rule
 
