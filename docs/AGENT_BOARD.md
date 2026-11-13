@@ -48,7 +48,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 
 | id | verdict | citations |
 |---|---|---|
-| _(empty)_ | | |
+| [ADVERSARY] review-d8650b2 | CONDITIONAL FAIL (gate-blocker: resim collapse; 8 pass / 3 conditional / 1 fail — see body) | rl/sim.py:336,349-358,371-385,399-416; src/ugv/policy.py:11-14,26,134-151; rl/runs/archive.jsonl:13; rl/PLAN.md:29 |
 
 ## [GATE]
 
