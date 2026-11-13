@@ -73,3 +73,4 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [EXP] gz-L3-baseline-5ep | L3 5/5 succ, 0 coll, med 8.16s, wall 54.2s | pass | /tmp/opencode/gz_smoke/baseline_gazebo_L3.json |
 | [EXP] gz-L3-policy-baseline-3ep | L3 3/3 succ | pass | run_policy_episodes.py --bridge gazebo --baseline |
 | [EXP] gz-L3-policy-student-3ep | L3 2/3 succ, 0 coll, 1 timeout (after yaw-sign fix) | conditional | cmd_phys=(-act[1],act[0],-act[2]) |
+| [ADVERSARY] teacher-10-coll | STOCHASTIC (seed-fixable): 14/15 mouth-clip same +50mm mode (cx+0.047-0.055/yaw14-21deg or cx-0.06-0.21), 1 runaway timeout; clip flips with particle/batching; yaw_w0.3>>1.0 (152->10). NEXT: seed-1 retry running; if FAIL then lat_w 2.0->4.0 only (keep yaw_w 0.3) | rl/reward.py:14-20; rl/sim.py:44-46,409-413; repro 985/14/1 vs JSON 989/10/1 |
