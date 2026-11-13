@@ -58,6 +58,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [EXP] teacher_L0_latw4_s0 | L0 131/1000 succ, 869 coll, 0 timeout, med 4.7s, pos_p95 101mm, yaw_p95 30.9deg (lat_w 4.0, yaw_w 0.3, p0, seed 0; GATE FAIL) | measured | rl/runs/teacher_L0_latw4_s0.json, archive.jsonl parent teacher_L0_yaw03 |
 | [EXP] teacher_L0_latw4_s1 | L0 125/1000 succ, 875 coll, 0 timeout, med 5.0s, pos_p95 111mm, yaw_p95 31.7deg (lat_w 4.0, yaw_w 0.3, p0, seed 1; 2nd seed -> GATE FAIL, idea dead) | measured | rl/runs/teacher_L0_latw4_s1.json, archive.jsonl parent teacher_L0_yaw03 |
 | [EXP] student_L0_lat_s1_fixedsim | L0 1000/1000 succ, 0 coll, 0 timeout, med 6.0s, pos_p95 10mm, yaw_p95 0.3deg (gate ckpt on fixed sim particle-0, seed 11; GATE PASS) | measured | rl/runs/student_L0_lat_s1_fixedsim.json, archive.jsonl parent student_L0_lat_s1 |
+| [EXP] student_L1_s0 | L1 0/1000 succ, 866 coll, 134 timeout, med 5.5s, pos_p95 1936mm, yaw_p95 67.3deg (warm-start from L0 gate ckpt, p0, seed 0, seed 11 eval; GATE FAIL: need >=98% succ, <=0.5% coll) | measured | rl/runs/student_L1.json, ckpt runs/student_L1_s0.pt, archive.jsonl parent student_L0_lat_s1_fixedsim |
 
 ## [ADVERSARY]
 
