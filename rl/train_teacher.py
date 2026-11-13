@@ -55,6 +55,9 @@ def main():
                     help="yaw weight in progress potential (gate retrain uses 0.3)")
     ap.add_argument("--ckpt-every", type=int, default=25,
                     help="overwrite --out every N iters so kills don't lose runs")
+    ap.add_argument("--reset-every-iter", action="store_true",
+                    help="full env.reset() at the top of each iter (OLD behavior); "
+                         "default persistent rollouts across iters")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -108,6 +111,9 @@ def main():
         if args.ent_anneal:
             ent = 0.01 * (1 - 0.9 * it / max(args.iters - 1, 1))
         env.cfg.spawn_dist = (0.1, 0.4) if it < args.curric else base_spawn
+        if args.reset_every_iter:
+            obs = env.reset()
+            o, c = priv_input(obs, env)
         O, C, A, LP, R, D, V = [], [], [], [], [], [], []
         ep_succ = ep_coll = 0
         for _ in range(args.steps):

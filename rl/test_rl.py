@@ -319,3 +319,11 @@ def test_yaw_weight_plumbing_and_default():
     r = subprocess.run([sys.executable, "train_teacher.py", "--help"],
                        capture_output=True, text=True)
     assert r.returncode == 0 and "--yaw-weight" in r.stdout
+
+
+def test_train_teacher_reset_every_iter_flag():
+    # OLD per-iter full reset restored only when set; default persistent.
+    import subprocess, sys
+    r = subprocess.run([sys.executable, "train_teacher.py", "--help"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "--reset-every-iter" in r.stdout

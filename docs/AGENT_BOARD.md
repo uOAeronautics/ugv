@@ -42,6 +42,8 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [SCOUT] baseline-enter-gating | staged_baseline lateral ENTER margin gating + test | done | src/ugv/staged_baseline.py:611-619 (ENTER→APPROACH+retreat when \|x_est\|>=margin); tests/test_staged_baseline.py margin-gating test + centered-hold control; .venv/bin/pytest tests/test_staged_baseline.py -q → 10 passed |
 | [SCOUT] reward-yaw-flag | reward yaw_w param + train_teacher --yaw-weight (default 1.0) | done | rl/reward.py:14,24; rl/train_teacher.py --yaw-weight; sim.py pass-through pending (EnvConfig.yaw_w + step_reward call) |
 | [SCOUT] sim-yaw-wiring | EnvConfig.yaw_w (default 1.0) passed to step_reward | done | rl/sim.py EnvConfig.yaw_w + step_reward call; rl/test_rl.py yaw test; pytest test_rl.py -q |
+| [SCOUT] teacher-reset-flag | train_teacher --reset-every-iter (default persistent) | done | rl/train_teacher.py flag + per-iter full reset; rl/test_rl.py flag test; pytest test_rl.py -q |
+| [SCOUT] failure-replay | failure-reset curriculum (6 clusters + R1-R5 sampling ratios) | done | docs/FAILURE_REPLAY.md (new); seeds teacher refixed/yaw03/yaw03_s1/latw4_s0+s1, student resim_mean, baseline L0_refixed/L2/L3/L4, oracle L1-L4 |
 
 ## [EXP]
 
