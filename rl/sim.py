@@ -72,6 +72,10 @@ class EnvConfig:
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     seed: int = 0
     spawn_dist: tuple | float | None = None  # override LEVELS dist (curriculum)
+    bearing_max: float | None = None  # override LEVELS bearing deg (curriculum)
+    yaw_max: float | None = None  # override LEVELS yaw deg (curriculum)
+    latency_override: float | tuple | None = None  # override LEVELS latency (curriculum)
+    drops_override: float | tuple | None = None  # override LEVELS drops (curriculum)
     rate_w: float = 0.0  # action-rate penalty weight; L0-gate teacher used 0.0
     lat_w: float = 2.0  # extra lateral-error weight in progress potential
     yaw_w: float = 1.0  # yaw-error weight in progress potential
@@ -204,9 +208,11 @@ class MecanumVecEnv:
             d = torch.full((m,), span)
         else:
             d = span[0] + (span[1] - span[0]) * torch.rand(m, generator=g)
-        bmax = math.radians(self.level["bearing"])
+        bmax = math.radians(self.cfg.bearing_max if self.cfg.bearing_max is not None
+                              else self.level["bearing"])
         b = (torch.rand(m, generator=g) * 2 - 1) * bmax
-        ymax = math.radians(self.level["yaw"])
+        ymax = math.radians(self.cfg.yaw_max if self.cfg.yaw_max is not None
+                            else self.level["yaw"])
         yaw = (torch.rand(m, generator=g) * 2 - 1) * ymax
         dev = self.device
         self.pose[idx.to(dev)] = torch.stack(
@@ -220,13 +226,13 @@ class MecanumVecEnv:
             getattr(self, name)[idx.to(dev)] = False
         self._sample_dynamics(idx)
         # sensor state
-        lat = self.level["latency"]
+        lat = self.cfg.latency_override if self.cfg.latency_override is not None else self.level["latency"]
         di_lat = idx.to(dev)
         if isinstance(lat, tuple):
             self.latency[di_lat] = lat[0] + (lat[1] - lat[0]) * torch.rand(m, device=dev, generator=self.gen)
         else:
             self.latency[di_lat] = float(lat)
-        dr = self.level["drops"]
+        dr = self.cfg.drops_override if self.cfg.drops_override is not None else self.level["drops"]
         if isinstance(dr, tuple):
             self.drop_p[di_lat] = dr[0] + (dr[1] - dr[0]) * torch.rand(m, device=dev, generator=self.gen)
         else:

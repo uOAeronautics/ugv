@@ -42,7 +42,12 @@ class Critic(nn.Module):
 
 
 class Student(nn.Module):
-    """GRU history encoder + MLP head. Deploy architecture (default h=64)."""
+    """GRU history encoder + MLP head. Deploy architecture (default h=64).
+
+    aux_head is training-only LeWM/RMA latent supervision: predicts privileged
+    [pose(3), vel(3)] from the GRU hidden state. export.py ships gru+head only,
+    so the .npz and src/ugv/policy.py forward are unchanged (0.0 ms Pi delta).
+    """
 
     def __init__(self, obs_dim=STUDENT_DIM, act_dim=3, h=64, head_w=64):
         super().__init__()
@@ -50,6 +55,7 @@ class Student(nn.Module):
         self.head = nn.Sequential(nn.Linear(h, head_w), nn.Tanh(),
                                   nn.Linear(head_w, head_w),
                                   nn.Tanh(), nn.Linear(head_w, act_dim), nn.Tanh())
+        self.aux_head = nn.Linear(h, 6)
 
     def forward(self, hist, h0=None):
         _, h = self.gru(hist, h0)

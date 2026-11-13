@@ -41,7 +41,8 @@ def main():
                     head_w=ckpt.get("head_w", 64) or 64)
     model.load_state_dict(ckpt["student"] if "student" in ckpt else ckpt)
     model.eval()
-    arrays = {k: v.detach().cpu().numpy() for k, v in model.state_dict().items()}
+    arrays = {k: v.detach().cpu().numpy() for k, v in model.state_dict().items()
+              if k.startswith("gru.") or k.startswith("head.")}
     err = parity_error(model, arrays)
     print(f"parity max-abs-err {err:.2e}")
     assert err < 1e-5, f"numpy deploy forward diverged: {err}"
