@@ -51,6 +51,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [EXP] baseline_ekf_staged_L0_refixed | L0 533/1000 succ, 6 coll, 461 timeout, med 13.3s (mean-dyn default; no --no-mean-dynamics flag in baselines.py) | measured | rl/runs/baseline_ekf_staged_L0_refixed.json, archive.jsonl parent baseline_ekf_staged_L0 |
 | [EXP] teacher_L0_yaw03 | L0 989/1000 succ, 10 coll, 1 timeout, med 4.4s, pos_p95 1mm, yaw_p95 0.3deg (yaw_w 0.3, p0, seed 0) | measured | rl/runs/teacher_L0_yaw03.json, archive.jsonl parent teacher_L0_refixed |
 | [EXP] baseline_ekf_staged_L0_gated | L0 816/1000 succ, 158 coll, 26 timeout, med 9.8s, pos_p95 228mm (p0 + ENTER margin gating) | measured | rl/runs/baseline_ekf_staged_L0_gated.json, archive.jsonl parent baseline_ekf_staged_L0_refixed |
+| [EXP] teacher_L0_yaw03_s1 | L0 103/1000 succ, 897 coll, 0 timeout, med 4.3s, pos_p95 79mm, yaw_p95 28.8deg (yaw_w 0.3, p0, seed 1; 2nd seed -> GATE FAIL, idea dead) | measured | rl/runs/teacher_L0_yaw03_s1.json, archive.jsonl parent teacher_L0_yaw03 |
 
 ## [ADVERSARY]
 
