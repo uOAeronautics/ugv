@@ -14,6 +14,7 @@ tmp/
 .pytest_cache/
 !tests/fixtures/*.png
 ._*
+simulation/gazebo/lockstep/build/
 
 # Calibration telemetry and reports are versioned. Camera images remain covered
 # by the image exclusions above and are retained in Pi/local raw-data backups.

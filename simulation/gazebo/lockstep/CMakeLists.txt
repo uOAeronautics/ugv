@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.16)
+project(ugv_lockstep_bridge CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_package(gz-transport13 REQUIRED)
+find_package(gz-msgs10 REQUIRED)
+add_executable(lockstep_bridge lockstep_bridge.cc)
+target_link_libraries(lockstep_bridge gz-transport13::core gz-msgs10::core)

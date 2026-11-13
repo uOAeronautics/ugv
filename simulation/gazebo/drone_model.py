@@ -183,7 +183,9 @@ def drone_assembly():
     grids={0: ("1011","0101","0011","0010"),
            1: ("0000","1111","1001","1010"),
            9: ("1100","1111","0101","0110"),
-           12:("0000","1110","1011","0111")}
+           12:("0000","1110","1011","0111"),
+           13:("0010","1010","0000","1111"),
+           14:("0010","0100","1011","0001")}
     # Side cards face outward across Y; payload card faces -X toward approach.
     def card(name,pos,rot,size,marker_id):
         # Local XY plane, normal +Z; rotate whole card into vertical plane.
@@ -204,8 +206,8 @@ def drone_assembly():
                         xx=(col-2.5)*cell*face
                         box(f'{name}_pixel_{face}_{row}_{col}',transform((xx,(2.5-row)*cell,face*.0009)),
                             (cell,cell,.0003),'white',rot)
-    card('payload_marker_front',(-.058,-.005,.202),(math.pi/2,0,-math.pi/2),.068,0)
-    card('payload_marker_rear',(.058,-.005,.202),(math.pi/2,0,math.pi/2),.068,1)
+    card('payload_marker_front',(-.058,-.005,.202),(math.pi/2,0,-math.pi/2),.068,13)
+    card('payload_marker_rear',(.058,-.005,.202),(math.pi/2,0,math.pi/2),.068,14)
     for s in (-1,1):
         card('leg_marker_'+str(s),(0,s*.168,.092),(-s*math.pi/2,0,0),.068,
              9 if s==-1 else 12)
