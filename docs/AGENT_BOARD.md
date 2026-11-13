@@ -42,7 +42,8 @@ Format: `[TYPE] id | scope | status | evidence`.
 
 | id | result | status | evidence |
 |---|---|---|---|
-| _(empty)_ | | | |
+| [EXP] teacher_L0_refixed | L0 848/1000 succ, 152 coll, med 4.7s (GATE FAIL) | measured | rl/runs/teacher_L0_refixed.json, archive.jsonl parent teacher_L0_gate |
+| [EXP] baseline_ekf_staged_L0_refixed | L0 533/1000 succ, 6 coll, 461 timeout, med 13.3s (mean-dyn default; no --no-mean-dynamics flag in baselines.py) | measured | rl/runs/baseline_ekf_staged_L0_refixed.json, archive.jsonl parent baseline_ekf_staged_L0 |
 
 ## [ADVERSARY]
 
