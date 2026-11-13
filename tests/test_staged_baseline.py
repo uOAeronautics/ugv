@@ -83,6 +83,40 @@ def test_yaw_coupling_adaptation():
     assert abs(c.sysid.A_hat[0, 2, 0] - prior) > 1e-4
 
 
+def test_enter_blocked_at_slot_margin_stale_tags():
+    # Adversary: EKF lateral trim lets car enter FINAL exactly at slot margin
+    # (coll x~=0.048, y~=0.17). Stale tags (age >= 0.30 s) disable the
+    # drift_outside retreat, so the margin gate must bounce FINAL -> APPROACH.
+    c = StagedBaseline(1)
+    c.yaw.t[:] = 1.0  # identified
+    g = c.g
+    M, stage_y = g.margin, g.stage_y
+    c.phase[:] = StagedBaseline.ENTER  # as if just entered FINAL
+    c.settle[:] = 0.24
+    c.ekf.init[:] = True
+    c.ekf.x[:] = np.array([M, stage_y, 0.0, 0.0, 0.0])
+    c.ekf.age[:] = 0.35  # stale: drift_outside cannot fire
+    c._seen_tag[:] = True
+    c.step(np.zeros(3), False, 0.0)
+    assert c.phase[0] == StagedBaseline.APPROACH
+
+
+def test_enter_held_when_centered_stale_tags():
+    # Control: a centered estimate must still hold FINAL under the same
+    # stale-tag conditions (gate only fires at/above the margin).
+    c = StagedBaseline(1)
+    c.yaw.t[:] = 1.0  # identified
+    stage_y = c.g.stage_y
+    c.phase[:] = StagedBaseline.ENTER
+    c.settle[:] = 0.24
+    c.ekf.init[:] = True
+    c.ekf.x[:] = np.array([0.0, stage_y, 0.0, 0.0, 0.0])
+    c.ekf.age[:] = 0.35
+    c._seen_tag[:] = True
+    c.step(np.zeros(3), False, 0.0)
+    assert c.phase[0] == StagedBaseline.ENTER
+
+
 def test_swept_clear_brakes_into_skids():
     c = StagedBaseline(1)
     c.yaw.t[:] = 1.0  # identified

@@ -611,6 +611,12 @@ class StagedBaseline:
         back_done = (ph == self.BACK) & (y > max(STAGE_Y, RETREAT_Y) - 0.02)
         ph = np.where(back_done, self.APPROACH, ph)
         self._retreat |= drift_inside
+        # Slot-margin gating: never enter/hold FINAL at/above the lateral slot
+        # margin (|x_est| >= M). Closes the stale-tag hole where drift_outside
+        # cannot fire (age >= 0.30 s) and EKF trim hides the true offset.
+        over_margin = (ph == self.ENTER) & (np.abs(x) >= M)
+        ph = np.where(over_margin, self.APPROACH, ph)
+        self._retreat |= over_margin
 
         enter = ph == self.ENTER
         # Lateral and yaw integral trim during FINAL (frozen during under-drone blind phase)
