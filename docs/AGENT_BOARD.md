@@ -57,3 +57,10 @@ Format: `[TYPE] id | scope | status | evidence`.
 | teacher L0 | PASS (prior) | runs/teacher_L0_gate.pt, archive.jsonl |
 | student L0 | PASS (prior) | runs/student_L0_lat_s1.pt, 07f607b |
 | baseline L0-L4 | MEASURED (prior) | runs/baseline_ekf_staged_L*.json, 27c2b5c |
+
+## [EXP] gazebo-l6-smoke (2026-11-13, scout ses_e2a0bde0)
+| id | result | status | evidence |
+|---|---|---|---|
+| [EXP] gz-L3-baseline-5ep | L3 5/5 succ, 0 coll, med 8.16s, wall 54.2s | pass | /tmp/opencode/gz_smoke/baseline_gazebo_L3.json |
+| [EXP] gz-L3-policy-baseline-3ep | L3 3/3 succ | pass | run_policy_episodes.py --bridge gazebo --baseline |
+| [EXP] gz-L3-policy-student-3ep | L3 2/3 succ, 0 coll, 1 timeout (after yaw-sign fix) | conditional | cmd_phys=(-act[1],act[0],-act[2]) |
