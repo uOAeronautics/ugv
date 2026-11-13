@@ -170,11 +170,6 @@ class OnlineSysID:
         self.S_eu_w = np.zeros((n, 1, 3))
         self.v_xy_filt = np.zeros((n, 2))
         self.u_del_filt = np.zeros((n, 3))
-        # Turn-drag feedforward: yaw-rate-to-translation coupling per unit
-        # turn command, estimated only on turn-dominant tag pairs (mixed
-        # translation data would wash it out, which is why the RLS keeps the
-        # translation-row turn column frozen at the prior).
-        self.c2 = np.broadcast_to(self.A_lin[:2, 2], (n, 2)).copy()
         self.prev_tag = np.zeros((n, 3))
         self.has_prev = np.zeros(n, bool)
         self.dt_since_valid = np.zeros(n)
@@ -230,33 +225,24 @@ class OnlineSysID:
             idx_u = (self.head - 1 - mid_lag) % RING
             u_del = self.u_ring[np.arange(self.n), idx_u]
 
-            # Matched first-order low-pass on both v_xy and u_del using exact dt_since_valid
+            # Matched first-order low-pass on both v_xy and u_del using exact dt_since_valid.
+            # Gate the filter update on raw sanity: a single outlier tag spike
+            # (L3 has 2%) would otherwise pollute ~10 subsequent filtered
+            # samples through the filter memory and poison RLS/c2.
+            raw_ok = ((np.linalg.norm(v_xy, axis=1) < 1.5)
+                      & (np.linalg.norm(u_del, axis=1) > 0.01))
+            sane = pair & raw_ok
             af = np.exp(-ds / self.TAU_FILT)[:, None]
             v_f = af * self.v_xy_filt + (1.0 - af) * v_xy
             u_f = af * self.u_del_filt + (1.0 - af) * u_del
-            self.v_xy_filt = np.where(pair[:, None], v_f, self.v_xy_filt)
-            self.u_del_filt = np.where(pair[:, None], u_f, self.u_del_filt)
+            self.v_xy_filt = np.where(sane[:, None], v_f, self.v_xy_filt)
+            self.u_del_filt = np.where(sane[:, None], u_f, self.u_del_filt)
 
             e_xy = self.v_xy_filt - (self.u_del_filt @ self.A_lin[:2].T)
-            good = (pair
+            good = (sane
                     & (np.linalg.norm(self.v_xy_filt, axis=1) < 1.5)
                     & (np.linalg.norm(e_xy, axis=1) < 1.0)
                     & (np.linalg.norm(self.u_del_filt, axis=1) > 0.03))
-            # Turn-drag (yaw-to-translation coupling) learns only here, on
-            # turn-dominant pairs: residual / turn-command isolates the true
-            # column-2 effect the frozen prior misses on monster draws.
-            uw_f = self.u_del_filt[:, 2]
-            uxy_f = np.abs(self.u_del_filt[:, :2]).max(1)
-            turn_dom = (pair & (np.abs(uw_f) > 0.2) & (uxy_f < 0.10)
-                        & (np.linalg.norm(e_xy, axis=1) < 1.0))
-            if turn_dom.any():
-                uw_safe = np.clip(uw_f, -1, 1)
-                uw_safe = np.where(np.abs(uw_safe) < 1e-6, 1e-6, uw_safe)
-                c2_tgt = self.A_lin[None, :2, 2] + e_xy / uw_safe[:, None]
-                c2_new = np.clip(0.95 * self.c2 + 0.05 * c2_tgt, -2.0, 2.0)
-                self.c2 = np.where(turn_dom[:, None], c2_new, self.c2)
-                # NOTE: c2 is used ONLY in _inv_kinematics feedforward. It is
-                # deliberately NOT written into A_hat: mis-estimated c2 would
                 # inject phantom m/s-scale velocities into EKF predict and
                 # diverge the estimate (29 cm errors -> wall clips).
             if good.any():
@@ -268,11 +254,9 @@ class OnlineSysID:
                 Gxy = self.S_uu_xy + self.LAM_XY * np.eye(3)[None]
                 dAxy = np.linalg.solve(Gxy, self.S_eu_xy.transpose(0, 2, 1)).transpose(0, 2, 1)
                 A_xy = np.clip(self.A_lin[:2][None] + dAxy, -6.0, 6.0)
-                # Freeze the turn column of the translation rows at the prior:
-                # the translation-free yaw probe leaves ux=uy=0, so any column-2
-                # update there only mis-attributes yaw coupling (A02/A12). The
-                # lateral PD+I + shield below cancels the residual instead.
-                A_xy[:, :, 2] = self.A_lin[None, :2, 2]
+                # All three columns adapt here (dithered excitation identifies
+                # the cross-coupling for _inv feedforward; EKF predict keeps
+                # a frozen col 2 for stability, see step()).
                 self.A_hat[:, :2, :] = np.where(mg, A_xy, self.A_hat[:, :2, :])
 
         # Advance prev_tag only on accepted or newly initialized valid frames (skip outliers)
@@ -337,8 +321,8 @@ class EKF:
         prolonged = (self.init & (self.age > 0.5)).astype(float)
         q_pos_infl = prolonged * ((0.25 + 0.45 * spd) ** 2) * dt
         q_yaw_infl = prolonged * ((0.20 + 0.15 * np.abs(gyro)) ** 2) * dt
-        q = np.stack([9.0 * (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
-                      9.0 * (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
+        q = np.stack([10.0 * (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
+                      10.0 * (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
                       0.002 ** 2 * dt + (0.05 * np.abs(gyro) * dt) ** 2 + q_yaw_infl, qb, qb], 1)
         self.P = F @ self.P @ F.transpose(0, 2, 1) + q[:, :, None] * np.eye(5)
         self.x = x
@@ -400,8 +384,9 @@ class AdaptiveYaw:
     posterior draws 70 deg+ and slides them into the skids (probe-slide
     clips); +/-0.15 still IDs (gyro SNR >> 1) with <25 deg worst-case yaw.
     Afterwards NLMS refines on steady-command samples only (|u - lowpass(u)| < STEADY)."""
-    PROBE = 0.5
-    WINDOW = 0.15
+    PROBE = 1.0
+    WINDOW = 0.3
+    PROBE_RATE = 0.4
     STEADY = 0.08
     LIM = np.array([4.0, 4.0, 2.0, 2.0])
 
@@ -412,6 +397,8 @@ class AdaptiveYaw:
         self.t = np.full(n, -1.0)  # probe clock; < 0 = not started
         self.acc = np.zeros((n, 2))
         self.cnt = np.zeros((n, 2))
+        self.acc_u = np.zeros((n, 2))
+        self.pu = np.zeros(n)  # rate-servo probe command
 
     def start(self, mask):
         self.t = np.where(mask & (self.t < 0), 0.0, self.t)
@@ -424,24 +411,34 @@ class AdaptiveYaw:
 
     def probe_cmd(self):
         c = np.zeros((len(self.t), 3))
-        c[:, 2] = np.where(self.t < self.PROBE / 2, 0.15, -0.15)
+        c[:, 2] = np.where(self.probing(), self.pu, 0.0)
         return c
 
     def observe(self, cmd, gyro, dt):
         h = self.PROBE / 2
+        # Rate-closed probe: servo yaw rate to +/-PROBE_RATE with an
+        # integrator (self-calibrating: exact b for any plant gain/lag, no
+        # transient bias). b = mean(gyro)/mean(u) over the window.
+        probing = self.probing()
+        rate_des = np.where(self.t < h, self.PROBE_RATE, -self.PROBE_RATE)
+        self.pu = np.where(probing,
+                           np.clip(self.pu + 4.0 * (rate_des - gyro) * dt, -0.6, 0.6),
+                           0.0)
         # probe windows: last WINDOW seconds of each half (t is the time the command was issued)
         for k, (lo, hi) in enumerate(((h - self.WINDOW, h), (self.PROBE - self.WINDOW, self.PROBE))):
             inw = (self.t >= lo) & (self.t < hi)
             self.acc[:, k] += np.where(inw, gyro, 0.0)
-            self.cnt[:, k] += inw
+            self.acc_u[:, k] += np.where(inw & (np.abs(cmd[:, 2]) > 0.05), cmd[:, 2], 0.0)
+            self.cnt[:, k] += inw & (np.abs(cmd[:, 2]) > 0.05)
         a = math.exp(-dt / self.tau)
         self.uf = a * self.uf + (1 - a) * cmd
         nt = np.where(self.t >= 0, self.t + dt, self.t)
         done_probe = (self.t < self.PROBE) & (nt >= self.PROBE)
         if done_probe.any():
-            mean = self.acc / np.maximum(self.cnt, 1)
-            self.th[:, 0] = np.where(done_probe, mean[:, 0] / 0.15, self.th[:, 0])
-            self.th[:, 1] = np.where(done_probe, mean[:, 1] / -0.15, self.th[:, 1])
+            b_est = self.acc / np.maximum(np.abs(self.acc_u), 1e-6) * np.sign(self.acc_u + 1e-9)
+            good_id = (self.cnt > 3).all(axis=1) & np.isfinite(b_est).all(axis=1)
+            self.th[:, 0] = np.where(done_probe & good_id, np.clip(b_est[:, 0], -4, 4), self.th[:, 0])
+            self.th[:, 1] = np.where(done_probe & good_id, np.clip(b_est[:, 1], -4, 4), self.th[:, 1])
         self.t = nt
         steady = self.identified() & (np.abs(cmd - self.uf).max(1) < self.STEADY)
         uw = cmd[:, 2]
@@ -464,11 +461,14 @@ class AdaptiveYaw:
         un = np.where(un < 0, un, 0.0)
         u = np.where(((np.abs(bp) >= np.abs(bn)) & (up > 0)) | (un == 0), up, un)
         # no identified channel turns the needed way: probe in the direction of
-        # the need (sign-aware). The old code always tried +0.3 first even when
-        # a negative yaw was needed, exciting the wrong channel.
+        # the need (sign-aware), but ONLY if a channel is still unidentified.
+        # If both channels are identified yet useless (e.g. one-directional
+        # monster draws), hold still instead of spinning the wrong way open
+        # loop into a wall/out (a timeout is cheaper than a collision).
         need = (u == 0) & (np.abs(r) > 0.05)
+        unidentified = (np.abs(bp) < 0.15) | (np.abs(bn) < 0.15)
         explore = np.where(r >= 0, 0.3, -0.3)
-        return np.clip(np.where(need, explore, u), -lim, lim)
+        return np.clip(np.where(need & unidentified, explore, u), -lim, lim)
 
 
 class StagedBaseline:
@@ -508,6 +508,7 @@ class StagedBaseline:
         self._back_y = np.zeros(n)
         self._was_back = np.zeros(n, bool)
         self._short_n = np.zeros(n, int)
+        self._dither_t = np.zeros(n)
         self._last_gyro = np.zeros(n)
         self.cmd = np.zeros((n, 3))
 
@@ -518,7 +519,9 @@ class StagedBaseline:
         gyro = np.asarray(gyro, float).reshape(self.n)
         prev = np.clip(self.cmd, -1, 1)
         self.sysid.step_lag(prev, self.dt)
-        self.ekf.predict(prev, gyro, self.dt, A_hat=self.sysid.A_hat, A_lin=self.sysid.A_lin)
+        A_ekf = self.sysid.A_hat.copy()
+        A_ekf[:, :2, 2] = self.sysid.A_lin[None, :2, 2]
+        self.ekf.predict(prev, gyro, self.dt, A_hat=A_ekf, A_lin=self.sysid.A_lin)
         clean_tag = np.where(valid[:, None], tag, 0.0)
         self.ekf.update(clean_tag, valid, std)
         self.sysid.observe(clean_tag, valid, gyro, self.dt, self.ekf.lag,
@@ -553,7 +556,11 @@ class StagedBaseline:
         w_cmd = np.where(use_rls_w, np.clip(cmd3[:, 2], -0.6, 0.6), w_fb)
         w_cmd = np.where(self.yaw.identified(), w_cmd, 0.0)
 
-        vb_net = vb - np.where(ok2[:, None], self.sysid.c2 * w_cmd[:, None], 0.0)
+        # Static turn-coupling subtraction with the frozen prior column
+        # (adaptation proved unidentifiable online and mis-estimates inject
+        # phantom motion). Cancels ~10-30 % of the drag; PD+I + micro-retreat
+        # + trips cancel the rest by feedback.
+        vb_net = vb - np.where(ok2[:, None], self.sysid.A_lin[None, :2, 2] * w_cmd[:, None], 0.0)
         A_safe2 = np.where(ok2[:, None, None], A2, np.eye(2)[None])
         xy_rls = np.linalg.solve(A_safe2, vb_net[:, :, None])[..., 0]
         xy_cmd = np.where(ok2[:, None], xy_rls, cmd_fb[:, :2])
@@ -593,8 +600,10 @@ class StagedBaseline:
         x, y, yaw = p[:, 0], p[:, 1], p[:, 2]
         dist_drone = np.hypot(x, y)
 
-        # Prolonged total loss far from target -> search sweep; short blackout -> hold still in APPROACH
-        prolonged_loss = (~self._seen_tag) | (~est.init) | ((est.age > 3.5) & (dist_drone > 0.45))
+        # Prolonged total loss far from target -> search sweep; short blackout -> hold still in APPROACH.
+        # No dist gate: a dead-reckoned EKF near the slot (but out of FOV)
+        # wanders on garbage estimates forever if only far loss re-sweeps.
+        prolonged_loss = (~self._seen_tag) | (~est.init) | (est.age > 3.5)
         blackout_wait = self._seen_tag & est.init & (est.age > 0.5) & (est.age <= 3.5)
 
         ph = self.phase.copy()
@@ -803,10 +812,10 @@ class StagedBaseline:
         # small yaw error injects more lateral disturbance than the error
         # itself; the integral trims residual slowly and safely.
         gyro = self._last_gyro
-        w_enter = np.clip(1.2 * ye + 2.0 * self.iyaw - 0.4 * gyro, -0.8, 0.8)
+        w_enter = np.clip(1.2 * ye + 2.0 * self.iyaw - 0.7 * gyro, -0.8, 0.8)
         w = np.where(enter, w_enter,
-                     np.where(back, np.clip(3.5 * ye - 0.4 * gyro, -1.2, 1.2),
-                              np.clip(2.5 * ye - 0.4 * gyro, -0.4, 0.4)))
+                     np.where(back, np.clip(3.5 * ye - 0.7 * gyro, -1.2, 1.2),
+                              np.clip(2.5 * ye - 0.7 * gyro, -0.4, 0.4)))
         # Near the slot, cap turn authority: roller-coupled draws translate
         # ~0.3 m/s per unit turn, so a 1.0 yaw servo scrapes the flanks.
         # 0.35 still converges 15 deg in ~1.2 s while entering (~3 s).
@@ -820,11 +829,25 @@ class StagedBaseline:
 
         cmd = self._inv_kinematics(vb, w)
 
+        # Persistency-of-excitation dither (APPROACH only): closed-loop
+        # commands are collinear (ux tracks x, uw tracks yaw, and x/yaw
+        # couple through A20), so the RLS cannot separate the input columns
+        # and mis-attributes (e.g. A01 sign flips on posterior draws).
+        # Small independent sines (incommensurate frequencies) decorrelate
+        # the regressor so the RLS converges to the true plant; the plant
+        # smooths the dither and the EKF/RLS filter it out. Never in
+        # ENTER/BACK/HOLD (precision phases).
+        self._dither_t = np.where(ph == self.APPROACH, self._dither_t + dt, 0.0)
+        dith = np.stack([0.04 * np.sin(2 * np.pi * 2.3 * self._dither_t),
+                         np.zeros_like(zero),
+                         0.08 * np.sin(2 * np.pi * 3.1 * self._dither_t)], 1)
+        cmd = np.where((ph == self.APPROACH)[:, None], cmd + dith, cmd)
+
         # HOLD: brake translation, but keep servoing yaw to 0 in place until
         # aligned. A hard zero here stalls forever when ENTER arrives with a
         # few degrees of yaw error (near/success need yaw < 5 deg). Translation
         # stays braked so the still-counter can accumulate.
-        hold_w = np.clip(3.0 * ye - 0.4 * self._last_gyro, -0.35, 0.35)
+        hold_w = np.clip(3.0 * ye - 0.7 * self._last_gyro, -0.35, 0.35)
         hold_cmd = np.zeros_like(cmd)
         hold_cmd[:, 2] = self.yaw.turn(hold_w, zero, zero)
         hold_cmd[:, 2] = np.where(self.yaw.identified(), hold_cmd[:, 2], 0.0)
@@ -939,6 +962,14 @@ class StagedBaseline:
         lost = search & ~self._has_anchor & (self._search_t > 30.0)
         if lost.any():
             cmd = np.where(lost[:, None], 0.0, cmd)
+        # Anchored stale brake: tags lost > 15 s while sweeping near the arena
+        # (anchor dist < 1.2 m) means the sweep random-walks blind — brake to a
+        # timeout instead of wandering out/colliding. Blackouts (<=3 s)
+        # recover long before this.
+        stale = (search & self._has_anchor & (est.age > 15.0)
+                 & (np.linalg.norm(self._anchor, axis=1) < 1.2))
+        if stale.any():
+            cmd = np.where(stale[:, None], 0.0, cmd)
 
         # Probe the yaw channel once tags are in (post-first-tag, so the
         # turn-only probe never drags the car blind pre-acquisition) -- but
@@ -955,20 +986,14 @@ class StagedBaseline:
         self.yaw.start(est.init & ~self.yaw.identified()
                        & (~apron | (self._probe_wait > 2.5)))
         cmd[:, 2] = np.where(self.yaw.identified() | search, cmd[:, 2], 0.0)
-        # Probe is turn-only in yaw but keeps the current translation command
-        # (translation-rich probe: keeps boundary-safe APPROACH progress and
-        # gives OnlineSysID full-column excitation instead of the
-        # translation-free data that mis-IDs the cross-coupling column).
+        # Probe is strictly turn-only (translation zeroed): any translation
+        # during the probe (approach drive or station-keeping) couples into
+        # yaw via kx/ky and biases the b+/b- ID — fatal on weak-turn draws
+        # where it flips the identified sign and the yaw loop spins out.
+        # The 0.5 s drag (<=15 cm) is safe mid-field; the apron above delays
+        # the probe near the slot/boundary until safe or 2.5 s.
         probe_cmd = self.yaw.probe_cmd()
         cmd[:, 2] = np.where(self.yaw.probing(), probe_cmd[:, 2], cmd[:, 2])
-        # Station-keep translation through the probe at the area edge
-        # (dist > 1.2 m: the turn-only probe drag outs boundary spawns) and
-        # near the slot (dist < 0.6 m: monster posterior draws slide ~0.5 m/s
-        # under turn-only commands). Mid-field the approach drive continues
-        # through the probe uninterrupted.
-        probe_keep = (self.yaw.probing() & self._has_anchor
-                      & ((dist_drone > 1.2) | (dist_drone < 0.6)))
-        if probe_keep.any():
-            cmd[:, :2] = np.where(probe_keep[:, None], self.m.inv(keep_b)[:, :2], cmd[:, :2])
+        cmd[:, :2] = np.where(self.yaw.probing()[:, None], 0.0, cmd[:, :2])
         # HOLD applied last so the brake/yaw-servo stands over probe/search defaults
         return np.where(hold[:, None], hold_out, cmd)
