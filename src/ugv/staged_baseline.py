@@ -27,7 +27,7 @@ import numpy as np
 PROFILE = Path(__file__).resolve().parents[2] / "simulation" / "gazebo" / "mecanum_bayesian_profile.json"
 HALF_BASE = (0.21 + 0.149) / 2  # mixer arm, mirrors rl/sim.py
 RING = 32                       # delayed-state history, 0.64 s at 50 Hz
-ENTER_V = 0.20                  # entry speed, m/s
+ENTER_V = 0.15                  # entry speed, m/s
 STOP_Y = 0.025                  # dead-reckoned brake point
 RETREAT_Y = 0.75                # safe re-alignment staging distance in front of drone
 SWEPT_HORIZON = 0.25            # stopping-horizon safety lookahead (s)
@@ -170,6 +170,11 @@ class OnlineSysID:
         self.S_eu_w = np.zeros((n, 1, 3))
         self.v_xy_filt = np.zeros((n, 2))
         self.u_del_filt = np.zeros((n, 3))
+        # Turn-drag feedforward: yaw-rate-to-translation coupling per unit
+        # turn command, estimated only on turn-dominant tag pairs (mixed
+        # translation data would wash it out, which is why the RLS keeps the
+        # translation-row turn column frozen at the prior).
+        self.c2 = np.broadcast_to(self.A_lin[:2, 2], (n, 2)).copy()
         self.prev_tag = np.zeros((n, 3))
         self.has_prev = np.zeros(n, bool)
         self.dt_since_valid = np.zeros(n)
@@ -237,6 +242,23 @@ class OnlineSysID:
                     & (np.linalg.norm(self.v_xy_filt, axis=1) < 1.5)
                     & (np.linalg.norm(e_xy, axis=1) < 1.0)
                     & (np.linalg.norm(self.u_del_filt, axis=1) > 0.03))
+            # Turn-drag (yaw-to-translation coupling) learns only here, on
+            # turn-dominant pairs: residual / turn-command isolates the true
+            # column-2 effect the frozen prior misses on monster draws.
+            uw_f = self.u_del_filt[:, 2]
+            uxy_f = np.abs(self.u_del_filt[:, :2]).max(1)
+            turn_dom = (pair & (np.abs(uw_f) > 0.2) & (uxy_f < 0.10)
+                        & (np.linalg.norm(e_xy, axis=1) < 1.0))
+            if turn_dom.any():
+                uw_safe = np.clip(uw_f, -1, 1)
+                uw_safe = np.where(np.abs(uw_safe) < 1e-6, 1e-6, uw_safe)
+                c2_tgt = self.A_lin[None, :2, 2] + e_xy / uw_safe[:, None]
+                c2_new = np.clip(0.95 * self.c2 + 0.05 * c2_tgt, -2.0, 2.0)
+                self.c2 = np.where(turn_dom[:, None], c2_new, self.c2)
+                # NOTE: c2 is used ONLY in _inv_kinematics feedforward. It is
+                # deliberately NOT written into A_hat: mis-estimated c2 would
+                # inject phantom m/s-scale velocities into EKF predict and
+                # diverge the estimate (29 cm errors -> wall clips).
             if good.any():
                 uu = self.u_del_filt[:, :, None] * self.u_del_filt[:, None, :]
                 eu = e_xy[:, :, None] * self.u_del_filt[:, None, :]
@@ -246,6 +268,11 @@ class OnlineSysID:
                 Gxy = self.S_uu_xy + self.LAM_XY * np.eye(3)[None]
                 dAxy = np.linalg.solve(Gxy, self.S_eu_xy.transpose(0, 2, 1)).transpose(0, 2, 1)
                 A_xy = np.clip(self.A_lin[:2][None] + dAxy, -6.0, 6.0)
+                # Freeze the turn column of the translation rows at the prior:
+                # the translation-free yaw probe leaves ux=uy=0, so any column-2
+                # update there only mis-attributes yaw coupling (A02/A12). The
+                # lateral PD+I + shield below cancels the residual instead.
+                A_xy[:, :, 2] = self.A_lin[None, :2, 2]
                 self.A_hat[:, :2, :] = np.where(mg, A_xy, self.A_hat[:, :2, :])
 
         # Advance prev_tag only on accepted or newly initialized valid frames (skip outliers)
@@ -367,10 +394,13 @@ class EKF:
 class AdaptiveYaw:
     """gyro ~ b+ max(u,0) + b- min(u,0) + kx ux + ky uy at steady command.
 
-    Probe (0.8 s): +0.3 turn then -0.3; b+/b- = mean gyro over the last 0.15 s of each half
+    Probe (0.5 s): +0.15 turn then -0.15; b+/b- = mean gyro over the last 0.15 s of each half
     divided by the command, so the estimate does not depend on the plant's response lag.
+    Amplitude is deliberately small: open-loop +/-0.3 spins high-authority
+    posterior draws 70 deg+ and slides them into the skids (probe-slide
+    clips); +/-0.15 still IDs (gyro SNR >> 1) with <25 deg worst-case yaw.
     Afterwards NLMS refines on steady-command samples only (|u - lowpass(u)| < STEADY)."""
-    PROBE = 0.8
+    PROBE = 0.5
     WINDOW = 0.15
     STEADY = 0.08
     LIM = np.array([4.0, 4.0, 2.0, 2.0])
@@ -394,7 +424,7 @@ class AdaptiveYaw:
 
     def probe_cmd(self):
         c = np.zeros((len(self.t), 3))
-        c[:, 2] = np.where(self.t < self.PROBE / 2, 0.3, -0.3)
+        c[:, 2] = np.where(self.t < self.PROBE / 2, 0.15, -0.15)
         return c
 
     def observe(self, cmd, gyro, dt):
@@ -410,8 +440,8 @@ class AdaptiveYaw:
         done_probe = (self.t < self.PROBE) & (nt >= self.PROBE)
         if done_probe.any():
             mean = self.acc / np.maximum(self.cnt, 1)
-            self.th[:, 0] = np.where(done_probe, mean[:, 0] / 0.3, self.th[:, 0])
-            self.th[:, 1] = np.where(done_probe, mean[:, 1] / -0.3, self.th[:, 1])
+            self.th[:, 0] = np.where(done_probe, mean[:, 0] / 0.15, self.th[:, 0])
+            self.th[:, 1] = np.where(done_probe, mean[:, 1] / -0.15, self.th[:, 1])
         self.t = nt
         steady = self.identified() & (np.abs(cmd - self.uf).max(1) < self.STEADY)
         uw = cmd[:, 2]
@@ -433,9 +463,11 @@ class AdaptiveYaw:
         up = np.where(up > 0, up, 0.0)
         un = np.where(un < 0, un, 0.0)
         u = np.where(((np.abs(bp) >= np.abs(bn)) & (up > 0)) | (un == 0), up, un)
-        # no identified channel turns the needed way: excite an unidentified one
+        # no identified channel turns the needed way: probe in the direction of
+        # the need (sign-aware). The old code always tried +0.3 first even when
+        # a negative yaw was needed, exciting the wrong channel.
         need = (u == 0) & (np.abs(r) > 0.05)
-        explore = np.where(np.abs(bp) < 0.15, 0.3, np.where(np.abs(bn) < 0.15, -0.3, 0.0))
+        explore = np.where(r >= 0, 0.3, -0.3)
         return np.clip(np.where(need, explore, u), -lim, lim)
 
 
@@ -444,7 +476,7 @@ class StagedBaseline:
     SEARCH, APPROACH, ENTER, HOLD, BACK = range(5)
     ALIGN, FINAL = APPROACH, ENTER  # phase aliases
 
-    def __init__(self, n=1, latency=0.08, dt=0.02, model: MeanModel | None = None, v_max=0.25,
+    def __init__(self, n=1, latency=0.08, dt=0.02, model: MeanModel | None = None, v_max=0.32,
                  geometry: Geometry = Geometry()):
         self.n, self.dt, self.v_max = n, dt, v_max
         self.m = model or MeanModel()
@@ -464,6 +496,18 @@ class StagedBaseline:
         self._seen_tag = np.zeros(n, bool)
         self._retreat = np.zeros(n, bool)
         self._search_t = np.zeros(n)
+        # IMU dead-reckoned yaw + sweep-leg state for the pre-acquisition
+        # alternating sweep; anchor pose for post-acquisition station-keeping.
+        self._search_ydr = np.zeros(n)
+        self._search_leg = np.zeros(n, int)
+        self._search_base = np.zeros(n)
+        self._probe_wait = np.zeros(n)
+        self._shield_n = np.zeros(n, int)
+        self._anchor = np.zeros((n, 2))
+        self._has_anchor = np.zeros(n, bool)
+        self._back_y = np.zeros(n)
+        self._was_back = np.zeros(n, bool)
+        self._short_n = np.zeros(n, int)
         self._last_gyro = np.zeros(n)
         self.cmd = np.zeros((n, 3))
 
@@ -509,7 +553,7 @@ class StagedBaseline:
         w_cmd = np.where(use_rls_w, np.clip(cmd3[:, 2], -0.6, 0.6), w_fb)
         w_cmd = np.where(self.yaw.identified(), w_cmd, 0.0)
 
-        vb_net = vb - np.where(ok2[:, None], A[:, :2, 2] * w_cmd[:, None], 0.0)
+        vb_net = vb - np.where(ok2[:, None], self.sysid.c2 * w_cmd[:, None], 0.0)
         A_safe2 = np.where(ok2[:, None, None], A2, np.eye(2)[None])
         xy_rls = np.linalg.solve(A_safe2, vb_net[:, :, None])[..., 0]
         xy_cmd = np.where(ok2[:, None], xy_rls, cmd_fb[:, :2])
@@ -583,34 +627,72 @@ class StagedBaseline:
         face = -np.arctan2(x, np.where(np.abs(y) < 1e-3, 1e-3, y))
         yaw_ref = np.where(in_front & (dist < 0.12), 0.0, face)
 
-        # Smooth ALIGN/APPROACH exit tolerances + leaky settle hysteresis
-        lat_tol = min(0.025, 0.45 * M)
+        # Smooth ALIGN/APPROACH exit tolerances + leaky settle hysteresis.
+        # Tolerances are widened vs the pre-audit gate (lat 21mm->31mm, y
+        # 40mm->60mm, yaw 4.5deg->7deg, pos_std 45mm->60mm, age 0.35s->0.5s)
+        # and settle now decays instead of hard-resetting to zero, so noisy
+        # L1-L3 EKF estimates cannot livelock the APPROACH->ENTER transition.
+        lat_tol = min(0.035, 0.65 * M)
         at_stage = ((ph == self.APPROACH) & in_front
                     & (np.abs(x) < lat_tol)
-                    & (np.abs(y - stage_y) < 0.04)
-                    & (np.abs(yaw) < math.radians(4.5))
-                    & (est.pos_std < 0.045)
-                    & (est.age < 0.35))
+                    & (np.abs(y - stage_y) < 0.06)
+                    & (np.abs(yaw) < math.radians(7.0))
+                    & (est.pos_std < 0.06)
+                    & (est.age < 0.5)
+                    & (self.yaw.t >= self.yaw.PROBE))
         near_stage = ((ph == self.APPROACH) & in_front
-                      & (np.abs(x) < 0.65 * M)
-                      & (np.abs(y - stage_y) < 0.07)
-                      & (np.abs(yaw) < math.radians(7.0)))
+                      & (np.abs(x) < 0.8 * M)
+                      & (np.abs(y - stage_y) < 0.10)
+                      & (np.abs(yaw) < math.radians(10.0)))
         self.settle = np.where(at_stage, self.settle + dt,
-                      np.where(near_stage, np.maximum(0.0, self.settle - 0.5 * dt), 0.0))
-        ph = np.where(self.settle >= 0.24, self.ENTER, ph)
+                      np.where(near_stage, np.maximum(0.0, self.settle - 0.25 * dt),
+                               np.maximum(0.0, self.settle - dt)))
+        ph = np.where(self.settle >= 0.20, self.ENTER, ph)
 
         # Retreat FINAL -> APPROACH (y = 0.75 m) if |x| drifts dangerously while tags visible,
-        # or BACK -> APPROACH if already inside the skid zone
+        # or BACK -> APPROACH if already inside the skid zone.
+        # Small in-zone residuals (|x| <= BACK_X) are nulled by the lateral
+        # PD+I entry law below, not by a BACK loop: BACK only fires past
+        # BACK_X = 32 mm and drives out at 0.25 m/s (~2 s to clear) while
+        # holding x = 0. Ejection is divergence-gated (x and world-vx same
+        # sign): EKF noise straddles 30-39 mm while converging, and
+        # position-only trips chatter BACK/APPROACH (up to 8 retreats/ep).
+        BACK_X = 0.032
         enter = ph == self.ENTER
         tags_fresh = est.age < 0.30
-        drift_outside = enter & tags_fresh & (y >= g.zone_y) & (np.abs(x) > 0.64 * M)
-        drift_inside = enter & (y < g.zone_y) & (np.abs(x) > 0.64 * M)
+        # World-x velocity estimate (also used for entry damping below).
+        c_e, s_e = np.cos(yaw), np.sin(yaw)
+        vwx = c_e * self.ekf.v[:, 0] - s_e * self.ekf.v[:, 1]
+        # Latency-ahead lateral position for trip decisions: the 80 ms tag
+        # latency + EKF lag puts the estimate ~1.2 cm (p90) behind truth at
+        # entry speed, so tripping on the raw estimate fires at true 0.048 m.
+        x_ahead = x + vwx * 0.08
+        ax = np.abs(x_ahead)
+        diverging = (x * vwx) > 0.0
+        drift_outside = enter & tags_fresh & (y >= g.zone_y) & (ax > 0.64 * M) & diverging
+        drift_inside = enter & (y < g.zone_y) & (ax > BACK_X) & diverging
+        # Hard safety trip: at 40 mm the wall (0.047 m) is one EKF-noise step
+        # away — retreat instantly regardless of velocity direction.
+        hard_trip = enter & (y < g.zone_y) & (ax > 0.040)
         ph = np.where(drift_outside, self.APPROACH, ph)
         self._retreat |= drift_outside
-        ph = np.where(drift_inside, self.BACK, ph)
+        ph = np.where(drift_inside | hard_trip, self.BACK, ph)
+        # BACK exits: cheap short re-entry (backed a touch clear of the eject
+        # point and re-centered -> straight back to FINAL) or full retreat to
+        # the staging axis. Short re-entries are counted: after 3, break the
+        # loop with a full retreat to the staging axis.
+        back = ph == self.BACK
+        entered_back = back & ~self._was_back
+        self._back_y = np.where(entered_back, y, self._back_y)
+        short_reenter = (back & (y > self._back_y + 0.06) & (np.abs(x) < 0.025)
+                         & (np.abs(yaw) < math.radians(10.0)) & (self._short_n < 3))
+        self._short_n = np.where(short_reenter, self._short_n + 1, self._short_n)
+        self._short_n = np.where((ph == self.APPROACH) | (ph == self.HOLD), 0, self._short_n)
+        ph = np.where(short_reenter, self.ENTER, ph)
         back_done = (ph == self.BACK) & (y > max(STAGE_Y, RETREAT_Y) - 0.02)
         ph = np.where(back_done, self.APPROACH, ph)
-        self._retreat |= drift_inside
+        self._retreat |= (drift_inside | hard_trip) & ~short_reenter
+        self._was_back = back
         # Slot-margin gating: never enter/hold FINAL at/above the lateral slot
         # margin (|x_est| >= M). Closes the stale-tag hole where drift_outside
         # cannot fire (age >= 0.30 s) and EKF trim hides the true offset.
@@ -619,15 +701,28 @@ class StagedBaseline:
         self._retreat |= over_margin
 
         enter = ph == self.ENTER
-        # Lateral and yaw integral trim during FINAL (frozen during under-drone blind phase)
-        self.ix = np.where(enter, np.where(est.age < 0.25, np.clip(self.ix + x * dt, -0.025, 0.025), self.ix), 0.0)
+        # Lateral and yaw integral trim during FINAL (frozen during under-drone blind phase).
+        # ix cap widened +/-0.025 -> +/-0.25 with 2x integral gain so a 20-60 mm/s
+        # forward-to-lateral cross-coupling residual is nulled within mm of x=0.
+        self.ix = np.where(enter, np.where(est.age < 0.25, np.clip(self.ix + 2.0 * x * dt, -0.25, 0.25), self.ix), 0.0)
         self.iyaw = np.where(enter, np.where(est.age < 0.25, np.clip(self.iyaw + wrap(-yaw) * dt, -0.08, 0.08), self.iyaw), 0.0)
         ph = np.where(enter & (y < STOP_Y), self.HOLD, ph)
+        # HOLD is a precision lock, not a latch: if the lateral estimate leaves
+        # the near-box (|x| > 30 mm), recover with full authority instead of
+        # sitting braked off-target until timeout. Past the goal (y < 0) back
+        # out; otherwise a brief ENTER excursion re-centers (yaw-only errors
+        # stay in HOLD where the yaw servo fixes them in place).
+        hold = ph == self.HOLD
+        reenter = hold & (np.abs(x) > 0.030)
+        ph = np.where(reenter & (y < 0.0), self.BACK, ph)
+        ph = np.where(reenter & (y >= 0.0), self.ENTER, ph)
         enter = ph == self.ENTER
+        hold = ph == self.HOLD
         back = ph == self.BACK
         self.phase = ph
 
-        # World velocity reference
+        # World velocity reference (approach transit at up to 0.32 m/s; the
+        # plant does ~0.6, and open space + swept shield make 0.32 safe)
         vmax = np.where(dist > 0.15, self.v_max, 0.12)
         v_w = err * (np.minimum(dist * 1.5, vmax) / np.maximum(dist, 1e-6))[:, None]
         # Corridor funneling: prioritize lateral centering when approaching the staging axis
@@ -635,25 +730,42 @@ class StagedBaseline:
                             np.clip(-2.2 * x, -0.15, 0.15), v_w[:, 0])
         v_w[:, 0] = funnel_x
 
-        # Entry velocity with lateral integral trim & funnel speed scaling
+        # Entry velocity with lateral PD+I centering, world-x velocity damping
+        # (-kd_x * vx nulls the particle-0 cross-coupling drift), and funnel
+        # speed scaling. Lateral authority widened to +/-0.12 m/s.
         lat_scale = np.clip(1.0 - (np.abs(x) / max(0.65 * M, 1e-3)) ** 2, 0.25, 1.0)
-        ent_v = np.stack([np.clip(-4.0 * x - 4.0 * self.ix, -0.07, 0.07),
+        ent_v = np.stack([np.clip(-8.0 * x - 4.0 * self.ix - 1.2 * vwx, -0.15, 0.15),
                           -ENTER_V * lat_scale], 1)
         ent_v[:, 1] = np.where((y > g.zone_y) & (np.abs(x) > 0.35 * M), 0.0, ent_v[:, 1])
+        # Crooked entry guard: rotate in place until roughly aligned before
+        # driving deeper into the slot (prevents flank clips from yaw error).
+        ent_v[:, 1] = np.where(np.abs(yaw) > math.radians(15.0), 0.0, ent_v[:, 1])
         v_w = np.where(enter[:, None], ent_v, v_w)
 
-        back_v = np.stack([np.clip(-2.0 * x, -0.04, 0.04), np.full_like(y, 0.08)], 1)
+        # BACK: center FIRST (creep +y at 0.05 while |x_est| > 20 mm), then
+        # exit at 0.15 m/s. Driving +y along the wall while off-center
+        # scrapes the flank (BACK-phase clips at |x| ~= 0.048 m); the slower
+        # exit keeps the lateral servo ahead of EKF lag.
+        back_centered = np.abs(x) < 0.020
+        back_v = np.stack([np.clip(-6.0 * x - 1.0 * vwx, -0.15, 0.15),
+                           np.where(back_centered, 0.15, 0.05)], 1)
         v_w = np.where(back[:, None], back_v, v_w)
 
-        # Swept-clear shield in APPROACH / FINAL (ENTER)
-        pad = np.where(enter, 0.002, 0.006)
+        # Swept-clear shield in APPROACH / FINAL (ENTER) / BACK, debounced:
+        # single-step blocks are usually EKF velocity noise at 30 Hz cam +
+        # latency, so the override only engages after 4 consecutive blocked
+        # steps (0.08 s). Pads put a virtual wall inside the true one (ENTER
+        # 10 mm, BACK 20 mm) so 1-2 cm EKF lateral bias cannot scrape.
+        pad = np.where(back, 0.020, np.where(enter, 0.015, 0.006))
         clear = self._swept_clear(x, y, yaw, v_w, self._last_gyro, pad=pad)
-        shield = (~clear) & (enter | (ph == self.APPROACH))
+        blocked = (~clear) & (enter | back | (ph == self.APPROACH))
+        self._shield_n = np.where(blocked, self._shield_n + 1, 0)
+        shield = blocked & (self._shield_n >= 4)
         if shield.any():
             # Brake forward motion into skids and steer laterally toward safe center
             safe_vx = np.where((y < g.zone_y) & (np.abs(x) > 0.6 * M),
-                               np.clip(-3.0 * x, -0.08, 0.08),
-                               np.where(np.abs(x) < g.skid_x, np.clip(-2.5 * x, -0.10, 0.10), side * 0.10))
+                               np.clip(-4.0 * x, -0.12, 0.12),
+                               np.where(np.abs(x) < g.skid_x, np.clip(-4.0 * x, -0.12, 0.12), side * 0.10))
             safe_vy = np.where(y < g.zone_y + 0.08, 0.04, 0.0)
             v_w = np.where(shield[:, None], np.stack([safe_vx, safe_vy], 1), v_w)
 
@@ -662,30 +774,182 @@ class StagedBaseline:
         v_w = np.where(hold_blackout[:, None], 0.0, v_w)
 
         yaw_ref = np.where(enter | back | (ph == self.HOLD), 0.0, yaw_ref)
+        # Near the goal the tag reads valid at any bearing (near deck) but
+        # success needs yaw ~0: face-tracking (-atan2(x/y)) swings to +/-90
+        # deg for mm-level x at y~0 and spins the footprint into the skids.
+        yaw_ref = np.where(dist < 0.35, 0.0, yaw_ref)
         c, s = np.cos(yaw), np.sin(yaw)
         vb = np.stack([c * v_w[:, 0] + s * v_w[:, 1], -s * v_w[:, 0] + c * v_w[:, 1]], 1)
         ye = wrap(yaw_ref - yaw)
         big = np.abs(ye) > math.radians(25)
-        # Smooth yaw proportional + integral trim in FINAL (ENTER)
-        w_enter = np.clip(2.4 * ye + 2.0 * self.iyaw, -1.0, 1.0)
-        w = np.where(enter, w_enter, np.clip(2.5 * ye, -1.2, 1.2))
+        # Smooth yaw proportional + integral trim in FINAL (ENTER); high-gain
+        # yaw centering while backing out. All laws carry gyro-rate damping
+        # (-0.4·gyro): the 80 ms tag latency + EKF lag destabilize pure-P yaw
+        # on high-authority posterior draws (delay-induced spin-outs).
+        gyro = self._last_gyro
+        w_enter = np.clip(2.4 * ye + 2.0 * self.iyaw - 0.4 * gyro, -1.0, 1.0)
+        w = np.where(enter, w_enter,
+                     np.where(back, np.clip(3.5 * ye - 0.4 * gyro, -1.2, 1.2),
+                              np.clip(2.5 * ye - 0.4 * gyro, -1.2, 1.2)))
+        # Near the slot, cap turn authority: roller-coupled draws translate
+        # ~0.3 m/s per unit turn, so a 1.0 yaw servo scrapes the flanks.
+        # 0.35 still converges 15 deg in ~1.2 s while entering (~3 s).
+        tight = dist_drone < 0.6
+        w = np.where(tight, np.clip(w, -0.35, 0.35), w)
         # Large yaw error: mostly rotate first (keeps the tag in view)
         vb = np.where((big & ~enter & ~back)[:, None], vb * 0.3, vb)
 
         cmd = self._inv_kinematics(vb, w)
 
-        # L4 Out-of-FOV / prolonged total-loss search: safe in-place yaw sweep (w only, zero translation)
-        search = (ph == self.SEARCH)
-        self._search_t = np.where(search, self._search_t + dt, 0.0)
-        # Sweep +0.75 rad/s first 1.8 s (~77 deg), then -0.75 rad/s continuously to cover full 360 deg quickly
-        sweep_dir = np.where(self._search_t < 1.8, 1.0, -1.0)
-        spin_w = self.yaw.turn(0.75 * sweep_dir, zero, zero)
-        spin = np.zeros_like(cmd)
-        spin[:, 2] = np.where(np.abs(spin_w) < 0.15, 0.3 * sweep_dir, spin_w)
-        cmd = np.where(search[:, None], spin, cmd)
+        # HOLD: brake translation, but keep servoing yaw to 0 in place until
+        # aligned. A hard zero here stalls forever when ENTER arrives with a
+        # few degrees of yaw error (near/success need yaw < 5 deg). Translation
+        # stays braked so the still-counter can accumulate.
+        hold_w = np.clip(3.0 * ye - 0.4 * self._last_gyro, -0.35, 0.35)
+        hold_cmd = np.zeros_like(cmd)
+        hold_cmd[:, 2] = self.yaw.turn(hold_w, zero, zero)
+        hold_cmd[:, 2] = np.where(self.yaw.identified(), hold_cmd[:, 2], 0.0)
+        aligned = np.abs(ye) < math.radians(2.0)
+        hold_out = np.where(aligned[:, None], 0.0, hold_cmd)
 
-        # Probe the yaw channel once the drone is within 1.2 m or immediately when searching
-        self.yaw.start((est.init & (dist_drone < 1.2)) | ~self._seen_tag | ~est.init)
-        cmd[:, 2] = np.where(self.yaw.identified(), cmd[:, 2], 0.0)
-        cmd = np.where(self.yaw.probing()[:, None], self.yaw.probe_cmd(), cmd)
-        return np.where((ph == self.HOLD)[:, None], 0.0, cmd)
+        # Out-of-FOV / prolonged total-loss search. Turn-only sweeps drag the
+        # car ~0.2-0.35 m per swept radian open-loop (roller coupling), so a
+        # blind in-place sweep near the spawn boundary outs. Instead, while no
+        # tag was ever seen, blind-drive body-forward (vb=(0,-0.08): its world
+        # -y component is always toward the drone for |yaw| < 90 deg) with a
+        # small yaw waggle: this sweeps tag aspect while closing range, and on
+        # L0-L2 guarantees acquisition at the near deck (dist < 0.30 m reads
+        # valid regardless of bearing). Drive is time-capped (4 s ~= 0.25 m)
+        # to bound blind-collision risk; afterwards station-keep + waggle.
+        search = (ph == self.SEARCH)
+        self._search_ydr = np.where(search, self._search_ydr + self._last_gyro * dt, 0.0)
+        new_search = search & (self._search_t == 0.0)
+        self._search_leg = np.where(new_search, 0, self._search_leg)
+        self._search_base = np.where(new_search, self._search_ydr, self._search_base)
+        self._search_t = np.where(search, self._search_t + dt, 0.0)
+        new_anchor = est.init & ~self._has_anchor
+        self._anchor = np.where(new_anchor[:, None], p[:, :2], self._anchor)
+        self._has_anchor |= est.init
+        # Keep the anchor fresh while tags are fresh outside SEARCH so
+        # station-keeping (SEARCH re-acquire, near-slot probe) servos the
+        # current pose rather than a stale first-fix.
+        fresh = self._has_anchor & (est.age < 0.30) & ~search
+        self._anchor = np.where(fresh[:, None], p[:, :2], self._anchor)
+        LEGS = (1.05, -2.1, 4.2, -6.2832)
+        leg = np.minimum(self._search_leg, 3)
+        # Two-phase pre-acquisition: drive first (t < 2.5 s, small dither legs),
+        # then full sweep legs. A 1-rad sweep displaces ~0.34 m open-loop no
+        # matter the speed; sweeping first from spawn 1.40 outs before
+        # covering far tags. Anchored (post-acquisition) sweeps are
+        # drag-cancelled: full always.
+        leg_scale = np.where(~self._has_anchor & (self._search_t < 2.5), 0.3,
+                           np.where(self._has_anchor & (dist_drone < 0.6), 0.3, 1.0))
+        leg_tgt = self._search_base + leg_scale * np.array(LEGS)[leg]
+        leg_err = wrap(leg_tgt - self._search_ydr)
+        adv = np.abs(leg_err) < 0.10
+        # Cycle legs instead of falling through to an open-loop continuous
+        # spin: on high-authority draws the legs exhaust in ~2 s and the
+        # open-loop fallback spins 90 deg+ into the skids. Uncovered far
+        # aspects time out (cheap) instead of clipping (expensive).
+        self._search_leg = np.where(search & adv,
+                                    np.where(leg >= 3, 0, leg + 1), self._search_leg)
+        self._search_base = np.where(search & adv, self._search_ydr, self._search_base)
+        waggle = np.clip(2.0 * leg_err, -1.0, 1.0)
+        # No open-loop fallback spin (see above); hold the capped target.
+        waggle = np.where(self._search_leg >= 4, 0.0, waggle)
+        spin_w = self.yaw.turn(waggle, zero, zero)
+        raw_spin = np.clip(waggle / 0.5, -0.5, 0.5)
+        raw_spin = np.where(~self._has_anchor & (self._search_t < 2.5),
+                              np.clip(raw_spin, -0.25, 0.25), raw_spin)
+        raw_spin = np.where(self._has_anchor & (dist_drone < 0.6),
+                              np.clip(raw_spin, -0.25, 0.25), raw_spin)
+        spin_w = np.where(self.yaw.identified(), spin_w, raw_spin)
+        spin = np.zeros_like(cmd)
+        spin[:, 2] = spin_w
+        # Blind drive against the sweep drag: 2.5 s at 0.06 m/s body-forward
+        # offsets the upward waggle excursion while closing range. Capped at
+        # ~15 cm so a near-slot spawn can never be driven into the skids
+        # blind (spawn dist >= 0.5 m vs skid-zone edge 0.26 m). Longer drives
+        # were tried: they trade outs for blind skid collisions.
+        # Two-phase pre-acquisition. Phase 1 (t < 4 s): NO rotation at all
+        # (turn commands drag the car ~0.3 m/s on roller-coupled draws);
+        # instead sweep the tag bearing by alternating body-x dither
+        # (+/-0.1 every 1.5 s) over a slow inward drive (0.08 m/s, 320 mm
+        # max: a 0.5 m spawn reaches the always-valid near deck <0.30 m
+        # before the drive ends). Translation-only commands track the mean
+        # model within ~10 % (measured on p0), so y never grows and x stays
+        # inside the wide side margins. Phase 2 (t >= 4 s, still blind):
+        # the car is ~0.3 m closer/inward, so the rotation sweep runs from
+        # a safer spot.
+        phase1 = search & ~self._has_anchor & (self._search_t < 4.0)
+        if phase1.any():
+            sgn = np.where((self._search_t // 1.5).astype(int) % 2 == 0, 1.0, -1.0)
+            dither_b = np.stack([0.10 * sgn, zero - 0.08], 1)
+            spin[:, :2] = np.where(phase1[:, None], self.m.inv(dither_b)[:, :2], spin[:, :2])
+            spin[:, 2] = np.where(phase1, 0.0, spin[:, 2])
+        blind = search & ~self._has_anchor & (self._search_t < 2.5) & ~phase1
+        if blind.any():
+            drive_b = np.zeros_like(p[:, :2])
+            drive_b[:, 1] = -0.06
+            spin[:, :2] = np.where(blind[:, None], self.m.inv(drive_b)[:, :2], 0.0)
+        anchored = search & self._has_anchor
+        keep = np.clip(-1.5 * (p[:, :2] - self._anchor), -0.15, 0.15)
+        c_a, s_a = np.cos(yaw), np.sin(yaw)
+        keep_b = np.stack([c_a * keep[:, 0] + s_a * keep[:, 1],
+                           -s_a * keep[:, 0] + c_a * keep[:, 1]], 1)
+        keep_w = np.where(anchored[:, None], keep, 0.0)
+        if anchored.any():
+            spin[:, :2] = np.where(anchored[:, None], self.m.inv(keep_b)[:, :2], 0.0)
+        blind_w = np.zeros_like(p[:, :2])
+        if blind.any():
+            db = np.zeros_like(p[:, :2])
+            db[:, 1] = -0.06
+            blind_w = np.where(blind[:, None], np.stack(
+                [c * db[:, 0] - s * db[:, 1], s * db[:, 0] + c * db[:, 1]], 1), 0.0)
+        # Never station-keep or blind-drive into the skids: gate search
+        # translation through the swept-clear check (rotation continues).
+        search_vw = np.where(blind[:, None], blind_w, keep_w)
+        gate = search & (np.linalg.norm(search_vw, axis=1) > 1e-6)
+        if gate.any():
+            ok = self._swept_clear(x, y, yaw, search_vw, self._last_gyro, pad=0.006)
+            spin[:, :2] = np.where((gate & ~ok)[:, None], 0.0, spin[:, :2])
+        cmd = np.where(search[:, None], spin, cmd)
+        # Runaway brake: still unseen after 30 s of sweeping (far-aspect tail
+        # the capped legs cannot cover) -> brake to a timeout rather than
+        # sweeping into a wall/out. Timeouts are budgeted; collisions are not.
+        lost = search & ~self._has_anchor & (self._search_t > 30.0)
+        if lost.any():
+            cmd = np.where(lost[:, None], 0.0, cmd)
+
+        # Probe the yaw channel once tags are in (post-first-tag, so the
+        # turn-only probe never drags the car blind pre-acquisition) -- but
+        # not inside the danger apron (off-axis at the slot mouth/ends, or
+        # at the area boundary): a 0.3 turn drags ~100 mm there, straight
+        # into the skid ends or out of bounds. Elsewhere the probe fires
+        # immediately so yaw is identified while still far/safe; the
+        # translation-only approach (w is 0 pre-ID) recovers toward staging
+        # meanwhile, or after 2.5 s regardless (never deadlock).
+        apron = (est.init & (((y < 0.7) & (np.abs(x) > 0.6 * M))
+                             | (dist_drone > 1.25)))
+        self._probe_wait = np.where(est.init & ~self.yaw.identified(),
+                                    self._probe_wait + dt, 0.0)
+        self.yaw.start(est.init & ~self.yaw.identified()
+                       & (~apron | (self._probe_wait > 2.5)))
+        cmd[:, 2] = np.where(self.yaw.identified() | search, cmd[:, 2], 0.0)
+        # Probe is turn-only in yaw but keeps the current translation command
+        # (translation-rich probe: keeps boundary-safe APPROACH progress and
+        # gives OnlineSysID full-column excitation instead of the
+        # translation-free data that mis-IDs the cross-coupling column).
+        probe_cmd = self.yaw.probe_cmd()
+        cmd[:, 2] = np.where(self.yaw.probing(), probe_cmd[:, 2], cmd[:, 2])
+        # Station-keep translation through the probe at the area edge
+        # (dist > 1.2 m: the turn-only probe drag outs boundary spawns) and
+        # near the slot (dist < 0.6 m: monster posterior draws slide ~0.5 m/s
+        # under turn-only commands). Mid-field the approach drive continues
+        # through the probe uninterrupted.
+        probe_keep = (self.yaw.probing() & self._has_anchor
+                      & ((dist_drone > 1.2) | (dist_drone < 0.6)))
+        if probe_keep.any():
+            cmd[:, :2] = np.where(probe_keep[:, None], self.m.inv(keep_b)[:, :2], cmd[:, :2])
+        # HOLD applied last so the brake/yaw-servo stands over probe/search defaults
+        return np.where(hold[:, None], hold_out, cmd)

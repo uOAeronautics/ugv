@@ -7,7 +7,9 @@ validates plumbing, not policy quality.
 
 --bridge gazebo: closed-loop Gazebo Harmonic lockstep evaluation via lockstep_env.py
 (passive-roller mecanum car, photo-model drone, 1 ms physics stepped at 50 Hz).
-Currently supports --sensing emulated (rl/sim.py sensor model).
+Supports --sensing emulated (rl/sim.py sensor model) and --sensing camera[_dr]
+(synthetic 3D ArUco render at the true Gazebo pose decoded by real aruco.py
+detect_gray + PnP, with optional --lighting-dr photometric DR).
 
 Step rate is 50 Hz: the student history (50 frames = 1 s) and its tag-velocity
 estimator are trained at dt=0.02 (rl/sim.py).
@@ -120,13 +122,20 @@ class FakeBridge:
 
 
 class GazeboBridge:
-    """Lockstep Gazebo Harmonic bridge using emulated rl/sim.py sensors."""
+    """Lockstep Gazebo Harmonic bridge with emulated or vision-in-the-loop sensing."""
 
     def __init__(self, level: str, seed: int, max_time: float, world_sdf: Path,
                  out_dir: Path, axes: str = "rl_sim", sensing: str = "emulated",
-                 log_name: str = "policy_gazebo"):
-        if sensing != "emulated":
+                 log_name: str = "policy_gazebo", photometric: bool = False):
+        if sensing == "camera_aruco":
+            sensing = "camera"
+        if sensing == "camera_dr":
+            sensing, photometric = "camera", True
+        if sensing not in ("emulated", "camera"):
             raise ValueError(f"unsupported sensing mode: {sensing}")
+        if sensing == "camera":
+            global VisionSensors
+            from vision_in_loop import VisionSensors  # noqa: E402 (cv2 only for camera modes)
         if axes not in ("rl_sim", "physical"):
             raise ValueError(f"axes must be rl_sim or physical, got {axes}")
         if not BRIDGE.exists():
@@ -144,11 +153,12 @@ class GazeboBridge:
         self.max_time = max_time
         self.axes = axes
         self.sensing = sensing
+        self.photometric = bool(photometric and sensing == "camera")
         self.pose = (0.0, 0.0, 0.0)
         self.vel = [0.0, 0.0, 0.0]
         self.collision = False
         self.out_of_bounds = False
-        self.sensors: Sensors | None = None
+        self.sensors: Sensors | VisionSensors | None = None
         self.tag: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.tag_valid = False
         self.tag_age = 0.0
@@ -168,7 +178,17 @@ class GazeboBridge:
         self.collision = collides(self.pose, GAZEBO_GEOMETRY)
         area = float(self.L.get("area", 1.5))
         self.out_of_bounds = max(abs(self.pose[0]), abs(self.pose[1])) > area
-        self.sensors = Sensors(self.L, rng, self.max_time, init_pose=self.pose)
+        prev = getattr(self, "sensors", None)
+        if prev is not None and self.sensing == "camera":
+            self._acc_frames = getattr(self, "_acc_frames", 0) + int(prev.frames)
+            self._acc_decodes = getattr(self, "_acc_decodes", 0) + int(prev.decodes)
+        if self.sensing == "camera":
+            assert VisionSensors is not None
+            self.sensors = VisionSensors(self.L, rng, self.max_time,
+                                         init_pose=self.pose,
+                                         photometric=self.photometric)
+        else:
+            self.sensors = Sensors(self.L, rng, self.max_time, init_pose=self.pose)
         z, seen = self.sensors.tag(self.pose)
         self.tag = tuple(float(v) for v in z) if seen else (0.0, 0.0, 0.0)
         self.tag_valid = bool(seen)
@@ -182,6 +202,13 @@ class GazeboBridge:
     def sensor_observation(self):
         return (self.tag, self.tag_age, self.tag_valid,
                 self.imu_w, self.imu_yaw, Pose2(*self.pose))
+
+    @property
+    def vision_stats(self) -> dict:
+        acc_f = getattr(self, "_acc_frames", 0)
+        acc_d = getattr(self, "_acc_decodes", 0)
+        return {"frames": acc_f, "decodes": acc_d,
+                "decode_rate": acc_d / max(acc_f, 1)}
 
     def step(self, act, dt=DT):
         assert self.sensors is not None
@@ -292,7 +319,14 @@ def main():
     ap.add_argument("--bridge", choices=["fake", "gazebo"], default="fake")
     ap.add_argument("--level", choices=list(LEVELS), default="L1")
     ap.add_argument("--seed", type=int, default=11)
-    ap.add_argument("--sensing", choices=["emulated"], default="emulated")
+    ap.add_argument("--sensing", choices=["emulated", "camera", "camera_aruco", "camera_dr"],
+                    default="emulated",
+                    help="emulated: rl/sim.py sensor model; camera: synthetic 3D render + "
+                         "real aruco.py detect_gray + PnP; camera_aruco: alias of camera; "
+                         "camera_dr: camera + photometric DR")
+    ap.add_argument("--lighting-dr", action="store_true",
+                    help="per-episode photometric DR (brightness/contrast/gamma, shadow "
+                         "gradient, glare, sensor noise, blur) on --sensing camera frames")
     ap.add_argument("--world", type=Path, default=REPO / "rl/runs/gazebo_l6/world_generated.sdf")
     ap.add_argument("--out", type=Path, default=REPO / "rl/runs/gazebo_l6")
     ap.add_argument("--json", default=None)
@@ -326,8 +360,10 @@ def main():
     if is_gz:
         log_tag = f"policy_gazebo_{meta['controller']}_{args.level}"
         bridge = GazeboBridge(args.level, args.seed, args.max_time, args.world, args.out,
-                              axes=axes, sensing=args.sensing, log_name=log_tag)
-        meta.update(level=args.level, seed=args.seed, sensing=args.sensing)
+                              axes=axes, sensing=args.sensing, log_name=log_tag,
+                              photometric=args.lighting_dr)
+        meta.update(level=args.level, seed=args.seed, sensing=args.sensing,
+                    photometric_dr=bool(args.lighting_dr and args.sensing.startswith("camera")))
     else:
         bridge = FakeBridge()
 
@@ -337,6 +373,13 @@ def main():
     finally:
         if hasattr(bridge, "close"):
             bridge.close()
+
+    if is_gz and args.sensing.startswith("camera"):
+        prev = getattr(bridge, "sensors", None)
+        if prev is not None:
+            bridge._acc_frames = getattr(bridge, "_acc_frames", 0) + int(prev.frames)
+            bridge._acc_decodes = getattr(bridge, "_acc_decodes", 0) + int(prev.decodes)
+        summary["vision"] = bridge.vision_stats
 
     summary.update(meta, bridge=args.bridge)
     print(json.dumps(summary, indent=2))

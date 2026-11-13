@@ -73,6 +73,9 @@ def main():
                     help="with --init, reset logstd to log(std0) instead of inheriting converged std")
     ap.add_argument("--aux-weight", type=float, default=0.1,
                     help="LeWM/RMA aux supervision weight: MSE(aux_head(h), priv [pose,vel])")
+    ap.add_argument("--critic-warmup", type=int, default=0,
+                    help="first N iters train the critic only (actor+logstd frozen) so a "
+                         "fresh/mismatched V cannot destroy warm-started actor weights")
     ap.add_argument("--ckpt-every", type=int, default=25,
                     help="overwrite --out every N iters so kills don't lose runs")
     ap.add_argument("--out", default=None)
@@ -127,13 +130,23 @@ def main():
                     "act_dim": args.act_dim, "stateful": args.stateful}, out)
 
     def apply_curric(it):
-        # alpha=0 starts L0-like (dist 0.55-0.85 straight ahead, no latency),
-        # which is skid-safe: bearing 0 spawns at x=0, clear of both skids.
+        # alpha=0 starts L0-like (dist 0.55-0.85 straight ahead, no latency,
+        # no sensor noise, 50 Hz camera), which is skid-safe: bearing 0 spawns
+        # at x=0, clear of both skids. Every L0->L1 sensor change must ramp:
+        # noise 1.0 alone collides 247/256 zero-shot at alpha=0, and 30 Hz
+        # cam alone collides 254/256 (valid flickers 0101..., hist_age/tag_ema
+        # pattern the L0 policy never saw) -- only noise=0 AND cam=50 together
+        # park 256/256. Spawn-range widening is harmless (255/256 with full
+        # L1 dist at alpha=0 otherwise), so bearing/yaw/latency/noise/camhz
+        # carry the curriculum.
         if args.curric <= 0 or it >= args.curric:
             env.cfg.spawn_dist = base_spawn
             env.cfg.bearing_max = None
             env.cfg.yaw_max = None
             env.cfg.latency_override = None
+            env.cfg.noise_override = None
+            env.cfg.cam_hz = None
+            env.cam_hz = float(env.level.get("cam_hz", 50.0))
             return
         alpha = it / max(args.curric, 1)
         tgt = base_spawn if base_spawn is not None else env.level["dist"]
@@ -144,14 +157,28 @@ def main():
         lat = env.level["latency"]
         env.cfg.latency_override = ((alpha * float(lat[0]), alpha * float(lat[1]))
                                     if isinstance(lat, tuple) else alpha * float(lat))
+        env.cfg.noise_override = alpha * float(env.level["noise"])
+        cam_tgt = float(env.level.get("cam_hz", 50.0))
+        env.cfg.cam_hz = env.cam_hz = 50.0 + alpha * (cam_tgt - 50.0)
 
     apply_curric(0)
     obs = env.reset()
     h_state = torch.zeros(1, n, args.hidden, device=dev) if args.stateful else None
+    # Critic warmup: the loaded critic was fitted to L0 returns, so its first
+    # advantages on the noisy curriculum point the wrong way; 4 PPO epochs of
+    # those gradients destroy the warm-started actor (iter1 coll 85->280 with
+    # inherited std, 32->713 with reset std). Freeze actor+logstd while V
+    # adapts. Adam skips params with grad None.
+    if args.critic_warmup > 0:
+        student.requires_grad_(False)
+        logstd.requires_grad_(False)
 
     for it in range(args.iters):
         t0 = time.time()
         apply_curric(it)
+        if it == args.critic_warmup and args.critic_warmup > 0:
+            student.requires_grad_(True)
+            logstd.requires_grad_(True)
         HS, A, LP, R, D, V, PR = [], [], [], [], [], [], []
         h_init = h_state.clone() if args.stateful else None
         ep_succ = ep_coll = 0
@@ -235,7 +262,11 @@ def main():
                 loss_v = 0.5 * (critic(PRs[:, sl].reshape(-1, PRs.shape[-1]))
                                 - ret[:, sl].reshape(-1)).pow(2).mean()
                 loss_e = -dist.entropy().sum(-1).mean()
-                (loss_p + loss_v + ent * loss_e + args.aux_weight * loss_aux).backward()
+                if it < args.critic_warmup:
+                    loss = loss_v
+                else:
+                    loss = loss_p + loss_v + ent * loss_e + args.aux_weight * loss_aux
+                loss.backward()
                 nn.utils.clip_grad_norm_(params, 0.5)
                 opt.step(); opt.zero_grad()
                 pl, vl, al = float(loss_p.detach()), float(loss_v.detach()), float(loss_aux.detach())

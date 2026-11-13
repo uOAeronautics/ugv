@@ -13,6 +13,15 @@ V_Y_MAX = 0.63
 W_MAX = 2.20
 STOP_HORIZON = 0.35  # > 200ms camera latency + 120ms brake_tau + margin
 EMA_TAU = 0.25
+# Pre-acquisition FOV search: with the tag outside the +/-33.5 deg camera FOV
+# for this long (sim hist_age; the tag frame reports age clamped at 5.0), the
+# bearing error is dominated by yaw, so rotate in place toward imu_yaw = 0
+# (zero blind translation). Yaw 0 puts bearing = spawn bearing (<=30 deg on
+# L1) inside the FOV. Mirrors the rl/distill.py --fov-search collection reflex.
+SEARCH_AGE = 1.0
+SEARCH_P = 1.8
+SEARCH_D = 0.3
+SEARCH_MAX = 0.6
 
 
 def _sigmoid(x):
@@ -131,11 +140,25 @@ class StudentPolicy:
             self._push(np.zeros(DIM))
             return np.zeros(self._act_dim), "brake: non-finite observation"
         self._push(frame)
-        if self.stateful:
+        # Blind-search reflex: prolonged total tag loss (e.g. blind spawn with
+        # the tag outside the camera FOV) -> in-place yaw servo toward
+        # imu_yaw = 0 with rate damping, zero translation. Applied through the
+        # swept-clear shield below, so a blocked spin still brakes.
+        search = (not tag_valid) and self._dt_since_valid >= SEARCH_AGE
+        if search:
+            yaw_w = (float(imu_yaw) + math.pi) % (2 * math.pi) - math.pi
+            u_turn = max(-SEARCH_MAX, min(SEARCH_MAX,
+                                          -SEARCH_P * yaw_w - SEARCH_D * float(imu_w)))
+            act = np.zeros(self._act_dim)
+            act[2] = u_turn
+            search_reason = "search: blind, rotating to acquire tag"
+        elif self.stateful:
             self._h = self._step_gru(frame, self._h)
             act = self._head(self._h).clip(-1, 1)
+            search_reason = ""
         else:
             act = self.forward(self.hist).clip(-1, 1)
+            search_reason = ""
         # shield: rotate body velocity by estimate.yaw, forward-predict past dt_stale,
         # then sweep the full stopping horizon (covers latency + brake_tau)
         c, s = math.cos(estimate.yaw), math.sin(estimate.yaw)
@@ -153,6 +176,8 @@ class StudentPolicy:
         if not swept_clear(start, nxt, self.vehicle["width_m"], self.vehicle["length_m"],
                            self.obstacles, self.inflation):
             return np.zeros_like(act), "brake: swept footprint blocked"
+        if search_reason:
+            return act, search_reason
         return act, "policy"
 
     def _push(self, frame):

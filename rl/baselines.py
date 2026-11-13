@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from ugv.staged_baseline import StagedBaseline, MeanModel  # noqa: E402  (numpy-only deploy module)
 
 
-def run(episodes, level, device, seed=0, use_mean_dynamics=True):
+def run(episodes, level, device, seed=0, use_mean_dynamics=False):
     env = MecanumVecEnv(min(episodes, 512), EnvConfig(level=level, device=device, seed=seed,
                                                       use_mean_dynamics=use_mean_dynamics))
     model = MeanModel()
@@ -64,6 +64,7 @@ def run(episodes, level, device, seed=0, use_mean_dynamics=True):
     times.sort(); epos.sort(); eyaw.sort()
     q = lambda v, p: v[min(int(len(v) * p), len(v) - 1)] if v else float("nan")
     out = {"policy": "ekf_staged", "level": level, "episodes": episodes, "seed": seed,
+           "use_mean_dynamics": use_mean_dynamics, "device": str(env.device),
            "success": succ, "success_lb": lo, "success_hi": hi,
            "collisions": coll, "collision_rate": coll / episodes,
            "false_parked": None, "false_parked_rate": None,
@@ -83,11 +84,16 @@ def main():
     ap.add_argument("--episodes", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--json", default=None)
+    ap.add_argument("--device", default=None,
+                    help="torch device (default: cuda if available else cpu)")
+    ap.add_argument("--mean-dynamics", action="store_true",
+                    help="use posterior-mean plant on L0/L1 (default: particle-0/full-posterior plant)")
     ap.add_argument("--no-mean-dynamics", action="store_true",
-                    help="use particles[0] instead of mean_coef on L0/L1")
+                    help="deprecated alias: particle-0 plant is now the default")
     a = ap.parse_args()
-    out = run(a.episodes, a.level, "cuda" if torch.cuda.is_available() else "cpu", a.seed,
-              use_mean_dynamics=not a.no_mean_dynamics)
+    device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    out = run(a.episodes, a.level, device, a.seed,
+              use_mean_dynamics=a.mean_dynamics and not a.no_mean_dynamics)
     if a.json:
         Path(a.json).write_text(json.dumps(out, indent=2))
         print(f"wrote {a.json}")

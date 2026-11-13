@@ -28,7 +28,10 @@ def test_searches_without_tag_and_holds_when_never_seen():
     c = StagedBaseline(1)
     for _ in range(10):
         act = c.step(np.zeros(3), False, 0.0)
-    assert c.phase[0] == StagedBaseline.SEARCH and act[0, 2] != 0 and abs(act[0, :2]).max() == 0
+    assert c.phase[0] == StagedBaseline.SEARCH
+    # phase-1 pre-acquisition: bearing dither (translation, no rotation:
+    # turn commands drag ~0.3 m/s on roller-coupled draws) instead of spin.
+    assert abs(act[0, :2]).max() > 0 and act[0, 2] == 0
 
 
 def test_parks_on_fake_bridge_without_contact():
@@ -52,7 +55,7 @@ def test_l4_search_acquires_and_locks_ekf():
     for _ in range(5):
         act = c.step(np.zeros(3), False, 0.0)
     assert c.phase[0] == StagedBaseline.SEARCH
-    assert abs(act[0, :2]).max() == 0 and act[0, 2] != 0  # yaw-only sweep
+    assert abs(act[0, :2]).max() > 0 and act[0, 2] == 0  # dither, no spin
     act = c.step(np.array([0.0, 1.0, 0.0]), True, 0.0)
     assert c.phase[0] == StagedBaseline.APPROACH
     assert c.ekf.init[0] and c.ekf.age[0] == 0.0

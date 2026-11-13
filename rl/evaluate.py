@@ -6,7 +6,7 @@ import math
 import torch
 
 from sim import MecanumVecEnv, EnvConfig
-from models import Student, load_teacher, teacher_obs
+from models import Student, load_student, load_teacher, teacher_obs
 
 BASELINES = ("random", "brake", "oracle_pd")
 
@@ -26,9 +26,8 @@ def load_policy(spec: str, device):
         return spec, None, {"act_dim": 3, "stateful": False}
     ckpt = torch.load(spec, map_location=device)
     if "student" in ckpt:
+        m, ckpt = load_student(spec, device)
         act_dim = ckpt.get("act_dim", 3)
-        m = Student(act_dim=act_dim, h=ckpt.get("hidden", 64), head_w=ckpt.get("head_w", 64)).to(device)
-        m.load_state_dict(ckpt["student"]); m.eval()
         return "student", m, {"act_dim": act_dim, "stateful": bool(ckpt.get("stateful", False)),
                               "hidden": ckpt.get("hidden", 64)}
     m, ck = load_teacher(spec, device)
@@ -65,7 +64,7 @@ def policy_act(kind, model, obs, n, device, h_state=None):
 
 
 def run(episodes, level, policy, device, seed=0, declare_parked=False,
-        use_mean_dynamics=True, cam_hz=None):
+        use_mean_dynamics=True, cam_hz=None, fov_search=False):
     env = MecanumVecEnv(min(episodes, 512), EnvConfig(
         level=level, device=device, seed=seed,
         declare_parked=declare_parked, use_mean_dynamics=use_mean_dynamics,
@@ -88,6 +87,15 @@ def run(episodes, level, policy, device, seed=0, declare_parked=False,
         while not bool(done.all()):
             a, h_state = policy_act(kind, model, {"pose": obs["pose"][:n], "vel": obs["vel"][:n],
                                                   "student": obs["student"][:n]}, n, env.device, h_state)
+            if fov_search and kind == "student":
+                # deploy blind-search reflex (mirrors StudentPolicy.step): after
+                # 1 s without a tag, spin toward imu_yaw = 0, zero translation.
+                h = obs["student"][:n]
+                blind = h[:, -1, 3] >= 1.0
+                if bool(blind.any()):
+                    u_turn = (-1.8 * h[:, -1, 6] - 0.3 * h[:, -1, 5]).clamp(-0.6, 0.6)
+                    z = torch.zeros_like(u_turn)
+                    a[blind] = torch.stack([z[blind], z[blind], u_turn[blind]], dim=1)[:, :a.shape[1]]
             full = torch.zeros(env.n, act_dim, device=env.device)
             full[:n] = a
             obs_full, _, d, info = env.step(full)
@@ -117,6 +125,7 @@ def run(episodes, level, policy, device, seed=0, declare_parked=False,
     times.sort(); epos.sort(); eyaw.sort()
     q = lambda v, p: v[min(int(len(v) * p), len(v) - 1)] if v else float("nan")
     out = {"policy": policy, "level": level, "episodes": episodes,
+               "use_mean_dynamics": use_mean_dynamics, "fov_search": fov_search,
            "success": succ, "success_lb": lo, "success_hi": hi,
            "collisions": coll, "collision_rate": coll / episodes,
            "false_parked": false_p, "false_parked_rate": false_p / episodes,
@@ -141,13 +150,15 @@ def main():
     ap.add_argument("--no-mean-dynamics", action="store_true",
                     help="use particles[0] instead of mean_coef on L0/L1")
     ap.add_argument("--cam-hz", type=float, default=None)
+    ap.add_argument("--fov-search", action="store_true",
+                    help="student blind-search spin reflex after 1 s without a tag")
     ap.add_argument("--json", default=None)
     args = ap.parse_args()
     out = run(args.episodes, args.level, args.policy,
               "cuda" if torch.cuda.is_available() else "cpu", args.seed,
               declare_parked=args.declare_parked,
               use_mean_dynamics=not args.no_mean_dynamics,
-              cam_hz=args.cam_hz)
+              cam_hz=args.cam_hz, fov_search=args.fov_search)
     if args.json:
         with open(args.json, "w") as f:
             json.dump(out, f, indent=2)

@@ -76,6 +76,7 @@ class EnvConfig:
     yaw_max: float | None = None  # override LEVELS yaw deg (curriculum)
     latency_override: float | tuple | None = None  # override LEVELS latency (curriculum)
     drops_override: float | tuple | None = None  # override LEVELS drops (curriculum)
+    noise_override: float | None = None  # override LEVELS noise scale (curriculum)
     rate_w: float = 0.0  # action-rate penalty weight; L0-gate teacher used 0.0
     lat_w: float = 2.0  # extra lateral-error weight in progress potential
     yaw_w: float = 1.0  # yaw-error weight in progress potential
@@ -215,9 +216,14 @@ class MecanumVecEnv:
                             else self.level["yaw"])
         yaw = (torch.rand(m, generator=g) * 2 - 1) * ymax
         dev = self.device
+        # Spawn strictly inside the out-of-bounds termination (|pose| > area):
+        # spawning exactly ON the kill boundary outs to sub-mm plant noise /
+        # blind pre-acquisition sweep drag before the first tag. No policy can
+        # survive that; it is a spawn-support artifact, not task difficulty.
+        lim = area - 0.20
         self.pose[idx.to(dev)] = torch.stack(
-            [(d * torch.sin(b)).clamp(-area, area),
-             (d * torch.cos(b)).clamp(-area, area), yaw], dim=1).to(dev)
+            [(d * torch.sin(b)).clamp(-lim, lim),
+             (d * torch.cos(b)).clamp(-lim, lim), yaw], dim=1).to(dev)
         self.vel[idx.to(dev)] = 0
         self.time[idx.to(dev)] = 0
         self.still[idx.to(dev)] = 0
@@ -334,7 +340,8 @@ class MecanumVecEnv:
         self._push_buffer()
 
         # ---- sensors ----
-        noise = float(self.level["noise"])
+        noise = float(self.cfg.noise_override if self.cfg.noise_override is not None
+                      else self.level["noise"])
         delayed = self._delayed_pose()
         dist = delayed[:, :2].norm(dim=1)
         # Bearing: sim yaw=0 faces -y (SDF front camera + Q/left convention);
