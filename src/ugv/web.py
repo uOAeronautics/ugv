@@ -59,6 +59,11 @@ class RobotState:
     stopped: bool = True
     reason: str = "startup"
     revision: int = 0
+    controller: str = "manual"
+    controller_stage: str = "idle"
+    swept_clear_margin_m: float | None = None
+    inference_ms: float | None = None
+    tick_ms: float | None = None
 
 class CameraStream:
     def __init__(self):
@@ -187,6 +192,12 @@ class RobotController:
         self.parking_task = None
         self.parking_status = "observing"
         self.parking_epoch = 0
+        self.controller_stage = "idle"
+        self.inference_ms: float | None = None
+        self.tick_ms: float | None = None
+
+    CONTROLLERS = ("manual", "staged_ekf", "rl_student")
+    RL_INFERENCE_BUDGET_MS = 20.0
 
     def imu_sample(self, acceleration: list[float], gyroscope: list[float], rate_hz: float) -> None:
         self.state.imu_accel_g = dict(zip("xyz", acceleration))
@@ -233,6 +244,22 @@ class RobotController:
 
     def _guard_check(self, now):
         with self.hw_lock:
+            if self.state.controller != "manual":
+                breach = None
+                if not self.state.armed:
+                    breach = "controller-disarmed"
+                elif not self._imu_ready(now):
+                    breach = "controller-imu-stale"
+                else:
+                    try:
+                        blockers = self.parking.snapshot()["blockers"]
+                    except Exception:
+                        blockers = ["parking snapshot unavailable"]
+                    if blockers:
+                        breach = "controller-blocked"
+                if breach:
+                    self._fallback_manual(breach)
+                    return
             if not self.state.armed: return
             reason = None
             if self.parking_active and (not self._imu_ready(now) or now-self.parking.last_localized>.30):
@@ -269,8 +296,11 @@ class RobotController:
                     if not self.motion.mode or not self.state.armed: continue
                     now = time.monotonic()
                     try:
+                        tick0 = time.perf_counter()
                         output = self.motion.step(now, self.state.heading_deg,
                                                   self.state.heading_rate_dps, self._imu_ready(now))
+                        self.tick_ms = round((time.perf_counter() - tick0) * 1000, 3)
+                        self.state.tick_ms = self.tick_ms
                         if output is None: continue
                         self.state.motion_mode = self.motion.mode
                         self.state.turn_target_dps = output.target_rate
@@ -294,6 +324,93 @@ class RobotController:
         if self.guard_thread: self.guard_thread.join(timeout=1)
         await self.stop("shutdown", True)
         if self.bus: self.bus.close(); self.bus = None
+
+    def _policy_artifact_path(self) -> Path:
+        import os
+        return Path(os.environ.get("UGV_STUDENT_POLICY", "runs/student.npz"))
+
+    def _numpy_only_ok(self) -> bool:
+        import sys
+        if "torch" in sys.modules:
+            return False
+        try:
+            src = (Path(__file__).parent / "policy.py").read_text()
+        except OSError:
+            return False
+        return "import torch" not in src and "from torch" not in src
+
+    def _measure_policy_ms(self, path: Path) -> float | None:
+        try:
+            from .policy import StudentPolicy
+            import time
+            p = StudentPolicy.load(path)
+            t0 = time.perf_counter()
+            for _ in range(5):
+                p.forward(p.hist)
+            return (time.perf_counter() - t0) / 5 * 1000
+        except Exception:
+            return None
+
+    def _swept_margin(self) -> float | None:
+        try:
+            snap = self.parking.snapshot()
+        except Exception:
+            return None
+        try:
+            margin = float(self.parking.config.get("clearance_margin_m", 0.015))
+            sigma = snap.get("position_sigma_m")
+            if sigma is not None:
+                margin += float(sigma)
+            return round(margin, 4)
+        except Exception:
+            return None
+
+    def _fallback_manual(self, reason: str) -> None:
+        self._brake_locked(reason)
+        self.state.controller = "manual"
+        self.controller_stage = "idle"
+        self.state.controller_stage = "idle"
+
+    async def select_controller(self, cid, name: str):
+        if name not in self.CONTROLLERS:
+            raise ValueError("unknown controller")
+        async with self.lock:
+            if name == "manual":
+                self.state.controller = "manual"
+                self.controller_stage = "idle"
+                self.state.controller_stage = "idle"
+                self.state.reason = "controller-manual"
+                self.state.revision += 1
+            else:
+                if self.state.owner != cid or not self.state.armed:
+                    raise PermissionError("arm controls before selecting controller")
+                now = time.monotonic()
+                if not self._imu_ready(now):
+                    raise PermissionError("fresh calibrated IMU required")
+                blockers = self.parking.snapshot()["blockers"]
+                if blockers:
+                    raise PermissionError("controller unavailable: " + "; ".join(blockers))
+                if name == "rl_student":
+                    if not self._numpy_only_ok():
+                        raise PermissionError("rl_student requires NumPy-only policy path")
+                    path = self._policy_artifact_path()
+                    if not path.is_file():
+                        raise PermissionError("rl_student policy artifact missing")
+                    ms = self._measure_policy_ms(path)
+                    if ms is None:
+                        raise PermissionError("rl_student policy artifact unloadable")
+                    if ms > self.RL_INFERENCE_BUDGET_MS:
+                        raise PermissionError(f"rl_student inference {ms:.1f}ms over budget")
+                    self.inference_ms = round(ms, 3)
+                    self.state.inference_ms = self.inference_ms
+                self.state.controller = name
+                self.controller_stage = "armed-hold" if name == "staged_ekf" else "policy-hold"
+                self.state.controller_stage = self.controller_stage
+                self.state.reason = f"controller-{name}"
+                self.state.revision += 1
+            self.state.swept_clear_margin_m = self._swept_margin()
+            self.state.tick_ms = self.tick_ms
+        await self.broadcast()
 
     async def arm(self, cid):
         async with self.lock:
@@ -532,6 +649,8 @@ class RobotController:
 
     def payload(self, cid=None):
         self.state.imu_age_ms = round((time.monotonic() - self.imu_sample_at) * 1000) if self.imu_sample_at else None
+        self.state.swept_clear_margin_m = self._swept_margin()
+        self.state.tick_ms = self.tick_ms
         p = asdict(self.state); p.update(clients=len(self.clients), you_are_owner=bool(cid and self.state.owner == cid), watchdog_ms=600)
         p.update(camera.metrics()); p.update(aruco.metrics())
         p["parking"] = self.parking.snapshot()
@@ -600,6 +719,7 @@ async def websocket_endpoint(ws: WebSocket):
                     if m.get("enabled") and not camera.enabled:
                         raise PermissionError("enable camera capture before ArUco")
                     await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"))
+                elif kind == "controller": await controller.select_controller(cid, str(m.get("controller", "manual")))
                 elif kind == "parking":
                     if m.get("action") == "start": await controller.start_parking(cid)
                     elif m.get("action") == "stop" and controller.state.owner == cid: await controller.cancel_parking()

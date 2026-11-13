@@ -35,6 +35,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 
 | id | scope | status | evidence |
 |---|---|---|---|
+| [SCOUT] dashboard-selector | IMPL/dashboard-selector | done | web.py controller selector (manual/staged_ekf/rl_student, armed+IMU+blocker gating, brake+manual fallback, snapshot controller/stage/margin/ms/tick) + tests/test_dashboard_selector.py; py_compile OK; tests/ 115 passed |
 | [SCOUT] ui-obs-01 | training-observatory | done | tools/training_ui.py summary output |
 | [SCOUT] dash-audit-01 | pi-dashboard/deploy-readiness | done | web.py audit + docs/L7_PREFLIGHT.md; py_compile OK |
 | [SCOUT] baseline-mean-flag | baselines --no-mean-dynamics (particle-0 plant) | done | rl/baselines.py:27,81-86; rl/test_rl.py flag-parsing test |
