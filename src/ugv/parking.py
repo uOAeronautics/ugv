@@ -101,16 +101,77 @@ def collides(pose, width, length, obstacles, inflation=0.):
     return False
 
 
+def _point_seg_dists(p, a, b):
+    """Vectorized |p - proj(p on ab)| over broadcasted (..., 2) arrays."""
+    d = b - a
+    den = (d * d).sum(-1)
+    num = ((p - a) * d).sum(-1)
+    t = np.divide(num, den, out=np.zeros_like(num), where=den > 0)
+    t = np.clip(t, 0., 1.)
+    return np.linalg.norm(p - (a + t[..., None] * d), axis=-1)
+
+
 def swept_clear(start, end, width, length, obstacles, inflation=0.):
+    """Vectorized sweep: all interpolation steps x capsules x edges at once.
+
+    Same boolean result as looping collides() over the interpolated poses
+    (inflation + .0025 margin included), but a single NumPy pass instead of
+    ~46 Python collides() calls.
+    """
+    if not obstacles:
+        return True
+    eff = inflation + .0025
+    hw, hl = width / 2 + eff, length / 2 + eff
+    dx, dz = end.x - start.x, end.z - start.z
     delta = angle_error(end.yaw, start.yaw)
-    # Sample displacement of the furthest corner, not just the centre point.
-    distance = math.hypot(end.x-start.x, end.z-start.z) + abs(delta)*math.hypot(width,length)/2
+    distance = math.hypot(dx, dz) + abs(delta) * math.hypot(width, length) / 2
     steps = max(1, math.ceil(distance / .005))
-    for i in range(steps + 1):
-        t = i / steps
-        pose = Pose2(start.x+t*(end.x-start.x), start.z+t*(end.z-start.z), start.yaw+t*delta)
-        if collides(pose, width, length, obstacles, inflation+.0025): return False
-    return True
+    n = steps + 1
+    t = np.linspace(0., 1., n)
+    xs = start.x + dx * t
+    zs = start.z + dz * t
+    yaws = start.yaw + delta * t
+    c, s = np.cos(yaws), np.sin(yaws)
+    # Footprint corners, same convention as footprint_corners().
+    lx = np.array([-hw, hw, hw, -hw])
+    lz = np.array([-hl, -hl, hl, hl])
+    corners = np.stack([xs[:, None] + lx * c[:, None] + lz * s[:, None],
+                        zs[:, None] - lx * s[:, None] + lz * c[:, None]], axis=-1)
+    ax = np.array([o.ax for o in obstacles])
+    az = np.array([o.az for o in obstacles])
+    bx = np.array([o.bx for o in obstacles])
+    bz = np.array([o.bz for o in obstacles])
+    rad = np.array([o.radius for o in obstacles])
+    m = len(obstacles)
+    # Capsule endpoints inside the inflated footprint?
+    for ox, oz in ((ax, az), (bx, bz)):
+        ddx, ddz = ox[None, :] - xs[:, None], oz[None, :] - zs[:, None]
+        inside = ((np.abs(c[:, None] * ddx - s[:, None] * ddz) <= hw)
+                  & (np.abs(s[:, None] * ddx + c[:, None] * ddz) <= hl))
+        if bool(inside.any()):
+            return False
+    # Capsule segment vs each footprint edge, over all poses at once.
+    A = np.stack([ax, az], axis=-1)                      # (M, 2)
+    B = np.stack([bx, bz], axis=-1)                      # (M, 2)
+    C = corners                                          # (N, 4, 2)
+    D = np.roll(corners, -1, axis=1)                     # (N, 4, 2)
+    ab = B - A                                           # (M, 2)
+    cd = D - C                                           # (N, 4, 2)
+    den = ab[None, :, None, 0] * cd[:, None, :, 1] - ab[None, :, None, 1] * cd[:, None, :, 0]  # (N, M, 4)
+    w = C[:, None] - A[None, :, None, :]                 # (N, M, 4, 2)
+    cdb = cd[:, None]                                    # (N, 1, 4, 2)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        tp = (w[..., 0] * cdb[..., 1] - w[..., 1] * cdb[..., 0]) / den
+        up = (w[..., 0] * ab[None, :, None, 1] - w[..., 1] * ab[None, :, None, 0]) / den
+    hit = ((np.abs(den) > 1e-10) & (tp >= 0) & (tp <= 1)
+             & (up >= 0) & (up <= 1))
+    if bool(hit.any()):
+        return False
+    dmin = _point_seg_dists(A[None, :, None, :], C[:, None], D[:, None])
+    np.minimum(dmin, _point_seg_dists(B[None, :, None, :], C[:, None], D[:, None]), out=dmin)
+    np.minimum(dmin, _point_seg_dists(C[:, None], A[None, :, None, :], B[None, :, None, :]), out=dmin)
+    np.minimum(dmin, _point_seg_dists(D[:, None], A[None, :, None, :], B[None, :, None, :]), out=dmin)
+    return not bool((dmin <= rad[None, :, None]).any())
 
 
 def gear_obstacles(gear, vehicle_height=0.):

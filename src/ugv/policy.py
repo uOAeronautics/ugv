@@ -11,7 +11,7 @@ DIM = 13  # tag(3) + age + valid + imu_w + imu_yaw + prev_act(3) + tag_vel(3); m
 V_X_MAX = 1.27
 V_Y_MAX = 0.63
 W_MAX = 2.20
-STOP_HORIZON = 0.18
+STOP_HORIZON = 0.35  # > 200ms camera latency + 120ms brake_tau + margin
 EMA_TAU = 0.25
 
 
@@ -94,7 +94,7 @@ class StudentPolicy:
 
     def step(self, tag_xyyaw: tuple | None, tag_age: float, tag_valid: bool,
              imu_w: float, imu_yaw: float, prev_act: np.ndarray,
-             estimate: Pose2, dt: float = 0.02) -> tuple[np.ndarray, str]:
+             estimate: Pose2, dt: float = 0.02, dt_stale: float = 0.0) -> tuple[np.ndarray, str]:
         """Returns (action[3|4] in [-1,1], reason). Brakes on bad input or blocked sweep."""
         # One frame spec with sim.py: an invalid tag is zeroed fields + valid=0,
         # never the last-seen values.
@@ -136,17 +136,21 @@ class StudentPolicy:
             act = self._head(self._h).clip(-1, 1)
         else:
             act = self.forward(self.hist).clip(-1, 1)
-        # shield: rotate body velocity by estimate.yaw and sweep full stopping horizon
+        # shield: rotate body velocity by estimate.yaw, forward-predict past dt_stale,
+        # then sweep the full stopping horizon (covers latency + brake_tau)
         c, s = math.cos(estimate.yaw), math.sin(estimate.yaw)
         vx_b = float(act[0]) * V_X_MAX
         vy_b = float(act[1]) * V_Y_MAX
         vx_w = c * vx_b - s * vy_b
         vz_w = s * vx_b + c * vy_b
         w = float(act[2]) * W_MAX
-        nxt = Pose2(estimate.x + vx_w * STOP_HORIZON,
-                    estimate.z + vz_w * STOP_HORIZON,
-                    estimate.yaw + w * STOP_HORIZON)
-        if not swept_clear(estimate, nxt, self.vehicle["width_m"], self.vehicle["length_m"],
+        nxt = Pose2(estimate.x + vx_w * (dt_stale + STOP_HORIZON),
+                    estimate.z + vz_w * (dt_stale + STOP_HORIZON),
+                    estimate.yaw + w * (dt_stale + STOP_HORIZON))
+        start = estimate if not dt_stale else Pose2(estimate.x + vx_w * dt_stale,
+                                                   estimate.z + vz_w * dt_stale,
+                                                   estimate.yaw + w * dt_stale)
+        if not swept_clear(start, nxt, self.vehicle["width_m"], self.vehicle["length_m"],
                            self.obstacles, self.inflation):
             return np.zeros_like(act), "brake: swept footprint blocked"
         return act, "policy"

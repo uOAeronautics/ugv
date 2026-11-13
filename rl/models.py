@@ -89,6 +89,18 @@ def load_teacher(path, device):
     return m, ckpt
 
 
+def load_student(path, device):
+    # strict=False so pre-aux checkpoints (no aux_head keys) and post-aux
+    # checkpoints both load cleanly.
+    ckpt = torch.load(path, map_location=device)
+    m = Student(act_dim=ckpt.get("act_dim", 3),
+                h=ckpt.get("hidden", 64),
+                head_w=ckpt.get("head_w", 64)).to(device)
+    m.load_state_dict(ckpt["student"], strict=False)
+    m.eval()
+    return m, ckpt
+
+
 def gae_advantages(rewards, values, dones, last_v, gamma, lam):
     """Generalized advantage estimation. `dones[t]` ends transition t, so both
     the bootstrap value and the carried advantage are zeroed with `1 - D[t]`

@@ -64,6 +64,15 @@ class RobotState:
     swept_clear_margin_m: float | None = None
     inference_ms: float | None = None
     tick_ms: float | None = None
+    aruco_age_ms: int | None = None
+    imu_bias_dps: dict[str, float] = field(default_factory=lambda: {axis: 0.0 for axis in "xyz"})
+    follow_debug: dict = field(default_factory=lambda: {
+        "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0, "vx": 0.0,
+        "vz": 0.0, "sigma_m": 0.05, "coast_age_ms": 0,
+        "cmd_vec": [0.0, 0.0, 0.0]})
+    rls_scale: float = 1.0
+    joystick_deadzone: float = 0.08
+    sysid_ready: bool = False
 
 class CameraStream:
     def __init__(self):
@@ -195,6 +204,7 @@ class RobotController:
         self.controller_stage = "idle"
         self.inference_ms: float | None = None
         self.tick_ms: float | None = None
+        self.rls_lateral_scale: float = 1.0
 
     CONTROLLERS = ("manual", "staged_ekf", "rl_student")
     RL_INFERENCE_BUDGET_MS = 20.0
@@ -647,10 +657,53 @@ class RobotController:
         if self.state.owner == cid: await self.stop("controller-disconnected", True)
         else: await self.broadcast()
 
+    def _aruco_age_ms(self) -> int | None:
+        try:
+            last = aruco.last_detection_at
+        except Exception:
+            return None
+        if not last:
+            return None
+        return round((time.monotonic() - last) * 1000)
+
+    def _imu_bias_dps(self) -> dict[str, float]:
+        try:
+            bias = getattr(self.heading, "_bias", (0.0, 0.0, 0.0))
+            return {axis: round(float(value), 3) for axis, value in zip("xyz", bias)}
+        except Exception:
+            return {axis: 0.0 for axis in "xyz"}
+
+    def _rls_scale(self) -> float:
+        # Bounded lateral dynamics gain estimate for SysID readiness display.
+        # Defaults to 1.0 until an online estimator publishes a refined scale.
+        try:
+            scale = float(getattr(self, "rls_lateral_scale", 1.0))
+        except Exception:
+            return 1.0
+        if not math.isfinite(scale):
+            return 1.0
+        return round(max(0.25, min(2.0, scale)), 3)
+
+    def _sysid_ready(self) -> bool:
+        now = time.monotonic()
+        try:
+            cam_age = camera.metrics()["camera_frame_age_ms"]
+        except Exception:
+            cam_age = None
+        return bool(self._imu_ready(now) and cam_age is not None and cam_age <= 250)
+
     def payload(self, cid=None):
         self.state.imu_age_ms = round((time.monotonic() - self.imu_sample_at) * 1000) if self.imu_sample_at else None
         self.state.swept_clear_margin_m = self._swept_margin()
         self.state.tick_ms = self.tick_ms
+        self.state.aruco_age_ms = self._aruco_age_ms()
+        self.state.imu_bias_dps = self._imu_bias_dps()
+        try:
+            self.state.follow_debug = dict(aruco.follow_debug)
+        except Exception:
+            pass
+        self.state.rls_scale = self._rls_scale()
+        self.state.sysid_ready = self._sysid_ready()
         p = asdict(self.state); p.update(clients=len(self.clients), you_are_owner=bool(cid and self.state.owner == cid), watchdog_ms=600)
         p.update(camera.metrics()); p.update(aruco.metrics())
         p["parking"] = self.parking.snapshot()
@@ -718,7 +771,7 @@ async def websocket_endpoint(ws: WebSocket):
                 elif kind == "aruco":
                     if m.get("enabled") and not camera.enabled:
                         raise PermissionError("enable camera capture before ArUco")
-                    await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"))
+                    await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"), m.get("follow_mode"))
                 elif kind == "controller": await controller.select_controller(cid, str(m.get("controller", "manual")))
                 elif kind == "parking":
                     if m.get("action") == "start": await controller.start_parking(cid)

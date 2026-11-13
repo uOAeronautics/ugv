@@ -56,6 +56,7 @@ class FollowCommand:
     turn: float = 0.0
     duration: float | None = None
     reason: str = "aruco-centering-settle"
+    strafe: float = 0.0
 
 
 class FollowSteering:
@@ -115,7 +116,9 @@ class FollowSteering:
 
 
 class ArucoFollower:
-    def __init__(self, camera: "CameraStream", controller: "RobotController") -> None:
+    def __init__(self, camera: "CameraStream", controller: "RobotController",
+                 follow_mode: str = "legacy") -> None:
+        import os as _os
         self.camera = camera
         self.controller = controller
         self.enabled = False
@@ -123,6 +126,19 @@ class ArucoFollower:
         self.owner: str | None = None
         self.follow_speed_limit = 1800
         self.steering = FollowSteering()
+        # Holonomic smooth policy: opt-in via follow_mode="holonomic" or
+        # FOLLOW_SMOOTH=1. Legacy FollowSteering stays the default so its
+        # step() signature and behaviour are preserved bit-for-bit.
+        self.follow_mode = follow_mode
+        if _os.environ.get("FOLLOW_SMOOTH") == "1":
+            self.follow_mode = "holonomic"
+        from .follow import HolonomicFollowPolicy
+        self.smooth_policy = HolonomicFollowPolicy()
+        self.follow_debug: dict = {
+            "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0,
+            "vx": 0.0, "vz": 0.0, "sigma_m": 0.05,
+            "coast_age_ms": 0, "cmd_vec": [0.0, 0.0, 0.0],
+        }
         self.task: asyncio.Task[None] | None = None
         self.last_sequence = -1
         self.last_detection_at = 0.0
@@ -138,6 +154,16 @@ class ArucoFollower:
         self.decode_ms = 0.0
         self.source_at = 0.0
         self.skipped_frames = 0
+
+    def smooth_enabled(self) -> bool:
+        return self.follow_mode == "holonomic"
+
+    def set_follow_mode(self, mode: str) -> None:
+        if mode not in ("legacy", "holonomic"):
+            raise ValueError("unknown follow mode")
+        self.follow_mode = mode
+        self.smooth_policy.reset()
+        self.steering.reset()
 
     def metrics(self) -> dict:
         now = time.monotonic()
@@ -165,13 +191,15 @@ class ArucoFollower:
                 pass
 
     async def configure(self, client_id: str, enabled: bool, follow: bool | None = None,
-                        speed_limit: int | None = None) -> None:
+                        speed_limit: int | None = None, follow_mode: str | None = None) -> None:
         if speed_limit is not None:
             if self.follow and self.owner != client_id:
                 raise PermissionError("only the follow controller can change speed")
             if follow and (self.controller.state.owner != client_id or not self.controller.state.armed):
                 raise PermissionError("arm controls before enabling ArUco follow")
             self.follow_speed_limit = max(500, min(1800, int(speed_limit)))
+        if follow_mode is not None:
+            self.set_follow_mode(follow_mode)
         if follow:
             if getattr(self.controller,"parking_active",False):
                 raise PermissionError("stop parking before enabling follow")
@@ -195,6 +223,12 @@ class ArucoFollower:
         self.follow = False
         self.owner = None
         self.steering.reset()
+        self.smooth_policy.reset()
+        self.follow_debug = {
+            "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0,
+            "vx": 0.0, "vz": 0.0, "sigma_m": 0.05,
+            "coast_age_ms": 0, "cmd_vec": [0.0, 0.0, 0.0],
+        }
         self.sync_state()
         if was_following:
             await self.controller.stop(reason, release=False)
@@ -206,6 +240,12 @@ class ArucoFollower:
 
     def clear_detection(self, status: str) -> None:
         self.steering.reset()
+        self.smooth_policy.reset()
+        self.follow_debug = {
+            "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0,
+            "vx": 0.0, "vz": 0.0, "sigma_m": 0.05,
+            "coast_age_ms": 0, "cmd_vec": [0.0, 0.0, 0.0],
+        }
         state = self.controller.state
         state.aruco_visible = False
         state.aruco_id = None
@@ -961,6 +1001,7 @@ class ArucoFollower:
                 self.target_id = detection.tag_id
                 self.filter_state = None
                 self.steering.reset()
+                self.smooth_policy.reset()
             if any(not item.tracked for item in detections):
                 self.last_detection_at = time.monotonic()
             state = self.controller.state
@@ -995,7 +1036,40 @@ class ArucoFollower:
                 self.steering.reset()
                 await self.controller.stop("aruco-decode-stale", release=False)
                 continue
+            yaw_rate = 0.0
+            try:
+                yaw_rate = float(self.controller.state.heading_rate_dps or 0.0)
+            except Exception:
+                yaw_rate = 0.0
+            if self.smooth_enabled():
+                command = self.smooth_policy.step(
+                    error_x, filtered_distance, completed, yaw_rate_dps=yaw_rate)
+                self.follow_debug = dict(self.smooth_policy.debug)
+                self.follow_debug["cmd_vec"] = [
+                    round(command.forward, 4), round(command.strafe, 4),
+                    round(command.turn, 4)]
+                state.aruco_status = (
+                    f"follow-{self.smooth_policy.mode.lower()}"
+                    if command.reason.startswith("smooth-") else state.aruco_status)
+                if command.reason == "smooth-target-reached":
+                    state.aruco_status = "target-reached"
+                if not command.forward and not command.strafe and not command.turn:
+                    await self.controller.stop(command.reason, release=False)
+                else:
+                    await self.controller.drive(
+                        self.owner, command.forward, command.strafe, command.turn,
+                        self.follow_speed_limit, autonomous=True, duration=None)
+                continue
             command = self.steering.step(error_x, filtered_distance, completed, captured_at)
+            self.follow_debug = {
+                "mode": "TRACK" if self.follow else "IDLE",
+                "err_lead": round(error_x, 4),
+                "z_lead": round(filtered_distance, 4),
+                "vx": 0.0, "vz": 0.0,
+                "sigma_m": 0.05, "coast_age_ms": 0,
+                "cmd_vec": [round(command.forward, 4) if command else 0.0, 0.0,
+                            round(command.turn, 4) if command else 0.0],
+            }
             if self.steering.centering:
                 state.aruco_status = "centering"
             if command is None:

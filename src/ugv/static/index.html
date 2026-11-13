@@ -26,6 +26,7 @@
         <button id="park-preview" disabled>PREVIEW ROUTE</button><button id="park-start" disabled>PARK</button><button id="park-stop" disabled>STOP PARKING</button>
       </section>
       <dl class="status" aria-live="polite">
+        <div id="l7-banner" class="l7-ok" role="status">L7 INTERLOCK · NOMINAL</div>
         <div id="heading-widget" class="heading-widget">
           <div class="heading-dial" aria-label="Relative heading compass">
             <span class="compass-north">N</span><span class="compass-east">E</span>
@@ -65,6 +66,28 @@
         <i id="joystick-knob"></i><small>MOVE</small>
       </div>
 
+      <aside id="telemetry-rail" aria-label="Technical telemetry rail">
+        <h2>TELEMETRY</h2>
+        <div class="rail-row"><span>Follow</span><b id="follow-state">IDLE</b></div>
+        <div class="rail-row"><span>Loop / infer</span><canvas id="spark-loop" width="220" height="36"></canvas></div>
+        <div class="rail-row"><span>Cam FPS / age</span><canvas id="spark-cam" width="220" height="36"></canvas></div>
+        <div class="rail-row"><span>Yaw / gyro</span><canvas id="spark-imu" width="220" height="36"></canvas></div>
+        <div class="rail-wheels" aria-label="Wheel PWM">
+          <div><span>FL</span><i><b id="wheel-fl"></b></i><em data-wheel-bar="front-left">0</em></div>
+          <div><span>FR</span><i><b id="wheel-fr"></b></i><em data-wheel-bar="front-right">0</em></div>
+          <div><span>RL</span><i><b id="wheel-rl"></b></i><em data-wheel-bar="rear-left">0</em></div>
+          <div><span>RR</span><i><b id="wheel-rr"></b></i><em data-wheel-bar="rear-right">0</em></div>
+        </div>
+        <div class="rail-row"><span>Lead err / z</span><b id="follow-lead">—</b></div>
+        <div class="rail-row"><span>Sigma / coast</span><b id="follow-sigma">—</b></div>
+        <div class="rail-row"><span>SysID</span><b id="sysid-readiness">—</b></div>
+      </aside>
+
+      <section id="tactical-panel" aria-label="Tactical BEV">
+        <h2>TACTICAL BEV</h2>
+        <canvas id="tactical-bev" width="300" height="300" aria-label="Bird's-eye tactical view"></canvas>
+      </section>
+
       <div class="control-bar">
         <button id="arm">ARM</button>
         <button id="detect-toggle" aria-pressed="false">DETECT OFF</button>
@@ -77,6 +100,14 @@
         <input id="speed" type="range" min="500" max="1800" step="50" value="1800" />
         <span class="meter" aria-hidden="true"><i id="speed-meter"></i></span>
         <button id="stop">STOP</button>
+        <label for="controller-select">Controller</label>
+        <select id="controller-select" aria-label="Controller select">
+          <option value="manual">manual</option>
+          <option value="staged_ekf">staged_ekf</option>
+          <option value="rl_student">rl_student</option>
+        </select>
+        <button id="follow-mode-toggle" aria-pressed="false" title="Toggle smooth vs legacy follow">SMOOTH OFF</button>
+        <button id="view-fit-toggle" aria-pressed="false" title="Toggle camera fit contain/cover">FIT: CONTAIN</button>
       </div>
 
       <div class="wheel-data" aria-hidden="true">
@@ -89,6 +120,7 @@
   </main>
   <script src="/static/vendor/ort.wasm.min.js" defer></script>
   <script src="/static/parking.js" defer></script>
+  <script src="/static/tactical.js" defer></script>
   <script src="/static/app.js" defer></script>
   <script src="/static/vision.js" defer></script>
 </body>

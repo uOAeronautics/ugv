@@ -15,6 +15,40 @@ const joystick = $("#joystick");
 const joystickKnob = $("#joystick-knob");
 let stick = { forward: 0, strafe: 0 };
 let stickPointer = null;
+const JOY_DEADZONE = 0.08;
+function applyJoyDeadzone(value) {
+  const magnitude = Math.abs(value);
+  if (magnitude <= JOY_DEADZONE) return 0;
+  return Math.sign(value) * ((magnitude - JOY_DEADZONE) / (1 - JOY_DEADZONE));
+}
+
+// Telemetry ring buffers (client-side, ~50 Hz loop data at render rate).
+const RING_N = 120;
+const rings = { loop: [], infer: [], fps: [], age: [], yaw: [], gyro: [] };
+function pushRing(name, value) {
+  if (!Number.isFinite(value)) return;
+  const ring = rings[name];
+  ring.push(value);
+  if (ring.length > RING_N) ring.shift();
+}
+function drawSpark(id, series, color, min, max) {
+  const el = document.querySelector(id);
+  if (!el) return;
+  const context = el.getContext("2d");
+  const W = el.width, H = el.height;
+  context.clearRect(0, 0, W, H);
+  if (series.length < 2) return;
+  const span = Math.max(1e-6, max - min);
+  context.strokeStyle = color;
+  context.lineWidth = 1.5;
+  context.beginPath();
+  series.forEach((v, i) => {
+    const x = (i / (RING_N - 1)) * W;
+    const y = H - 3 - ((Math.min(max, Math.max(min, v)) - min) / span) * (H - 6);
+    if (i === 0) context.moveTo(x, y); else context.lineTo(x, y);
+  });
+  context.stroke();
+}
 
 function drawAruco(next) {
   const ratio = devicePixelRatio || 1;
@@ -129,6 +163,61 @@ function render(next) {
   drawAruco(next);
   window.renderParking?.(next.parking, next);
   Object.entries(next.wheels).forEach(([name, duty]) => document.querySelector(`[data-wheel="${name}"]`).textContent = duty);
+  // Mission-Control HUD (additive; every legacy ID above is untouched).
+  pushRing("loop", Number(next.tick_ms) || 0);
+  pushRing("infer", Number(next.inference_ms) || 0);
+  pushRing("fps", Number(next.camera_fps) || 0);
+  pushRing("age", Number(next.camera_frame_age_ms) || 0);
+  pushRing("yaw", Number(next.heading_deg) || 0);
+  pushRing("gyro", Number(next.heading_rate_dps) || 0);
+  drawSpark("#spark-loop", rings.loop, "#38bdf8", 0, Math.max(20, ...rings.loop));
+  drawSpark("#spark-cam", rings.fps, "#22c55e", 0, Math.max(35, ...rings.fps));
+  drawSpark("#spark-imu", rings.gyro, "#f59e0b", Math.min(-45, ...rings.gyro), Math.max(45, ...rings.gyro));
+  const bar = { "front-left": "#wheel-fl", "front-right": "#wheel-fr", "rear-left": "#wheel-rl", "rear-right": "#wheel-rr" };
+  Object.entries(bar).forEach(([name, id]) => {
+    const pwm = Number((next.wheels || {})[name] || 0);
+    const el = document.querySelector(id);
+    if (el) el.style.width = `${Math.min(100, (Math.abs(pwm) / 4095) * 100).toFixed(1)}%`;
+    const num = document.querySelector(`[data-wheel-bar="${name}"]`);
+    if (num) num.textContent = String(pwm);
+  });
+  const fd = next.follow_debug || {};
+  const badge = $("#follow-state");
+  if (badge) {
+    const mode = String(fd.mode || (next.aruco_follow ? "TRACK" : "IDLE")).toUpperCase();
+    badge.textContent = mode;
+    badge.className = mode === "TRACK" ? "track" : mode === "COAST" ? "coast" : mode === "SEARCH" ? "search" : "";
+    badge.id = "follow-state";
+  }
+  const lead = $("#follow-lead");
+  if (lead) lead.textContent = `${Number(fd.err_lead ?? NaN).toFixed?.(3) ?? "—"} / ${Number(fd.z_lead ?? NaN).toFixed?.(3) ?? "—"}`;
+  const sigma = $("#follow-sigma");
+  if (sigma) sigma.textContent = `${fd.sigma_m ?? "—"} m / ${fd.coast_age_ms ?? 0} ms`;
+  const sysid = $("#sysid-readiness");
+  if (sysid) sysid.textContent = `${next.sysid_ready ? "READY" : "HOLD"} · rls ${next.rls_scale ?? 1} · bias ${(next.imu_bias_dps?.z ?? 0).toFixed?.(2) ?? "—"} dps`;
+  const banner = $("#l7-banner");
+  if (banner) {
+    const breach = next.controller !== "manual" && !["armed-hold", "policy-hold"].includes(next.controller_stage)
+      ? false : (next.reason || "").includes("controller-blocked") || (next.reason || "").includes("watchdog");
+    const armedBreach = next.armed && (next.reason || "").match(/(watchdog|blocked|stale|mismatch|expired)/);
+    if (armedBreach) {
+      banner.textContent = `L7 INTERLOCK · BREACH · ${next.reason}`;
+      banner.className = "l7-breach";
+    } else {
+      banner.textContent = `L7 INTERLOCK · NOMINAL · ${next.controller}/${next.controller_stage} · deadline ${next.watchdog_ms} ms`;
+      banner.className = "l7-ok";
+    }
+    banner.id = "l7-banner";
+  }
+  const select = $("#controller-select");
+  if (select && select.value !== next.controller) select.value = next.controller;
+  const fmt = $("#follow-mode-toggle");
+  if (fmt) {
+    const smooth = (next.follow_debug && next.follow_debug.smooth) || window.__followSmooth;
+    fmt.textContent = window.__followSmooth ? "SMOOTH ON" : "SMOOTH OFF";
+    fmt.setAttribute("aria-pressed", String(Boolean(window.__followSmooth)));
+  }
+  window.renderTactical?.(next);
 }
 
 function connect() {
@@ -182,6 +271,24 @@ $("#camera-toggle").addEventListener("click", () => send({ type: "camera-capture
 $("#aruco-toggle").addEventListener("click", () => send({ type: "aruco", enabled: !state.aruco_enabled, follow: state.aruco_follow ? false : null }));
 $("#follow-toggle").addEventListener("click", () => send({ type: "aruco", enabled: true, follow: !state.aruco_follow, speed_limit: Number(speed.value) }));
 $("#heading-calibrate").addEventListener("click", () => send({ type: "heading-calibrate" }));
+$("#controller-select")?.addEventListener("change", (event) => send({ type: "controller", controller: event.target.value }));
+window.__followSmooth = false;
+window.__viewFit = "contain";
+$("#follow-mode-toggle")?.addEventListener("click", () => {
+  window.__followSmooth = !window.__followSmooth;
+  const el = $("#follow-mode-toggle");
+  el.textContent = window.__followSmooth ? "SMOOTH ON" : "SMOOTH OFF";
+  el.setAttribute("aria-pressed", String(window.__followSmooth));
+  send({ type: "aruco", enabled: true, follow: state.aruco_follow || undefined, follow_mode: window.__followSmooth ? "holonomic" : "legacy" });
+});
+$("#view-fit-toggle")?.addEventListener("click", () => {
+  window.__viewFit = window.__viewFit === "contain" ? "cover" : "contain";
+  const feed = $("#camera-feed");
+  if (feed) feed.style.objectFit = window.__viewFit;
+  const el = $("#view-fit-toggle");
+  el.textContent = `FIT: ${window.__viewFit.toUpperCase()}`;
+  el.setAttribute("aria-pressed", String(window.__viewFit === "cover"));
+});
 speed.addEventListener("input", () => {
   speedValue.textContent = speed.value;
   $("#speed-meter").style.width = `${((speed.value - 500) / 1300) * 100}%`;
@@ -194,7 +301,7 @@ function updateStick(event) {
   const dx = event.clientX - (rect.left + rect.width / 2), dy = event.clientY - (rect.top + rect.height / 2);
   const magnitude = Math.hypot(dx, dy), scale = magnitude > radius ? radius / magnitude : 1;
   const x = dx * scale, y = dy * scale;
-  stick = { strafe: x / radius, forward: -y / radius };
+  stick = { strafe: applyJoyDeadzone(x / radius), forward: applyJoyDeadzone(-y / radius) };
   joystickKnob.style.transform = `translate(${x}px, ${y}px)`;
   if (state.armed && state.you_are_owner) drive();
 }

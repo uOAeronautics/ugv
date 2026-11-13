@@ -73,7 +73,7 @@ def test_shield_rotates_by_yaw_and_sweeps_horizon():
     act, reason = p.step((0.0, 0.26, math.pi / 2), 0.0, True, 0.0, 0.0, np.zeros(3), est_rot)
     assert (act == 0).all() and "blocked" in reason
 
-    # Stopping horizon (0.18s) catches skid collision that a 0.02s step misses.
+    # Stopping horizon (0.35s) catches skid collision that a 0.02s step misses.
     p.reset()
     est_left = Pose2(-0.005, 0.0, 0.0)
     p.forward = lambda h: np.array([-0.15, 0.0, 0.0])
