@@ -52,6 +52,8 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [EXP] teacher_L0_yaw03 | L0 989/1000 succ, 10 coll, 1 timeout, med 4.4s, pos_p95 1mm, yaw_p95 0.3deg (yaw_w 0.3, p0, seed 0) | measured | rl/runs/teacher_L0_yaw03.json, archive.jsonl parent teacher_L0_refixed |
 | [EXP] baseline_ekf_staged_L0_gated | L0 816/1000 succ, 158 coll, 26 timeout, med 9.8s, pos_p95 228mm (p0 + ENTER margin gating) | measured | rl/runs/baseline_ekf_staged_L0_gated.json, archive.jsonl parent baseline_ekf_staged_L0_refixed |
 | [EXP] teacher_L0_yaw03_s1 | L0 103/1000 succ, 897 coll, 0 timeout, med 4.3s, pos_p95 79mm, yaw_p95 28.8deg (yaw_w 0.3, p0, seed 1; 2nd seed -> GATE FAIL, idea dead) | measured | rl/runs/teacher_L0_yaw03_s1.json, archive.jsonl parent teacher_L0_yaw03 |
+| [EXP] teacher_L0_latw4_s0 | L0 131/1000 succ, 869 coll, 0 timeout, med 4.7s, pos_p95 101mm, yaw_p95 30.9deg (lat_w 4.0, yaw_w 0.3, p0, seed 0; GATE FAIL) | measured | rl/runs/teacher_L0_latw4_s0.json, archive.jsonl parent teacher_L0_yaw03 |
+| [EXP] teacher_L0_latw4_s1 | L0 125/1000 succ, 875 coll, 0 timeout, med 5.0s, pos_p95 111mm, yaw_p95 31.7deg (lat_w 4.0, yaw_w 0.3, p0, seed 1; 2nd seed -> GATE FAIL, idea dead) | measured | rl/runs/teacher_L0_latw4_s1.json, archive.jsonl parent teacher_L0_yaw03 |
 
 ## [ADVERSARY]
 
