@@ -54,6 +54,7 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [EXP] teacher_L0_yaw03_s1 | L0 103/1000 succ, 897 coll, 0 timeout, med 4.3s, pos_p95 79mm, yaw_p95 28.8deg (yaw_w 0.3, p0, seed 1; 2nd seed -> GATE FAIL, idea dead) | measured | rl/runs/teacher_L0_yaw03_s1.json, archive.jsonl parent teacher_L0_yaw03 |
 | [EXP] teacher_L0_latw4_s0 | L0 131/1000 succ, 869 coll, 0 timeout, med 4.7s, pos_p95 101mm, yaw_p95 30.9deg (lat_w 4.0, yaw_w 0.3, p0, seed 0; GATE FAIL) | measured | rl/runs/teacher_L0_latw4_s0.json, archive.jsonl parent teacher_L0_yaw03 |
 | [EXP] teacher_L0_latw4_s1 | L0 125/1000 succ, 875 coll, 0 timeout, med 5.0s, pos_p95 111mm, yaw_p95 31.7deg (lat_w 4.0, yaw_w 0.3, p0, seed 1; 2nd seed -> GATE FAIL, idea dead) | measured | rl/runs/teacher_L0_latw4_s1.json, archive.jsonl parent teacher_L0_yaw03 |
+| [EXP] student_L0_lat_s1_fixedsim | L0 1000/1000 succ, 0 coll, 0 timeout, med 6.0s, pos_p95 10mm, yaw_p95 0.3deg (gate ckpt on fixed sim particle-0, seed 11; GATE PASS) | measured | rl/runs/student_L0_lat_s1_fixedsim.json, archive.jsonl parent student_L0_lat_s1 |
 
 ## [ADVERSARY]
 
@@ -78,3 +79,4 @@ Format: `[TYPE] id | scope | status | evidence`.
 | [EXP] gz-L3-policy-student-3ep | L3 2/3 succ, 0 coll, 1 timeout (after yaw-sign fix) | conditional | cmd_phys=(-act[1],act[0],-act[2]) |
 | [ADVERSARY] teacher-10-coll | STOCHASTIC (seed-fixable): 14/15 mouth-clip same +50mm mode (cx+0.047-0.055/yaw14-21deg or cx-0.06-0.21), 1 runaway timeout; clip flips with particle/batching; yaw_w0.3>>1.0 (152->10). NEXT: seed-1 retry running; if FAIL then lat_w 2.0->4.0 only (keep yaw_w 0.3) | rl/reward.py:14-20; rl/sim.py:44-46,409-413; repro 985/14/1 vs JSON 989/10/1 |
 | [ADVERSARY] seed-divergence | TRAINED OK, EVAL DIVERGED: identical entropy/value/coll convergence; stochastic-train (sample) vs deterministic-eval (mean) mismatch on particles[0] + yaw_w 0.3. NEXT: single change lat_w 2.0->4.0, rerun seeds 0+1 | train_teacher.py:33-34,50-51,62-65,102,110,117; evaluate.py:60,67-72; logs iters 1-120 both |
+| [GATE] student L0 (fixed sim) | PASS 1000/1000, 0 coll | ckpt runs/student_L0_lat_s1.pt, eval runs/student_L0_lat_s1_fixedsim.json, deploy policy valid; teacher track stays red (best 989/10, s1 103) |
