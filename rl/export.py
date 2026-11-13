@@ -36,7 +36,8 @@ def main():
     ap.add_argument("--onnx", default=None)
     args = ap.parse_args()
     ckpt = torch.load(args.ckpt, map_location="cpu")
-    model = Student(h=ckpt.get("hidden", 64) or 64,
+    model = Student(act_dim=ckpt.get("act_dim", 3),
+                    h=ckpt.get("hidden", 64) or 64,
                     head_w=ckpt.get("head_w", 64) or 64)
     model.load_state_dict(ckpt["student"] if "student" in ckpt else ckpt)
     model.eval()
@@ -47,7 +48,8 @@ def main():
     blob = b"".join(v.tobytes() for k, v in sorted(arrays.items()))
     digest = hashlib.sha256(blob).hexdigest()[:16]
     np.savez(args.out, **arrays, meta_level=np.array(ckpt.get("level", "?")),
-             meta_sha=np.array(digest))
+             meta_sha=np.array(digest),
+             meta_stateful=np.array(bool(ckpt.get("stateful", False))))
     print(f"wrote {args.out} ({os.path.getsize(args.out)/1e3:.1f} kB) sha {digest}")
     if args.onnx:
         torch.onnx.export(model, (torch.zeros(1, HIST, STUDENT_DIM),), args.onnx,

@@ -9,6 +9,13 @@ from sim import MecanumVecEnv, EnvConfig
 from models import RUNS, TEACHER_OBS, Actor, Critic, gae_advantages, priv_input
 
 
+def _parse_spawn(s: str | None):
+    if s is None:
+        return None
+    parts = [float(x) for x in s.split(",")]
+    return parts[0] if len(parts) == 1 else (parts[0], parts[1])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--level", default="L1")
@@ -21,6 +28,8 @@ def main():
     ap.add_argument("--gamma", type=float, default=0.99)
     ap.add_argument("--lam", type=float, default=0.95)
     ap.add_argument("--clip", type=float, default=0.2)
+    ap.add_argument("--hidden", type=int, default=256)
+    ap.add_argument("--act-dim", type=int, default=3)
     ap.add_argument("--ent", type=float, default=1e-3,
                     help="constant entropy weight (status quo: runs/teacher_L0.pt used this)")
     ap.add_argument("--ent-anneal", action="store_true",
@@ -28,8 +37,15 @@ def main():
     ap.add_argument("--curric", type=int, default=0,
                     help="first N iters spawn at 0.1-0.4m so the hold is discovered, "
                          "then spec spawns (final gate always uses spec spawns)")
-    ap.add_argument("--init", default=None,
-                    help="warm-start actor+critic from a checkpoint (curriculum/continuation)")
+    ap.add_argument("--spawn-dist", default=None,
+                    help="override spawn distance, e.g. '0.5,1.5' or '0.75'")
+    ap.add_argument("--declare-parked", action="store_true")
+    ap.add_argument("--no-mean-dynamics", action="store_true")
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--init", default=None,
+                   help="warm-start actor+critic weights (fresh opt & LR schedule)")
+    g.add_argument("--resume", default=None,
+                   help="resume interrupted run (loads weights + opt + sched)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--lat-weight", type=float, default=2.0,
                     help="extra lateral-error weight in progress potential")
@@ -40,21 +56,27 @@ def main():
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
-    env = MecanumVecEnv(args.envs, EnvConfig(level=args.level, device=dev,
-                                         seed=args.seed, rate_w=args.rate_weight, lat_w=args.lat_weight))
-    actor = Actor().to(dev)
-    critic = Critic().to(dev)
-    if args.init:
-        ckpt = torch.load(args.init, map_location=dev)
+    base_spawn = _parse_spawn(args.spawn_dist)
+    env = MecanumVecEnv(args.envs, EnvConfig(
+        level=args.level, device=dev, seed=args.seed,
+        spawn_dist=base_spawn, rate_w=args.rate_weight, lat_w=args.lat_weight,
+        use_mean_dynamics=not args.no_mean_dynamics, declare_parked=args.declare_parked))
+    actor = Actor(act_dim=args.act_dim, w=args.hidden).to(dev)
+    critic = Critic(w=args.hidden).to(dev)
+    ckpt_path = args.resume or args.init
+    ckpt = None
+    if ckpt_path:
+        ckpt = torch.load(ckpt_path, map_location=dev)
         actor.load_state_dict(ckpt["actor"])
         if "critic" in ckpt:
-            critic.load_state_dict(ckpt["critic"])
-        print(f"warm-started from {args.init}")
+            try:
+                critic.load_state_dict(ckpt["critic"])
+            except RuntimeError:
+                pass
+        print(f"{'resumed' if args.resume else 'warm-started'} from {ckpt_path}")
     opt = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()), lr=args.lr)
     sched = torch.optim.lr_scheduler.LinearLR(opt, 1.0, 0.1, total_iters=args.iters)
-    if args.init:
-        # Continue optimization where it left off (fresh schedule churns
-        # converged policies; observed 911->881 and 976->720 on continuation).
+    if args.resume and ckpt is not None:
         for key, obj in (("opt", opt), ("sched", sched)):
             if key in ckpt:
                 try:
@@ -67,17 +89,20 @@ def main():
     def save_ckpt():
         torch.save({"actor": actor.state_dict(), "critic": critic.state_dict(),
                     "opt": opt.state_dict(), "sched": sched.state_dict(),
-                    "level": args.level, "obs_dim": TEACHER_OBS}, out)
+                    "level": args.level, "obs_dim": TEACHER_OBS,
+                    "hidden": args.hidden, "act_dim": args.act_dim}, out)
     n = args.envs
     ent = args.ent
+
+    env.cfg.spawn_dist = (0.1, 0.4) if args.curric > 0 else base_spawn
+    obs = env.reset()
+    o, c = priv_input(obs, env)
 
     for it in range(args.iters):
         t0 = time.time()
         if args.ent_anneal:
             ent = 0.01 * (1 - 0.9 * it / max(args.iters - 1, 1))
-        env.cfg.spawn_dist = (0.1, 0.4) if it < args.curric else None
-        obs = env.reset()
-        o, c = priv_input(obs, env)
+        env.cfg.spawn_dist = (0.1, 0.4) if it < args.curric else base_spawn
         O, C, A, LP, R, D, V = [], [], [], [], [], [], []
         ep_succ = ep_coll = 0
         for _ in range(args.steps):
@@ -94,7 +119,8 @@ def main():
             idx = torch.where(done)[0]
             if len(idx):
                 env.reset(idx.cpu())
-            o, c = priv_input(obs2 if not len(idx) else env._privileged(), env)
+                obs2 = env._privileged()
+            o, c = priv_input(obs2, env)
         O = torch.stack(O); C = torch.stack(C); A = torch.stack(A)
         LP = torch.stack(LP); R = torch.stack(R); D = torch.stack(D); V = torch.stack(V)
         with torch.no_grad():

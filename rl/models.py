@@ -51,9 +51,13 @@ class Student(nn.Module):
                                   nn.Linear(head_w, head_w),
                                   nn.Tanh(), nn.Linear(head_w, act_dim), nn.Tanh())
 
-    def forward(self, hist):
-        _, h = self.gru(hist)
+    def forward(self, hist, h0=None):
+        _, h = self.gru(hist, h0)
         return self.head(h.squeeze(0))
+
+    def forward_seq(self, seq, h0=None):
+        out, h = self.gru(seq, h0)
+        return self.head(out), h
 
     def n_params(self):
         return sum(p.numel() for p in self.parameters())
@@ -71,7 +75,9 @@ def priv_input(obs, env):
 
 def load_teacher(path, device):
     ckpt = torch.load(path, map_location=device)
-    m = Actor(obs_dim=ckpt.get("obs_dim", TEACHER_OBS)).to(device)
+    m = Actor(obs_dim=ckpt.get("obs_dim", TEACHER_OBS),
+              act_dim=ckpt.get("act_dim", 3),
+              w=ckpt.get("hidden", 256)).to(device)
     m.load_state_dict(ckpt["actor"])
     m.eval()
     return m, ckpt

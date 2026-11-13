@@ -23,6 +23,13 @@ from sim import MecanumVecEnv, EnvConfig, HIST
 from models import RUNS, Critic, Student, gae_advantages
 
 
+def _parse_spawn(s: str | None):
+    if s is None:
+        return None
+    parts = [float(x) for x in s.split(",")]
+    return parts[0] if len(parts) == 1 else (parts[0], parts[1])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--level", default="L0")
@@ -35,7 +42,25 @@ def main():
     ap.add_argument("--gamma", type=float, default=0.99)
     ap.add_argument("--lam", type=float, default=0.95)
     ap.add_argument("--clip", type=float, default=0.2)
-    ap.add_argument("--init", default=None, help="student ckpt to warm-start")
+    ap.add_argument("--ent", type=float, default=1e-3,
+                    help="constant entropy weight")
+    ap.add_argument("--ent-anneal", action="store_true",
+                    help="anneal entropy 0.01 -> 10%% over training instead of --ent")
+    ap.add_argument("--curric", type=int, default=0,
+                    help="first N iters spawn at 0.1-0.4m, then spec/spawn-dist")
+    ap.add_argument("--spawn-dist", default=None,
+                    help="override spawn distance, e.g. '0.5,1.5' or '0.75'")
+    ap.add_argument("--act-dim", type=int, default=3)
+    ap.add_argument("--stateful", action="store_true",
+                    help="carry GRU hidden state across steps (for 3s L3+ blackouts)")
+    ap.add_argument("--declare-parked", action="store_true")
+    ap.add_argument("--no-mean-dynamics", action="store_true")
+    ap.add_argument("--cam-hz", type=float, default=None)
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--init", default=None,
+                   help="warm-start student weights (fresh opt & LR schedule)")
+    g.add_argument("--resume", default=None,
+                   help="resume interrupted run (loads weights + opt + sched)")
     ap.add_argument("--hidden", type=int, default=64)
     ap.add_argument("--head-w", type=int, default=64)
     ap.add_argument("--seed", type=int, default=0)
@@ -49,18 +74,24 @@ def main():
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
-    env = MecanumVecEnv(args.envs, EnvConfig(level=args.level, device=dev,
-                                         seed=args.seed, rate_w=args.rate_weight, lat_w=args.lat_weight))
-    student = Student(h=args.hidden, head_w=args.head_w).to(dev)
-    logstd = nn.Parameter(torch.full((3,), math.log(args.std0), device=dev))
-    if args.init:
-        ck = torch.load(args.init, map_location=dev)
+    base_spawn = _parse_spawn(args.spawn_dist)
+    env = MecanumVecEnv(args.envs, EnvConfig(
+        level=args.level, device=dev, seed=args.seed,
+        spawn_dist=base_spawn, rate_w=args.rate_weight, lat_w=args.lat_weight,
+        use_mean_dynamics=not args.no_mean_dynamics, declare_parked=args.declare_parked,
+        cam_hz=args.cam_hz))
+    student = Student(act_dim=args.act_dim, h=args.hidden, head_w=args.head_w).to(dev)
+    logstd = nn.Parameter(torch.full((args.act_dim,), math.log(args.std0), device=dev))
+    ckpt_path = args.resume or args.init
+    ck = None
+    if ckpt_path:
+        ck = torch.load(ckpt_path, map_location=dev)
         student.load_state_dict(ck["student"])
-        if "logstd" in ck:
+        if "logstd" in ck and ck["logstd"].shape == logstd.shape:
             logstd.data.copy_(ck["logstd"])
-        print(f"warm-started from {args.init}")
+        print(f"{'resumed' if args.resume else 'warm-started'} from {ckpt_path}")
     critic = Critic().to(dev)
-    if args.init and "critic" in ck:
+    if ck is not None and "critic" in ck:
         try:
             critic.load_state_dict(ck["critic"])
         except RuntimeError:
@@ -68,10 +99,7 @@ def main():
     params = list(student.parameters()) + [logstd] + list(critic.parameters())
     opt = torch.optim.Adam(params, lr=args.lr)
     sched = torch.optim.lr_scheduler.LinearLR(opt, 1.0, 0.1, total_iters=args.iters)
-    if args.init:
-        # Continue optimization where it left off: a fresh schedule restarts LR
-        # at full scale and churns converged policies (observed twice: 911->881,
-        # 976->720 on continuation).
+    if args.resume and ck is not None:
         for key, obj in (("opt", opt), ("sched", sched)):
             if key in ck:
                 try:
@@ -85,31 +113,46 @@ def main():
     def save_ckpt():
         torch.save({"student": student.state_dict(), "critic": critic.state_dict(),
                     "logstd": logstd.detach().cpu(), "opt": opt.state_dict(),
-                    "sched": sched.state_dict(),
-                    "level": args.level, "hidden": args.hidden, "head_w": args.head_w}, out)
+                    "sched": sched.state_dict(), "level": args.level,
+                    "hidden": args.hidden, "head_w": args.head_w,
+                    "act_dim": args.act_dim, "stateful": args.stateful}, out)
 
+    env.cfg.spawn_dist = (0.1, 0.4) if args.curric > 0 else base_spawn
     obs = env.reset()
+    h_state = torch.zeros(1, n, args.hidden, device=dev) if args.stateful else None
 
     for it in range(args.iters):
         t0 = time.time()
+        env.cfg.spawn_dist = (0.1, 0.4) if it < args.curric else base_spawn
         HS, A, LP, R, D, V, PR = [], [], [], [], [], [], []
+        h_init = h_state.clone() if args.stateful else None
         ep_succ = ep_coll = 0
         for t in range(args.steps):
             h = obs["student"]
-            mean = student(h)
-            dist = torch.distributions.Normal(mean, logstd.exp())
-            a = dist.sample()
-            lp = dist.log_prob(a).sum(-1)
-            o = torch.cat([obs["pose"], obs["vel"]], dim=1)
-            priv = torch.cat([o, env.coef.reshape(n, -1)], dim=1)
-            v = critic(priv)
+            with torch.no_grad():
+                if args.stateful:
+                    frame = h[:, -1:, :]
+                    mean_seq, h_next = student.forward_seq(frame, h_state)
+                    mean = mean_seq[:, 0]
+                else:
+                    mean = student(h)
+                dist = torch.distributions.Normal(mean, logstd.exp())
+                a = dist.sample()
+                lp = dist.log_prob(a).sum(-1)
+                o = torch.cat([obs["pose"], obs["vel"]], dim=1)
+                priv = torch.cat([o, env.coef.reshape(n, -1)], dim=1)
+                v = critic(priv)
             obs2, r, done, info = env.step(a)
-            HS.append(h.detach())
+            HS.append((h[:, -1, :] if args.stateful else h).detach())
             PR.append(priv.detach())
             A.append(a.detach()); LP.append(lp.detach())
             R.append(r.detach()); D.append(done.float()); V.append(v.detach())
             ep_succ += int(info["success"].sum()); ep_coll += int(info["collision"].sum())
             idx = torch.where(done)[0]
+            if args.stateful:
+                h_state = h_next.detach()
+                if len(idx):
+                    h_state[:, idx] = 0.0
             if len(idx):
                 env.reset(idx.cpu())
                 obs2 = env._privileged()
@@ -123,16 +166,28 @@ def main():
             last_v = critic(torch.cat([o, env.coef.reshape(n, -1)], dim=1))
             adv, ret = gae_advantages(R, V, D, last_v, args.gamma, args.lam)
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
-        ent = 0.01 * (1 - 0.9 * it / max(args.iters - 1, 1))
-        idx_all = torch.randperm(n, device=dev)
-        mb = n // args.minibatches
+        if args.ent_anneal:
+            ent = 0.01 * (1 - 0.9 * it / max(args.iters - 1, 1))
+        else:
+            ent = args.ent
+        mb = max(1, n // args.minibatches)
         pl = vl = 0.0
         for e in range(args.epochs):
-            for b in range(args.minibatches):
-                sl = idx_all[b * mb:(b + 1) * mb]
-                mean = student(HSs[:, sl].reshape(args.steps * len(sl), HIST, -1))
+            idx_all = torch.randperm(n, device=dev)
+            for b in range(0, n, mb):
+                sl = idx_all[b:b + mb]
+                if args.stateful:
+                    hc = h_init[:, sl]
+                    means = []
+                    for st in range(args.steps):
+                        out_t, hc = student.gru(HSs[st, sl].unsqueeze(1), hc)
+                        means.append(student.head(out_t.squeeze(1)))
+                        hc = hc * (1.0 - D[st:st + 1, sl, None])
+                    mean = torch.stack(means).reshape(-1, args.act_dim)
+                else:
+                    mean = student(HSs[:, sl].reshape(args.steps * len(sl), HIST, -1))
                 dist = torch.distributions.Normal(mean, logstd.exp())
-                nlp = dist.log_prob(A[:, sl].reshape(-1, 3)).sum(-1)
+                nlp = dist.log_prob(A[:, sl].reshape(-1, args.act_dim)).sum(-1)
                 ratio = torch.exp(nlp - LP[:, sl].reshape(-1))
                 pg1 = ratio * adv[:, sl].reshape(-1)
                 pg2 = ratio.clamp(1 - args.clip, 1 + args.clip) * adv[:, sl].reshape(-1)

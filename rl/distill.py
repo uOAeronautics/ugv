@@ -31,11 +31,13 @@ def collect(teacher, student, env, episodes, noise=0.05, beta=0.0):
         use_teacher = torch.rand(m, device=env.device) < beta
         done = torch.zeros(m, dtype=torch.bool, device=env.device)
         while not bool(done.all()):
+            active = ~done
             h = obs["student"][:m]
             with torch.no_grad():
                 a_s = student(h)
                 a_t = teacher_act(teacher, {"pose": obs["pose"][:m], "vel": obs["vel"][:m]})
-            hists.append(h.detach().cpu()); labels.append(a_t.detach().cpu())
+            hists.append(h[active].detach().cpu())
+            labels.append(a_t[active].detach().cpu())
             a_exec = torch.where(use_teacher[:, None].expand_as(a_s), a_t,
                                  (a_s + noise * torch.randn_like(a_s)).clamp(-1, 1))
             full = torch.zeros(n, 3, device=env.device)
@@ -61,13 +63,15 @@ def main():
                     help="initial pure-teacher behavior-cloning iters (beta=1)")
     ap.add_argument("--buffer", type=int, default=120000,
                     help="rolling buffer; large enough to retain teacher demos")
+    ap.add_argument("--hidden", type=int, default=64)
+    ap.add_argument("--head-w", type=int, default=64)
     ap.add_argument("--envs", type=int, default=256)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     teacher, _ = load_teacher(args.teacher, dev)
-    student = Student().to(dev)
+    student = Student(h=args.hidden, head_w=args.head_w).to(dev)
     print(f"student params: {student.n_params()}")
     env = MecanumVecEnv(args.envs, EnvConfig(level=args.level, device=dev,
                                          seed=args.seed))
@@ -103,7 +107,8 @@ def main():
         print(f"dagger {it} mse {loss_sum/max(loss_n,1):.4f} val {float(verr):.4f} buf {len(buf_h)}", flush=True)
     RUNS.mkdir(exist_ok=True)
     out = args.out or str(RUNS / f"student_dagger_{args.level}.pt")
-    torch.save({"student": student.state_dict(), "level": args.level}, out)
+    torch.save({"student": student.state_dict(), "level": args.level,
+                "hidden": args.hidden, "head_w": args.head_w}, out)
     print(f"saved {out}")
 
 

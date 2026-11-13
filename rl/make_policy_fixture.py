@@ -19,7 +19,7 @@ OUT = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "policy_trace
 
 def main():
     torch.manual_seed(0)
-    env = MecanumVecEnv(1, EnvConfig(level="L1", device="cpu", seed=123))
+    env = MecanumVecEnv(1, EnvConfig(level="L1", device="cpu", seed=0))
     env.reset()
     student = Student()
     rec = {k: [] for k in ("tag", "valid", "age", "imu_w", "imu_yaw", "prev_act", "est")}

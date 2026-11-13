@@ -28,11 +28,11 @@ L0 aligned 0.75m ahead / posterior mean / perfect state
 L1 0.5-1.5m, +-30deg bearing, +-60deg yaw, tags visible / mean / nominal noise 80ms
    gate := >=98%, collisions <=0.5%
 L2 as L1 / full 60-draw posterior + extra DR (yaw couple, deadzone, lag, gain, sag) / nominal
-   gate := >=95%, <=1%, beats ContinuousDocking baseline
+   gate := >=95%, <=1%, beats EKF + staged baseline
 L3 as L1 / as L2 / drops 25-45%, outliers, 3s blackout, tag loss under drone, 80-200ms
-   gate := >=95%, <=1%, false-parked <=0.5%
+   gate := >=95%, <=1%, false-parked <=0.5%, beats EKF + staged baseline
 L4 4x4m open, any heading, drone may start out of view, random drone yaw / as L2 / as L3
-   gate := >=90%, <=1%, median <=45s
+   gate := >=90%, <=1%, median <=45s, beats EKF + staged baseline
 L5 full 24x12m lab + furniture (`simulation/gazebo/room_dimensions.json`) / as L2 / as L3 + scene-bridge only
    gate := >=85%, <=1%
 L6 Gazebo sim-to-sim: native rollers, rendered camera, real ParkingEstimator + RelativeHeading
@@ -59,9 +59,12 @@ mixer    := hardware PWM polarity retained by fit: translation channels negated,
 imu      := simulation/gazebo/imu_noise_profile.json (BMI270 rest, body_to_sensor, bias)
 camera   := simulation/gazebo/camera_profile.json (1280x720, 67x41deg nominal, L8 30Hz) + ArUco DICT_4X4_50
 geom     := src/ugv/parking.py gear_obstacles/footprint_corners/swept_clear + room_dimensions.json
-baseline := rl/evaluate.py `classical` (staged PD+I crab on true pose), current sim:
-            L0 128/128 med 10.4s; L1 56/128; L4 17/256 (105 coll).
-            (The earlier 0/128 predates the rest-noise gate.) RL must beat it at L1+.
+baseline := EKF + staged (src/ugv/staged_baseline.py, NumPy; bench rl/baselines.py, same 1000 eps/seed 11).
+            Same inputs as the student (tag, gyro, own commands; known tag latency), no privileged state.
+            "beats" = higher success at no higher collision rate. Current sim (runs/baseline_ekf_staged_L*.json):
+            L0 975, L1 896, L2 448, L3 215, L4 148 /1000. The same class drives the Gazebo L6 harness.
+oracle   := rl/evaluate.py `oracle_pd` (PD crab on TRUE pose): diagnostic only, not a gate.
+            L0 998, L1 391, L2 161, L3 160, L4 53 /1000.
 deploy   := NumPy student 0.90ms/step desktop CPU (Pi pending), sha-pinned .npz; GRU width read from weights
 ```
 
@@ -73,6 +76,9 @@ clearance := config/parking.json gear clearance unverified; thresholds above pro
 intrinsic := fx=fy=968 nominal, no checkerboard calibration
 heldout   := no complete heldout full-power (4095) trajectory; MECANUM_REAL2SIM.md
 rule      := sim success != real success; L7 needs measured clearance + SAFETY flags
+turn      := posterior turn column unidentified (yaw per +0.2 turn spans -1.1..+1.0 rad/s across draws;
+             fit used translation trials only); ~17% of L2+ draws cannot yaw both ways. Needs pure-rotation trials
+L0/L1 dyn := rl/sim.py uses posterior draw 0, not the posterior mean stated above (unchanged to keep numbers)
 ```
 
 ## Compute
@@ -90,7 +96,9 @@ Status and work queue: `rl/PLAN.md`. Agent rules: `rl/AGENTS.md`. Checkpoints an
 train teacher := cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120 --seed <s>   # gate-teacher recipe (defaults: rate 0, gamma 0.99, lam 0.95; it used reward yaw weight 0.3, now 1.0)
 student ppo   := cd rl && uv run python train_student.py --level L0 --iters 300 --seed <s>             # best-student recipe; --init <ckpt> to continue
 dagger        := cd rl && uv run python distill.py --teacher runs/teacher_L0_gate.pt --level L0      # optional; not needed for L0
-eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt --seed 11  # or classical|brake|random
+eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt --seed 11  # or oracle_pd|brake|random
+baseline      := cd rl && uv run python baselines.py --level L0 --episodes 1000 --seed 11 --json runs/baseline_ekf_staged_L0.json
+L6 baseline   := uv run python simulation/gazebo/run_policy_episodes.py --baseline --latency <s>  # fake bridge until the Gazebo bridge exists
 export        := cd rl && uv run python export.py --ckpt runs/<student>.pt --out runs/policy_L0.npz
 pi bench      := uv run python -m ugv.policy --weights <policy.npz> --benchmark  # no motors
 L6 plumbing   := uv run python simulation/gazebo/run_policy_episodes.py --weights <policy.npz>  # fake bridge; live Gazebo bridge not built

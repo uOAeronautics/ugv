@@ -55,3 +55,27 @@ def test_golden_trace_matches_sim():
     # at float32-vs-float64 rounding level between torch and NumPy.
     np.testing.assert_array_equal(p.hist[:, :10], z["hist"][:, :10])
     np.testing.assert_allclose(p.hist[:, 10:], z["hist"][:, 10:], atol=1e-6)
+
+
+def test_shield_rotates_by_yaw_and_sweeps_horizon():
+    import math
+    p = _policy()
+    # Car at (0.0, 0.26) rotated +90 deg: +x_body rotates to +z_world (away from skids, clear),
+    # whereas -y_body rotates to +x_world (into right skid at x=0.157, blocked).
+    # z=0.26 keeps the start pose clear of the skid-capsule end margin (the 90 deg
+    # footprint spans +-0.11 in x against the 0.127 skid face + inflation).
+    est_rot = Pose2(0.0, 0.26, math.pi / 2)
+    p.forward = lambda h: np.array([1.0, 0.0, 0.0])
+    act, reason = p.step((0.0, 0.26, math.pi / 2), 0.0, True, 0.0, 0.0, np.zeros(3), est_rot)
+    assert reason == "policy" and np.allclose(act, [1.0, 0.0, 0.0])
+
+    p.forward = lambda h: np.array([0.0, -1.0, 0.0])
+    act, reason = p.step((0.0, 0.26, math.pi / 2), 0.0, True, 0.0, 0.0, np.zeros(3), est_rot)
+    assert (act == 0).all() and "blocked" in reason
+
+    # Stopping horizon (0.18s) catches skid collision that a 0.02s step misses.
+    p.reset()
+    est_left = Pose2(-0.005, 0.0, 0.0)
+    p.forward = lambda h: np.array([-0.15, 0.0, 0.0])
+    act, reason = p.step((0.0, 0.0, 0.0), 0.0, True, 0.0, 0.0, np.zeros(3), est_left)
+    assert (act == 0).all() and "blocked" in reason

@@ -21,22 +21,22 @@ PROFILE = REPO / "simulation" / "gazebo" / "mecanum_bayesian_profile.json"
 LEVELS = {
     "L0": dict(dist=0.75, bearing=0.0, yaw=0.0, noise=0.0, latency=0.0, drops=0.0,
                outliers=0.0, blackout=0.0, under_drone_loss=False,
-               full_posterior=False, area=1.0),
+               full_posterior=False, area=1.0, cam_hz=50.0),
     "L1": dict(dist=(0.5, 1.5), bearing=30.0, yaw=60.0, noise=1.0, latency=0.08,
                drops=0.0, outliers=0.0, blackout=0.0, under_drone_loss=False,
-               full_posterior=False, area=1.5),
+               full_posterior=False, area=1.5, cam_hz=30.0),
     "L2": dict(dist=(0.5, 1.5), bearing=30.0, yaw=60.0, noise=1.0, latency=0.08,
                drops=0.0, outliers=0.0, blackout=0.0, under_drone_loss=False,
-               full_posterior=True, area=1.5),
+               full_posterior=True, area=1.5, cam_hz=30.0),
     "L3": dict(dist=(0.5, 1.5), bearing=30.0, yaw=60.0, noise=1.0, latency=(0.08, 0.20),
                drops=(0.25, 0.45), outliers=0.02, blackout=3.0, under_drone_loss=True,
-               full_posterior=True, area=1.5),
+               full_posterior=True, area=1.5, cam_hz=30.0),
     "L4": dict(dist=(0.5, 4.0), bearing=180.0, yaw=180.0, noise=1.0, latency=(0.08, 0.20),
                drops=(0.25, 0.45), outliers=0.02, blackout=3.0, under_drone_loss=True,
-               full_posterior=True, area=4.0),
+               full_posterior=True, area=4.0, cam_hz=30.0),
     "L5": dict(dist=(0.5, 8.0), bearing=180.0, yaw=180.0, noise=1.0, latency=(0.08, 0.20),
                drops=(0.25, 0.45), outliers=0.02, blackout=3.0, under_drone_loss=True,
-               full_posterior=True, area=12.0),
+               full_posterior=True, area=12.0, cam_hz=30.0),
 }
 
 # Provisional geometry (config/parking.json unverified): car 0.16 x 0.22 m,
@@ -74,6 +74,10 @@ class EnvConfig:
     spawn_dist: tuple | float | None = None  # override LEVELS dist (curriculum)
     rate_w: float = 0.0  # action-rate penalty weight; L0-gate teacher used 0.0
     lat_w: float = 2.0  # extra lateral-error weight in progress potential
+    cam_hz: float | None = None  # override LEVELS cam_hz (50 Hz L0, 30 Hz L1+)
+    use_mean_dynamics: bool = True  # L0/L1 use posterior mean unless False (particles[0])
+    full_posterior: bool | None = None  # override LEVELS full_posterior if set
+    declare_parked: bool = False  # enable 3-dim still-outside-goal false_park detection
 
 
 class MecanumVecEnv:
@@ -89,6 +93,7 @@ class MecanumVecEnv:
         self.mean_dz = float(prof["deadzone"])
         self.mean_drive = torch.tensor(prof["drive_tau_s"], dtype=torch.float32, device=self.device)
         self.mean_brake = torch.tensor(prof["brake_tau_s"], dtype=torch.float32, device=self.device)
+        self.mean_cov = torch.tensor(prof["innovation_covariance"], dtype=torch.float32, device=self.device)
         self.particles = [{
             "coef": torch.tensor(p["coefficients"], dtype=torch.float32, device=self.device),
             "dz": float(p["deadzone"]),
@@ -97,6 +102,7 @@ class MecanumVecEnv:
             "cov": torch.tensor(p["innovation_covariance"], dtype=torch.float32, device=self.device),
         } for p in prof["posterior_particles"]]
         self.level = LEVELS[cfg.level]
+        self.cam_hz = float(cfg.cam_hz if cfg.cam_hz is not None else self.level.get("cam_hz", 50.0))
         # Persistent generators: every stochastic draw in reset/step comes from
         # these streams, so a fixed seed + fixed call pattern is reproducible.
         # Device draws use gen, CPU index draws use gen_cpu.
@@ -107,16 +113,20 @@ class MecanumVecEnv:
         self.vel = torch.zeros(n, 3, device=dev)
         self.time = torch.zeros(n, device=dev)
         self.still = torch.zeros(n, device=dev)
+        self.vel_still = torch.zeros(n, device=dev)
         self.done = torch.zeros(n, dtype=torch.bool, device=dev)
         self.latched_success = torch.zeros(n, dtype=torch.bool, device=dev)
         self.latched_coll = torch.zeros(n, dtype=torch.bool, device=dev)
         self.latched_timeout = torch.zeros(n, dtype=torch.bool, device=dev)
+        self.latched_false_park = torch.zeros(n, dtype=torch.bool, device=dev)
         self.prev_act = torch.zeros(n, 3, device=dev)
         self.hist = torch.zeros(n, HIST, STUDENT_DIM, device=dev)
         self.hist_age = torch.full((n,), 1e9, device=dev)
         self.tag_ema = torch.zeros(n, 3, device=dev)
         self.prev_tag = torch.zeros(n, 3, device=dev)
         self.prev_valid = torch.zeros(n, dtype=torch.bool, device=dev)
+        self.dt_since_valid = torch.zeros(n, device=dev)
+        self.cam_accum = torch.zeros(n, device=dev)
         self.imu_bias = torch.zeros(n, device=dev)
         self.imu_yaw = torch.zeros(n, device=dev)
         self.tag_raw = torch.zeros(n, 3, device=dev)
@@ -143,22 +153,35 @@ class MecanumVecEnv:
         dev = self.device
         idx_d = idx.to(dev)
         m = len(idx)
-        full = self.level["full_posterior"]
+        full = self.level["full_posterior"] if self.cfg.full_posterior is None else self.cfg.full_posterior
         if full:
             pick = torch.randint(0, len(self.particles), (m,), generator=self.gen_cpu)
-        else:
-            pick = torch.zeros(m, dtype=torch.long)
-        coef = torch.stack([self.particles[int(i)]["coef"] for i in pick]).to(self.device)
-        dz = torch.tensor([self.particles[int(i)]["dz"] for i in pick],
-                          dtype=torch.float32, device=self.device)
-        drive = torch.stack([self.particles[int(i)]["drive"] for i in pick]).to(self.device)
-        brake = torch.stack([self.particles[int(i)]["brake"] for i in pick]).to(self.device)
-        cov = torch.stack([self.particles[int(i)]["cov"] for i in pick]).to(self.device)
-        if full:  # extra DR grounded in observed run-to-run variation
+            coef = torch.stack([self.particles[int(i)]["coef"] for i in pick]).to(dev)
+            dz = torch.tensor([self.particles[int(i)]["dz"] for i in pick],
+                              dtype=torch.float32, device=dev)
+            drive = torch.stack([self.particles[int(i)]["drive"] for i in pick]).to(dev)
+            brake = torch.stack([self.particles[int(i)]["brake"] for i in pick]).to(dev)
+            cov = torch.stack([self.particles[int(i)]["cov"] for i in pick]).to(dev)
+            # extra DR grounded in observed run-to-run variation
             self.wheel_gain[idx_d] = 0.85 + 0.30 * torch.rand(m, 4, device=dev, generator=self.gen)
             self.yaw_scale[idx_d] = 0.5 + 1.0 * torch.rand(m, device=dev, generator=self.gen)
             self.sag[idx_d] = 0.90 + 0.10 * torch.rand(m, device=dev, generator=self.gen)
+        elif self.cfg.use_mean_dynamics:
+            coef = self.mean_coef.unsqueeze(0).expand(m, -1, -1)
+            dz = torch.full((m,), self.mean_dz, dtype=torch.float32, device=dev)
+            drive = self.mean_drive.unsqueeze(0).expand(m, -1)
+            brake = self.mean_brake.unsqueeze(0).expand(m, -1)
+            cov = self.mean_cov.unsqueeze(0).expand(m, -1, -1)
+            self.wheel_gain[idx_d] = 1.0
+            self.yaw_scale[idx_d] = 1.0
+            self.sag[idx_d] = 1.0
         else:
+            p0 = self.particles[0]
+            coef = p0["coef"].unsqueeze(0).expand(m, -1, -1)
+            dz = torch.full((m,), p0["dz"], dtype=torch.float32, device=dev)
+            drive = p0["drive"].unsqueeze(0).expand(m, -1)
+            brake = p0["brake"].unsqueeze(0).expand(m, -1)
+            cov = p0["cov"].unsqueeze(0).expand(m, -1, -1)
             self.wheel_gain[idx_d] = 1.0
             self.yaw_scale[idx_d] = 1.0
             self.sag[idx_d] = 1.0
@@ -191,7 +214,8 @@ class MecanumVecEnv:
         self.vel[idx.to(dev)] = 0
         self.time[idx.to(dev)] = 0
         self.still[idx.to(dev)] = 0
-        for name in ("done", "latched_success", "latched_coll", "latched_timeout"):
+        self.vel_still[idx.to(dev)] = 0
+        for name in ("done", "latched_success", "latched_coll", "latched_timeout", "latched_false_park"):
             getattr(self, name)[idx.to(dev)] = False
         self._sample_dynamics(idx)
         # sensor state
@@ -219,6 +243,11 @@ class MecanumVecEnv:
         self.tag_ema[di] = 0
         self.prev_tag[di] = 0
         self.prev_valid[di] = False
+        self.dt_since_valid[di] = 0
+        if self.cam_hz < 1.0 / self.dt - 1e-6:
+            self.cam_accum[di] = (1.0 / self.cam_hz) - self.dt
+        else:
+            self.cam_accum[di] = 0.0
         self.imu_bias[di] = 0.002 * torch.randn(len(di), device=dev, generator=self.gen)
         self.imu_yaw[di] = self.pose[di, 2].clone()
         # latency ring: prefill with the spawn pose so delayed reads are valid
@@ -243,13 +272,16 @@ class MecanumVecEnv:
     def step(self, act: torch.Tensor):
         from reward import step_reward
         dev = self.device
-        cmd = act.to(dev).clamp(-1, 1)
+        act_t = act.to(dev)
+        cmd = act_t[:, :3].clamp(-1, 1)
         prev_done = self.done.clone()
         saved = {"pose": self.pose.clone(), "vel": self.vel.clone(), "time": self.time.clone(),
-                 "still": self.still.clone(), "hist": self.hist.clone(),
-                 "age": self.hist_age.clone(), "imu_yaw": self.imu_yaw.clone(),
-                 "prev_act": self.prev_act.clone(), "ema": self.tag_ema.clone(),
-                 "ptag": self.prev_tag.clone(), "pvalid": self.prev_valid.clone()}
+                 "still": self.still.clone(), "vel_still": self.vel_still.clone(),
+                 "hist": self.hist.clone(), "age": self.hist_age.clone(),
+                 "imu_yaw": self.imu_yaw.clone(), "prev_act": self.prev_act.clone(),
+                 "ema": self.tag_ema.clone(), "ptag": self.prev_tag.clone(),
+                 "pvalid": self.prev_valid.clone(), "dt_sv": self.dt_since_valid.clone(),
+                 "cam_acc": self.cam_accum.clone()}
         # mecanum inverse mixer -> normalized wheel PWM [-1,1]. NOTE: the fitted
         # coefficients retain hardware PWM polarity (mecanum_dynamics.py):
         # translation needs negation (+cmd -> +body vel) while the turn
@@ -300,8 +332,8 @@ class MecanumVecEnv:
         dist = delayed[:, :2].norm(dim=1)
         # Bearing: sim yaw=0 faces -y (SDF front camera + Q/left convention);
         # facing rotates +yaw from the tag direction, so relative bearing ADDS
-        # yaw (subtracted before: same result at yaw 0, wrong whenever turned).
-        bearing = torch.atan2(delayed[:, 0], delayed[:, 1].clamp_min(1e-6)) + self.pose[:, 2]
+        # yaw at the delayed capture timestamp.
+        bearing = torch.atan2(delayed[:, 0], delayed[:, 1]) + delayed[:, 2]
         bearing = torch.atan2(torch.sin(bearing), torch.cos(bearing))
         # Near/under the deck (< 0.30 m) the point-bearing model is meaningless
         # (y -> 0 or negative), so the per-level switch alone decides there:
@@ -314,9 +346,16 @@ class MecanumVecEnv:
             seen = in_fov & ~near_deck
         else:
             seen = in_fov | near_deck
+        if self.cam_hz >= 1.0 / self.dt - 1e-6:
+            cam_tick = torch.ones(self.n, dtype=torch.bool, device=dev)
+        else:
+            cam_period = 1.0 / self.cam_hz
+            self.cam_accum += self.dt
+            cam_tick = self.cam_accum >= (cam_period - 1e-6)
+            self.cam_accum = torch.where(cam_tick, self.cam_accum - cam_period, self.cam_accum)
         in_blackout = (self.time > self.blackout_start) & (self.time < self.blackout_start + self.blackout_total)
         dropped = torch.rand(self.n, device=dev, generator=self.gen) < self.drop_p
-        valid = seen & (~in_blackout) & (~dropped)
+        valid = seen & cam_tick & (~in_blackout) & (~dropped)
         pos_std = noise * (0.008 + 0.020 * dist)
         yaw_std = noise * (math.radians(2) + math.radians(2) * dist)
         tag = delayed + torch.randn(delayed.shape, device=dev, generator=self.gen) * torch.stack([pos_std, pos_std, yaw_std], dim=1)
@@ -329,17 +368,21 @@ class MecanumVecEnv:
         self.tag_raw = tag_raw
         self.tag_valid = valid
         self.hist_age = torch.where(valid, torch.zeros_like(self.hist_age), self.hist_age + self.dt)
-        # valid-gated smoothed tag velocity (finite difference + EMA): explicit
-        # velocity signal for the transit, computable onboard from the estimator
-        pair = valid & self.prev_valid
-        diff = torch.where(pair[:, None].expand_as(tag),
-                           (tag - self.prev_tag) / self.dt, torch.zeros_like(tag))
-        # unwrap yaw diff
-        diff[:, 2] = torch.atan2(torch.sin(diff[:, 2]), torch.cos(diff[:, 2]))
-        self.tag_ema = torch.where(pair[:, None].expand_as(tag),
-                                   0.5 * self.tag_ema + 0.5 * diff, 0.0 * self.tag_ema)
-        self.prev_tag = tag.clone()
-        self.prev_valid = valid.clone()
+        # valid-gated smoothed tag velocity (finite difference over dt_since_valid
+        # + EMA): holds/decays across inter-frame invalid ticks (e.g. 30 Hz camera).
+        self.dt_since_valid += self.dt
+        pair = valid & self.prev_valid & (self.dt_since_valid <= 0.5)
+        raw_diff = tag - self.prev_tag
+        raw_diff[:, 2] = torch.atan2(torch.sin(raw_diff[:, 2]), torch.cos(raw_diff[:, 2]))
+        diff = raw_diff / self.dt_since_valid.clamp_min(self.dt)[:, None]
+        ema_valid = torch.where(pair[:, None].expand_as(tag),
+                                0.5 * self.tag_ema + 0.5 * diff,
+                                torch.zeros_like(tag))
+        ema_decay = self.tag_ema * math.exp(-self.dt / 0.25)
+        self.tag_ema = torch.where(valid[:, None].expand_as(tag), ema_valid, ema_decay)
+        self.prev_tag = torch.where(valid[:, None].expand_as(tag), tag, self.prev_tag)
+        self.prev_valid = self.prev_valid | valid
+        self.dt_since_valid = torch.where(valid, torch.zeros_like(self.dt_since_valid), self.dt_since_valid)
         # IMU: true yaw rate + white + bias, yaw integrated with drift
         gyro_white = noise * 0.002 * torch.randn(self.n, device=dev, generator=self.gen)
         imu_w = self.vel[:, 2] + gyro_white + self.imu_bias
@@ -353,7 +396,15 @@ class MecanumVecEnv:
         near = ((self.pose[:, 0].abs() < 0.03) & (self.pose[:, 1].abs() < 0.05)
                 & (self.pose[:, 2].abs() < math.radians(5)))
         self.still = torch.where(slow & near, self.still + self.dt, torch.zeros_like(self.still))
+        self.vel_still = torch.where(slow, self.vel_still + self.dt, torch.zeros_like(self.vel_still))
         success = self.still >= 1.0
+        if act_t.shape[1] >= 4:
+            declared = act_t[:, 3] > 0.5
+            false_park = declared & (~(near & slow))
+        elif self.cfg.declare_parked:
+            false_park = (self.vel_still >= 1.0) & (~near)
+        else:
+            false_park = torch.zeros(self.n, dtype=torch.bool, device=dev)
         # collision: car rect vs skid capsules (conservative AABB approx)
         hw, hl = CAR_W / 2, CAR_L / 2
         touch_x = (self.pose[:, 0].abs() + hw > SKID_X - GEAR_R) & (self.pose[:, 0].abs() - hw < SKID_X + GEAR_R)
@@ -362,7 +413,7 @@ class MecanumVecEnv:
         area = self.level["area"]
         out = (self.pose[:, 0].abs() > area) | (self.pose[:, 1].abs() > area)
         timeout = (self.time >= self.cfg.max_time) | out
-        done = success | collision | timeout
+        done = success | collision | timeout | false_park
 
         # student history frame (angles wrapped: the raw integrated IMU yaw
         # drifts unboundedly over long episodes, saturating recurrent gates)
@@ -376,21 +427,23 @@ class MecanumVecEnv:
         self.prev_act = cmd.detach()
 
         reward = step_reward(prev_pose, self.pose, cmd, rate_prev, self.vel, success,
-                             near, collision, torch.zeros_like(collision), self.dt,
+                             near, collision, false_park, self.dt,
                              rate_w=self.cfg.rate_w, lat_w=self.cfg.lat_w)
         # out-of-bounds penalty
         reward = reward - out.float() * 2.0
         # latch terminal outcomes; freeze previously-done envs so flags can't be overwritten
-        newly = ~prev_done & (success | collision | timeout)
+        newly = ~prev_done & done
         self.latched_success |= newly & success
         self.latched_coll |= newly & collision
-        self.latched_timeout |= newly & timeout & ~success & ~collision
-        self.done |= success | collision | timeout
+        self.latched_false_park |= newly & false_park & ~success & ~collision
+        self.latched_timeout |= newly & timeout & ~success & ~collision & ~false_park
+        self.done |= done
         if bool(prev_done.any()):
             self.pose[prev_done] = saved["pose"][prev_done]
             self.vel[prev_done] = saved["vel"][prev_done]
             self.time[prev_done] = saved["time"][prev_done]
             self.still[prev_done] = saved["still"][prev_done]
+            self.vel_still[prev_done] = saved["vel_still"][prev_done]
             self.hist[prev_done] = saved["hist"][prev_done]
             self.hist_age[prev_done] = saved["age"][prev_done]
             self.imu_yaw[prev_done] = saved["imu_yaw"][prev_done]
@@ -398,13 +451,16 @@ class MecanumVecEnv:
             self.tag_ema[prev_done] = saved["ema"][prev_done]
             self.prev_tag[prev_done] = saved["ptag"][prev_done]
             self.prev_valid[prev_done] = saved["pvalid"][prev_done]
+            self.dt_since_valid[prev_done] = saved["dt_sv"][prev_done]
+            self.cam_accum[prev_done] = saved["cam_acc"][prev_done]
             reward = torch.where(prev_done, 0.0, reward)
-            success, collision, timeout, done = (self.latched_success, self.latched_coll,
-                                                self.latched_timeout, self.done)
+            success, collision, timeout, false_park, done = (
+                self.latched_success, self.latched_coll,
+                self.latched_timeout, self.latched_false_park, self.done)
         obs = {"pose": self.pose.clone(), "vel": self.vel.clone(),
                "student": self.hist.clone(), "tag": tag.clone(), "valid": valid.clone()}
         info = {"success": success, "collision": collision, "near": near,
-                "timeout": timeout, "done": done, "out": out}
+                "timeout": timeout, "false_park": false_park, "done": done, "out": out}
         return obs, reward, done, info
 
     def _privileged(self):

@@ -19,7 +19,12 @@ student L0   ✓ GATE PASS  runs/student_L0_lat_s1.pt  1000/1000, 0 coll, med 6.
              +x coupling drift (928 -> 1000 same seed 1). Slower than teacher.
              runs/student_L0_H.pt (GRU-128, gamma 0.997/lam 0.99, steps 256): 976/1000,
              24 coll, med 6.7s. "Capacity was the wall" is contradicted: GRU-64 got 991.
-classical    ✓ L0 128/128 med 10.4s; L1 56/128; L4 17/256 (105 coll). RL bar: beat it at L1+.
+baseline     ✓ EKF + staged (src/ugv/staged_baseline.py; rl/baselines.py), 1000 eps seed 11:
+             L0 975 (5 coll), L1 896 (30), L2 448 (128), L3 215 (307), L4 148 (227).
+             runs/baseline_ekf_staged_L*.json. RL gates L2-L4 must beat it.
+             L2+ limits: turn channel unidentified in the posterior (see RL_PARKING.md gaps).
+             L3+: blind last 0.30 m (under_drone_loss) -> 7-20 cm dead-reckoning stop error.
+oracle_pd    ~ diagnostic (true pose): L0 998, L1 391, L2 161, L3 160, L4 53. runs/oracle_pd_L*.json
 DAgger       × not needed; direct student PPO works. Old 0/1000 runs predate the sim fix.
 deploy       ~ ugv.policy NumPy forward 0.90 ms/step desktop; parity 1.4e-7. Pi not measured.
 L6 Gazebo    × fake-bridge plumbing only; live bridge not built
@@ -135,8 +140,7 @@ JSON into `runs/`, and a result row in the State section above. Promote only on 
   = 5 s), so L1+ episodes (up to 45 s) never reach late-episode states. Port the
   persistent-env loop from `train_student.py` before L1 teacher training.
 - Curriculum: warm-start each level from the previous level's checkpoint.
-- L2 must also beat the ContinuousDocking baseline (`src/ugv/continuous.py`). Add it as
-  an `evaluate.py` baseline driven from the sim tag stream.
+- L2-L4 must also beat the EKF + staged baseline (`rl/baselines.py`, numbers in State).
 - L3 adds `false_parked`. The env currently has no "declare parked" output, so
   `evaluate.py` reports `null`. Define the declare signal (policy output or shield rule),
   then measure it.
