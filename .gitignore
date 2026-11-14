@@ -16,7 +16,7 @@ tmp/
 ._*
 simulation/gazebo/lockstep/build/
 
-# Calibration telemetry and reports are versioned. Camera images remain covered
+# Calibration fits and manifests are versioned; raw telemetry logs are not. Camera images remain covered
 # by the image exclusions above and are retained in Pi/local raw-data backups.
 calibration/runs/**/*.jsonl
 calibration/runs/**/*.log

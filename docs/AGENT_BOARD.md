@@ -147,3 +147,16 @@ Breakthroughs, all measured:
 
 Open threads: 46 L1 timeouts (settle/precision reward work); teacher track
 red (best 989/10); seed-1 bifurcation (freeze vs clips) unresolved.
+
+## SESSION SUMMARY (2026-11-14, repo cleanup)
+
+- No runtime behaviour changed: `config/` untouched; the two lint commits (`cb71636`, `8c6f90b`)
+  were reviewed hunk by hunk (115 non-import hunks, 0 behaviour-changing). Checks: root
+  `pytest` 200 passed, `rl/test_rl.py` 23 passed, `ruff check` and `ruff format --check` pass.
+- New: root `AGENTS.md` (safety first, command table pointer, frames and tags), `docs/COMMANDS.md`
+  as the single command table, CI and pre-commit, yaw helpers `pose2_from_ccw` / `pose2_to_ccw`
+  (existing call sites unchanged), skills under `.agents/skills/`.
+- Untracked (history keeps them, working copies stay on the desktop and the Pi): raw
+  `calibration/runs/**/*.jsonl` and `*.log`, Gazebo traces, `rl/runs/*.mp4`,
+  `tools/l7/sim_reference_L1.npz`. Fits, manifests and `summary.json` files stay tracked.
+- Not verified here: Gazebo runtime, Pi deploy, field harness.

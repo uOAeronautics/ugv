@@ -1,3 +1,21 @@
+<img src="docs/assets/banner.png" alt="ugv: a mecanum car backing into the 0.31 m slot between a drone's skids, guided by ArUco tags 14, 6 and 3" width="100%">
+
+<p align="center"><i>A small mecanum car that parks itself under a drone, from simulation to the floor.</i></p>
+
+<p align="center">
+  <a href="https://github.com/uOAeronautics/ugv/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/uOAeronautics/ugv/actions/workflows/ci.yml/badge.svg?branch=main"/></a>
+</p>
+
+<p align="center">
+  <a href="docs/COMMANDS.md"><b>Commands</b></a> ·
+  <a href="docs/SAFETY.md"><b>Safety</b></a> ·
+  <a href="docs/RL_PARKING.md"><b>RL parking</b></a> ·
+  <a href="docs/L7_FIELD_NOTES.md"><b>Field notes</b></a> ·
+  <a href="docs/INDEX.md"><b>All docs</b></a>
+</p>
+
+---
+
 # UGV
 
 `UGV := FNK0043/Freenove-4WD control+observe repo`
