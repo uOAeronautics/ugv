@@ -168,7 +168,7 @@ def main():
         if args.reset_every_iter:
             obs = env.reset()
             o, c = priv_input(obs, env)
-        O, C, A, LP, R, D, V = [], [], [], [], [], [], []
+        obs_buf, C, A, LP, R, D, V = [], [], [], [], [], [], []
         ep_succ = ep_coll = 0
         for _ in range(args.steps):
             with torch.no_grad():
@@ -178,7 +178,7 @@ def main():
                 lp = dist.log_prob(a).sum(-1)
                 v = critic(c)
             obs2, r, done, info = env.step(a)
-            O.append(o)
+            obs_buf.append(o)
             C.append(c)
             A.append(a)
             LP.append(lp)
@@ -192,7 +192,7 @@ def main():
                 env.reset(idx.cpu())
                 obs2 = env._privileged()
             o, c = priv_input(obs2, env)
-        O = torch.stack(O)
+        obs_buf = torch.stack(obs_buf)
         C = torch.stack(C)
         A = torch.stack(A)
         LP = torch.stack(LP)
@@ -204,16 +204,26 @@ def main():
             last_v = critic(c_last)
             adv, ret = gae_advantages(R, V, D, last_v, args.gamma, args.lam)
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
-        flat = lambda x: x.reshape(args.steps * n, *x.shape[2:])
-        O, C, A, LP, ADV, RET = flat(O), flat(C), flat(A), flat(LP), flat(adv), flat(ret)
-        m = O.shape[0]
+
+        def flat(x):
+            return x.reshape(args.steps * n, *x.shape[2:])
+
+        obs_buf, C, A, LP, ADV, RET = (
+            flat(obs_buf),
+            flat(C),
+            flat(A),
+            flat(LP),
+            flat(adv),
+            flat(ret),
+        )
+        m = obs_buf.shape[0]
         idx_all = torch.randperm(m, device=dev)
         mb = m // args.minibatches
         pl = vl = el = 0.0
-        for e in range(args.epochs):
+        for _e in range(args.epochs):
             for b in range(args.minibatches):
                 sl = idx_all[b * mb : (b + 1) * mb]
-                mean = actor(O[sl])
+                mean = actor(obs_buf[sl])
                 dist = torch.distributions.Normal(mean, actor.logstd.exp())
                 nlp = dist.log_prob(A[sl]).sum(-1)
                 ratio = torch.exp(nlp - LP[sl])

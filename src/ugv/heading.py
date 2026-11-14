@@ -179,12 +179,14 @@ class RelativeHeading:
                 # Slowly follow true zero-rate bias only after a half-second of rest.
                 alpha = 1.0 - math.exp(-dt / 2.0)
                 self._bias = tuple(
-                    old + alpha * (value - old) for old, value in zip(self._bias, gyro)
+                    old + alpha * (value - old)
+                    for old, value in zip(self._bias, gyro, strict=False)
                 )
 
             # Positive displayed heading is clockwise, like a game compass.
             self._rate = -sum(
-                (value - bias) * up for value, bias, up in zip(gyro, self._bias, self._up)
+                (value - bias) * up
+                for value, bias, up in zip(gyro, self._bias, self._up, strict=False)
             )
             if self._stationary and abs(self._rate) < 0.35:
                 self._rate = 0.0

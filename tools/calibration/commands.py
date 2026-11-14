@@ -22,13 +22,14 @@ def wheel_duties(keys, pwm):
         zip(
             ("front-left", "rear-left", "front-right", "rear-right"),
             [round(left / scale * pwm)] * 2 + [round(right / scale * pwm)] * 2,
+            strict=True,
         )
     )
 
 
 def combinations():
     return {
-        "".join(k): dict(zip(("forward", "turn"), vector("".join(k))))
+        "".join(k): dict(zip(("forward", "turn"), vector("".join(k)), strict=True))
         for count in range(7)
         for k in itertools.combinations("WASDQE", count)
     }

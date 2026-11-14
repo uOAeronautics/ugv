@@ -17,7 +17,7 @@ from ugv.heading import RelativeHeading
 
 
 def transform(matrix, vector):
-    return [sum(a * b for a, b in zip(row, vector)) for row in matrix]
+    return [sum(a * b for a, b in zip(row, vector, strict=False)) for row in matrix]
 
 
 def cholesky(matrix):
@@ -63,7 +63,8 @@ class RecordedImu:
                 # Rest-window variability is empirical within-session spread,
                 # not a claimed characterization of power-on bias repeatability.
                 self.offset[key] = [
-                    b + self.random.gauss(0, s) for b, s in zip(bias, p["rest_window_mean_std"])
+                    b + self.random.gauss(0, s)
+                    for b, s in zip(bias, p["rest_window_mean_std"], strict=False)
                 ]
                 self.drift[key] = [self.random.gauss(0, s) for s in p["short_term_bias_std"]]
                 self.factor[key] = cholesky(p["white_covariance"])
@@ -75,14 +76,17 @@ class RecordedImu:
 
     def _channel(self, key, ideal, dt):
         p = self.profile["channels"][key]
-        for i, (std, tau) in enumerate(zip(p["short_term_bias_std"], p["short_term_bias_tau_s"])):
+        for i, (std, tau) in enumerate(
+            zip(p["short_term_bias_std"], p["short_term_bias_tau_s"], strict=False)
+        ):
             decay = math.exp(-dt / tau)
             self.drift[key][i] = decay * self.drift[key][i] + self.random.gauss(
                 0, std * math.sqrt(1 - decay * decay)
             )
         white = transform(self.factor[key], [self.random.gauss(0, 1) for _ in range(3)])
         return [
-            v + b + d + n for v, b, d, n in zip(ideal, self.offset[key], self.drift[key], white)
+            v + b + d + n
+            for v, b, d, n in zip(ideal, self.offset[key], self.drift[key], white, strict=False)
         ]
 
     def update(self, t, acceleration_mps2, angular_velocity_rps, body_yaw_rad, moving):

@@ -243,7 +243,7 @@ def main():
         HS, A, LP, R, D, V, PR = [], [], [], [], [], [], []
         h_init = h_state.clone() if args.stateful else None
         ep_succ = ep_coll = 0
-        for t in range(args.steps):
+        for _t in range(args.steps):
             h = obs["student"]
             with torch.no_grad():
                 if args.stateful:
@@ -295,7 +295,7 @@ def main():
             ent = args.ent
         mb = max(1, n // args.minibatches)
         pl = vl = 0.0
-        for e in range(args.epochs):
+        for _e in range(args.epochs):
             idx_all = torch.randperm(n, device=dev)
             for b in range(0, n, mb):
                 sl = idx_all[b : b + mb]

@@ -59,7 +59,7 @@ def south_details():
         b("foot" + str(sx), (sx * 0.57, 0, 0.10), (0.06, 0.64, 0.045), "frame")
         for sy in (-1, 1):
             c(
-                "wheel%s%s" % (sx, sy),
+                f"wheel{sx}{sy}",
                 (sx * 0.57, sy * 0.27, 0.055),
                 0.045,
                 0.04,
@@ -115,7 +115,7 @@ def south_details():
         b("table" + str(j), (xx, 0, 0.93), (0.055, 1.75, 0.78), "white", (0, 0.09, 0))
         for sy in (-1, 1):
             r(
-                "table_leg%s%s" % (j, sy),
+                f"table_leg{j}{sy}",
                 (xx - 0.05, sy * 0.65, 0.58),
                 (xx - 0.05, sy * 0.65, 1.26),
                 0.018,
@@ -125,7 +125,7 @@ def south_details():
         xx = -1.6 + j * 0.43
         for sx in (-1, 1):
             r(
-                "frame_leg%s%s" % (j, sx),
+                f"frame_leg{j}{sx}",
                 (xx + sx * 0.18, 0.50, 0.04),
                 (xx + sx * 0.18, 0.50, 1.36),
                 0.016,
@@ -140,7 +140,7 @@ def south_details():
         for sx in (-1, 1):
             for sy in (-1, 1):
                 r(
-                    "chairleg%s%s%s" % (j, sx, sy),
+                    f"chairleg{j}{sx}{sy}",
                     (xx + sx * 0.17, sy * 0.15, 0.44),
                     (xx + sx * 0.21, sy * 0.20, 0.025),
                     0.015,
@@ -149,23 +149,23 @@ def south_details():
     b, c, r = group("rack", -5, -10.5)
     for sx in (-1, 1):
         for sy in (-1, 1):
-            b("post%s%s" % (sx, sy), (sx * 0.63, sy * 0.28, 0.97), (0.035, 0.035, 1.94), "dark")
+            b(f"post{sx}{sy}", (sx * 0.63, sy * 0.28, 0.97), (0.035, 0.035, 1.94), "dark")
     for j in range(4):
         z = 0.15 + j * 0.50
         b("shelf" + str(j), (0, 0, z), (1.3, 0.60, 0.035), "dark")
         for k in range(2):
             xx = -0.32 + k * 0.64
-            b("bin%d_%d" % (j, k), (xx, 0, z + 0.16), (0.51, 0.48, 0.28), "dark")
+            b(f"bin{j}_{k}", (xx, 0, z + 0.16), (0.51, 0.48, 0.28), "dark")
             b(
-                "label%d_%d" % (j, k),
+                f"label{j}_{k}",
                 (xx, 0.246, z + 0.16),
                 (0.18, 0.005, 0.07),
                 "white",
                 collision=False,
             )
-            b("lid%d_%d" % (j, k), (xx, 0, z + 0.31), (0.54, 0.50, 0.025), "grey", collision=False)
+            b(f"lid{j}_{k}", (xx, 0, z + 0.31), (0.54, 0.50, 0.025), "grey", collision=False)
             b(
-                "latch%d_%d" % (j, k),
+                f"latch{j}_{k}",
                 (xx + 0.18, 0.252, z + 0.27),
                 (0.055, 0.012, 0.055),
                 "dark",
@@ -176,9 +176,9 @@ def south_details():
         z = 0.07 + j * 0.085
         b("base" + str(j), (0, 0, z), (0.55, 0.66, 0.018), "grey")
         for sx in (-1, 1):
-            b("side%s%s" % (j, sx), (sx * 0.265, 0, z + 0.04), (0.02, 0.66, 0.075), "grey")
+            b(f"side{j}{sx}", (sx * 0.265, 0, z + 0.04), (0.02, 0.66, 0.075), "grey")
         for sy in (-1, 1):
-            b("end%s%s" % (j, sy), (0, sy * 0.32, z + 0.04), (0.53, 0.02, 0.075), "grey")
+            b(f"end{j}{sy}", (0, sy * 0.32, z + 0.04), (0.53, 0.02, 0.075), "grey")
     b, c, r = group("trash", -3, -9)
     c("body", (0, 0, 0.29), 0.22, 0.56, "dark", collision=True)
     c("rim", (0, 0, 0.58), 0.235, 0.045, "grey")

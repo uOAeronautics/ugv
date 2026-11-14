@@ -130,7 +130,7 @@ def extract(folder):
         motion_end = (max(active_times) + 0.25) if active_times else e["t"]
         bad_motion_gap = any(
             r1["t"] - r0["t"] > 0.12 and r0["t"] < motion_end and r1["t"] > e["t"]
-            for r0, r1 in zip(usable[:-1], usable[1:])
+            for r0, r1 in zip(usable[:-1], usable[1:], strict=True)
         )
         if (
             len(usable) >= 5

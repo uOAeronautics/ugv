@@ -16,7 +16,7 @@ class MassPropertiesTest(unittest.TestCase):
         model = E.parse(HERE / "freenove_world.sdf").find('./world/model[@name="freenove"]')
         self.assertEqual(len(model.findall("link")), 41)
         self.assertAlmostEqual(
-            sum(float(l.findtext("inertial/mass")) for l in model.findall("link")), 0.5774
+            sum(float(link.findtext("inertial/mass")) for link in model.findall("link")), 0.5774
         )
         self.assertAlmostEqual(
             float(model.findtext('./link[@name="chassis"]/inertial/mass')), 0.4454

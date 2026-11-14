@@ -100,8 +100,8 @@ def _chair_shell():
     _atomic_text(
         path,
         "# Curved moulded sled chair shell\n"
-        + "".join("v %.6f %.6f %.6f\n" % v for v in verts)
-        + "".join("f %d %d %d\n" % tuple(q + 1 for q in f) for f in faces),
+        + "".join(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n" for v in verts)
+        + "".join(f"f {f[0] + 1:d} {f[1] + 1:d} {f[2] + 1:d}\n" for f in faces),
     )
     return "assets/room/chair_shell.obj"
 
@@ -159,7 +159,7 @@ def furniture_assembly():
             b("foot" + str(s), (xx, 0, 0.055), (0.065, d - 0.10, 0.045), "metal")
             for k in (-1, 1):
                 b(
-                    "endpad%s%s" % (s, k),
+                    f"endpad{s}{k}",
                     (xx, k * (d / 2 - 0.08), 0.026),
                     (0.085, 0.08, 0.027),
                     "rubber",
@@ -215,7 +215,7 @@ def furniture_assembly():
         for row in range(4):
             for k in range(12):
                 b(
-                    "key%d_%d" % (row, k),
+                    f"key{row}_{k}",
                     (-0.195 + k * 0.035, -0.215 + row * 0.029, 0.788),
                     (0.027, 0.021, 0.006),
                     "grey",
@@ -262,7 +262,7 @@ def furniture_assembly():
         for sx in (-1, 1):
             for sy in (-1, 1):
                 c(
-                    "wheel%s%s" % (sx, sy),
+                    f"wheel{sx}{sy}",
                     (sx * (w / 2 - 0.09), sy * 0.19, 0.065),
                     0.06,
                     0.045,
@@ -275,18 +275,18 @@ def furniture_assembly():
         a, b, c, r = group(n, x, y, yaw)
         for sx in (-1, 1):
             for sy in (-1, 1):
-                b("post%s%s" % (sx, sy), (sx * 0.72, sy * 0.24, 1.05), (0.04, 0.04, 2.1), "grey")
+                b(f"post{sx}{sy}", (sx * 0.72, sy * 0.24, 1.05), (0.04, 0.04, 2.1), "grey")
         for j in range(5):
             z = 0.12 + j * 0.46
             b("shelf" + str(j), (0, 0, z), (1.5, 0.55, 0.045), "wood")
             for k in range(3):
                 xx = -0.48 + k * 0.47
                 if (j + k) % 2:
-                    carton(b, "carton%d_%d" % (j, k), (xx, 0, z + 0.16), (0.38, 0.40, 0.28))
+                    carton(b, f"carton{j}_{k}", (xx, 0, z + 0.16), (0.38, 0.40, 0.28))
                 else:
-                    b("bin%d_%d" % (j, k), (xx, 0, z + 0.13), (0.38, 0.41, 0.22), "blue")
+                    b(f"bin{j}_{k}", (xx, 0, z + 0.13), (0.38, 0.41, 0.22), "blue")
                     b(
-                        "label%d_%d" % (j, k),
+                        f"label{j}_{k}",
                         (xx, -0.207, z + 0.13),
                         (0.15, 0.003, 0.06),
                         "white",
@@ -347,7 +347,7 @@ def furniture_assembly():
             b("handle" + str(s), (s * 0.075, -0.36, 1.0), (0.015, 0.025, 0.15), "black")
             for k in range(4):
                 b(
-                    "vent%s%s" % (s, k),
+                    f"vent{s}{k}",
                     (s * 0.214, -0.346, 1.75 - k * 0.035),
                     (0.25, 0.005, 0.009),
                     "grey",
@@ -466,7 +466,7 @@ def furniture_assembly():
         (0.38, 0.35, 0.018),
         (0.25, 0.27, 0.018),
     ]
-    for k, (v, w) in enumerate(zip(cable, cable[1:])):
+    for k, (v, w) in enumerate(zip(cable, cable[1:], strict=False)):
         r("lead" + str(k), v, w, 0.004, "black", False)
     a, b, c, r = group("ref_backpack", 3.4, 2.5, -0.25)
     b("body", (0, 0, 0.25), (0.30, 0.19, 0.46), "black", (0.12, 0, 0))
@@ -505,7 +505,7 @@ def furniture_assembly():
         b("top" + str(j), (xx, 0, 0.95), (0.055, 1.58, 0.80), "wood", (0, 0.06, 0))
         for sy in (-1, 1):
             r(
-                "folded_leg%s%s" % (j, sy),
+                f"folded_leg{j}{sy}",
                 (xx - 0.035, sy * 0.60, 0.57),
                 (xx - 0.035, sy * 0.60, 1.29),
                 0.021,

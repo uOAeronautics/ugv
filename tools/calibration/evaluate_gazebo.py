@@ -172,11 +172,11 @@ def run(args):
                 active = poses[max(0, start - 1) :]
                 angle = sum(
                     math.atan2(math.sin(b["yaw"] - a["yaw"]), math.cos(b["yaw"] - a["yaw"]))
-                    for a, b in zip(active, active[1:])
+                    for a, b in zip(active, active[1:], strict=False)
                 )
                 tail = [p for p in active if p["t"] > t0 + 0.65 * phase["duration"]]
                 values = []
-                for a, b in zip(tail, tail[1:]):
+                for a, b in zip(tail, tail[1:], strict=False):
                     dt = b["t"] - a["t"]
                     if dt <= 0:
                         continue
@@ -207,7 +207,8 @@ def run(args):
             drive("", args.pwm, 1.0)
             stop = poses[max(0, end - 1) :]
             distance = sum(
-                math.hypot(b["x"] - a["x"], b["y"] - a["y"]) for a, b in zip(stop, stop[1:])
+                math.hypot(b["x"] - a["x"], b["y"] - a["y"])
+                for a, b in zip(stop, stop[1:], strict=False)
             )
             out.write_text(
                 json.dumps(
@@ -244,7 +245,7 @@ def run(args):
             trajectory = poses[begin:]
             active = poses[begin:end]
             rates = []
-            for a, b in zip(active, active[1:]):
+            for a, b in zip(active, active[1:], strict=False):
                 dt = b["t"] - a["t"]
                 if dt > 0:
                     rates.append(
@@ -265,7 +266,7 @@ def run(args):
             ]
             body_forward = []
             body_side = []
-            for a, b in zip(active, active[1:]):
+            for a, b in zip(active, active[1:], strict=False):
                 dt = b["t"] - a["t"]
                 if dt > 0 and b["t"] > active[0]["t"] + 0.65 * (active[-1]["t"] - active[0]["t"]):
                     vx = (b["x"] - a["x"]) / dt
@@ -276,14 +277,14 @@ def run(args):
             stop_path = [active[-1], *after]
             distance = sum(
                 math.hypot(b["x"] - a["x"], b["y"] - a["y"])
-                for a, b in zip(stop_path, stop_path[1:])
+                for a, b in zip(stop_path, stop_path[1:], strict=False)
             )
             stop_time = None
             for j in range(len(stop_path) - 5):
                 window = stop_path[j : j + 6]
                 speeds = [
                     math.hypot(b["x"] - a["x"], b["y"] - a["y"]) / (b["t"] - a["t"])
-                    for a, b in zip(window, window[1:])
+                    for a, b in zip(window, window[1:], strict=False)
                     if b["t"] > a["t"]
                 ]
                 if speeds and max(speeds) < 0.02:

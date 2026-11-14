@@ -222,7 +222,7 @@ def fit_bayesian(trials, draws=120, seed=29):
         for j in range(1, len(t)):
             if t[j] - t[index[-1]] >= 0.08:
                 index.append(j)
-        for i, j in zip(index[:-1], index[1:]):
+        for i, j in zip(index[:-1], index[1:], strict=True):
             # Do not average across a discontinuous control change; motor inputs
             # are time varying and transitions use their observed duration mean.
             dt = t[j] - t[i]
@@ -389,7 +389,7 @@ def fit_bayesian(trials, draws=120, seed=29):
                 brake_tau_s=c["brake"],
                 probability=float(prob),
             )
-            for c, prob in zip(candidates, weights)
+            for c, prob in zip(candidates, weights, strict=True)
             if prob > 1e-6
         ],
         limitations=[

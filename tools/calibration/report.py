@@ -56,7 +56,7 @@ def main():
     for session in profile["source_sessions"][1:]:
         p = DATA / session
         analysis = json.loads((p / "analysis.json").read_text())
-        samples = [json.loads(l) for l in (p / "samples.jsonl").read_text().splitlines()]
+        samples = [json.loads(line) for line in (p / "samples.jsonl").read_text().splitlines()]
         for trial in analysis["trials"]:
             if trial["keys"] not in keys:
                 continue
@@ -84,7 +84,7 @@ def main():
         "SD": "S + D · reverse right",
         "SA": "S + A · reverse left",
     }
-    for ax, key in zip(axes.flat, keys):
+    for ax, key in zip(axes.flat, keys, strict=True):
         for k, t, yaw, repeat in records:
             if k == key:
                 ax.plot(

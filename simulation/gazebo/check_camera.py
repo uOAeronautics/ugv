@@ -97,7 +97,9 @@ try:
     info = infos[-1]
     assert (info.width, info.height) == (1280, 720)
     k = list(info.intrinsics.k)
-    assert all(abs(a - b) < 0.01 for a, b in zip(k, [968, 0, 640, 0, 968, 360, 0, 0, 1])), k
+    assert all(
+        abs(a - b) < 0.01 for a, b in zip(k, [968, 0, 640, 0, 968, 360, 0, 0, 1], strict=True)
+    ), k
     rate = (len(stamps) - 1) / (stamps[-1] - stamps[0])
     assert 28 < rate <= 31, rate
     with camera.lock:
@@ -124,7 +126,7 @@ try:
         [[p["cx"] - p["fx"] * y / distance, p["cy"] - p["fy"] * z / distance] for y, z in targets]
     )
     measured = sorted(blobs)
-    errors = [math.dist(a, b) for a, b in zip(measured, predicted)]
+    errors = [math.dist(a, b) for a, b in zip(measured, predicted, strict=True)]
     assert max(errors) < 3, (measured, predicted, errors)
     out = args.output
     out.mkdir(parents=True, exist_ok=True)

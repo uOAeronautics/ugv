@@ -33,7 +33,9 @@ class RoomGeometry(unittest.TestCase):
         for part in room_assembly():
             if not part["collision"]:
                 continue
-            overlap = all(a < d and c < b for (a, b), (c, d) in zip(bounds(part), corridor))
+            overlap = all(
+                a < d and c < b for (a, b), (c, d) in zip(bounds(part), corridor, strict=True)
+            )
             self.assertFalse(overlap, "Demo floor blocked by " + part["name"])
 
     def test_assets_and_materials_exist_offline(self):

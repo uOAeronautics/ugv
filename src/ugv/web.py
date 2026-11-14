@@ -213,7 +213,9 @@ class CameraStream:
         seen = -1
         while not self.stop.is_set():
             with self.cv:
-                self.cv.wait_for(lambda: self.seq != seen or self.stop.is_set(), timeout=2)
+                self.cv.wait_for(
+                    lambda seen=seen: self.seq != seen or self.stop.is_set(), timeout=2
+                )
                 if self.stop.is_set():
                     return
                 if self.seq == seen:
@@ -300,8 +302,8 @@ class RobotController:
     RL_INFERENCE_BUDGET_MS = 20.0
 
     def imu_sample(self, acceleration: list[float], gyroscope: list[float], rate_hz: float) -> None:
-        self.state.imu_accel_g = dict(zip("xyz", acceleration))
-        self.state.imu_gyro_dps = dict(zip("xyz", gyroscope))
+        self.state.imu_accel_g = dict(zip("xyz", acceleration, strict=False))
+        self.state.imu_gyro_dps = dict(zip("xyz", gyroscope, strict=False))
         self.state.imu_rate_hz = rate_hz
         self.state.imu_connected = True
         self.state.imu_status = "streaming"
@@ -423,7 +425,7 @@ class RobotController:
                 reason = "calibration-imu-stale"
             elif self.state.motion_mode == "calibration":
                 gyro = tuple(self.state.imu_gyro_dps[a] for a in "xyz")
-                yaw = sum(a * b for a, b in zip(gyro, self.calibration_up))
+                yaw = sum(a * b for a, b in zip(gyro, self.calibration_up, strict=False))
                 tilt = math.sqrt(max(0, sum(v * v for v in gyro) - yaw * yaw))
                 if not all(math.isfinite(v) for v in gyro) or abs(yaw) > 850 or tilt > 180:
                     reason = "calibration-sensor-motion-limit"
@@ -1095,7 +1097,7 @@ class RobotController:
     def _imu_bias_dps(self) -> dict[str, float]:
         try:
             bias = getattr(self.heading, "_bias", (0.0, 0.0, 0.0))
-            return {axis: round(float(value), 3) for axis, value in zip("xyz", bias)}
+            return {axis: round(float(value), 3) for axis, value in zip("xyz", bias, strict=False)}
         except Exception:
             return {axis: 0.0 for axis in "xyz"}
 

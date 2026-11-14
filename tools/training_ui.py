@@ -98,7 +98,7 @@ def pareto_frontier(entries):
     by_level = {}
     for e in entries:
         by_level.setdefault(e["level"], []).append(e)
-    for lvl, group in by_level.items():
+    for _lvl, group in by_level.items():
         for a in group:
             dominated = False
             for b in group:
@@ -492,7 +492,7 @@ def make_curves(logs, run_id, out):
     have = [k for k in keys if any(p[k] is not None for p in pts)]
     fig, axs = plt.subplots(2, 3, figsize=(12, 6), squeeze=False)
     it = [p["iter"] for p in pts]
-    for ax, k in zip([a for row in axs for a in row], keys):
+    for ax, k in zip([a for row in axs for a in row], keys, strict=True):
         if k in have:
             ax.plot(it, [p[k] if p[k] is not None else float("nan") for p in pts])
         ax.set_title(f"{run_id} {k}")
@@ -557,7 +557,6 @@ def html_page(entries, board_filter=None):
     H.append("</table>")
 
     H.append("<h2>Discovery tree / lineage DAG</h2><ul>")
-    by_id = {r.get("run_id"): r for r in rows}
     for r in rows:
         rid = r.get("run_id")
         kids = sorted(children.get(rid, []))

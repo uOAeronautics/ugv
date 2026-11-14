@@ -35,7 +35,7 @@ node(body, "pose", "0 0 .05 0 0 0")
 inertial = node(body, "inertial")
 node(inertial, "mass", 0.55)
 tensor = node(inertial, "inertia")
-for key, value in zip(("ixx", "iyy", "izz"), (0.001, 0.002, 0.003)):
+for key, value in zip(("ixx", "iyy", "izz"), (0.001, 0.002, 0.003), strict=True):
     node(tensor, key, value)
 groups = {}
 for tag, x, y in [

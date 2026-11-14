@@ -37,7 +37,7 @@ class MotorModelTest(unittest.TestCase):
     def test_mecanum_contacts_are_passive_independent_rollers(self):
         springs = self.model.findall('./joint[@type="prismatic"]')
         self.assertEqual(len(springs), 4)
-        rollers = [l for l in self.model.findall("link") if "_roller_" in l.get("name")]
+        rollers = [link for link in self.model.findall("link") if "_roller_" in link.get("name")]
         self.assertEqual(len(rollers), 32)
         for link in rollers:
             contact = link.find("collision/surface/friction/ode")

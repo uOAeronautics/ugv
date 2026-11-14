@@ -176,7 +176,7 @@ class ExcitationSchedule:
         bounds[-1] = n_total
         cmds = np.zeros((n_total, 3))
         labels: list = []
-        for s, (a, b) in zip(self.segments, zip(bounds[:-1], bounds[1:])):
+        for s, (a, b) in zip(self.segments, zip(bounds[:-1], bounds[1:], strict=True), strict=True):
             n = max(b - a, 1 if s.duration > 0 else 0)
             b = a + n
             cmds[a:b] = np.array(s.cmd, float)

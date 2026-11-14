@@ -64,7 +64,6 @@ def collect_trajs():
                 math.radians(40),
             )
         trajs = [dict(pose=[], valid=[], act=[]) for _ in range(6)]
-        h = None
         steps = 1100
         with torch.no_grad():
             for _ in range(steps):
@@ -159,7 +158,6 @@ def draw_scene(img, pose, trail, cam_mode, t, valid, act, gru, W, H, pov_mode="n
     for i in range(0, H, 8):
         a = i / H
         img[i : i + 8] = (int(8 + 10 * a), int(6 + 8 * a), int(20 + 26 * a))
-    cx, cy = W / 2, H * 0.56
     u = pose
     # camera paths
     if cam_mode == "orbit":
@@ -210,7 +208,7 @@ def draw_scene(img, pose, trail, cam_mode, t, valid, act, gru, W, H, pov_mode="n
     )
     poly(img, project(body, cam, tgt, fov, W, H), (200, 200, 220), 2)
     # ArUco tags under belly
-    for i, tx in enumerate([-0.12, -0.04, 0.04, 0.12]):
+    for _i, tx in enumerate([-0.12, -0.04, 0.04, 0.12]):
         tg = np.array(
             [
                 [tx - 0.025, 0.15, 0.40],

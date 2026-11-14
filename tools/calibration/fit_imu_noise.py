@@ -22,17 +22,17 @@ def fit(data, output):
     for name in SESSIONS:
         path = data / name / "samples.jsonl"
         blob = path.read_bytes()
-        rows = [json.loads(l) for l in blob.splitlines()]
+        rows = [json.loads(line) for line in blob.splitlines()]
         run = []
         rest_start = None
         previous = None
         count = 0
 
-        def save():
+        def save(current_run):
             nonlocal count
-            if len(run) >= 75 and run[-1]["t"] - run[0]["t"] >= 0.7:
-                spans.append(run.copy())
-                count += len(run)
+            if len(current_run) >= 75 and current_run[-1]["t"] - current_run[0]["t"] >= 0.7:
+                spans.append(current_run.copy())
+                count += len(current_run)
 
         for row in rows:
             gap = previous is not None and not 0 < row["t"] - previous < 0.05
@@ -43,7 +43,7 @@ def fit(data, output):
                 and abs(np.linalg.norm(row["accel_g"]) - 1) < 0.1
             )
             if gap or not quiet:
-                save()
+                save(run)
                 run = []
                 rest_start = None
             if quiet:
@@ -52,7 +52,7 @@ def fit(data, output):
                 if row["t"] - rest_start >= 1.0:
                     run.append(row)
             previous = row["t"]
-        save()
+        save(run)
         sources.append(
             dict(session=name, sha256=hashlib.sha256(blob).hexdigest(), rest_samples=count)
         )
@@ -69,7 +69,7 @@ def fit(data, output):
         covariance = np.cov(residual, rowvar=False)
         bins = []
         pairs = []
-        for span, array in zip(spans, arrays):
+        for span, array in zip(spans, arrays, strict=True):
             time = np.array([r["t"] - span[0]["t"] for r in span])
             block = []
             for k in range(int(time[-1] / 0.5)):
@@ -80,7 +80,7 @@ def fit(data, output):
                 block = np.array(block)
                 block -= block.mean(axis=0)
                 bins.extend(block)
-                pairs.extend(zip(block[:-1], block[1:]))
+                pairs.extend(zip(block[:-1], block[1:], strict=True))
         bins = np.array(bins)
         first = np.array([a for a, b in pairs])
         second = np.array([b for a, b in pairs])

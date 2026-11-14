@@ -320,7 +320,7 @@ elif args.room:
             part.get("category") == "wall" and (x < -5 or y < -11)
         )
     shot("room-overview", (-18, -20, 19), (0, 0, 0.3), 29)
-    for ob, part in room_objects:
+    for ob, _part in room_objects:
         ob.hide_render = False
     cam.data.type = "PERSP"
     cam.data.lens = 20

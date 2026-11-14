@@ -144,7 +144,7 @@ def main():
         perm = torch.randperm(len(buf_h))[:50000]
         loss_sum, loss_n = 0.0, 0
         student.train()
-        for e in range(args.epochs):
+        for _e in range(args.epochs):
             for b in range(0, len(perm), 2048):
                 sl = perm[b : b + 2048]
                 seq = buf_h[sl].to(dev)

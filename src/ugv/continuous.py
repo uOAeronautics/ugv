@@ -241,10 +241,10 @@ class TorqueAllocator:
 
 
 class ContinuousDocking:
-    def __init__(self, vehicle, obstacles, goal=Pose2(0, 0, 0)):
+    def __init__(self, vehicle, obstacles, goal=None):
         self.vehicle = vehicle
         self.obstacles = obstacles
-        self.goal = goal
+        self.goal = goal if goal is not None else Pose2(0, 0, 0)
         self.phase = "approach"
         self.allocator = TorqueAllocator()
         self.aligned_since = None

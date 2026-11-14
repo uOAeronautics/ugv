@@ -43,8 +43,8 @@ def first_order(t, rate):
 
 def analyze(folder):
     folder = Path(folder)
-    samples = [json.loads(l) for l in (folder / "samples.jsonl").read_text().splitlines()]
-    events = [json.loads(l) for l in (folder / "events.jsonl").read_text().splitlines()]
+    samples = [json.loads(line) for line in (folder / "samples.jsonl").read_text().splitlines()]
+    events = [json.loads(line) for line in (folder / "events.jsonl").read_text().splitlines()]
     times = np.array([p["t"] for p in samples])
     output = []
     starts = [e for e in events if e["event"] == "trial_start"]

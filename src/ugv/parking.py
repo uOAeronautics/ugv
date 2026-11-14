@@ -107,8 +107,8 @@ def segment_distance(a, b, c, d):
 
 
 def footprint_corners(pose, width, length, inflation=0.0):
-    w, l = width / 2 + inflation, length / 2 + inflation
-    local = np.array([[-w, -l], [w, -l], [w, l], [-w, l]])
+    w, half_l = width / 2 + inflation, length / 2 + inflation
+    local = np.array([[-w, -half_l], [w, -half_l], [w, half_l], [-w, half_l]])
     c, s = math.cos(pose.yaw), math.sin(pose.yaw)
     return local @ np.array([[c, -s], [s, c]]) + [pose.x, pose.z]
 
@@ -177,7 +177,6 @@ def swept_clear(start, end, width, length, obstacles, inflation=0.0):
     bx = np.array([o.bx for o in obstacles])
     bz = np.array([o.bz for o in obstacles])
     rad = np.array([o.radius for o in obstacles])
-    m = len(obstacles)
     # Capsule endpoints inside the inflated footprint?
     for ox, oz in ((ax, az), (bx, bz)):
         ddx, ddz = ox[None, :] - xs[:, None], oz[None, :] - zs[:, None]

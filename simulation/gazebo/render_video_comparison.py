@@ -43,7 +43,7 @@ camera.location = fit["panorama_camera_estimate"]
 yaws = [math.radians(value) for value in fit["panorama_yaws_deg"]]
 pitches = [math.radians(value) for value in fit["panorama_pitches_deg"]]
 poses = []
-for second, (yaw, pitch) in enumerate(zip(yaws, pitches)):
+for second, (yaw, pitch) in enumerate(zip(yaws, pitches, strict=True)):
     poses.append(
         dict(
             second=second,

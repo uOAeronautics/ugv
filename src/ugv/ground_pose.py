@@ -26,8 +26,10 @@ class SkidPoseObserver:
     def __init__(self, camera_matrix, clear_width=0.254, bar_length=0.3048, radius=0.03):
         self.k = np.asarray(camera_matrix, float)
         w = clear_width / 2 + radius
-        l = bar_length / 2
-        self.objects = np.array([[-w, 0, -l], [w, 0, -l], [w, 0, l], [-w, 0, l]], float)
+        half_l = bar_length / 2
+        self.objects = np.array(
+            [[-w, 0, -half_l], [w, 0, -half_l], [w, 0, half_l], [-w, 0, half_l]], float
+        )
         self.previous = None
         self.points = None
         self.pose = None
@@ -43,7 +45,7 @@ class SkidPoseObserver:
         except cv2.error:
             return None
         candidates = []
-        for rvec, tvec in zip(result[1], result[2]):
+        for rvec, tvec in zip(result[1], result[2], strict=True):
             rvec, tvec = cv2.solvePnPRefineLM(self.objects, pixels, self.k, np.zeros(5), rvec, tvec)
             rotation = cv2.Rodrigues(rvec)[0]
             position = -rotation.T @ tvec.reshape(3)

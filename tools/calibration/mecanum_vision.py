@@ -15,7 +15,9 @@ import numpy as np
 
 def analyze(folder, height=0.065, focal=968.0, surveyed=False, stride=1):
     frames = [
-        json.loads(l) for l in (folder / "frames.jsonl").read_text().splitlines() if l.strip()
+        json.loads(line)
+        for line in (folder / "frames.jsonl").read_text().splitlines()
+        if line.strip()
     ]
     frames = frames[::stride]
     results = []
@@ -81,7 +83,7 @@ def analyze(folder, height=0.065, focal=968.0, surveyed=False, stride=1):
         row["reprojection_rmse_px"] = float(np.sqrt(np.mean((projected - b[keep]) ** 2)))
         count, rotations, translations, normals = cv2.decomposeHomographyMat(hom, k)
         candidates = []
-        for r, t, n in zip(rotations, translations, normals):
+        for r, t, n in zip(rotations, translations, normals, strict=True):
             n = n[:, 0]
             translation = t[:, 0]
             # Floor normal points camera-down; reject vertical furniture planes.
@@ -254,7 +256,6 @@ def align_visual_inertial(
     visual = read(folder / "visual_reference.jsonl")
     events = read(folder / "events.jsonl")
     equations = []
-    diagnostics = []
     for tr in trials:
         t = np.asarray(tr["t"])
         raw = [s for s in samples if t[0] <= s["t"] <= t[-1]]

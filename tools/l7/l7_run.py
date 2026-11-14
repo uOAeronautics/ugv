@@ -294,7 +294,7 @@ def _process_frame(body, seq, cap, t0, n, det, bits, state, ids, save_every, out
         found: dict[int, tuple[np.ndarray, str]] = {}
         quads, qids, _ = det.detectMarkers(half)
         if qids is not None:
-            for qd, i in zip(quads, qids.ravel()):
+            for qd, i in zip(quads, qids.ravel(), strict=False):
                 i = int(i)
                 if i not in ids:
                     continue
@@ -527,7 +527,7 @@ class Localizer:
             and pick_clear
             and abs(e) < math.radians(8)
         ):
-            for t2, m2, s2, clear2 in map_cands:
+            for _t2, m2, s2, clear2 in map_cands:
                 if m2[3] < 0 or not clear2:
                     continue
                 p = cam + s2[2] * f + s2[0] * r
@@ -1257,7 +1257,6 @@ def main():
             t_start = time.monotonic()
             t_next = t_start
             outcome = "timeout"
-            prev_pose_for_speed = None
             brake_stale_since = None
             imu_w_lp = None
             while not stop["flag"]:
@@ -1365,16 +1364,6 @@ def main():
                 )
                 # ---- termination bookkeeping (estimate-based) ----
                 if est is not None:
-                    if prev_pose_for_speed is not None:
-                        sp = (
-                            math.hypot(
-                                est[0] - prev_pose_for_speed[0], est[1] - prev_pose_for_speed[1]
-                            )
-                            / DT
-                        )
-                    else:
-                        sp = 0.0
-                    prev_pose_for_speed = est
                     near = (
                         abs(est[0]) < 0.03 and abs(est[1]) < 0.05 and abs(est[2]) < math.radians(5)
                     )

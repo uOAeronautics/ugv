@@ -304,7 +304,7 @@ def _local_ippe(
     active = markers if markers is not None else MARKERS
     center, R_mw = active[d.tag_id]
     out = []
-    for rv, tv, err in zip(rvecs, tvecs, errs.ravel()):
+    for rv, tv, err in zip(rvecs, tvecs, errs.ravel(), strict=True):
         R_cm, _ = cv2.Rodrigues(rv)
         R_cw = R_cm @ R_mw.T
         t_w = tv.reshape(3) - R_cw @ center

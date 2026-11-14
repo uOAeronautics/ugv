@@ -43,7 +43,10 @@ def test_route_and_every_sweep_fit_between_gear():
     obstacles = gear_obstacles(gear)
     route = plan_route(Pose2(0, -0.5), Pose2(0, 0), vehicle, obstacles, 0.015)
     assert route and math.hypot(route[-1].x, route[-1].z) < 0.02
-    assert all(swept_clear(a, b, 0.16, 0.24, obstacles, 0.015) for a, b in zip(route, route[1:]))
+    assert all(
+        swept_clear(a, b, 0.16, 0.24, obstacles, 0.015)
+        for a, b in zip(route, route[1:], strict=False)
+    )
     assert not plan_route(
         Pose2(0, -0.5), Pose2(0, 0), {"width_m": 0.24, "length_m": 0.3}, obstacles, 0.015
     )

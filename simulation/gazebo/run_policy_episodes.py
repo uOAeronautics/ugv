@@ -115,7 +115,7 @@ class FakeBridge:
         return list(self.pose), list(self.vel), self.collision
 
     def step(self, act, dt):
-        vx, vy, w = (a * s for a, s in zip(act, (0.6, 0.6, 2.5)))
+        vx, vy, w = (a * s for a, s in zip(act, (0.6, 0.6, 2.5), strict=False))
         w += 0.3 * vx
         self.vel = [vx, vy, w]
         th = self.pose[2] + w * dt / 2

@@ -111,8 +111,8 @@ def _prop_mesh():
         j = start + (len(stations) - 1) * 4
         faces.extend(((j, j + 1, j + 2), (j, j + 2, j + 3)))
     text = "# Photo estimated 380mm two blade propeller\n"
-    text += "".join("v %.7f %.7f %.7f\n" % v for v in verts)
-    text += "".join("f %d %d %d\n" % tuple(i + 1 for i in f) for f in faces)
+    text += "".join(f"v {v[0]:.7f} {v[1]:.7f} {v[2]:.7f}\n" for v in verts)
+    text += "".join(f"f {f[0] + 1:d} {f[1] + 1:d} {f[2] + 1:d}\n" for f in faces)
     # Gazebo generation and Blender previews may request this asset concurrently.
     # Preserve unchanged assets, and publish changed contents as one atomic rename.
     try:
@@ -187,7 +187,7 @@ def drone_assembly(
         )
 
     def wire(n, points, c, r=0.0015):
-        for i, (a, b) in enumerate(zip(points, points[1:])):
+        for i, (a, b) in enumerate(zip(points, points[1:], strict=False)):
             rod(n + "_" + str(i), a, b, r, c)
 
     # Continuous black skid cores with individual foam sleeves and red annular seams.
@@ -425,11 +425,11 @@ def drone_assembly(
         if paper_bounds is None:
             box(name + "_paper", pos, (size, size, 0.0008), "white", rot)
         else:
-            l, r, b, t = paper_bounds
+            left_b, r, b, t = paper_bounds
             box(
                 name + "_paper",
-                transform((0.5 * (l + r), 0.5 * (b + t), 0.0)),
-                (r - l, t - b, 0.0008),
+                transform((0.5 * (left_b + r), 0.5 * (b + t), 0.0)),
+                (r - left_b, t - b, 0.0008),
                 "white",
                 rot,
             )

@@ -170,7 +170,7 @@ def assembly(p):
         (0.023, board + 0.070),
         (cx - 0.004, board + 0.039),
     ]
-    for i, ((ax, az), (bx, bz)) in enumerate(zip(path, path[1:])):
+    for i, ((ax, az), (bx, bz)) in enumerate(zip(path, path[1:], strict=False)):
         box(
             "camera_ribbon_" + str(i),
             ((ax + bx) / 2, 0, (az + bz) / 2),

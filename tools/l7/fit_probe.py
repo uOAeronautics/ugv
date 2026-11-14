@@ -85,7 +85,7 @@ def _fit_nonneg_deadzone(pts: list[tuple[float, float]], stall_thresh: float) ->
 
 
 def _extract_ws_lag(ws_path: Path, imu: list[dict], it: np.ndarray) -> float | None:
-    rows = [json.loads(l) for l in open(ws_path) if l.strip()]
+    rows = [json.loads(line) for line in open(ws_path) if line.strip()]
     if not rows:
         return None
     ack_diffs = []
@@ -136,8 +136,8 @@ def _extract_ws_lag(ws_path: Path, imu: list[dict], it: np.ndarray) -> float | N
 
 
 def analyze_run(run: Path) -> dict:
-    ticks = [json.loads(l) for l in open(run / "ticks.jsonl")]
-    imu = [json.loads(l) for l in open(run / "imu.jsonl")]
+    ticks = [json.loads(line) for line in open(run / "ticks.jsonl")]
+    imu = [json.loads(line) for line in open(run / "imu.jsonl")]
     it = np.array([s["t"] for s in imu], dtype=float)
     gz = np.array([s["g"][2] for s in imu], dtype=float)
     st = np.array([bool(s.get("st", False)) for s in imu], dtype=bool)
@@ -217,16 +217,16 @@ def analyze_run(run: Path) -> dict:
             P = np.array([ps[t] for t in tt], dtype=float)
             th = P[0, 2] - math.pi / 2.0
             f = (P[:, 0] - P[0, 0]) * math.cos(th) + (P[:, 1] - P[0, 1]) * math.sin(th)
-            l = -(P[:, 0] - P[0, 0]) * math.sin(th) + (P[:, 1] - P[0, 1]) * math.cos(th)
+            left_disp = -(P[:, 0] - P[0, 0]) * math.sin(th) + (P[:, 1] - P[0, 1]) * math.cos(th)
             late = tt > t0 + 0.3
             if late.sum() >= 3:
                 v_fwd = float(np.polyfit(tt[late], f[late], 1)[0])
-                v_left = float(np.polyfit(tt[late], l[late], 1)[0])
+                v_left = float(np.polyfit(tt[late], left_disp[late], 1)[0])
                 row["v_fwd_ss"] = v_fwd
                 row["v_left_ss"] = v_left
                 if axis in ("fwd", "left"):
                     row["v_ss"] = v_fwd if axis == "fwd" else v_left
-            s = f if axis == "fwd" else l
+            s = f if axis == "fwd" else left_disp
             moved = tt[np.abs(s) > 0.01]
             row["onset_s"] = float(moved[0] - t0) if len(moved) else None
 
@@ -348,9 +348,9 @@ def analyze_run(run: Path) -> dict:
     frames_path = run / "frames.jsonl"
     if frames_path.exists():
         proc_ms = []
-        for l in open(frames_path):
-            if l.strip():
-                fr = json.loads(l)
+        for line in open(frames_path):
+            if line.strip():
+                fr = json.loads(line)
                 if fr.get("done") is not None and fr.get("cap") is not None:
                     proc_ms.append((float(fr["done"]) - float(fr["cap"])) * 1000.0)
         if proc_ms:

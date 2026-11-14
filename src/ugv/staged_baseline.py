@@ -542,11 +542,11 @@ class StagedBaseline:
         dt=0.02,
         model: MeanModel | None = None,
         v_max=0.32,
-        geometry: Geometry = Geometry(),
+        geometry: Geometry | None = None,
     ):
         self.n, self.dt, self.v_max = n, dt, v_max
         self.m = model or MeanModel()
-        self.g = geometry
+        self.g = geometry if geometry is not None else Geometry()
         self.latency = latency
         self.reset()
 

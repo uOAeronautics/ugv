@@ -120,7 +120,7 @@ def _authored_room_assembly():
     for shade in ("light", "dark"):
         verts = []
         faces = []
-        for i in range(85):
+        for _i in range(85):
             x = rng.uniform(-11.9, 11.9)
             y = rng.uniform(-5.9, 5.9)
             radius = rng.uniform(0.025, 0.22)
@@ -141,8 +141,8 @@ def _authored_room_assembly():
         mesh = "assets/room/concrete_" + shade + ".obj"
         _atomic_text(
             HERE / mesh,
-            "".join("v %.5f %.5f %.5f\n" % v for v in verts)
-            + "".join("f %d %d %d\n" % tuple(x + 1 for x in f) for f in faces),
+            "".join(f"v {v[0]:.5f} {v[1]:.5f} {v[2]:.5f}\n" for v in verts)
+            + "".join(f"f {f[0] + 1:d} {f[1] + 1:d} {f[2] + 1:d}\n" for f in faces),
         )
         parts.append(
             dict(

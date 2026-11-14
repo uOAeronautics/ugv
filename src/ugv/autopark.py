@@ -151,7 +151,7 @@ class TagDetector:
         if ids is None:
             self.last_timings = {"detect_ms": detect_ms, "subpix_ms": subpix_ms, "pnp_ms": pnp_ms}
             return {"cap": cap, "tags": tags}
-        for c, tid_val in zip(corners_list, np.ravel(ids)):
+        for c, tid_val in zip(corners_list, np.ravel(ids), strict=False):
             tid = int(tid_val)
             if self.valid_ids and tid not in self.valid_ids:
                 continue

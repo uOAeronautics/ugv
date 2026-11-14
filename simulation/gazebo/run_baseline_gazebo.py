@@ -213,7 +213,10 @@ def main():
     finally:
         gz.close()
     n = len(results)
-    count = lambda k: sum(r["result"] == k for r in results)
+
+    def count(k):
+        return sum(r["result"] == k for r in results)
+
     ts = sorted(r["t"] for r in results)
     summary = dict(
         policy="ekf_staged",

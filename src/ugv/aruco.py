@@ -462,7 +462,7 @@ class ArucoFollower:
             quads, ids, rejected_live = detector.detectMarkers(pixels)
             result = []
             if ids is not None:
-                for quad, raw_id in zip(quads, ids.flatten()):
+                for quad, raw_id in zip(quads, ids.flatten(), strict=False):
                     tag = int(raw_id)
                     if tag in ALLOWED_IDS:
                         item = ArucoFollower.from_points(
@@ -489,7 +489,7 @@ class ArucoFollower:
                 ]
                 large.sort(key=lambda q: abs(cv2.contourArea(q)), reverse=True)
                 seen = {item.tag_id for item in result}
-                for tag, points, errors in ArucoFollower.decode_rejected(
+                for tag, points, _errors in ArucoFollower.decode_rejected(
                     boosted, large[:4], dictionary, 0
                 ):
                     if tag not in seen:
@@ -576,7 +576,7 @@ class ArucoFollower:
             extra_corners, extra_ids, _ = decoder.detectMarkers(pixels)
             if extra_ids is None:
                 continue
-            for quad, raw_id in zip(extra_corners, extra_ids.flatten()):
+            for quad, raw_id in zip(extra_corners, extra_ids.flatten(), strict=False):
                 tag_id = int(raw_id)
                 if tag_id not in ALLOWED_IDS or tag_id in found_ids:
                     continue
@@ -593,7 +593,7 @@ class ArucoFollower:
             enlarged = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
             extra_corners, extra_ids, _ = small.detectMarkers(enlarged)
             if extra_ids is not None:
-                for quad, raw_id in zip(extra_corners, extra_ids.flatten()):
+                for quad, raw_id in zip(extra_corners, extra_ids.flatten(), strict=False):
                     tag_id = int(raw_id)
                     if tag_id not in ALLOWED_IDS or tag_id in found_ids:
                         continue
@@ -990,7 +990,7 @@ class ArucoFollower:
                     quads, ids, _ = cv2.aruco.ArucoDetector(dictionary, p).detectMarkers(roi)
                     if ids is None:
                         continue
-                    for quad, raw_id in zip(quads, ids.flatten()):
+                    for quad, raw_id in zip(quads, ids.flatten(), strict=False):
                         tag = int(raw_id)
                         # This local pass verifies the acquired identity.
                         if tag != seed.tag_id or tag in roi_ids:
@@ -1264,7 +1264,7 @@ class ArucoFollower:
                 }
                 for item in detections
             ]
-            for marker, item in zip(state.aruco_markers, detections):
+            for marker, item in zip(state.aruco_markers, detections, strict=True):
                 marker.update(
                     rotation_vector=item.rotation_vector,
                     translation_vector=item.translation_vector,

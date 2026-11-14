@@ -27,8 +27,8 @@ DETAIL_COLORS = {
 def _mesh(name, vertices, faces):
     path = HERE / "assets" / "room" / name
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = "".join("v %.6f %.6f %.6f\n" % v for v in vertices) + "".join(
-        "f %s\n" % " ".join(str(i + 1) for i in f) for f in faces
+    data = "".join(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n" for v in vertices) + "".join(
+        f"f {' '.join(str(i + 1) for i in f)}\n" for f in faces
     )
     if not path.exists() or path.read_text() != data:
         tmp = None

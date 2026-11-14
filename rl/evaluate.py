@@ -163,7 +163,10 @@ def run(
     times.sort()
     epos.sort()
     eyaw.sort()
-    q = lambda v, p: v[min(int(len(v) * p), len(v) - 1)] if v else float("nan")
+
+    def q(v, p):
+        return v[min(int(len(v) * p), len(v) - 1)] if v else float("nan")
+
     out = {
         "policy": policy,
         "level": level,

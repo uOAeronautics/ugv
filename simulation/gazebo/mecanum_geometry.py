@@ -8,7 +8,7 @@ photo estimates, not measured geometry. Positive hub rotation about +Y drives +X
 import math
 
 WHEEL_ORDER = ("front_left", "front_right", "rear_left", "rear_right")
-HANDEDNESS = dict(zip(WHEEL_ORDER, (1, -1, -1, 1)))
+HANDEDNESS = dict(zip(WHEEL_ORDER, (1, -1, -1, 1), strict=True))
 
 
 def wheel_parts(radius=0.03175, width=0.032):
@@ -99,6 +99,7 @@ def add_passive_rollers(
             for key, value in zip(
                 ("ixx", "iyy", "izz", "ixy", "ixz", "iyz"),
                 (transverse, transverse, roller_mass * rr * rr / 2, 0, 0, 0),
+                strict=True,
             ):
                 node(tensor, key, value)
             for kind in ("visual", "collision"):

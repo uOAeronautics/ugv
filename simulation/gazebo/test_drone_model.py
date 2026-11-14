@@ -30,7 +30,7 @@ def bounds(part):
         extent = [
             abs(row[2]) * length / 2 + radius * math.hypot(row[0], row[1]) for row in rotation
         ]
-    return [(x - e, x + e) for x, e in zip(part["pos"], extent)]
+    return [(x - e, x + e) for x, e in zip(part["pos"], extent, strict=True)]
 
 
 class DroneGeometry(unittest.TestCase):
@@ -124,7 +124,7 @@ class DroneGeometry(unittest.TestCase):
                     for i in range(count)
                 ]
             overlap = any(
-                all(a < d and c < b for (a, b), (c, d) in zip(bounds(piece), corridor))
+                all(a < d and c < b for (a, b), (c, d) in zip(bounds(piece), corridor, strict=True))
                 for piece in pieces
             )
             self.assertFalse(overlap, "Docking corridor blocked by " + part["name"])

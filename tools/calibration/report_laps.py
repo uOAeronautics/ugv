@@ -20,7 +20,9 @@ def main(output):
     fig, (ax, path) = plt.subplots(1, 2, figsize=(12, 5), layout="constrained")
     colors = ["#b55d35", "#176f83"]
     ax.plot(range(1, 7), real, "o-", color="#30353a", label="Real gyro, bias corrected")
-    for data, label, color in zip((before, after), ("Previous Gazebo", "Updated Gazebo"), colors):
+    for data, label, color in zip(
+        (before, after), ("Previous Gazebo", "Updated Gazebo"), colors, strict=True
+    ):
         turns = [-p["yaw_angle_deg"] for p in data["phases"] if p["keys"] == "WD"]
         ax.plot(range(1, 7), turns, "o--", color=color, label=label)
         points = data["trajectory"]

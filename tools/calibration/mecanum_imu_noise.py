@@ -34,7 +34,7 @@ def calibrate(rest_folder, probe_folder, output):
     from mecanum_fit import extract
 
     blob = (rest_folder / "samples.jsonl").read_bytes()
-    rows = [json.loads(l) for l in blob.splitlines() if l.strip()]
+    rows = [json.loads(line) for line in blob.splitlines() if line.strip()]
     rows = [r for r in rows if not any(r["wheels"].values()) and r.get("stopped", True)]
     t = np.array([r["t"] for r in rows])
     dt = float(np.median(np.diff(t)))

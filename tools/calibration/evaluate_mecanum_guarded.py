@@ -14,7 +14,7 @@ from ugv.mecanum_dynamics import rollout
 
 
 def read(path):
-    return [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
 def rotate(angle, v):
@@ -152,7 +152,6 @@ def evaluate(folder, profile_path, output, seed=101):
     grows = [g for g in guard if g["accepted"]]
     gt = np.array([g["frame_t"] for g in grows])
     gp = np.array([g["position_world_m"] for g in grows])
-    gv = np.array([g["delta_body_m"] for g in grows])
     guard_all_t = np.array([g["frame_t"] for g in guard])
     results = []
     for event in events:

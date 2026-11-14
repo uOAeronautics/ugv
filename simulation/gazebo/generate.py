@@ -115,7 +115,9 @@ def main():
         node(inertial, "mass", prop["mass"])
         node(inertial, "pose", " ".join(map(str, (*prop["center"], 0, 0, 0))))
         inertia = node(inertial, "inertia")
-        for tag, value in zip(("ixx", "iyy", "izz", "ixy", "ixz", "iyz"), prop["inertia"]):
+        for tag, value in zip(
+            ("ixx", "iyy", "izz", "ixy", "ixz", "iyz"), prop["inertia"], strict=True
+        ):
             node(inertia, tag, value)
         for part in group["parts"]:
             for kind in ("visual", "collision") if part["collision"] else ("visual",):
@@ -156,7 +158,9 @@ def main():
             node(ci, "mass", masses[name + "_carrier"]["mass"])
             tensor = node(ci, "inertia")
             for tag, value in zip(
-                ("ixx", "iyy", "izz", "ixy", "ixz", "iyz"), masses[name + "_carrier"]["inertia"]
+                ("ixx", "iyy", "izz", "ixy", "ixz", "iyz"),
+                masses[name + "_carrier"]["inertia"],
+                strict=True,
             ):
                 node(tensor, tag, value)
             spring = node(model, "joint", name=name + "_radial_compliance", type="prismatic")

@@ -45,3 +45,8 @@ extend-exclude = [
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Standalone scripts in these directories insert sibling paths into sys.path before local imports.
+"simulation/gazebo/*.py" = ["E402"]
+"tools/calibration/*.py" = ["E402"]
