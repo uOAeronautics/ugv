@@ -4,7 +4,6 @@ import argparse
 import json
 import math
 import os
-from pathlib import Path
 import signal
 import statistics
 import subprocess
@@ -13,16 +12,17 @@ import tempfile
 import time
 import uuid
 import xml.etree.ElementTree as E
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 os.environ["GZ_PARTITION"] = "ugv-camera-check-" + uuid.uuid4().hex
+from build_motor_plugin import plugin_environment
 from camera_model import camera_geometry, load_camera
 from camera_stream import CameraStream
-from build_motor_plugin import plugin_environment
-from gz.transport import Node
-from gz.msgs.image_pb2 import Image
 from gz.msgs.camera_info_pb2 import CameraInfo
+from gz.msgs.image_pb2 import Image
+from gz.transport import Node
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--output", type=Path, default=HERE / ".control-logs")

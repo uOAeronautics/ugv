@@ -4,7 +4,6 @@ import argparse
 import json
 import math
 import os
-from pathlib import Path
 import signal
 import statistics
 import subprocess
@@ -13,6 +12,7 @@ import tempfile
 import time
 import uuid
 import xml.etree.ElementTree as E
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GAZEBO = ROOT / "simulation/gazebo"
@@ -23,11 +23,11 @@ from commands import wheel_duties
 
 def run(args):
     os.environ["GZ_PARTITION"] = "ugv-pwm-fit-" + uuid.uuid4().hex
-    from gz.transport import Node
+    from gz.msgs.boolean_pb2 import Boolean
     from gz.msgs.double_v_pb2 import Double_V
     from gz.msgs.pose_v_pb2 import Pose_V
     from gz.msgs.world_control_pb2 import WorldControl
-    from gz.msgs.boolean_pb2 import Boolean
+    from gz.transport import Node
 
     env = plugin_environment()
     env["GZ_PARTITION"] = os.environ["GZ_PARTITION"]

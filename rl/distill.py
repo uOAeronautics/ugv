@@ -8,12 +8,13 @@ checkpoints for train_student.py --init.
 """
 
 from __future__ import annotations
+
 import argparse
+
 import torch
 import torch.nn as nn
-
-from sim import MecanumVecEnv, EnvConfig
 from models import RUNS, Student, load_teacher, teacher_obs
+from sim import EnvConfig, MecanumVecEnv
 
 
 @torch.no_grad()

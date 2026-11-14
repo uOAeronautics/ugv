@@ -1,23 +1,34 @@
 from __future__ import annotations
 
-import asyncio, json, math, os, select, subprocess, threading, time, uuid
+import asyncio
+import json
+import math
+import os
+import select
+import subprocess
+import threading
+import time
+import uuid
 from collections import deque
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
+
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, StreamingResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from smbus2 import SMBus
+
 from . import SERVO_CHANNELS, WHEEL_CHANNELS, _configure_pca9685, _set_pulse, _set_pwm, _stop_wheels
 from .aruco import ArucoFollower
+from .autopark import AutoParkRunner, TagDetector
+from .dynamics_telemetry import DynamicsTelemetry
 from .heading import RelativeHeading
 from .imu import ImuStream
-from .dynamics_telemetry import DynamicsTelemetry
 from .motion import GyroMotion, MotionFault, ramp_wheels
-from .autopark import AutoParkRunner, TagDetector
-from .parking import ParkingEstimator, Pose2, DockingFeedback, gear_obstacles
+from .parking import DockingFeedback, ParkingEstimator, Pose2, gear_obstacles
 from .perf import PerfMonitor
 
 STATIC = Path(__file__).parent / "static"
@@ -505,8 +516,9 @@ class RobotController:
 
     def _measure_policy_ms(self, path: Path) -> float | None:
         try:
-            from .policy import StudentPolicy
             import time
+
+            from .policy import StudentPolicy
 
             p = StudentPolicy.load(path)
             t0 = time.perf_counter()

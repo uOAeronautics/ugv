@@ -3,15 +3,19 @@
 blender -b --python render_drone.py -- /absolute/output/directory
 """
 
+import argparse
+import json
+import math
+import sys
 from pathlib import Path
-import sys, json, math, argparse
+
 import bpy
 from mathutils import Vector
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from drone_model import drone_assembly, DRONE_COLORS
-from assembly import assembly, COLORS
+from assembly import COLORS, assembly
+from drone_model import DRONE_COLORS, drone_assembly
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("output", nargs="?", type=Path)
@@ -70,7 +74,7 @@ def material(name, rgb):
 
 color_sets = [("drone_", DRONE_COLORS), ("ugv_", COLORS)]
 if args.room:
-    from room_model import room_assembly, ROOM_COLORS
+    from room_model import ROOM_COLORS, room_assembly
 
     room_parts = room_assembly()
     room_config = json.loads((HERE / "room_dimensions.json").read_text())
@@ -193,6 +197,7 @@ for group in car_groups.values():
 # Use the simulator's own generator so the visual preview follows that model.
 if any(part["name"] == "hub_core" for group in car_groups.values() for part in group["parts"]):
     import xml.etree.ElementTree as ET
+
     from mecanum_geometry import add_passive_rollers
 
     def xml_node(parent, tag, text=None, **attrs):

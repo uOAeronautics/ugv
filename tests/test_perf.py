@@ -171,6 +171,7 @@ def test_perf_monitor_stale_stage_expiry(monkeypatch) -> None:
 def test_aruco_follower_records_aruco_ms(monkeypatch) -> None:
     import asyncio
     import time
+
     from ugv.aruco import ArucoFollower
 
     class FakeCamera:

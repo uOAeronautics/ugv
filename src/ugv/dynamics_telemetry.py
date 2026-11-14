@@ -1,8 +1,8 @@
 """Bounded, read-only raw IMU/control history for dynamics identification."""
 
-from collections import deque
 import math
 import threading
+from collections import deque
 
 
 class DynamicsTelemetry:

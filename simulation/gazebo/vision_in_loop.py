@@ -33,8 +33,14 @@ if str(REPO / "src") not in sys.path:
     sys.path.insert(0, str(REPO / "src"))
 
 from lockstep_env import DT, Sensors  # noqa: E402
-from ugv.aruco import FRAME_WIDTH, FRAME_HEIGHT, FOCAL_PX, TAG_SIZE_M  # noqa: E402
-from ugv.aruco import ArucoFollower  # noqa: E402
+
+from ugv.aruco import (  # noqa: E402
+    FOCAL_PX,
+    FRAME_HEIGHT,
+    FRAME_WIDTH,
+    TAG_SIZE_M,
+    ArucoFollower,  # noqa: E402
+)
 
 CX, CY = FRAME_WIDTH / 2, FRAME_HEIGHT / 2
 MARKER_LAYOUTS = ("real", "legacy")

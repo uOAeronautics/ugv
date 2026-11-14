@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Zero-dependency Shared KB & Deterministic RAG / Symbol-Slice tool."""
 
-import ast, json, pathlib, re, sys
+import ast
+import json
+import pathlib
+import re
+import sys
 
 KB_DIR = pathlib.Path(__file__).resolve().parent
 ROOT = KB_DIR.parent

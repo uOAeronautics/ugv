@@ -144,7 +144,9 @@ def test_follow_loop_uses_selected_speed_and_finite_close_pivot():
 
 def test_stop_turns_follow_off_without_disarming_connected_owner():
     import json
+
     from fastapi import WebSocketDisconnect
+
     from ugv import web
 
     async def scenario():

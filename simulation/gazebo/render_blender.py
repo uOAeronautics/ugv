@@ -1,11 +1,14 @@
+import json
+import math
+import sys
 from pathlib import Path
-import sys, math, json
+
 import bpy
-from mathutils import Vector, Euler
+from mathutils import Euler, Vector
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from assembly import assembly, COLORS
+from assembly import COLORS, assembly
 from motor_physics import load_profile
 
 profile = load_profile()

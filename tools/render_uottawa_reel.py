@@ -1,8 +1,14 @@
 """uOttawa Aero Cup hype reel renderer (CPU-only rollouts + cv2 + numpy audio)."""
 
 from __future__ import annotations
-import math, os, subprocess, sys, wave
+
+import math
+import os
+import subprocess
+import sys
+import wave
 from pathlib import Path
+
 import numpy as np
 
 REPO = Path(__file__).resolve().parents[1]
@@ -27,8 +33,8 @@ def collect_trajs():
         return out
     try:
         import torch
-        from sim import MecanumVecEnv, EnvConfig
         from models import load_student
+        from sim import EnvConfig, MecanumVecEnv
 
         torch.set_num_threads(4)
         env = MecanumVecEnv(
@@ -492,7 +498,7 @@ def draw_frame(f, trajs, W, H, rng):
     t = f / FPS
     tr = trajs[ti % len(trajs)]
     idx = min(int(t / DUR * (len(tr["pose"]) - 1) * (DUR / 24)), len(tr["pose"]) - 1)
-    idx = min(int(f / NFR * (len(tr["pose"]) - 1) * 1.0) + int((f % 60 == 0)), len(tr["pose"]) - 1)
+    idx = min(int(f / NFR * (len(tr["pose"]) - 1) * 1.0) + int(f % 60 == 0), len(tr["pose"]) - 1)
     idx = min(int(len(tr["pose"]) * f / NFR), len(tr["pose"]) - 1)
     pose = tr["pose"][idx]
     valid = bool(tr["valid"][idx])

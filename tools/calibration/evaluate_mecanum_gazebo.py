@@ -10,7 +10,6 @@ import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import signal
 import subprocess
 import sys
@@ -18,14 +17,16 @@ import tempfile
 import time
 import uuid
 import xml.etree.ElementTree as E
+from pathlib import Path
+
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 GAZEBO = ROOT / "simulation/gazebo"
 sys.path[:0] = [str(GAZEBO), str(ROOT / "src")]
 from build_motor_plugin import plugin_environment
-from native_motor_parameters import apply_native_parameters, extract_native_parameters
 from mecanum_fit import extract, extract_visual_segments
+from native_motor_parameters import apply_native_parameters, extract_native_parameters
 
 
 def body_velocity(rows):
@@ -139,9 +140,9 @@ def run(args):
     if not trials:
         raise ValueError("No completed trials selected")
     os.environ["GZ_PARTITION"] = "ugv-mecanum-replay-" + uuid.uuid4().hex
-    from gz.transport import Node
     from gz.msgs.double_v_pb2 import Double_V
     from gz.msgs.pose_v_pb2 import Pose_V
+    from gz.transport import Node
 
     env = plugin_environment()
     env["GZ_PARTITION"] = os.environ["GZ_PARTITION"]

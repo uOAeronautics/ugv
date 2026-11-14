@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 import math
 import time
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, Sequence
 
 import cv2
 import numpy as np

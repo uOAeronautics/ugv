@@ -6,8 +6,9 @@ far/left far. Approximate dimensions remain labelled approximate; this
 observer does not confer metric calibration or command the wheels.
 """
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
+
 import cv2
 import numpy as np
 

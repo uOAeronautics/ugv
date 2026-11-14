@@ -4,11 +4,10 @@ Panorama suggests an open central demonstration floor surrounded by teaching,
 computing and fabrication zones. Object placements are estimates, not a survey.
 """
 
-import json
 import math
 import os
-import tempfile
 import random
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -493,7 +492,7 @@ def _authored_room_assembly():
             "room_floor_tape",
             (0, 0, a),
         )
-    from room_furniture import furniture_assembly, FURNITURE_COLORS
+    from room_furniture import FURNITURE_COLORS, furniture_assembly
 
     ROOM_COLORS.update(FURNITURE_COLORS)
     parts.extend(furniture_assembly())
@@ -578,7 +577,7 @@ def _authored_room_assembly():
 
 def room_assembly():
     """Cardinal layout anchored by user: 8s south, 11s west, 17s north."""
-    from room_details import room_details, DETAIL_COLORS
+    from room_details import DETAIL_COLORS, room_details
 
     details = room_details()
     ROOM_COLORS.update(DETAIL_COLORS)
@@ -716,7 +715,7 @@ def room_assembly():
             x, y, z = p["pos"]
             q["pos"] = (cx + (x + 2.4), cy + (y + 3.9), z + cz)
             parts.append(q)
-    from room_walk_details import walk_parts, WALK_COLORS
+    from room_walk_details import WALK_COLORS, walk_parts
 
     ROOM_COLORS.update(WALK_COLORS)
     parts.extend(walk_parts())

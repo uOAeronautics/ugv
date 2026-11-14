@@ -3,13 +3,13 @@
 import json
 import math
 import os
-from pathlib import Path
 import signal
 import statistics
 import subprocess
 import sys
 import time
 import uuid
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))

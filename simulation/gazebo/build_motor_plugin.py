@@ -1,8 +1,8 @@
 """Compile the local Gazebo 10 TT motor system and report its plugin directory."""
 
-from pathlib import Path
 import os
 import subprocess
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BUILD = HERE / "plugins/build"

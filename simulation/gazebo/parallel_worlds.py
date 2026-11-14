@@ -23,6 +23,7 @@ Aggregation writes <out>/aggregate.json.
 """
 
 from __future__ import annotations
+
 import argparse
 import json
 import subprocess

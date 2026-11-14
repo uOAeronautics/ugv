@@ -1,16 +1,17 @@
 import importlib.util
 import json
-from pathlib import Path
 import sys
 import tempfile
 import types
 import unittest
+from pathlib import Path
+
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from commands import combinations, vector, wheel_duties
 from analyze import analyze
+from commands import combinations, vector, wheel_duties
 
 spec = importlib.util.spec_from_file_location(
     "dynamics_telemetry", HERE.parents[1] / "src/ugv/dynamics_telemetry.py"

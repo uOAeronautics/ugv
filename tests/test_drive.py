@@ -4,8 +4,8 @@ import asyncio
 import math
 import time
 from unittest.mock import patch
-from ugv.motion import GyroMotion, MotionFault, angle_error, ramp_wheels
 
+from ugv.motion import GyroMotion, MotionFault, angle_error, ramp_wheels
 from ugv.web import RobotController
 
 

@@ -5,9 +5,9 @@ Requires numpy. No motor torque/friction is claimed identifiable from IMU alone.
 
 import argparse
 import json
-import math
-from pathlib import Path
 import statistics
+from pathlib import Path
+
 import numpy as np
 
 

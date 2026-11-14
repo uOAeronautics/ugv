@@ -1,15 +1,15 @@
 """Local browser controls for the simulated Freenove car."""
 
 import argparse
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
-from pathlib import Path
 import signal
 import threading
 import webbrowser
-from urllib.request import urlopen
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.error import URLError
+from urllib.request import urlopen
 
 HERE = Path(__file__).resolve().parent
 

@@ -6,18 +6,19 @@ for 3D use the Gazebo drone world (simulation/gazebo/launch_drone.command).
 """
 
 from __future__ import annotations
+
 import argparse
 import math
+
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import torch
+from evaluate import load_policy, policy_act
 from matplotlib import animation
 from matplotlib.patches import Rectangle
-import torch
-
-from sim import MecanumVecEnv, EnvConfig, SKID_X, GEAR_LEN, GEAR_R, CAR_W, CAR_L
-from evaluate import load_policy, policy_act
+from sim import CAR_L, CAR_W, GEAR_LEN, SKID_X, EnvConfig, MecanumVecEnv
 
 
 def rollout(policy, level, episodes, device, seed=0, max_steps=3000):

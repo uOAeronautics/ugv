@@ -5,6 +5,7 @@ unhealthy because motion during the gap cannot safely be inferred. No actuation.
 """
 
 import math
+
 import cv2
 import numpy as np
 

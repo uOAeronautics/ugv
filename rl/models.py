@@ -5,11 +5,11 @@ against that deployed implementation.
 """
 
 from __future__ import annotations
+
 from pathlib import Path
 
 import torch
 import torch.nn as nn
-
 from sim import STUDENT_DIM
 
 RUNS = Path(__file__).resolve().parent / "runs"  # gitignored checkpoints/logs

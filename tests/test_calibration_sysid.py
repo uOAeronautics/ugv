@@ -8,7 +8,6 @@ JoystickMapper eliminates yaw drift during pure strafe.
 """
 
 import json
-import math
 from pathlib import Path
 
 import numpy as np
@@ -88,7 +87,8 @@ def test_refit_recovers_true_parameters():
 
 def test_turn_column_prediction_within_8pct():
     _, cmds, _, C_true, res = _run_sysid()
-    from ugv.calibration import mix as _mix, wheel_features as _wf
+    from ugv.calibration import mix as _mix
+    from ugv.calibration import wheel_features as _wf
 
     model = CalibratedModel(res.coef, res.deadzone)
     yaw_only = (np.abs(cmds[:, 2]) > 0.2) & (np.abs(cmds[:, :2]).max(axis=1) < 1e-9)

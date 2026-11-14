@@ -6,6 +6,7 @@ and pareto_score, and computes non-dominated Pareto frontiers per level.
 """
 
 from __future__ import annotations
+
 import argparse
 import json
 import time

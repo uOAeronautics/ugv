@@ -1,17 +1,17 @@
 """Generate a photo-informed Freenove visual model; stdlib only, SI in SDF."""
 
-from assembly import assembly, COLORS
+import argparse
+import hashlib
+import json
+import xml.etree.ElementTree as E
+from pathlib import Path
+
+from assembly import COLORS, assembly
 from camera_model import add_camera_sensor
 from environment import add_environment
-from motor_physics import load_profile, add_rubber_surface, add_visual_material
 from mass_properties import properties
+from motor_physics import add_rubber_surface, add_visual_material, load_profile
 from native_motor_parameters import apply_native_parameters
-from pathlib import Path
-import json
-import hashlib
-import argparse
-import math
-import xml.etree.ElementTree as E
 
 HERE = Path(__file__).resolve().parent
 

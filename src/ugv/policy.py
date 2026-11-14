@@ -1,9 +1,11 @@
 """Deploy-time parking student: NumPy forward pass + shield. No torch."""
 
 from __future__ import annotations
+
 import math
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 from .parking import Pose2, gear_obstacles, swept_clear
 
@@ -77,7 +79,7 @@ class StudentPolicy:
         self.reset()
 
     @classmethod
-    def load(cls, weights: str | Path, **kw) -> "StudentPolicy":
+    def load(cls, weights: str | Path, **kw) -> StudentPolicy:
         z = np.load(weights, allow_pickle=True)
         arrays = {k: z[k] for k in z.files if not k.startswith("meta")}
         if "stateful" not in kw and "meta_stateful" in z.files:

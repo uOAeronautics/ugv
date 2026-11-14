@@ -1,9 +1,10 @@
 """Regression checks for motor units, generated force actuation, and tire axes."""
 
 import math
-from pathlib import Path
 import unittest
 import xml.etree.ElementTree as E
+from pathlib import Path
+
 from motor_physics import load_profile
 
 HERE = Path(__file__).resolve().parent

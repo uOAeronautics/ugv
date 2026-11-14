@@ -1,13 +1,14 @@
 """PPO teacher with asymmetric critic (privileged pose+dynamics in value only)."""
 
 from __future__ import annotations
+
 import argparse
 import time
+
 import torch
 import torch.nn as nn
-
-from sim import MecanumVecEnv, EnvConfig
 from models import RUNS, TEACHER_OBS, Actor, Critic, gae_advantages, priv_input
+from sim import EnvConfig, MecanumVecEnv
 
 
 def _parse_spawn(s: str | None):

@@ -1,6 +1,7 @@
 """Shared Gazebo Harmonic lockstep environment, frames, geometry, and emulated sensors."""
 
 from __future__ import annotations
+
 import math
 import os
 import shutil
@@ -22,6 +23,7 @@ if str(REPO / "src") not in sys.path:
     sys.path.insert(0, str(REPO / "src"))
 
 from build_motor_plugin import plugin_environment  # noqa: E402
+
 from ugv.staged_baseline import GAZEBO_GEOMETRY, mix  # noqa: E402
 
 DT = 0.02

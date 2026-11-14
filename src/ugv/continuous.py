@@ -6,9 +6,12 @@ lease. This module never imports a bus, service, socket or hardware controller.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import math
+from dataclasses import dataclass, field
+
 import numpy as np
+
 from .parking import Pose2, angle_error, swept_clear
 
 

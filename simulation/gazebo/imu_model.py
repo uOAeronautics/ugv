@@ -6,10 +6,10 @@ simulation time and command intent enter RelativeHeading; pose is comparison onl
 
 import json
 import math
-from pathlib import Path
 import random
 import sys
 import threading
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "src"))

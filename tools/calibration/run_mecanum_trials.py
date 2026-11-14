@@ -5,15 +5,16 @@ Each energized command has a server-enforced 250ms lease, renewed at 50ms.
 """
 
 import argparse
-import bisect
 import asyncio
+import bisect
 import json
 import math
 import os
-from pathlib import Path
 import statistics
 import time
+from pathlib import Path
 from urllib.request import urlopen
+
 import websockets
 
 

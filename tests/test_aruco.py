@@ -1,11 +1,12 @@
+import asyncio
+import time
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
 import cv2
 import numpy as np
 
 from ugv.aruco import ArucoFollower
-from unittest.mock import patch, AsyncMock
-from types import SimpleNamespace
-import asyncio
-import time
 
 
 def test_rejected_perspective_quad_fallback_decodes_id_2():

@@ -1,9 +1,10 @@
 """Geometry contracts for the photo estimated drone docking obstacle."""
 
-import math
 import json
+import math
 import unittest
 from pathlib import Path
+
 from drone_model import DEFAULT_MARKER_LAYOUT, drone_assembly
 
 

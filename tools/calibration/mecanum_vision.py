@@ -8,6 +8,7 @@ select furniture or an ambiguous plane; all quality gates are recorded.
 import argparse
 import json
 from pathlib import Path
+
 import cv2
 import numpy as np
 
@@ -157,8 +158,8 @@ def analyze(folder, height=0.065, focal=968.0, surveyed=False, stride=1):
 
 def analyze_gyro_floor(folder, height=0.065, focal=968.0):
     """Batch gyro-assisted floor tracking; reuse the independently tested guard."""
-    from mecanum_online_guard import FloorMotionGuard
     from mecanum_fit import extract, read
+    from mecanum_online_guard import FloorMotionGuard
 
     trials, mount = extract(folder)
     samples = read(folder / "samples.jsonl")

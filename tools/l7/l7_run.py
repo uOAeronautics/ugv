@@ -964,8 +964,8 @@ def main():
     policy = None
     if args.mode == "policy":
         sys.path.insert(0, str(Path(__file__).resolve().parent))
-        from ugv.policy import StudentPolicy
         from ugv.parking import Pose2
+        from ugv.policy import StudentPolicy
 
         kw = {}
         if args.shield == "real":  # simulation/gazebo/drone_dimensions.json + Gazebo car footprint

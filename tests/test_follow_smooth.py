@@ -1,9 +1,8 @@
 """Holonomic smooth-follow policy: lead, damping, simultaneity, CoastSearch."""
 
-import math
 
-from ugv.follow import AlphaBetaLead, HolonomicFollowPolicy, TargetState, smooth_deadzone
 from ugv.aruco import TARGET_DISTANCE_M
+from ugv.follow import AlphaBetaLead, HolonomicFollowPolicy, smooth_deadzone
 
 
 def test_lead_predicts_ahead_with_velocity():

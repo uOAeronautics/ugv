@@ -1,10 +1,11 @@
 """Checks for the recorded sensor model and the unchanged production estimator."""
 
 import math
-from pathlib import Path
 import statistics
 import unittest
-from imu_model import RecordedImu, ImuDownsampler, transform
+from pathlib import Path
+
+from imu_model import ImuDownsampler, RecordedImu, transform
 
 HERE = Path(__file__).resolve().parent
 

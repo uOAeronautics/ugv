@@ -2,11 +2,12 @@
 
 import json
 import math
-from pathlib import Path
 import struct
 import unittest
 import xml.etree.ElementTree as E
 import zlib
+from pathlib import Path
+
 from camera_model import camera_geometry, load_camera
 from camera_stream import gray_png
 

@@ -3,14 +3,17 @@ Run with .control-venv/bin/python check_mecanum_physics.py.
 Uses a simple 550 g rigid probe body to isolate roller handedness/contact.
 """
 
-import sys, math, json, xml.etree.ElementTree as E
+import json
+import math
+import sys
+import xml.etree.ElementTree as E
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 (HERE / ".control-logs").mkdir(exist_ok=True)
-from mecanum_geometry import add_passive_rollers
 from generate import node
+from mecanum_geometry import add_passive_rollers
 
 root = E.Element("sdf", version="1.9")
 world = node(root, "world", name="freenove_lab")
@@ -63,21 +66,26 @@ node(plugin, "wheel_separation", 0.14)
 E.ElementTree(root).write(HERE / ".control-logs/mecanum_probe.sdf")
 
 """Isolated live Gazebo regression: requires the control panel Python environment."""
-import os, sys, time, math, threading, subprocess, json, signal
+import os
+import signal
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 p = Path(__file__).resolve().parent
 sys.path.insert(0, str(p))
-from build_motor_plugin import plugin_environment
 import uuid
+
+from build_motor_plugin import plugin_environment
 
 os.environ["GZ_PARTITION"] = "ugv-tt-check-" + uuid.uuid4().hex
 env = plugin_environment()
 env["GZ_PARTITION"] = os.environ["GZ_PARTITION"]
-from gz.transport import Node
-from gz.msgs.twist_pb2 import Twist
-from gz.msgs.pose_v_pb2 import Pose_V
 from gz.msgs.double_v_pb2 import Double_V
+from gz.msgs.pose_v_pb2 import Pose_V
+from gz.msgs.twist_pb2 import Twist
+from gz.transport import Node
 
 n = Node()
 pub = n.advertise("/model/freenove/cmd_vel", Twist)

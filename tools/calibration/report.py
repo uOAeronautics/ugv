@@ -2,11 +2,11 @@
 
 import argparse
 import json
-import math
-from pathlib import Path
 import statistics
-import numpy as np
+from pathlib import Path
+
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

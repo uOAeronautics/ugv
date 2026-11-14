@@ -6,6 +6,7 @@ Parameters are identified responses, not separately identifiable tire/motor cons
 """
 
 from __future__ import annotations
+
 import numpy as np
 
 WHEEL_ORDER = ("front-left", "rear-left", "front-right", "rear-right")

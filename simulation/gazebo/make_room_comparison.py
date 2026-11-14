@@ -5,8 +5,9 @@ python3 make_room_comparison.py REFERENCE.mp4 --frames-dir preview/room/every-se
 
 import argparse
 import json
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
 
 parser = argparse.ArgumentParser(description=__doc__)

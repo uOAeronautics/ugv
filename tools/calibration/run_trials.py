@@ -8,12 +8,13 @@ import argparse
 import asyncio
 import json
 import math
-from pathlib import Path
 import statistics
 import time
+from pathlib import Path
 from urllib.request import urlopen
+
 import websockets
-from commands import vector, combinations, wheel_duties
+from commands import combinations, vector, wheel_duties
 
 
 def read_json(url):

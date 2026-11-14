@@ -6,13 +6,13 @@ the sim frame builder or the deploy frame builder changes.
 """
 
 from __future__ import annotations
-import math
-import numpy as np
-import torch
+
 from pathlib import Path
 
-from sim import MecanumVecEnv, EnvConfig
+import numpy as np
+import torch
 from models import Student
+from sim import EnvConfig, MecanumVecEnv
 
 STEPS = 25
 OUT = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "policy_trace.npz"

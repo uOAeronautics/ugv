@@ -1,13 +1,14 @@
 """Seeded benchmark per docs/RL_PARKING.md. Baseline + checkpoints, Wilson bounds, JSON."""
 
 from __future__ import annotations
+
 import argparse
 import json
 import math
-import torch
 
-from sim import MecanumVecEnv, EnvConfig
-from models import Student, load_student, load_teacher, teacher_obs
+import torch
+from models import load_student, load_teacher, teacher_obs
+from sim import EnvConfig, MecanumVecEnv
 
 BASELINES = ("random", "brake", "oracle_pd")
 

@@ -1,8 +1,8 @@
 """Reference motor conversions and rigid rubber-contact material parameters."""
 
-from pathlib import Path
 import json
 import math
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 

@@ -1,9 +1,10 @@
 """Check room collision envelopes and offline assets for the UGV scene."""
 
-import unittest
 import json
+import unittest
 from pathlib import Path
-from room_model import room_assembly, ROOM_COLORS
+
+from room_model import ROOM_COLORS, room_assembly
 from test_drone_model import bounds
 
 

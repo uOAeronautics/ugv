@@ -1,11 +1,12 @@
 """Measured total, component accounting and physically valid composite inertia."""
 
 import json
-from pathlib import Path
 import unittest
 import xml.etree.ElementTree as E
+from pathlib import Path
+
 from assembly import assembly
-from mass_properties import properties, combine, box
+from mass_properties import box, combine, properties
 
 HERE = Path(__file__).resolve().parent
 

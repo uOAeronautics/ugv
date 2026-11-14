@@ -3,9 +3,12 @@ Requires scipy and numpy. Full actual dynamics are evaluated separately by
 `evaluate_mecanum_gazebo.py`; this surrogate fit alone is not acceptance.
 """
 
-import sys, json, numpy as np
-from scipy.optimize import least_squares
+import json
+import sys
 from pathlib import Path
+
+import numpy as np
+from scipy.optimize import least_squares
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "tools/calibration"), str(ROOT / "src")]

@@ -1,7 +1,7 @@
 import torch
-from sim import MecanumVecEnv, EnvConfig
-from models import Student
 from export import parity_error
+from models import Student
+from sim import EnvConfig, MecanumVecEnv
 
 
 def test_env_steps():
@@ -129,6 +129,7 @@ def test_yaw_priced_in_potential():
     # Failures cluster at ~5.8 deg while the limit is 5 deg; the potential must
     # price yaw materially (old weight 0.3 made 5 deg worth ~0.026).
     import math
+
     from reward import progress_potential
 
     flat = progress_potential(torch.zeros(1, 3))
@@ -261,15 +262,18 @@ def test_declare_parked_and_false_park():
 def test_baselines_no_mean_dynamics_flag():
     # baselines.py mirrors train_teacher/train_student: default mean_coef,
     # --no-mean-dynamics selects the particle-0 plant.
-    import subprocess, sys
+    import subprocess
+    import sys
 
     r = subprocess.run([sys.executable, "baselines.py", "--help"], capture_output=True, text=True)
     assert r.returncode == 0 and "--no-mean-dynamics" in r.stdout
 
 
 def test_trainers_and_archive_smoke(tmp_path):
-    import subprocess, sys
-    from experiment_tree import record_run, load_archive, pareto_frontier
+    import subprocess
+    import sys
+
+    from experiment_tree import load_archive, pareto_frontier, record_run
 
     # Teacher 1-iter smoke + --init vs --resume
     t_ckpt = tmp_path / "t.pt"
@@ -438,7 +442,9 @@ def test_yaw_weight_plumbing_and_default():
     # yaw_w param defaults to 1.0 (current behavior unchanged); scales the yaw
     # term in the potential; --yaw-weight flag defaults to 1.0.
     import math
-    import subprocess, sys
+    import subprocess
+    import sys
+
     from reward import progress_potential, step_reward
 
     tilted = torch.tensor([[0.0, 0.0, math.radians(5)]])
@@ -472,7 +478,8 @@ def test_yaw_weight_plumbing_and_default():
 
 def test_train_teacher_reset_every_iter_flag():
     # OLD per-iter full reset restored only when set; default persistent.
-    import subprocess, sys
+    import subprocess
+    import sys
 
     r = subprocess.run(
         [sys.executable, "train_teacher.py", "--help"], capture_output=True, text=True

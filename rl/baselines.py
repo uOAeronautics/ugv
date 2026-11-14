@@ -9,6 +9,7 @@ Usage: uv run python baselines.py --level L1 --episodes 1000 --seed 11 --json ru
 """
 
 from __future__ import annotations
+
 import argparse
 import json
 import math
@@ -17,12 +18,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
-from sim import MecanumVecEnv, EnvConfig
 from evaluate import wilson
+from sim import EnvConfig, MecanumVecEnv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from ugv.staged_baseline import StagedBaseline, MeanModel  # noqa: E402  (numpy-only deploy module)
+from ugv.staged_baseline import MeanModel, StagedBaseline  # noqa: E402  (numpy-only deploy module)
 
 
 def run(episodes, level, device, seed=0, use_mean_dynamics=False):

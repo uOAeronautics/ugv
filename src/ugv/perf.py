@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections import deque
 import os
 import resource
 import threading
 import time
+from collections import deque
 from typing import Any
 
 
@@ -51,7 +51,7 @@ class PerfMonitor:
 
     def _read_rss_mb(self, ru_maxrss: int) -> float:
         try:
-            with open("/proc/self/statm", "r", encoding="utf-8") as fh:
+            with open("/proc/self/statm", encoding="utf-8") as fh:
                 parts = fh.read().split()
             if len(parts) >= 2:
                 pages = int(parts[1])
@@ -63,7 +63,7 @@ class PerfMonitor:
 
     def _read_temp_c(self) -> float | None:
         try:
-            with open("/sys/class/thermal/thermal_zone0/temp", "r", encoding="utf-8") as fh:
+            with open("/sys/class/thermal/thermal_zone0/temp", encoding="utf-8") as fh:
                 return round(int(fh.read().strip()) / 1000.0, 1)
         except Exception:
             return None

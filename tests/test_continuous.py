@@ -1,6 +1,8 @@
 import math
+
 import numpy as np
 import pytest
+
 from ugv.continuous import (
     ContinuousDocking,
     Estimate,

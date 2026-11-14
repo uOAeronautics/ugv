@@ -121,7 +121,7 @@ class FollowSteering:
 
 class ArucoFollower:
     def __init__(
-        self, camera: "CameraStream", controller: "RobotController", follow_mode: str = "legacy"
+        self, camera: CameraStream, controller: RobotController, follow_mode: str = "legacy"
     ) -> None:
         import os as _os
 

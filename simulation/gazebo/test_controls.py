@@ -1,6 +1,7 @@
 """Run with python3 -m unittest discover -s simulation/gazebo -p test_controls.py."""
 
 import unittest
+
 from control_state import ControlState
 
 

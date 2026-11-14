@@ -5,7 +5,7 @@ import json
 import threading
 import time
 from collections import deque
-from typing import Callable
+from collections.abc import Callable
 
 import serial
 

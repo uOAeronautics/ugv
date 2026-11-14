@@ -1,6 +1,7 @@
 """Optional texture regeneration: uv run --with pillow make_test_pad.py."""
 
 from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).resolve().parent

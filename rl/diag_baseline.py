@@ -6,10 +6,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np
 import torch
-from sim import MecanumVecEnv, EnvConfig
+from sim import EnvConfig, MecanumVecEnv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from ugv.staged_baseline import StagedBaseline, MeanModel
+from ugv.staged_baseline import MeanModel, StagedBaseline
 
 
 def diag(level, episodes=300, seed=11, device="cuda"):

@@ -4,8 +4,9 @@ X points toward the camera/front, Y left, Z up. Small components are approximate
 """
 
 import math
-from tt_geometry import add_tt_motor
+
 from camera_model import camera_geometry, load_camera
+from tt_geometry import add_tt_motor
 
 COLORS = {
     "pcb": (0.018, 0.024, 0.03),

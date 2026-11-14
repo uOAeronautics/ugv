@@ -419,7 +419,7 @@ def room_details():
     cyl("partition_bucket", (fx + 1.20, fy - 0.14, 0.24), 0.14, 0.40, "detail_white")
     cyl("partition_bucket_lid", (fx + 1.20, fy - 0.14, 0.45), 0.15, 0.035, "detail_orange")
     try:
-        from room_south_details import south_details, SOUTH_COLORS
+        from room_south_details import SOUTH_COLORS, south_details
 
         DETAIL_COLORS.update(SOUTH_COLORS)
         p.extend(south_details())
@@ -440,7 +440,7 @@ def room_details():
         for part in p
         if not part["name"].startswith(("detail_northwest_shop_", "detail_large_airframe_"))
     ]
-    from room_west_bays import bay_parts, BAY_COLORS
+    from room_west_bays import BAY_COLORS, bay_parts
 
     DETAIL_COLORS.update(BAY_COLORS)
     p.extend(bay_parts())

@@ -15,6 +15,7 @@ Run (from the repo root): uv run python simulation/gazebo/run_baseline_gazebo.py
 """
 
 from __future__ import annotations
+
 import argparse
 import json
 import math
@@ -32,8 +33,8 @@ sys.path[:0] = [str(HERE), str(REPO / "src")]
 from lockstep_env import (  # noqa: E402
     BRIDGE,
     DT,
-    Gazebo,
     LEVELS,
+    Gazebo,
     Sensors,
     collides,
     duties_for,
@@ -41,6 +42,7 @@ from lockstep_env import (  # noqa: E402
     to_drone,
     to_world,
 )
+
 from ugv.staged_baseline import GAZEBO_GEOMETRY, MeanModel, StagedBaseline  # noqa: E402
 
 

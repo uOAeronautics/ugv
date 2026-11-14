@@ -5,6 +5,7 @@ not a copy, so a drift between training and deploy code fails the export.
 """
 
 from __future__ import annotations
+
 import argparse
 import hashlib
 import os
@@ -13,7 +14,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
 from models import Student
 from sim import HIST, STUDENT_DIM
 

@@ -9,9 +9,10 @@ Runs on CUDA (3090) or CPU. Gazebo is the L6 gate only.
 """
 
 from __future__ import annotations
+
 import json
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import torch
@@ -573,7 +574,7 @@ class MecanumVecEnv:
         activity = torch.maximum(cmd_lvl, spd_lvl).clamp(0.03, 1.0)
         try:
             L = torch.linalg.cholesky(
-                (self.cov + 1e-12 * torch.eye(3, device=dev).expand_as(self.cov))
+                self.cov + 1e-12 * torch.eye(3, device=dev).expand_as(self.cov)
             )
             z = torch.randn(self.n, 3, device=dev, generator=self.gen)
             self.vel += (activity * scale)[:, None] * torch.bmm(L, z[:, :, None]).squeeze(2)

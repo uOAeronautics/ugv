@@ -1,10 +1,11 @@
 """Fit aggregate simulated drive effort to observed yaw, not motor electrical constants."""
 
 import json
-from pathlib import Path
 import statistics
+from pathlib import Path
+
 import numpy as np
-from commands import vector, combinations
+from commands import combinations, vector
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "calibration/runs"

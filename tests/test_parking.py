@@ -1,25 +1,29 @@
-import asyncio, copy, json, math, time
+import asyncio
+import json
+import math
 from types import SimpleNamespace
 from unittest.mock import patch
+
 import cv2
 import numpy as np
 import pytest
+
+from ugv.aruco import Detection
+from ugv.odometry import SceneOdometry
 from ugv.parking import (
-    Pose2,
+    CONFIG_PATH,
     Capsule,
+    DockingFeedback,
+    ParkingEstimator,
+    Pose2,
     collides,
-    swept_clear,
+    gear_obstacles,
+    inverse,
     plan_route,
     readiness,
-    ParkingEstimator,
-    DockingFeedback,
+    swept_clear,
     transform,
-    inverse,
-    gear_obstacles,
-    CONFIG_PATH,
 )
-from ugv.odometry import SceneOdometry
-from ugv.aruco import Detection
 from ugv.web import RobotController, RobotState
 
 
@@ -255,8 +259,9 @@ def test_calibrated_parking_pose_uses_configured_intrinsics_and_tag_size():
 
 
 def test_stop_cancels_pending_planning_before_it_can_start_motors():
-    from ugv import web
     from unittest.mock import AsyncMock
+
+    from ugv import web
 
     async def scenario():
         c = RobotController()
