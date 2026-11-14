@@ -90,6 +90,7 @@
       <button id="follow-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco follow">Follow</button>
       <button id="view-fit-toggle" type="button" class="btn active" aria-pressed="true" title="Fit: Cover (click for Contain)">Fit</button>
       <button id="map-toggle" type="button" class="btn" aria-pressed="false" title="Toggle parking map">Map</button>
+      <button id="perf-toggle" class="btn" type="button" aria-pressed="false" title="Live Pi profiler">Perf</button>
     </div>
   </nav>
 
@@ -109,6 +110,17 @@
     <div id="parking-blockers" class="mono"></div>
     <div id="parking-plan-result" class="mono"></div>
     <details><summary>Calibration</summary><small id="parking-calibration-details"></small></details>
+  </section>
+
+  <section id="perf-panel" class="glass parking-panel perf-panel" hidden aria-label="Pi live profiler">
+    <div class="parking-head">
+      <strong>Pi Live Profiler</strong>
+      <span id="perf-summary" class="mono muted">—</span>
+      <button id="perf-close" class="mini-btn" type="button">Close</button>
+    </div>
+    <canvas id="perf-chart" width="380" height="176"></canvas>
+    <div id="perf-legend" class="perf-legend mono"></div>
+    <div id="perf-details" class="mono muted perf-details"></div>
   </section>
 
   <div id="telemetry-rail" hidden aria-hidden="true">

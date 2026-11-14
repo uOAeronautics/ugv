@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Sequence
@@ -120,15 +121,21 @@ class TagDetector:
         self.valid_ids = set(int(i) for i in valid_ids)
         self.K = np.asarray(K, dtype=np.float64)
         self._subpix_crit = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 0.02)
+        self.last_timings: dict[str, float] = {}
 
     def detect_gray(self, gray: np.ndarray, cap: float) -> dict:
+        t_det0 = time.perf_counter()
         h, w = gray.shape[:2]
         crop_h = min(CROP_Y1, h)
         crop = gray[:crop_h, :]
         small = cv2.resize(crop, (max(1, crop.shape[1] // 2), max(1, crop.shape[0] // 2)), interpolation=cv2.INTER_AREA)
         corners_list, ids, _ = self.detector.detectMarkers(small)
+        detect_ms = (time.perf_counter() - t_det0) * 1000.0
+        subpix_ms = 0.0
+        pnp_ms = 0.0
         tags: list[dict] = []
         if ids is None:
+            self.last_timings = {"detect_ms": detect_ms, "subpix_ms": subpix_ms, "pnp_ms": pnp_ms}
             return {"cap": cap, "tags": tags}
         for c, tid_val in zip(corners_list, np.ravel(ids)):
             tid = int(tid_val)
@@ -137,22 +144,32 @@ class TagDetector:
             pts = c.reshape(4, 2).astype(np.float32) * 2.0
             pts[:, 0] = np.clip(pts[:, 0], 1.0, w - 2.0)
             pts[:, 1] = np.clip(pts[:, 1], 1.0, h - 2.0)
+            t_sp0 = time.perf_counter()
             cv2.cornerSubPix(gray, pts.reshape(-1, 1, 2), (3, 3), (-1, -1), self._subpix_crit)
+            subpix_ms += (time.perf_counter() - t_sp0) * 1000.0
             if self.bits.errors(gray, tid, pts) > 1:
                 continue
+            t_pnp0 = time.perf_counter()
             sols = tag_solutions(pts, self.K)
+            pnp_ms += (time.perf_counter() - t_pnp0) * 1000.0
             if not sols:
                 continue
             px = float(cv2.contourArea(pts))
             tags.append({"id": tid, "px": px, "sol": sols})
+        self.last_timings = {"detect_ms": detect_ms, "subpix_ms": subpix_ms, "pnp_ms": pnp_ms}
         return {"cap": cap, "tags": tags}
 
     def detect_jpeg(self, jpeg_bytes: bytes, cap: float) -> dict:
+        t_dec0 = time.perf_counter()
         arr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
         gray = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
+        decode_ms = (time.perf_counter() - t_dec0) * 1000.0
         if gray is None:
+            self.last_timings = {"decode_ms": decode_ms}
             return {"cap": cap, "tags": []}
-        return self.detect_gray(gray, cap)
+        res = self.detect_gray(gray, cap)
+        self.last_timings["decode_ms"] = decode_ms
+        return res
 
 
 class Localizer:

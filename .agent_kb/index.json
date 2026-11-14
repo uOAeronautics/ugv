@@ -1,0 +1,6291 @@
+{
+ "symbols": [
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "snapshot",
+   "start": 19,
+   "end": 36
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "_write",
+   "start": 39,
+   "end": 40
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "_configure_pca9685",
+   "start": 43,
+   "end": 51
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "_set_pulse",
+   "start": 54,
+   "end": 60
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "_release",
+   "start": 63,
+   "end": 65
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "_set_pwm",
+   "start": 68,
+   "end": 73
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "_stop_wheels",
+   "start": 76,
+   "end": 78
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "emergency_stop",
+   "start": 81,
+   "end": 96
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "servo_test",
+   "start": 99,
+   "end": 121
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "wheel_test",
+   "start": 124,
+   "end": 150
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "_ws2812_spi_frame",
+   "start": 153,
+   "end": 159
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "led_test",
+   "start": 162,
+   "end": 191
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "led_test_gpio18",
+   "start": 194,
+   "end": 225
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "parser",
+   "start": 228,
+   "end": 253
+  },
+  {
+   "path": "src/ugv/__init__.py",
+   "kind": "func",
+   "name": "main",
+   "start": 256,
+   "end": 284
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "class",
+   "name": "Detection",
+   "start": 24,
+   "end": 37
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "class",
+   "name": "TrackMemory",
+   "start": 41,
+   "end": 50
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "class",
+   "name": "FollowCommand",
+   "start": 54,
+   "end": 59
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "class",
+   "name": "FollowSteering",
+   "start": 62,
+   "end": 115
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "FollowSteering.__init__",
+   "start": 67,
+   "end": 69
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "FollowSteering.reset",
+   "start": 71,
+   "end": 75
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "FollowSteering.step",
+   "start": 77,
+   "end": 115
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "class",
+   "name": "ArucoFollower",
+   "start": 118,
+   "end": 1086
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.__init__",
+   "start": 119,
+   "end": 156
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.smooth_enabled",
+   "start": 158,
+   "end": 159
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.set_follow_mode",
+   "start": 161,
+   "end": 166
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.metrics",
+   "start": 168,
+   "end": 174
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.start",
+   "start": 176,
+   "end": 181
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.close",
+   "start": 183,
+   "end": 191
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.configure",
+   "start": 193,
+   "end": 219
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.disable_follow",
+   "start": 221,
+   "end": 234
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.sync_state",
+   "start": 236,
+   "end": 239
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.clear_detection",
+   "start": 241,
+   "end": 262
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.filter_target",
+   "start": 264,
+   "end": 284
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.from_points",
+   "start": 287,
+   "end": 324
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.detector",
+   "start": 328,
+   "end": 344
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.detect_all",
+   "start": 347,
+   "end": 351
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.low_light_detectors",
+   "start": 355,
+   "end": 373
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.detect_gray",
+   "start": 376,
+   "end": 499
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.decode_rejected",
+   "start": 502,
+   "end": 579
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.decode_curved",
+   "start": 582,
+   "end": 667
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.decode_cells",
+   "start": 671,
+   "end": 713
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.detect",
+   "start": 716,
+   "end": 718
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.expanded_bbox",
+   "start": 721,
+   "end": 729
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.create_tracker",
+   "start": 732,
+   "end": 740
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.update_motion",
+   "start": 742,
+   "end": 755
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.transform_from_bbox",
+   "start": 757,
+   "end": 774
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.track_all",
+   "start": 776,
+   "end": 947
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "method",
+   "name": "ArucoFollower.run",
+   "start": 949,
+   "end": 1086
+  },
+  {
+   "path": "src/ugv/aruco.py",
+   "kind": "func",
+   "name": "state_defaults",
+   "start": 1089,
+   "end": 1100
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "func",
+   "name": "wrap",
+   "start": 31,
+   "end": 32
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "func",
+   "name": "load_tagmap",
+   "start": 35,
+   "end": 52
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "func",
+   "name": "tag_solutions",
+   "start": 55,
+   "end": 77
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "func",
+   "name": "make_detector",
+   "start": 80,
+   "end": 90
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "class",
+   "name": "TagBits",
+   "start": 93,
+   "end": 110
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "TagBits.__init__",
+   "start": 96,
+   "end": 99
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "TagBits.errors",
+   "start": 101,
+   "end": 110
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "class",
+   "name": "TagDetector",
+   "start": 113,
+   "end": 155
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "TagDetector.__init__",
+   "start": 116,
+   "end": 122
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "TagDetector.detect_gray",
+   "start": 124,
+   "end": 148
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "TagDetector.detect_jpeg",
+   "start": 150,
+   "end": 155
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "class",
+   "name": "Localizer",
+   "start": 158,
+   "end": 331
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "Localizer.__init__",
+   "start": 161,
+   "end": 203
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "Localizer.fused_yaw",
+   "start": 205,
+   "end": 208
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "Localizer._tag_yaw",
+   "start": 211,
+   "end": 213
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "Localizer._pick_cands",
+   "start": 215,
+   "end": 231
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "Localizer.update",
+   "start": 233,
+   "end": 313
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "Localizer.propagate",
+   "start": 315,
+   "end": 331
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "func",
+   "name": "duty_to_dashboard",
+   "start": 334,
+   "end": 338
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "class",
+   "name": "GoTo",
+   "start": 341,
+   "end": 413
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "GoTo.__init__",
+   "start": 344,
+   "end": 382
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "GoTo.command_for",
+   "start": 384,
+   "end": 404
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "GoTo.step",
+   "start": 406,
+   "end": 413
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "class",
+   "name": "AutoParkCommand",
+   "start": 417,
+   "end": 426
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "class",
+   "name": "AutoParkRunner",
+   "start": 429,
+   "end": 719
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner.__init__",
+   "start": 432,
+   "end": 482
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner._boost_turn_duty",
+   "start": 484,
+   "end": 509
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner.record_gyro",
+   "start": 511,
+   "end": 515
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner.gyro_yaw_at",
+   "start": 517,
+   "end": 521
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner._check_swept",
+   "start": 523,
+   "end": 549
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner._staging_orbit_waypoints",
+   "start": 551,
+   "end": 573
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner._to_cmd",
+   "start": 575,
+   "end": 578
+  },
+  {
+   "path": "src/ugv/autopark.py",
+   "kind": "method",
+   "name": "AutoParkRunner.step",
+   "start": 580,
+   "end": 719
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "wheel_features",
+   "start": 58,
+   "end": 64
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "mix",
+   "start": 67,
+   "end": 73
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "class",
+   "name": "ExcitationSegment",
+   "start": 81,
+   "end": 84
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "class",
+   "name": "ExcitationSchedule",
+   "start": 87,
+   "end": 212
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.__init__",
+   "start": 100,
+   "end": 102
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule._steps",
+   "start": 105,
+   "end": 146
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.build_default",
+   "start": 149,
+   "end": 158
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.total_s",
+   "start": 161,
+   "end": 162
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.max_abs_cmd",
+   "start": 164,
+   "end": 165
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.max_pulse_s",
+   "start": 167,
+   "end": 168
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.to_array",
+   "start": 170,
+   "end": 191
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.save_csv",
+   "start": 193,
+   "end": 203
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ExcitationSchedule.load_csv",
+   "start": 206,
+   "end": 212
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "class",
+   "name": "CalibratedModel",
+   "start": 219,
+   "end": 252
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "CalibratedModel.__init__",
+   "start": 222,
+   "end": 233
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "CalibratedModel.f",
+   "start": 235,
+   "end": 236
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "CalibratedModel.inv",
+   "start": 238,
+   "end": 242
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "CalibratedModel.linearize",
+   "start": 244,
+   "end": 252
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "simulate_particle",
+   "start": 255,
+   "end": 280
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "class",
+   "name": "FitResult",
+   "start": 288,
+   "end": 296
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "_find_runs",
+   "start": 299,
+   "end": 307
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "_weighted_ridge",
+   "start": 310,
+   "end": 314
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "_ridge_fit",
+   "start": 317,
+   "end": 319
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "_fit_tau_from_steps",
+   "start": 322,
+   "end": 340
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "class",
+   "name": "ProfileRefitter",
+   "start": 343,
+   "end": 509
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ProfileRefitter.__init__",
+   "start": 351,
+   "end": 358
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ProfileRefitter.from_profile",
+   "start": 361,
+   "end": 375
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ProfileRefitter.fit",
+   "start": 377,
+   "end": 494
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "ProfileRefitter.apply_to_profile",
+   "start": 496,
+   "end": 509
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "smooth_dz_comp",
+   "start": 516,
+   "end": 525
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "class",
+   "name": "JoystickMapper",
+   "start": 528,
+   "end": 600
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "JoystickMapper.__init__",
+   "start": 545,
+   "end": 550
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "JoystickMapper.turn_cmd_for",
+   "start": 552,
+   "end": 586
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "method",
+   "name": "JoystickMapper.map_stick",
+   "start": 588,
+   "end": 600
+  },
+  {
+   "path": "src/ugv/calibration.py",
+   "kind": "func",
+   "name": "main",
+   "start": 607,
+   "end": 661
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "class",
+   "name": "VisionPose",
+   "start": 15,
+   "end": 22
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "class",
+   "name": "MotorCommand",
+   "start": 26,
+   "end": 30
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "class",
+   "name": "Estimate",
+   "start": 34,
+   "end": 39
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "class",
+   "name": "_Node",
+   "start": 43,
+   "end": 52
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "class",
+   "name": "PoseFusion",
+   "start": 55,
+   "end": 136
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "PoseFusion.__init__",
+   "start": 62,
+   "end": 68
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "PoseFusion._predict",
+   "start": 71,
+   "end": 82
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "PoseFusion._correct",
+   "start": 85,
+   "end": 94
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "PoseFusion.advance",
+   "start": 96,
+   "end": 105
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "PoseFusion.observe",
+   "start": 107,
+   "end": 130
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "PoseFusion.estimate",
+   "start": 132,
+   "end": 136
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "class",
+   "name": "TorqueAllocator",
+   "start": 139,
+   "end": 168
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "TorqueAllocator.__init__",
+   "start": 145,
+   "end": 146
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "TorqueAllocator.reset",
+   "start": 148,
+   "end": 149
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "TorqueAllocator.step",
+   "start": 151,
+   "end": 168
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "class",
+   "name": "ContinuousDocking",
+   "start": 171,
+   "end": 257
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "ContinuousDocking.__init__",
+   "start": 172,
+   "end": 175
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "ContinuousDocking.hold",
+   "start": 177,
+   "end": 179
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "ContinuousDocking._clear",
+   "start": 181,
+   "end": 187
+  },
+  {
+   "path": "src/ugv/continuous.py",
+   "kind": "method",
+   "name": "ContinuousDocking.step",
+   "start": 189,
+   "end": 257
+  },
+  {
+   "path": "src/ugv/dynamics_telemetry.py",
+   "kind": "class",
+   "name": "DynamicsTelemetry",
+   "start": 7,
+   "end": 28
+  },
+  {
+   "path": "src/ugv/dynamics_telemetry.py",
+   "kind": "method",
+   "name": "DynamicsTelemetry.__init__",
+   "start": 8,
+   "end": 11
+  },
+  {
+   "path": "src/ugv/dynamics_telemetry.py",
+   "kind": "method",
+   "name": "DynamicsTelemetry.append",
+   "start": 13,
+   "end": 21
+  },
+  {
+   "path": "src/ugv/dynamics_telemetry.py",
+   "kind": "method",
+   "name": "DynamicsTelemetry.snapshot",
+   "start": 23,
+   "end": 28
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "func",
+   "name": "_clamp",
+   "start": 17,
+   "end": 18
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "func",
+   "name": "smooth_deadzone",
+   "start": 21,
+   "end": 27
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "class",
+   "name": "TargetState",
+   "start": 31,
+   "end": 37
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "class",
+   "name": "AlphaBetaLead",
+   "start": 41,
+   "end": 90
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "AlphaBetaLead.reset",
+   "start": 53,
+   "end": 55
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "AlphaBetaLead.update",
+   "start": 57,
+   "end": 79
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "AlphaBetaLead.lead",
+   "start": 81,
+   "end": 90
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "class",
+   "name": "HolonomicFollowPolicy",
+   "start": 93,
+   "end": 245
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "HolonomicFollowPolicy.__init__",
+   "start": 104,
+   "end": 133
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "HolonomicFollowPolicy.reset",
+   "start": 135,
+   "end": 146
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "HolonomicFollowPolicy.debug",
+   "start": 149,
+   "end": 150
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "HolonomicFollowPolicy._track_command",
+   "start": 152,
+   "end": 169
+  },
+  {
+   "path": "src/ugv/follow.py",
+   "kind": "method",
+   "name": "HolonomicFollowPolicy.step",
+   "start": 171,
+   "end": 245
+  },
+  {
+   "path": "src/ugv/ground_pose.py",
+   "kind": "class",
+   "name": "GroundPose",
+   "start": 15,
+   "end": 20
+  },
+  {
+   "path": "src/ugv/ground_pose.py",
+   "kind": "class",
+   "name": "SkidPoseObserver",
+   "start": 23,
+   "end": 92
+  },
+  {
+   "path": "src/ugv/ground_pose.py",
+   "kind": "method",
+   "name": "SkidPoseObserver.__init__",
+   "start": 24,
+   "end": 28
+  },
+  {
+   "path": "src/ugv/ground_pose.py",
+   "kind": "method",
+   "name": "SkidPoseObserver.solve",
+   "start": 30,
+   "end": 48
+  },
+  {
+   "path": "src/ugv/ground_pose.py",
+   "kind": "method",
+   "name": "SkidPoseObserver.seed",
+   "start": 50,
+   "end": 54
+  },
+  {
+   "path": "src/ugv/ground_pose.py",
+   "kind": "method",
+   "name": "SkidPoseObserver.update",
+   "start": 56,
+   "end": 81
+  },
+  {
+   "path": "src/ugv/ground_pose.py",
+   "kind": "method",
+   "name": "SkidPoseObserver.sensitivity",
+   "start": 83,
+   "end": 92
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "class",
+   "name": "RelativeHeading",
+   "start": 9,
+   "end": 185
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading.__init__",
+   "start": 18,
+   "end": 31
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading.request_calibration",
+   "start": 33,
+   "end": 41
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading.disconnected",
+   "start": 43,
+   "end": 53
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading._norm",
+   "start": 56,
+   "end": 57
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading._mean",
+   "start": 60,
+   "end": 62
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading._max_std",
+   "start": 65,
+   "end": 70
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading._snapshot",
+   "start": 72,
+   "end": 80
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading.snapshot",
+   "start": 82,
+   "end": 84
+  },
+  {
+   "path": "src/ugv/heading.py",
+   "kind": "method",
+   "name": "RelativeHeading.update",
+   "start": 86,
+   "end": 185
+  },
+  {
+   "path": "src/ugv/imu.py",
+   "kind": "func",
+   "name": "parse_imu_line",
+   "start": 15,
+   "end": 24
+  },
+  {
+   "path": "src/ugv/imu.py",
+   "kind": "class",
+   "name": "ImuStream",
+   "start": 27,
+   "end": 67
+  },
+  {
+   "path": "src/ugv/imu.py",
+   "kind": "method",
+   "name": "ImuStream.__init__",
+   "start": 28,
+   "end": 32
+  },
+  {
+   "path": "src/ugv/imu.py",
+   "kind": "method",
+   "name": "ImuStream.start",
+   "start": 34,
+   "end": 36
+  },
+  {
+   "path": "src/ugv/imu.py",
+   "kind": "method",
+   "name": "ImuStream._run",
+   "start": 38,
+   "end": 62
+  },
+  {
+   "path": "src/ugv/imu.py",
+   "kind": "method",
+   "name": "ImuStream.close",
+   "start": 64,
+   "end": 67
+  },
+  {
+   "path": "src/ugv/mecanum_dynamics.py",
+   "kind": "func",
+   "name": "features",
+   "start": 13,
+   "end": 19
+  },
+  {
+   "path": "src/ugv/mecanum_dynamics.py",
+   "kind": "func",
+   "name": "step",
+   "start": 22,
+   "end": 36
+  },
+  {
+   "path": "src/ugv/mecanum_dynamics.py",
+   "kind": "func",
+   "name": "rollout",
+   "start": 39,
+   "end": 50
+  },
+  {
+   "path": "src/ugv/mecanum_dynamics.py",
+   "kind": "func",
+   "name": "fit",
+   "start": 53,
+   "end": 125
+  },
+  {
+   "path": "src/ugv/mecanum_dynamics.py",
+   "kind": "func",
+   "name": "_inverse_wishart",
+   "start": 128,
+   "end": 135
+  },
+  {
+   "path": "src/ugv/mecanum_dynamics.py",
+   "kind": "func",
+   "name": "fit_bayesian",
+   "start": 138,
+   "end": 209
+  },
+  {
+   "path": "src/ugv/mecanum_dynamics.py",
+   "kind": "func",
+   "name": "posterior_rollout",
+   "start": 212,
+   "end": 217
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "func",
+   "name": "clamp",
+   "start": 8,
+   "end": 9
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "func",
+   "name": "angle_error",
+   "start": 12,
+   "end": 13
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "class",
+   "name": "MotionFault",
+   "start": 16,
+   "end": 17
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "class",
+   "name": "Output",
+   "start": 21,
+   "end": 26
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "class",
+   "name": "GyroMotion",
+   "start": 29,
+   "end": 154
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion.__init__",
+   "start": 37,
+   "end": 38
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion.cancel",
+   "start": 40,
+   "end": 51
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion.requires_gyro",
+   "start": 54,
+   "end": 55
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion.drive",
+   "start": 57,
+   "end": 62
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion.sidestep",
+   "start": 64,
+   "end": 69
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion._advance",
+   "start": 71,
+   "end": 76
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion._yaw",
+   "start": 78,
+   "end": 100
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "method",
+   "name": "GyroMotion.step",
+   "start": 102,
+   "end": 154
+  },
+  {
+   "path": "src/ugv/motion.py",
+   "kind": "func",
+   "name": "ramp_wheels",
+   "start": 157,
+   "end": 166
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "func",
+   "name": "invert",
+   "start": 12,
+   "end": 14
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "class",
+   "name": "SceneOdometry",
+   "start": 17,
+   "end": 115
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "method",
+   "name": "SceneOdometry.__init__",
+   "start": 18,
+   "end": 23
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "method",
+   "name": "SceneOdometry.features",
+   "start": 26,
+   "end": 28
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "method",
+   "name": "SceneOdometry.flow",
+   "start": 31,
+   "end": 40
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "method",
+   "name": "SceneOdometry.update",
+   "start": 42,
+   "end": 48
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "method",
+   "name": "SceneOdometry._update",
+   "start": 50,
+   "end": 111
+  },
+  {
+   "path": "src/ugv/odometry.py",
+   "kind": "method",
+   "name": "SceneOdometry.snapshot",
+   "start": 113,
+   "end": 115
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "angle_error",
+   "start": 18,
+   "end": 19
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "yaw_rotation",
+   "start": 22,
+   "end": 24
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "transform",
+   "start": 27,
+   "end": 31
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "inverse",
+   "start": 34,
+   "end": 35
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "valid_transform",
+   "start": 38,
+   "end": 45
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "class",
+   "name": "Pose2",
+   "start": 49,
+   "end": 52
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "class",
+   "name": "Capsule",
+   "start": 56,
+   "end": 61
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "point_segment_distance",
+   "start": 64,
+   "end": 68
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "segment_distance",
+   "start": 71,
+   "end": 79
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "footprint_corners",
+   "start": 82,
+   "end": 86
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "collides",
+   "start": 89,
+   "end": 101
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "_point_seg_dists",
+   "start": 104,
+   "end": 111
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "swept_clear",
+   "start": 114,
+   "end": 174
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "gear_obstacles",
+   "start": 177,
+   "end": 181
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "plan_route",
+   "start": 184,
+   "end": 220
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "func",
+   "name": "readiness",
+   "start": 223,
+   "end": 253
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "class",
+   "name": "DockingFeedback",
+   "start": 256,
+   "end": 297
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "DockingFeedback.__init__",
+   "start": 258,
+   "end": 260
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "DockingFeedback.step",
+   "start": 262,
+   "end": 297
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "class",
+   "name": "ParkingEstimator",
+   "start": 300,
+   "end": 482
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "ParkingEstimator.__init__",
+   "start": 301,
+   "end": 311
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "ParkingEstimator.update",
+   "start": 313,
+   "end": 315
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "ParkingEstimator._bridge",
+   "start": 317,
+   "end": 332
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "ParkingEstimator._update",
+   "start": 334,
+   "end": 438
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "ParkingEstimator.snapshot",
+   "start": 440,
+   "end": 441
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "ParkingEstimator._snapshot",
+   "start": 443,
+   "end": 470
+  },
+  {
+   "path": "src/ugv/parking.py",
+   "kind": "method",
+   "name": "ParkingEstimator.plan_snapshot",
+   "start": 472,
+   "end": 482
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "func",
+   "name": "_sigmoid",
+   "start": 27,
+   "end": 28
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "class",
+   "name": "StudentPolicy",
+   "start": 31,
+   "end": 196
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy.__init__",
+   "start": 34,
+   "end": 61
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy.load",
+   "start": 64,
+   "end": 69
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy.reset",
+   "start": 71,
+   "end": 78
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy._step_gru",
+   "start": 80,
+   "end": 84
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy._head",
+   "start": 86,
+   "end": 89
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy.forward",
+   "start": 91,
+   "end": 102
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy.step",
+   "start": 104,
+   "end": 184
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy._push",
+   "start": 186,
+   "end": 188
+  },
+  {
+   "path": "src/ugv/policy.py",
+   "kind": "method",
+   "name": "StudentPolicy.benchmark",
+   "start": 190,
+   "end": 196
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "class",
+   "name": "Scenario",
+   "start": 16,
+   "end": 25
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "class",
+   "name": "NoisyPlant",
+   "start": 38,
+   "end": 65
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "method",
+   "name": "NoisyPlant.__init__",
+   "start": 39,
+   "end": 46
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "method",
+   "name": "NoisyPlant.step",
+   "start": 48,
+   "end": 65
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "class",
+   "name": "NoisyVision",
+   "start": 68,
+   "end": 100
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "method",
+   "name": "NoisyVision.__init__",
+   "start": 69,
+   "end": 72
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "method",
+   "name": "NoisyVision.capture",
+   "start": 74,
+   "end": 97
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "method",
+   "name": "NoisyVision.deliver",
+   "start": 99,
+   "end": 100
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "func",
+   "name": "run_episode",
+   "start": 103,
+   "end": 139
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "func",
+   "name": "benchmark",
+   "start": 142,
+   "end": 153
+  },
+  {
+   "path": "src/ugv/simulation.py",
+   "kind": "func",
+   "name": "main",
+   "start": 156,
+   "end": 164
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "class",
+   "name": "Geometry",
+   "start": 37,
+   "end": 64
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "Geometry.margin",
+   "start": 47,
+   "end": 48
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "Geometry.zone_y",
+   "start": 51,
+   "end": 52
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "Geometry.band_y",
+   "start": 55,
+   "end": 56
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "Geometry.stage_y",
+   "start": 59,
+   "end": 60
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "Geometry.keep_x",
+   "start": 63,
+   "end": 64
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "func",
+   "name": "wrap",
+   "start": 71,
+   "end": 72
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "func",
+   "name": "wheel_features",
+   "start": 75,
+   "end": 79
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "func",
+   "name": "mix",
+   "start": 82,
+   "end": 87
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "func",
+   "name": "tag_std",
+   "start": 90,
+   "end": 92
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "class",
+   "name": "MeanModel",
+   "start": 95,
+   "end": 139
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "MeanModel.__init__",
+   "start": 100,
+   "end": 117
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "MeanModel.f",
+   "start": 119,
+   "end": 123
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "MeanModel.inv",
+   "start": 125,
+   "end": 128
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "MeanModel.linearize",
+   "start": 130,
+   "end": 139
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "class",
+   "name": "OnlineSysID",
+   "start": 142,
+   "end": 267
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "OnlineSysID.__init__",
+   "start": 158,
+   "end": 175
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "OnlineSysID.step_lag",
+   "start": 177,
+   "end": 184
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "OnlineSysID._well_conditioned",
+   "start": 186,
+   "end": 191
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "OnlineSysID.observe",
+   "start": 193,
+   "end": 267
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "class",
+   "name": "EKF",
+   "start": 270,
+   "end": 375
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "EKF.__init__",
+   "start": 273,
+   "end": 286
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "EKF.pose",
+   "start": 289,
+   "end": 290
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "EKF.pos_std",
+   "start": 293,
+   "end": 295
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "EKF.predict",
+   "start": 297,
+   "end": 331
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "EKF.update",
+   "start": 333,
+   "end": 375
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "class",
+   "name": "AdaptiveYaw",
+   "start": 378,
+   "end": 471
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "AdaptiveYaw.__init__",
+   "start": 393,
+   "end": 401
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "AdaptiveYaw.start",
+   "start": 403,
+   "end": 404
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "AdaptiveYaw.probing",
+   "start": 406,
+   "end": 407
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "AdaptiveYaw.identified",
+   "start": 409,
+   "end": 410
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "AdaptiveYaw.probe_cmd",
+   "start": 412,
+   "end": 415
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "AdaptiveYaw.observe",
+   "start": 417,
+   "end": 452
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "AdaptiveYaw.turn",
+   "start": 454,
+   "end": 471
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "class",
+   "name": "StagedBaseline",
+   "start": 474,
+   "end": 999
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "StagedBaseline.__init__",
+   "start": 479,
+   "end": 485
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "StagedBaseline.reset",
+   "start": 487,
+   "end": 513
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "StagedBaseline.step",
+   "start": 515,
+   "end": 533
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "StagedBaseline._inv_kinematics",
+   "start": 535,
+   "end": 571
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "StagedBaseline._swept_clear",
+   "start": 573,
+   "end": 594
+  },
+  {
+   "path": "src/ugv/staged_baseline.py",
+   "kind": "method",
+   "name": "StagedBaseline._control",
+   "start": 596,
+   "end": 999
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "class",
+   "name": "RobotState",
+   "start": 26,
+   "end": 80
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "class",
+   "name": "CameraStream",
+   "start": 82,
+   "end": 186
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.__init__",
+   "start": 83,
+   "end": 88
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.start",
+   "start": 90,
+   "end": 92
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream._run",
+   "start": 94,
+   "end": 144
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.set_enabled",
+   "start": 146,
+   "end": 152
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.frames",
+   "start": 154,
+   "end": 163
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.latest",
+   "start": 165,
+   "end": 167
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.latest_sample",
+   "start": 169,
+   "end": 171
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.metrics",
+   "start": 173,
+   "end": 180
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "CameraStream.close",
+   "start": 182,
+   "end": 186
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "class",
+   "name": "RobotController",
+   "start": 188,
+   "end": 883
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.__init__",
+   "start": 189,
+   "end": 215
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.imu_sample",
+   "start": 220,
+   "end": 230
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.imu_status",
+   "start": 232,
+   "end": 239
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.start",
+   "start": 241,
+   "end": 246
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._imu_ready",
+   "start": 248,
+   "end": 250
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._brake_locked",
+   "start": 252,
+   "end": 261
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._guard_check",
+   "start": 263,
+   "end": 329
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._guard",
+   "start": 331,
+   "end": 333
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._motion_loop",
+   "start": 335,
+   "end": 360
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.close",
+   "start": 362,
+   "end": 372
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._policy_artifact_path",
+   "start": 374,
+   "end": 376
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._numpy_only_ok",
+   "start": 378,
+   "end": 386
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._measure_policy_ms",
+   "start": 388,
+   "end": 398
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._swept_margin",
+   "start": 400,
+   "end": 412
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._fallback_manual",
+   "start": 414,
+   "end": 418
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.select_controller",
+   "start": 420,
+   "end": 459
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.arm",
+   "start": 461,
+   "end": 465
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.camera_move",
+   "start": 467,
+   "end": 479
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._write",
+   "start": 481,
+   "end": 488
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._apply_vector",
+   "start": 490,
+   "end": 510
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.calibration_step",
+   "start": 512,
+   "end": 538
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.sidestep",
+   "start": 540,
+   "end": 541
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.survey_step",
+   "start": 543,
+   "end": 561
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.cancel_parking",
+   "start": 563,
+   "end": 574
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.start_parking",
+   "start": 576,
+   "end": 599
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._parking_loop",
+   "start": 601,
+   "end": 640
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.cancel_auto_park",
+   "start": 642,
+   "end": 661
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.start_auto_park",
+   "start": 663,
+   "end": 687
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._auto_park_loop",
+   "start": 689,
+   "end": 761
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.camera_capture",
+   "start": 763,
+   "end": 773
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.drive",
+   "start": 775,
+   "end": 806
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.stop",
+   "start": 808,
+   "end": 814
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.disconnect",
+   "start": 816,
+   "end": 822
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._aruco_age_ms",
+   "start": 824,
+   "end": 831
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._imu_bias_dps",
+   "start": 833,
+   "end": 838
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._rls_scale",
+   "start": 840,
+   "end": 849
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController._sysid_ready",
+   "start": 851,
+   "end": 857
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.payload",
+   "start": 859,
+   "end": 876
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "method",
+   "name": "RobotController.broadcast",
+   "start": 878,
+   "end": 883
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "startup",
+   "start": 891,
+   "end": 891
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "shutdown",
+   "start": 893,
+   "end": 893
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "index",
+   "start": 895,
+   "end": 895
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "stream",
+   "start": 897,
+   "end": 898
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "state",
+   "start": 900,
+   "end": 900
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "route",
+   "name": "GET /api/state -> state",
+   "start": 899,
+   "end": 900
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "calibration_frame",
+   "start": 903,
+   "end": 909
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "route",
+   "name": "GET /api/calibration/frame -> calibration_frame",
+   "start": 902,
+   "end": 909
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "dynamics",
+   "start": 912,
+   "end": 912
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "route",
+   "name": "GET /api/dynamics -> dynamics",
+   "start": 911,
+   "end": 912
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "parking_state",
+   "start": 915,
+   "end": 915
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "route",
+   "name": "GET /api/parking -> parking_state",
+   "start": 914,
+   "end": 915
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "parking_plan",
+   "start": 918,
+   "end": 918
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "route",
+   "name": "GET /api/parking/plan -> parking_plan",
+   "start": 917,
+   "end": 918
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "websocket_endpoint",
+   "start": 921,
+   "end": 963
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "route",
+   "name": "WEBSOCKET /ws -> websocket_endpoint",
+   "start": 920,
+   "end": 963
+  },
+  {
+   "path": "src/ugv/web.py",
+   "kind": "func",
+   "name": "main",
+   "start": 965,
+   "end": 965
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_wrap",
+   "start": 164,
+   "end": 165
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_quantiles",
+   "start": 168,
+   "end": 185
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_sign_flip_rate",
+   "start": 188,
+   "end": 196
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_mix_np",
+   "start": 199,
+   "end": 203
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_wheel_features_np",
+   "start": 206,
+   "end": 213
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "compute_sim_stats",
+   "start": 216,
+   "end": 273
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "extract_run_metrics",
+   "start": 276,
+   "end": 421
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_sim_profile_metrics",
+   "start": 424,
+   "end": 449
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_load_probe_metrics",
+   "start": 452,
+   "end": 508
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_check_l6_gate",
+   "start": 511,
+   "end": 547
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "_discover_probe",
+   "start": 550,
+   "end": 555
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "evaluate_contract",
+   "start": 558,
+   "end": 874
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "format_table",
+   "start": 877,
+   "end": 939
+  },
+  {
+   "path": "tools/l7/audit_contract.py",
+   "kind": "func",
+   "name": "main",
+   "start": 942,
+   "end": 980
+  },
+  {
+   "path": "tools/l7/dump_sim_reference.py",
+   "kind": "func",
+   "name": "_import_rl",
+   "start": 41,
+   "end": 56
+  },
+  {
+   "path": "tools/l7/dump_sim_reference.py",
+   "kind": "func",
+   "name": "_load_student_from_npz",
+   "start": 59,
+   "end": 74
+  },
+  {
+   "path": "tools/l7/dump_sim_reference.py",
+   "kind": "func",
+   "name": "dump_reference",
+   "start": 77,
+   "end": 171
+  },
+  {
+   "path": "tools/l7/dump_sim_reference.py",
+   "kind": "func",
+   "name": "main",
+   "start": 174,
+   "end": 195
+  },
+  {
+   "path": "tools/l7/fit_probe.py",
+   "kind": "func",
+   "name": "_exp_tau",
+   "start": 19,
+   "end": 57
+  },
+  {
+   "path": "tools/l7/fit_probe.py",
+   "kind": "func",
+   "name": "_fit_nonneg_deadzone",
+   "start": 60,
+   "end": 84
+  },
+  {
+   "path": "tools/l7/fit_probe.py",
+   "kind": "func",
+   "name": "_extract_ws_lag",
+   "start": 87,
+   "end": 122
+  },
+  {
+   "path": "tools/l7/fit_probe.py",
+   "kind": "func",
+   "name": "analyze_run",
+   "start": 125,
+   "end": 353
+  },
+  {
+   "path": "tools/l7/fit_probe.py",
+   "kind": "func",
+   "name": "main",
+   "start": 356,
+   "end": 363
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "wrap",
+   "start": 53,
+   "end": 54
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "should_abort_corridor",
+   "start": 57,
+   "end": 67
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "class",
+   "name": "JsonlWriter",
+   "start": 70,
+   "end": 82
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "JsonlWriter.__init__",
+   "start": 71,
+   "end": 73
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "JsonlWriter.write",
+   "start": 75,
+   "end": 78
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "JsonlWriter.close",
+   "start": 80,
+   "end": 82
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "http_conn",
+   "start": 85,
+   "end": 86
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "class",
+   "name": "Imu",
+   "start": 90,
+   "end": 156
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Imu.__init__",
+   "start": 93,
+   "end": 105
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Imu.run",
+   "start": 107,
+   "end": 141
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Imu.yaw_at",
+   "start": 145,
+   "end": 152
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Imu.snapshot",
+   "start": 154,
+   "end": 156
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "tag_solutions",
+   "start": 164,
+   "end": 179
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "make_detector",
+   "start": 185,
+   "end": 197
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "class",
+   "name": "TagBits",
+   "start": 200,
+   "end": 218
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "TagBits.__init__",
+   "start": 203,
+   "end": 207
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "TagBits.errors",
+   "start": 209,
+   "end": 218
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "vision_worker",
+   "start": 221,
+   "end": 266
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "_process_frame",
+   "start": 269,
+   "end": 319
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "class",
+   "name": "Vision",
+   "start": 322,
+   "end": 363
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Vision.__init__",
+   "start": 325,
+   "end": 337
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Vision.start",
+   "start": 339,
+   "end": 341
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Vision._drain",
+   "start": 343,
+   "end": 354
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Vision.join",
+   "start": 356,
+   "end": 357
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Vision.poll",
+   "start": 359,
+   "end": 363
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "class",
+   "name": "Localizer",
+   "start": 376,
+   "end": 532
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Localizer.__init__",
+   "start": 379,
+   "end": 400
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Localizer.fused_yaw",
+   "start": 402,
+   "end": 406
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Localizer._tag_yaw",
+   "start": 409,
+   "end": 411
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Localizer.update",
+   "start": 413,
+   "end": 510
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Localizer.propagate",
+   "start": 512,
+   "end": 529
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Localizer.export_map",
+   "start": 531,
+   "end": 532
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "class",
+   "name": "Drive",
+   "start": 536,
+   "end": 592
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Drive.__init__",
+   "start": 537,
+   "end": 544
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Drive._reader",
+   "start": 546,
+   "end": 562
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Drive.send",
+   "start": 564,
+   "end": 568
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Drive.arm",
+   "start": 570,
+   "end": 578
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Drive.drive",
+   "start": 580,
+   "end": 581
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Drive.brake",
+   "start": 583,
+   "end": 584
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "Drive.release",
+   "start": 586,
+   "end": 592
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "duty_to_dashboard",
+   "start": 595,
+   "end": 604
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "action_to_duty",
+   "start": 607,
+   "end": 612
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "_import_parking",
+   "start": 620,
+   "end": 629
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "validate_stage_arrival",
+   "start": 632,
+   "end": 639
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "class",
+   "name": "GoTo",
+   "start": 642,
+   "end": 718
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "GoTo.__init__",
+   "start": 645,
+   "end": 653
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "GoTo._duty_to_vel",
+   "start": 655,
+   "end": 660
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "GoTo._is_clear",
+   "start": 662,
+   "end": 672
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "method",
+   "name": "GoTo.step",
+   "start": 674,
+   "end": 718
+  },
+  {
+   "path": "tools/l7/l7_run.py",
+   "kind": "func",
+   "name": "main",
+   "start": 722,
+   "end": 1166
+  },
+  {
+   "path": "rl/baselines.py",
+   "kind": "func",
+   "name": "run",
+   "start": 27,
+   "end": 78
+  },
+  {
+   "path": "rl/baselines.py",
+   "kind": "func",
+   "name": "main",
+   "start": 81,
+   "end": 99
+  },
+  {
+   "path": "rl/diag_baseline.py",
+   "kind": "func",
+   "name": "diag",
+   "start": 12,
+   "end": 64
+  },
+  {
+   "path": "rl/distill.py",
+   "kind": "func",
+   "name": "teacher_act",
+   "start": 19,
+   "end": 20
+  },
+  {
+   "path": "rl/distill.py",
+   "kind": "func",
+   "name": "collect",
+   "start": 23,
+   "end": 69
+  },
+  {
+   "path": "rl/distill.py",
+   "kind": "func",
+   "name": "main",
+   "start": 72,
+   "end": 142
+  },
+  {
+   "path": "rl/evaluate.py",
+   "kind": "func",
+   "name": "wilson",
+   "start": 14,
+   "end": 21
+  },
+  {
+   "path": "rl/evaluate.py",
+   "kind": "func",
+   "name": "load_policy",
+   "start": 24,
+   "end": 34
+  },
+  {
+   "path": "rl/evaluate.py",
+   "kind": "func",
+   "name": "policy_act",
+   "start": 38,
+   "end": 63
+  },
+  {
+   "path": "rl/evaluate.py",
+   "kind": "func",
+   "name": "run",
+   "start": 66,
+   "end": 139
+  },
+  {
+   "path": "rl/evaluate.py",
+   "kind": "func",
+   "name": "main",
+   "start": 142,
+   "end": 165
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "compute_pareto_score",
+   "start": 17,
+   "end": 22
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "load_archive",
+   "start": 25,
+   "end": 33
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "save_archive",
+   "start": 36,
+   "end": 40
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "record_run",
+   "start": 43,
+   "end": 60
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "_dominates",
+   "start": 63,
+   "end": 70
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "pareto_frontier",
+   "start": 73,
+   "end": 83
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "format_frontier",
+   "start": 86,
+   "end": 102
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "seed_existing",
+   "start": 105,
+   "end": 123
+  },
+  {
+   "path": "rl/experiment_tree.py",
+   "kind": "func",
+   "name": "main",
+   "start": 126,
+   "end": 150
+  },
+  {
+   "path": "rl/export.py",
+   "kind": "func",
+   "name": "parity_error",
+   "start": 23,
+   "end": 29
+  },
+  {
+   "path": "rl/export.py",
+   "kind": "func",
+   "name": "main",
+   "start": 32,
+   "end": 58
+  },
+  {
+   "path": "rl/make_policy_fixture.py",
+   "kind": "func",
+   "name": "main",
+   "start": 20,
+   "end": 43
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "class",
+   "name": "Actor",
+   "start": 19,
+   "end": 29
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Actor.__init__",
+   "start": 22,
+   "end": 26
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Actor.forward",
+   "start": 28,
+   "end": 29
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "class",
+   "name": "Critic",
+   "start": 32,
+   "end": 41
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Critic.__init__",
+   "start": 35,
+   "end": 38
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Critic.forward",
+   "start": 40,
+   "end": 41
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "class",
+   "name": "Student",
+   "start": 44,
+   "end": 69
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Student.__init__",
+   "start": 52,
+   "end": 58
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Student.forward",
+   "start": 60,
+   "end": 62
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Student.forward_seq",
+   "start": 64,
+   "end": 66
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "method",
+   "name": "Student.n_params",
+   "start": 68,
+   "end": 69
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "func",
+   "name": "teacher_obs",
+   "start": 72,
+   "end": 73
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "func",
+   "name": "priv_input",
+   "start": 76,
+   "end": 79
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "func",
+   "name": "load_teacher",
+   "start": 82,
+   "end": 89
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "func",
+   "name": "load_student",
+   "start": 92,
+   "end": 101
+  },
+  {
+   "path": "rl/models.py",
+   "kind": "func",
+   "name": "gae_advantages",
+   "start": 104,
+   "end": 116
+  },
+  {
+   "path": "rl/reward.py",
+   "kind": "func",
+   "name": "progress_potential",
+   "start": 14,
+   "end": 20
+  },
+  {
+   "path": "rl/reward.py",
+   "kind": "func",
+   "name": "step_reward",
+   "start": 23,
+   "end": 38
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "func",
+   "name": "_wheel_features",
+   "start": 64,
+   "end": 70
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "class",
+   "name": "EnvConfig",
+   "start": 74,
+   "end": 97
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "class",
+   "name": "MecanumVecEnv",
+   "start": 100,
+   "end": 579
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "method",
+   "name": "MecanumVecEnv.__init__",
+   "start": 103,
+   "end": 176
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "method",
+   "name": "MecanumVecEnv._sample_dynamics",
+   "start": 179,
+   "end": 254
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "method",
+   "name": "MecanumVecEnv.reset",
+   "start": 256,
+   "end": 339
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "method",
+   "name": "MecanumVecEnv._push_buffer",
+   "start": 341,
+   "end": 344
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "method",
+   "name": "MecanumVecEnv._delayed_pose",
+   "start": 346,
+   "end": 352
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "method",
+   "name": "MecanumVecEnv.step",
+   "start": 355,
+   "end": 575
+  },
+  {
+   "path": "rl/sim.py",
+   "kind": "method",
+   "name": "MecanumVecEnv._privileged",
+   "start": 577,
+   "end": 579
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_env_steps",
+   "start": 7,
+   "end": 14
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_env_posterior_and_sensor",
+   "start": 17,
+   "end": 23
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_student_params_small",
+   "start": 26,
+   "end": 30
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_export_parity_against_deployed_forward",
+   "start": 33,
+   "end": 37
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_returned_history_matches_internal_state",
+   "start": 40,
+   "end": 47
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_partial_reset_preserves_other_envs",
+   "start": 50,
+   "end": 62
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_same_seed_same_results",
+   "start": 65,
+   "end": 70
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_action_rate_penalty_nonzero_on_step_change",
+   "start": 73,
+   "end": 88
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_terminal_bonus_only_on_success",
+   "start": 91,
+   "end": 101
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_gae_resets_at_terminal",
+   "start": 108,
+   "end": 117
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_yaw_priced_in_potential",
+   "start": 120,
+   "end": 127
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_lateral_weight_prices_offset",
+   "start": 130,
+   "end": 138
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_fov_facing_and_sign",
+   "start": 141,
+   "end": 161
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_under_drone_loss_only_from_l3",
+   "start": 164,
+   "end": 180
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_fov_behind_drone_y_negative",
+   "start": 183,
+   "end": 193
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_cam_hz_and_tag_ema_hold_decay",
+   "start": 196,
+   "end": 212
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_use_mean_dynamics_vs_legacy_and_full_posterior",
+   "start": 215,
+   "end": 221
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_declare_parked_and_false_park",
+   "start": 224,
+   "end": 245
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_baselines_no_mean_dynamics_flag",
+   "start": 248,
+   "end": 254
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_trainers_and_archive_smoke",
+   "start": 257,
+   "end": 293
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_yaw_weight_plumbing_and_default",
+   "start": 296,
+   "end": 321
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_train_teacher_reset_every_iter_flag",
+   "start": 324,
+   "end": 329
+  },
+  {
+   "path": "rl/test_rl.py",
+   "kind": "func",
+   "name": "test_real_fit_plant",
+   "start": 332,
+   "end": 378
+  },
+  {
+   "path": "rl/train_student.py",
+   "kind": "func",
+   "name": "_parse_spawn",
+   "start": 26,
+   "end": 30
+  },
+  {
+   "path": "rl/train_student.py",
+   "kind": "func",
+   "name": "main",
+   "start": 33,
+   "end": 278
+  },
+  {
+   "path": "rl/train_teacher.py",
+   "kind": "func",
+   "name": "_parse_spawn",
+   "start": 12,
+   "end": 16
+  },
+  {
+   "path": "rl/train_teacher.py",
+   "kind": "func",
+   "name": "main",
+   "start": 19,
+   "end": 169
+  },
+  {
+   "path": "rl/visualize.py",
+   "kind": "func",
+   "name": "rollout",
+   "start": 21,
+   "end": 48
+  },
+  {
+   "path": "rl/visualize.py",
+   "kind": "func",
+   "name": "draw_episode",
+   "start": 51,
+   "end": 77
+  },
+  {
+   "path": "rl/visualize.py",
+   "kind": "func",
+   "name": "animate_episode",
+   "start": 80,
+   "end": 105
+  },
+  {
+   "path": "rl/visualize.py",
+   "kind": "func",
+   "name": "main",
+   "start": 108,
+   "end": 128
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_rejected_perspective_quad_fallback_decodes_id_2",
+   "start": 11,
+   "end": 32
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_resampling_all_ids_rotations_and_blank_rejection",
+   "start": 35,
+   "end": 45
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "sample_frame",
+   "start": 48,
+   "end": 52
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_oblique_blurred_cells_need_threshold_resampling_not_more_bit_errors",
+   "start": 55,
+   "end": 74
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_fresh_decode_skips_trackers_and_missed_decode_uses_flow",
+   "start": 77,
+   "end": 87
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_correlation_is_lazy_and_preserves_full_resolution_coordinates",
+   "start": 90,
+   "end": 100
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_stale_camera_clears_overlay_and_stops_follow",
+   "start": 103,
+   "end": 122
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_curled_live_id0_decodes_without_retaining_a_track",
+   "start": 125,
+   "end": 137
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "bent_test_marker",
+   "start": 140,
+   "end": 147
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_curved_border_all_dictionary_ids_and_rotations",
+   "start": 150,
+   "end": 157
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_curved_border_rejects_blank_and_invalid_codes",
+   "start": 160,
+   "end": 175
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_image_edge_gate_applies_to_native_and_fallback",
+   "start": 178,
+   "end": 185
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_dark_drone_screenshot_decodes_underbody_marker",
+   "start": 188,
+   "end": 195
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_live_drone_frame_retains_large_and_small_markers",
+   "start": 198,
+   "end": 201
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_low_light_passes_reject_blank_frames",
+   "start": 204,
+   "end": 206
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_small_live_marker_upsampling_preserves_full_frame_coordinates",
+   "start": 209,
+   "end": 215
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_low_light_new_identity_requires_repeat_read",
+   "start": 218,
+   "end": 226
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_live_acquisition_spreads_dark_marker_passes_across_frames",
+   "start": 229,
+   "end": 237
+  },
+  {
+   "path": "tests/test_aruco.py",
+   "kind": "func",
+   "name": "test_live_bent_drone_tag_uses_contrast_and_border_rectification",
+   "start": 240,
+   "end": 247
+  },
+  {
+   "path": "tests/test_audit_contract.py",
+   "kind": "func",
+   "name": "_make_sim_ref",
+   "start": 16,
+   "end": 46
+  },
+  {
+   "path": "tests/test_audit_contract.py",
+   "kind": "func",
+   "name": "_make_profile_and_probe",
+   "start": 49,
+   "end": 102
+  },
+  {
+   "path": "tests/test_audit_contract.py",
+   "kind": "func",
+   "name": "_make_run",
+   "start": 105,
+   "end": 138
+  },
+  {
+   "path": "tests/test_audit_contract.py",
+   "kind": "func",
+   "name": "test_audit_passes_on_matching_synthetic_contract",
+   "start": 141,
+   "end": 177
+  },
+  {
+   "path": "tests/test_audit_contract.py",
+   "kind": "func",
+   "name": "test_audit_fails_on_gyro_saturation_plant_and_l6_gate",
+   "start": 180,
+   "end": 220
+  },
+  {
+   "path": "tests/test_audit_contract.py",
+   "kind": "func",
+   "name": "test_audit_handles_stage_run_without_actions",
+   "start": 223,
+   "end": 245
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "_make_pose_sols",
+   "start": 15,
+   "end": 19
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "class",
+   "name": "_FakeWS",
+   "start": 22,
+   "end": 42
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "method",
+   "name": "_FakeWS.__init__",
+   "start": 23,
+   "end": 26
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "method",
+   "name": "_FakeWS.accept",
+   "start": 28,
+   "end": 29
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "method",
+   "name": "_FakeWS.send_json",
+   "start": 31,
+   "end": 32
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "method",
+   "name": "_FakeWS.receive_text",
+   "start": 34,
+   "end": 42
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_load_tagmap_skips_zero_obs",
+   "start": 45,
+   "end": 55
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_tag_solutions_verifies_positive_camera_z",
+   "start": 58,
+   "end": 65
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_tag_bits_and_detector_jpeg",
+   "start": 68,
+   "end": 87
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_localizer_ippe_branch_disambiguation_and_outlier_rejection",
+   "start": 90,
+   "end": 116
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_autopark_runner_swept_clear_blocks_with_cw_negation",
+   "start": 119,
+   "end": 129
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_autopark_runner_corridor_and_blind_dr_timeout_and_parked",
+   "start": 132,
+   "end": 170
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_ws_autopark_start_stop_disarm_manual_override_and_stale",
+   "start": 173,
+   "end": 255
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_autopark_runner_acquiring_timeout_aborts",
+   "start": 258,
+   "end": 274
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_uncalibrated_tag6_bootstraps_staging_and_blocks_entering_until_calibrated",
+   "start": 277,
+   "end": 312
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_first_calibrated_fix_snaps_dr_pose_within_25cm",
+   "start": 315,
+   "end": 330
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_autopark_adaptive_imu_breakaway_ramp_and_damping",
+   "start": 333,
+   "end": 353
+  },
+  {
+   "path": "tests/test_autopark.py",
+   "kind": "func",
+   "name": "test_staging_perimeter_orbit_clears_skids_from_side_and_rear_poses",
+   "start": 354,
+   "end": 384
+  },
+  {
+   "path": "tests/test_calibration_drive.py",
+   "kind": "func",
+   "name": "controller",
+   "start": 8,
+   "end": 11
+  },
+  {
+   "path": "tests/test_calibration_drive.py",
+   "kind": "func",
+   "name": "test_full_pwm_is_bounded_and_deadline_brakes",
+   "start": 14,
+   "end": 21
+  },
+  {
+   "path": "tests/test_calibration_drive.py",
+   "kind": "func",
+   "name": "test_invalid_calibration_pulse_never_moves",
+   "start": 25,
+   "end": 29
+  },
+  {
+   "path": "tests/test_calibration_drive.py",
+   "kind": "func",
+   "name": "test_sensor_loss_and_foreign_owner_cannot_energize",
+   "start": 32,
+   "end": 38
+  },
+  {
+   "path": "tests/test_calibration_sysid.py",
+   "kind": "func",
+   "name": "_prior_coef",
+   "start": 32,
+   "end": 35
+  },
+  {
+   "path": "tests/test_calibration_sysid.py",
+   "kind": "func",
+   "name": "_run_sysid",
+   "start": 38,
+   "end": 49
+  },
+  {
+   "path": "tests/test_calibration_sysid.py",
+   "kind": "func",
+   "name": "test_schedule_is_30s_bounded_safe",
+   "start": 52,
+   "end": 61
+  },
+  {
+   "path": "tests/test_calibration_sysid.py",
+   "kind": "func",
+   "name": "test_refit_recovers_true_parameters",
+   "start": 64,
+   "end": 73
+  },
+  {
+   "path": "tests/test_calibration_sysid.py",
+   "kind": "func",
+   "name": "test_turn_column_prediction_within_8pct",
+   "start": 76,
+   "end": 88
+  },
+  {
+   "path": "tests/test_calibration_sysid.py",
+   "kind": "func",
+   "name": "_settle",
+   "start": 91,
+   "end": 96
+  },
+  {
+   "path": "tests/test_calibration_sysid.py",
+   "kind": "func",
+   "name": "test_joystick_mapper_kills_strafe_yaw_drift",
+   "start": 99,
+   "end": 125
+  },
+  {
+   "path": "tests/test_camera.py",
+   "kind": "func",
+   "name": "check_stall_recovery",
+   "start": 5,
+   "end": 24
+  },
+  {
+   "path": "tests/test_camera.py",
+   "kind": "func",
+   "name": "test_camera_recovers_live_process_with_silent_pipe",
+   "start": 26,
+   "end": 27
+  },
+  {
+   "path": "tests/test_camera.py",
+   "kind": "func",
+   "name": "test_camera_recovers_process_sending_no_complete_frames",
+   "start": 30,
+   "end": 31
+  },
+  {
+   "path": "tests/test_camera.py",
+   "kind": "func",
+   "name": "test_camera_kills_process_that_ignores_termination",
+   "start": 34,
+   "end": 35
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_late_frame_replays_motion_and_later_accepted_frames",
+   "start": 9,
+   "end": 27
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_yaw_wrap_wrong_tag_bad_pose_duplicate_and_expiry",
+   "start": 30,
+   "end": 40
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_command_deadtime_does_not_predict_instant_movement",
+   "start": 43,
+   "end": 49
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_short_detection_gap_preserves_control_long_gap_holds_then_resumes",
+   "start": 52,
+   "end": 61
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_allocator_crosses_breakaway_and_emits_only_one_axis_per_slot",
+   "start": 64,
+   "end": 70
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_continuous_docking_with_asymmetry_delay_and_transient_poses",
+   "start": 74,
+   "end": 79
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_blackout_produces_a_hold_and_returns_to_closed_loop",
+   "start": 82,
+   "end": 86
+  },
+  {
+   "path": "tests/test_continuous.py",
+   "kind": "func",
+   "name": "test_true_collision_evaluator_is_independent_of_controller_claim",
+   "start": 89,
+   "end": 91
+  },
+  {
+   "path": "tests/test_dashboard_selector.py",
+   "kind": "func",
+   "name": "_armed",
+   "start": 8,
+   "end": 11
+  },
+  {
+   "path": "tests/test_dashboard_selector.py",
+   "kind": "func",
+   "name": "test_manual_is_default_and_snapshot_exposes_fields",
+   "start": 14,
+   "end": 19
+  },
+  {
+   "path": "tests/test_dashboard_selector.py",
+   "kind": "func",
+   "name": "test_staged_requires_armed_imu_and_zero_blockers",
+   "start": 22,
+   "end": 36
+  },
+  {
+   "path": "tests/test_dashboard_selector.py",
+   "kind": "func",
+   "name": "test_staged_select_and_guard_fallback_to_manual",
+   "start": 39,
+   "end": 56
+  },
+  {
+   "path": "tests/test_dashboard_selector.py",
+   "kind": "func",
+   "name": "test_rl_student_requires_artifact_and_budget",
+   "start": 59,
+   "end": 75
+  },
+  {
+   "path": "tests/test_dashboard_selector.py",
+   "kind": "func",
+   "name": "test_unknown_controller_rejected",
+   "start": 78,
+   "end": 83
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "drive_vector",
+   "start": 12,
+   "end": 19
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_forward_uses_classical_four_wheel_drive",
+   "start": 22,
+   "end": 28
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_rotate_left_pattern",
+   "start": 31,
+   "end": 37
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "mock_controller",
+   "start": 40,
+   "end": 45
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_direct_turn_without_gyro",
+   "start": 48,
+   "end": 54
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_watchdog_brakes_without_disarming",
+   "start": 57,
+   "end": 65
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_key_release_and_stop_preserve_arm",
+   "start": 68,
+   "end": 76
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_disconnect_releases_session_and_brakes",
+   "start": 79,
+   "end": 84
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_mecanum_strafe_pattern",
+   "start": 87,
+   "end": 91
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_rate_loop_converges_with_both_turn_directions",
+   "start": 94,
+   "end": 105
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_sidestep_uses_actual_heading_and_returns_to_origin",
+   "start": 108,
+   "end": 124
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_expired_input_cannot_be_renewed_by_internal_steps",
+   "start": 127,
+   "end": 132
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_missing_gyro_stall_and_wrong_direction_stop",
+   "start": 135,
+   "end": 146
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_pwm_ramp_bounds_and_reversal_crosses_zero",
+   "start": 149,
+   "end": 152
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_arc_never_reverses_inside_wheels_and_respects_slider",
+   "start": 155,
+   "end": 164
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_pivot_breakaway_overcomes_dead_zone_without_unbounded_power",
+   "start": 167,
+   "end": 182
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_small_heading_error_still_gets_breakaway_power",
+   "start": 185,
+   "end": 189
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "ready_controller",
+   "start": 192,
+   "end": 198
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_independent_watchdog_uses_browser_lease_even_when_motor_loop_fresh",
+   "start": 201,
+   "end": 211
+  },
+  {
+   "path": "tests/test_drive.py",
+   "kind": "func",
+   "name": "test_foreign_command_cannot_cancel_motion_and_disarmed_loop_cannot_write",
+   "start": 214,
+   "end": 225
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_close_tag_gets_full_qe_pivot_with_no_forward_motion",
+   "start": 14,
+   "end": 17
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_centered_close_tag_brakes_and_distant_tag_approaches",
+   "start": 20,
+   "end": 24
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_pulse_is_not_extended_and_waits_for_post_pulse_image",
+   "start": 27,
+   "end": 33
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_no_visual_response_increases_next_pulse_duration",
+   "start": 36,
+   "end": 41
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_pivot_deadline_brakes_independently_of_camera_processing",
+   "start": 44,
+   "end": 57
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_visual_pivots_center_a_high_friction_plant_both_directions",
+   "start": 61,
+   "end": 84
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_follow_speed_is_clamped_and_only_its_owner_can_change_it",
+   "start": 87,
+   "end": 100
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_follow_loop_uses_selected_speed_and_finite_close_pivot",
+   "start": 103,
+   "end": 127
+  },
+  {
+   "path": "tests/test_follow.py",
+   "kind": "func",
+   "name": "test_stop_turns_follow_off_without_disarming_connected_owner",
+   "start": 130,
+   "end": 154
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_lead_predicts_ahead_with_velocity",
+   "start": 8,
+   "end": 17
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_sigma_grows_with_age",
+   "start": 20,
+   "end": 25
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_yaw_rate_damping_reduces_command",
+   "start": 28,
+   "end": 35
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_damped_plant_overshoots_less_than_undamped",
+   "start": 38,
+   "end": 58
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_simultaneous_forward_strafe_turn",
+   "start": 61,
+   "end": 67
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_smooth_deadzone_is_continuous",
+   "start": 70,
+   "end": 75
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_coast_search_stop_transitions",
+   "start": 78,
+   "end": 99
+  },
+  {
+   "path": "tests/test_follow_smooth.py",
+   "kind": "func",
+   "name": "test_target_reached_brakes",
+   "start": 102,
+   "end": 106
+  },
+  {
+   "path": "tests/test_ground_pose.py",
+   "kind": "func",
+   "name": "test_ground_rectangle_recovers_camera_pose_and_rejects_degenerate_points",
+   "start": 7,
+   "end": 18
+  },
+  {
+   "path": "tests/test_ground_pose.py",
+   "kind": "func",
+   "name": "test_caps_with_no_trackable_texture_cannot_supply_new_pose",
+   "start": 21,
+   "end": 25
+  },
+  {
+   "path": "tests/test_heading.py",
+   "kind": "func",
+   "name": "calibrated_heading",
+   "start": 4,
+   "end": 10
+  },
+  {
+   "path": "tests/test_heading.py",
+   "kind": "func",
+   "name": "test_heading_zeroes_after_three_stationary_seconds",
+   "start": 13,
+   "end": 15
+  },
+  {
+   "path": "tests/test_heading.py",
+   "kind": "func",
+   "name": "test_heading_integrates_actual_clockwise_gyro_rotation_while_driving",
+   "start": 18,
+   "end": 23
+  },
+  {
+   "path": "tests/test_heading.py",
+   "kind": "func",
+   "name": "test_rezero_waits_for_stationary_state",
+   "start": 26,
+   "end": 31
+  },
+  {
+   "path": "tests/test_heading.py",
+   "kind": "func",
+   "name": "test_sample_gap_does_not_integrate_unknown_rotation",
+   "start": 34,
+   "end": 38
+  },
+  {
+   "path": "tests/test_heading.py",
+   "kind": "func",
+   "name": "test_disconnect_invalidates_estimate_until_rezeroed",
+   "start": 41,
+   "end": 46
+  },
+  {
+   "path": "tests/test_hud_payload.py",
+   "kind": "func",
+   "name": "test_payload_has_additive_telemetry_fields",
+   "start": 28,
+   "end": 44
+  },
+  {
+   "path": "tests/test_hud_payload.py",
+   "kind": "func",
+   "name": "test_controller_selector_round_trip",
+   "start": 47,
+   "end": 62
+  },
+  {
+   "path": "tests/test_hud_payload.py",
+   "kind": "func",
+   "name": "test_static_hud_ids_present_and_legacy_preserved",
+   "start": 65,
+   "end": 85
+  },
+  {
+   "path": "tests/test_imu.py",
+   "kind": "func",
+   "name": "test_parse_imu_line",
+   "start": 4,
+   "end": 6
+  },
+  {
+   "path": "tests/test_imu.py",
+   "kind": "func",
+   "name": "test_parse_imu_line_rejects_bad_messages",
+   "start": 9,
+   "end": 11
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "class",
+   "name": "_StubImu",
+   "start": 24,
+   "end": 34
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "method",
+   "name": "_StubImu.__init__",
+   "start": 25,
+   "end": 28
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "method",
+   "name": "_StubImu.yaw_at",
+   "start": 30,
+   "end": 31
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "method",
+   "name": "_StubImu.snapshot",
+   "start": 33,
+   "end": 34
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "_make_args",
+   "start": 37,
+   "end": 57
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "_tag14_sol",
+   "start": 60,
+   "end": 65
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "test_ippe_ambiguity_and_outlier_rejection",
+   "start": 68,
+   "end": 127
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "test_latency_cap_to_now_propagation",
+   "start": 130,
+   "end": 151
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "test_goto_swept_clear_yaw_negation_and_atan2_guard",
+   "start": 154,
+   "end": 172
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "test_tagbits_tightened_threshold",
+   "start": 175,
+   "end": 182
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "test_validate_stage_arrival_false_arrive",
+   "start": 185,
+   "end": 192
+  },
+  {
+   "path": "tests/test_l7_localizer.py",
+   "kind": "func",
+   "name": "test_should_abort_corridor_fresh_tag_vs_stale_dr",
+   "start": 193,
+   "end": 213
+  },
+  {
+   "path": "tests/test_mecanum_dynamics.py",
+   "kind": "func",
+   "name": "profile",
+   "start": 6,
+   "end": 9
+  },
+  {
+   "path": "tests/test_mecanum_dynamics.py",
+   "kind": "func",
+   "name": "test_deadzone_and_zero_equilibrium",
+   "start": 12,
+   "end": 14
+  },
+  {
+   "path": "tests/test_mecanum_dynamics.py",
+   "kind": "func",
+   "name": "test_exact_lag_is_invariant_to_time_subdivision",
+   "start": 17,
+   "end": 21
+  },
+  {
+   "path": "tests/test_mecanum_dynamics.py",
+   "kind": "func",
+   "name": "test_probabilistic_rollout_reproducible_and_covariance_nonzero",
+   "start": 24,
+   "end": 29
+  },
+  {
+   "path": "tests/test_mecanum_dynamics.py",
+   "kind": "func",
+   "name": "test_identification_recovers_unseen_trial_dynamics",
+   "start": 32,
+   "end": 43
+  },
+  {
+   "path": "tests/test_mecanum_dynamics.py",
+   "kind": "func",
+   "name": "test_bayesian_posterior_retains_parameter_and_process_uncertainty",
+   "start": 46,
+   "end": 59
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_collision_checks_full_rectangle_and_rotating_corners",
+   "start": 14,
+   "end": 20
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_route_and_every_sweep_fit_between_gear",
+   "start": 23,
+   "end": 30
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "verified_config",
+   "start": 33,
+   "end": 41
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_nominal_geometry_and_missing_pose_cannot_enable_entry",
+   "start": 44,
+   "end": 56
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "detection",
+   "start": 59,
+   "end": 62
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_imu_clockwise_axis_matches_camera_frame_without_fake_translation",
+   "start": 65,
+   "end": 77
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_tag_loss_bridge_expires_and_pan_changes_invalidate_map",
+   "start": 80,
+   "end": 90
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_reverse_feedback_and_blocked_pivot_stop",
+   "start": 93,
+   "end": 101
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_blank_and_pure_rotation_do_not_invent_metric_depth",
+   "start": 104,
+   "end": 110
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_visual_pose_from_known_static_landmarks",
+   "start": 113,
+   "end": 123
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_survey_deadline_and_parking_camera_interlock",
+   "start": 126,
+   "end": 138
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_new_viewpoint_relocalizes_after_three_consistent_anchor_frames",
+   "start": 141,
+   "end": 153
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_parking_guard_brakes_on_pose_expiry_independent_of_event_loop",
+   "start": 156,
+   "end": 162
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_calibrated_parking_pose_uses_configured_intrinsics_and_tag_size",
+   "start": 165,
+   "end": 173
+  },
+  {
+   "path": "tests/test_parking.py",
+   "kind": "func",
+   "name": "test_stop_cancels_pending_planning_before_it_can_start_motors",
+   "start": 176,
+   "end": 190
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "_policy",
+   "start": 7,
+   "end": 9
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "test_shield_brakes_on_stale_pose",
+   "start": 12,
+   "end": 14
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "test_invalid_nan_brakes",
+   "start": 17,
+   "end": 19
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "test_shield_brakes_on_blocked_sweep",
+   "start": 22,
+   "end": 27
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "test_reset_clears_episode_state",
+   "start": 30,
+   "end": 36
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "test_golden_trace_matches_sim",
+   "start": 39,
+   "end": 57
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "test_shield_rotates_by_yaw_and_sweeps_horizon",
+   "start": 60,
+   "end": 81
+  },
+  {
+   "path": "tests/test_policy.py",
+   "kind": "func",
+   "name": "test_shield_ccw_yaw_negated_for_swept_clear",
+   "start": 82,
+   "end": 96
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "_reference_sweep",
+   "start": 15,
+   "end": 27
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "_default_obstacles",
+   "start": 30,
+   "end": 32
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "test_swept_clear_parity_with_scalar_loop",
+   "start": 35,
+   "end": 45
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "_contact_approach",
+   "start": 48,
+   "end": 70
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "_max_speed_policy",
+   "start": 73,
+   "end": 76
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "test_shield_brakes_under_200ms_stale_pose",
+   "start": 79,
+   "end": 87
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "test_shield_no_false_brake_when_truly_clear",
+   "start": 90,
+   "end": 96
+  },
+  {
+   "path": "tests/test_policy_and_shield.py",
+   "kind": "func",
+   "name": "test_swept_clear_under_point_15ms",
+   "start": 99,
+   "end": 107
+  },
+  {
+   "path": "tests/test_power_controls.py",
+   "kind": "func",
+   "name": "test_pause_clears_stale_camera_and_resume_requires_new_frame",
+   "start": 7,
+   "end": 16
+  },
+  {
+   "path": "tests/test_power_controls.py",
+   "kind": "func",
+   "name": "test_camera_pause_cancels_autonomy_before_capture_and_rejects_observer",
+   "start": 19,
+   "end": 37
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "_harness",
+   "start": 12,
+   "end": 17
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_translation_inverse_round_trip",
+   "start": 20,
+   "end": 24
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_searches_without_tag_and_holds_when_never_seen",
+   "start": 27,
+   "end": 34
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_parks_on_fake_bridge_without_contact",
+   "start": 37,
+   "end": 41
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_brakes_after_arrival",
+   "start": 44,
+   "end": 50
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_l4_search_acquires_and_locks_ekf",
+   "start": 53,
+   "end": 61
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_3s_blackout_recovers",
+   "start": 64,
+   "end": 75
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_yaw_coupling_adaptation",
+   "start": 78,
+   "end": 86
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_enter_blocked_at_slot_margin_stale_tags",
+   "start": 89,
+   "end": 104
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_enter_held_when_centered_stale_tags",
+   "start": 107,
+   "end": 120
+  },
+  {
+   "path": "tests/test_staged_baseline.py",
+   "kind": "func",
+   "name": "test_swept_clear_brakes_into_skids",
+   "start": 123,
+   "end": 139
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "$",
+   "start": 1,
+   "end": 1
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "applyJoyDeadzone",
+   "start": 23,
+   "end": 23
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "drawAruco",
+   "start": 28,
+   "end": 28
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "vector",
+   "start": 77,
+   "end": 77
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "send",
+   "start": 84,
+   "end": 84
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "drive",
+   "start": 88,
+   "end": 88
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "stop",
+   "start": 94,
+   "end": 94
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "render",
+   "start": 102,
+   "end": 102
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "vectorText",
+   "start": 178,
+   "end": 178
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "connect",
+   "start": 208,
+   "end": 208
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "updateStick",
+   "start": 290,
+   "end": 290
+  },
+  {
+   "path": "src/ugv/static/app.js",
+   "kind": "js_func",
+   "name": "releaseStick",
+   "start": 313,
+   "end": 313
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#media-layer",
+   "start": 11,
+   "end": 11
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#camera-feed",
+   "start": 12,
+   "end": 12
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#aruco-overlay",
+   "start": 13,
+   "end": 13
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#feed-stats",
+   "start": 17,
+   "end": 17
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#connection",
+   "start": 18,
+   "end": 18
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#auto-park-pill",
+   "start": 19,
+   "end": 19
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#heading-widget",
+   "start": 23,
+   "end": 23
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#heading-needle",
+   "start": 26,
+   "end": 26
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#heading-degrees",
+   "start": 27,
+   "end": 27
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#heading-status",
+   "start": 30,
+   "end": 30
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#heading-calibrate",
+   "start": 31,
+   "end": 31
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#motion",
+   "start": 36,
+   "end": 36
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#pose-tag",
+   "start": 37,
+   "end": 37
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#imu-status",
+   "start": 38,
+   "end": 38
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#forward",
+   "start": 39,
+   "end": 39
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#strafe",
+   "start": 39,
+   "end": 39
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#turn",
+   "start": 39,
+   "end": 39
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#reason",
+   "start": 45,
+   "end": 45
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#turn-feedback",
+   "start": 46,
+   "end": 46
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#ownership",
+   "start": 47,
+   "end": 47
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#clients",
+   "start": 48,
+   "end": 48
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#watchdog",
+   "start": 49,
+   "end": 49
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#pan",
+   "start": 50,
+   "end": 50
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#tilt",
+   "start": 50,
+   "end": 50
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#aruco-readout",
+   "start": 51,
+   "end": 51
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#vision-rate",
+   "start": 52,
+   "end": 52
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#vision-time",
+   "start": 53,
+   "end": 53
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#imu-accel",
+   "start": 54,
+   "end": 54
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#imu-gyro",
+   "start": 55,
+   "end": 55
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#controller-select",
+   "start": 59,
+   "end": 59
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#joystick",
+   "start": 72,
+   "end": 72
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#joystick-knob",
+   "start": 73,
+   "end": 73
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#arm",
+   "start": 78,
+   "end": 78
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#auto-park-toggle",
+   "start": 79,
+   "end": 79
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#stop",
+   "start": 80,
+   "end": 80
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#speed",
+   "start": 84,
+   "end": 84
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#speed-value",
+   "start": 85,
+   "end": 85
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#camera-toggle",
+   "start": 88,
+   "end": 88
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#aruco-toggle",
+   "start": 89,
+   "end": 89
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#follow-toggle",
+   "start": 90,
+   "end": 90
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#view-fit-toggle",
+   "start": 91,
+   "end": 91
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#map-toggle",
+   "start": 92,
+   "end": 92
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-panel",
+   "start": 96,
+   "end": 96
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-status",
+   "start": 99,
+   "end": 99
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#park-preview",
+   "start": 101,
+   "end": 101
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#park-start",
+   "start": 102,
+   "end": 102
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#park-stop",
+   "start": 103,
+   "end": 103
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-map",
+   "start": 106,
+   "end": 106
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-reference",
+   "start": 107,
+   "end": 107
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-detail",
+   "start": 108,
+   "end": 108
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-blockers",
+   "start": 109,
+   "end": 109
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-plan-result",
+   "start": 110,
+   "end": 110
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#parking-calibration-details",
+   "start": 111,
+   "end": 111
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#telemetry-rail",
+   "start": 114,
+   "end": 114
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#speed-meter",
+   "start": 115,
+   "end": 115
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#tactical-bev",
+   "start": 116,
+   "end": 116
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#follow-state",
+   "start": 117,
+   "end": 117
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#l7-banner",
+   "start": 118,
+   "end": 118
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#follow-mode-toggle",
+   "start": 119,
+   "end": 119
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#spark-loop",
+   "start": 120,
+   "end": 120
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#spark-cam",
+   "start": 120,
+   "end": 120
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#spark-imu",
+   "start": 120,
+   "end": 120
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#wheel-fl",
+   "start": 121,
+   "end": 121
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#wheel-fr",
+   "start": 121,
+   "end": 121
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#wheel-rl",
+   "start": 121,
+   "end": 121
+  },
+  {
+   "path": "src/ugv/static/index.html",
+   "kind": "html_id",
+   "name": "#wheel-rr",
+   "start": 121,
+   "end": 121
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-panel",
+   "start": 2,
+   "end": 2
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-map",
+   "start": 3,
+   "end": 3
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#map-toggle",
+   "start": 6,
+   "end": 6
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#park-start",
+   "start": 14,
+   "end": 14
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#park-stop",
+   "start": 15,
+   "end": 15
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#park-preview",
+   "start": 16,
+   "end": 16
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-plan-result",
+   "start": 20,
+   "end": 20
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-plan-result",
+   "start": 21,
+   "end": 21
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-status",
+   "start": 25,
+   "end": 25
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-detail",
+   "start": 30,
+   "end": 30
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-blockers",
+   "start": 31,
+   "end": 31
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-calibration-details",
+   "start": 32,
+   "end": 32
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#park-start",
+   "start": 33,
+   "end": 33
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#park-preview",
+   "start": 34,
+   "end": 34
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#park-stop",
+   "start": 35,
+   "end": 35
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_func",
+   "name": "xy",
+   "start": 41,
+   "end": 41
+  },
+  {
+   "path": "src/ugv/static/parking.js",
+   "kind": "js_id",
+   "name": "#parking-reference",
+   "start": 56,
+   "end": 56
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".mono",
+   "start": 8,
+   "end": 8
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".glass",
+   "start": 9,
+   "end": 9
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".pill",
+   "start": 10,
+   "end": 10
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": "#media-layer",
+   "start": 12,
+   "end": 12
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": "#camera-feed",
+   "start": 16,
+   "end": 16
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".feed-label",
+   "start": 18,
+   "end": 22
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".connection",
+   "start": 23,
+   "end": 23
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".connection .dot",
+   "start": 24,
+   "end": 24
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".connection.online .dot",
+   "start": 25,
+   "end": 25
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".park-pill",
+   "start": 26,
+   "end": 29
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".park-pill.stopped",
+   "start": 30,
+   "end": 32
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".status",
+   "start": 34,
+   "end": 37
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".heading-widget",
+   "start": 38,
+   "end": 41
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".compass-ring",
+   "start": 42,
+   "end": 46
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".compass-n",
+   "start": 47,
+   "end": 47
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".compass-needle",
+   "start": 48,
+   "end": 52
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".compass-deg",
+   "start": 53,
+   "end": 53
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".heading-widget.uncalibrated .compass-needle",
+   "start": 54,
+   "end": 54
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".heading-widget.moving .compass-ring",
+   "start": 55,
+   "end": 55
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".heading-meta",
+   "start": 56,
+   "end": 56
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".heading-status",
+   "start": 57,
+   "end": 57
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-rows",
+   "start": 59,
+   "end": 59
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-rows > div",
+   "start": 60,
+   "end": 60
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-rows dt",
+   "start": 61,
+   "end": 61
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-rows dd",
+   "start": 62,
+   "end": 62
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": "#motion.moving",
+   "start": 63,
+   "end": 63
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-more",
+   "start": 64,
+   "end": 64
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-more summary",
+   "start": 65,
+   "end": 65
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-more summary::after",
+   "start": 66,
+   "end": 66
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-more[open] summary::after",
+   "start": 67,
+   "end": 67
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-more .sub",
+   "start": 68,
+   "end": 68
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".hud-select",
+   "start": 69,
+   "end": 72
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".keys-hint",
+   "start": 74,
+   "end": 77
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".joystick",
+   "start": 78,
+   "end": 82
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".joystick::before",
+   "start": 83,
+   "end": 86
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".joystick-knob",
+   "start": 87,
+   "end": 90
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".control-bar",
+   "start": 92,
+   "end": 96
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn-group",
+   "start": 97,
+   "end": 97
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn, .mini-btn",
+   "start": 98,
+   "end": 102
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn",
+   "start": 103,
+   "end": 103
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".mini-btn",
+   "start": 104,
+   "end": 104
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn:disabled, .mini-btn:disabled",
+   "start": 106,
+   "end": 106
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn.active, .btn[aria-pressed=\"true\"]",
+   "start": 107,
+   "end": 107
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn-primary.armed",
+   "start": 108,
+   "end": 108
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn-park.active, .btn-park[aria-pressed=\"true\"]",
+   "start": 109,
+   "end": 109
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".btn-stop",
+   "start": 110,
+   "end": 110
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".speed-wrap",
+   "start": 113,
+   "end": 116
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".speed-lbl",
+   "start": 117,
+   "end": 117
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": "#speed",
+   "start": 118,
+   "end": 118
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": "#speed-value",
+   "start": 119,
+   "end": 119
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".parking-panel",
+   "start": 121,
+   "end": 125
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".parking-head",
+   "start": 126,
+   "end": 126
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": "#parking-map",
+   "start": 127,
+   "end": 127
+  },
+  {
+   "path": "src/ugv/static/styles.css",
+   "kind": "css",
+   "name": ".parking-panel .mono",
+   "start": 128,
+   "end": 128
+  },
+  {
+   "path": "src/ugv/static/tactical.js",
+   "kind": "js_id",
+   "name": "#tactical-bev",
+   "start": 3,
+   "end": 3
+  },
+  {
+   "path": "src/ugv/static/tactical.js",
+   "kind": "js_func",
+   "name": "draw",
+   "start": 8,
+   "end": 8
+  },
+  {
+   "path": "src/ugv/static/tactical.js",
+   "kind": "js_func",
+   "name": "toPx",
+   "start": 17,
+   "end": 17
+  }
+ ],
+ "runs": [
+  {
+   "path": "calibration/runs/l7/20261113-180033-watch-first/summary.json",
+   "run_id": "20261113-180033-watch-first",
+   "outcome": "watch",
+   "start": [
+    0.9934901921876129,
+    0.26661099174133773,
+    -1.2714207780470916
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-180312-watch-klt/summary.json",
+   "run_id": "20261113-180312-watch-klt",
+   "outcome": "watch",
+   "start": [
+    0.9739868743821745,
+    0.2873107059482901,
+    -1.2460756088361447
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-181040-probe-axes/summary.json",
+   "run_id": "20261113-181040-probe-axes",
+   "outcome": "probe",
+   "start": [
+    1.0011728264570305,
+    0.3538854897481083,
+    -1.1194857656903086
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-181438-stage-toD/summary.json",
+   "run_id": "20261113-181438-stage-toD",
+   "outcome": "arrived",
+   "start": [
+    0.899623797130961,
+    0.1985056927394816,
+    -1.074770511216257
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-181622-stage-front/summary.json",
+   "run_id": "20261113-181622-stage-front",
+   "outcome": "arrived",
+   "start": [
+    0.5335186499733106,
+    0.9347190138442574,
+    -0.4401868196461281
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-181848-watch-shutter4ms/summary.json",
+   "run_id": "20261113-181848-watch-shutter4ms",
+   "outcome": "watch",
+   "start": [
+    0.02323091033389974,
+    1.0068998915849179,
+    0.04681450156952316
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-182030-watch-shutter4ms-b/summary.json",
+   "run_id": "20261113-182030-watch-shutter4ms-b",
+   "outcome": "watch",
+   "start": [
+    0.01814922404697809,
+    1.0048684679047892,
+    0.05109535913887564
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-182150-policy-ep1-front/summary.json",
+   "run_id": "20261113-182150-policy-ep1-front",
+   "outcome": "timeout",
+   "start": [
+    -0.007551513448787645,
+    1.007544932648678,
+    0.04902377276465054
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-182413-stage-front2/summary.json",
+   "run_id": "20261113-182413-stage-front2",
+   "outcome": "stage",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-182536-stage-front3/summary.json",
+   "run_id": "20261113-182536-stage-front3",
+   "outcome": "arrived",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-182645-policy-ep2-mean/summary.json",
+   "run_id": "20261113-182645-policy-ep2-mean",
+   "outcome": "lost",
+   "start": [
+    -0.016744310047670272,
+    0.9959285272018514,
+    -0.019486568389582626
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-183026-stage-front4/summary.json",
+   "run_id": "20261113-183026-stage-front4",
+   "outcome": "arrived",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-183140-policy-ep3-p0/summary.json",
+   "run_id": "20261113-183140-policy-ep3-p0",
+   "outcome": "policy",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-183316-stage-front5/summary.json",
+   "run_id": "20261113-183316-stage-front5",
+   "outcome": "stage",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-183432-policy-ep3-p0/summary.json",
+   "run_id": "20261113-183432-policy-ep3-p0",
+   "outcome": "policy",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-183626-watch-spawn/summary.json",
+   "run_id": "20261113-183626-watch-spawn",
+   "outcome": "watch",
+   "start": [
+    -0.3457395471069618,
+    0.7164396486149728,
+    0.41572468507442517
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-183731-stage-front6/summary.json",
+   "run_id": "20261113-183731-stage-front6",
+   "outcome": "timeout",
+   "start": [
+    -0.884505871620942,
+    -0.021867596658920886,
+    1.5396104903638177
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-183857-policy-ep3-p0/summary.json",
+   "run_id": "20261113-183857-policy-ep3-p0",
+   "outcome": "timeout",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-184454-stage-restage/summary.json",
+   "run_id": "20261113-184454-stage-restage",
+   "outcome": "arrived",
+   "start": [
+    -0.03040449462729563,
+    1.1077522096999335,
+    -0.11204590463869923
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-184652-policy-gyro-zero/summary.json",
+   "run_id": "20261113-184652-policy-gyro-zero",
+   "outcome": "timeout",
+   "start": [
+    0.5738025323203746,
+    0.7729791870682987,
+    -0.5073796525678569
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-184814-stage-restage-lp/summary.json",
+   "run_id": "20261113-184814-stage-restage-lp",
+   "outcome": "arrived",
+   "start": [
+    -0.0002546785170300305,
+    0.42209144060438286,
+    -0.034926612766814635
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-184908-policy-gyro-lp/summary.json",
+   "run_id": "20261113-184908-policy-gyro-lp",
+   "outcome": "timeout",
+   "start": [
+    -0.11598943714352662,
+    0.9954346884315212,
+    0.13489810025100413
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-185039-stage-park-0.7/summary.json",
+   "run_id": "20261113-185039-stage-park-0.7",
+   "outcome": "arrived",
+   "start": null,
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-185204-stage-park-0.45/summary.json",
+   "run_id": "20261113-185204-stage-park-0.45",
+   "outcome": "arrived",
+   "start": [
+    -0.0012417923681811481,
+    0.6726298612432071,
+    0.0015192328450018484
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  },
+  {
+   "path": "calibration/runs/l7/20261113-193354-watch-diag/summary.json",
+   "run_id": "20261113-193354-watch-diag",
+   "outcome": "watch",
+   "start": [
+    0.7466489482867742,
+    -0.04867761849181411,
+    -1.4844643753452071
+   ],
+   "end": null,
+   "duration": null,
+   "target": null
+  }
+ ]
+}

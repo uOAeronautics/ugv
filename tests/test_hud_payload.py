@@ -83,3 +83,19 @@ def test_static_hud_ids_present_and_legacy_preserved():
     assert "parking.gear" in tactical or "parking" in tactical
     assert "sigma" in tactical  # covariance ellipse
     assert "wheel" in tactical.lower()
+
+
+def test_perf_profiler_panel_static_assets():
+    html = (STATIC / "index.html").read_text()
+    for dom_id in (
+        "perf-toggle", "perf-panel", "perf-close",
+        "perf-summary", "perf-chart", "perf-legend", "perf-details",
+    ):
+        assert f'id="{dom_id}"' in html, dom_id
+    css = (STATIC / "styles.css").read_text()
+    for sel in (".perf-panel", "#perf-chart", ".perf-legend", ".perf-details"):
+        assert sel in css, sel
+    assert "backdrop-filter" not in css
+    app_js = (STATIC / "app.js").read_text()
+    for token in ("perf-toggle", "perf-close", "perf-chart", "drawPerfChart"):
+        assert token in app_js, token

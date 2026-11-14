@@ -968,11 +968,16 @@ class ArucoFollower:
                 self.skipped_frames += max(0, sequence - self.last_sequence - 1)
             self.last_sequence = sequence
             started = time.monotonic()
+            t_aruco0 = time.perf_counter()
             detections = await asyncio.to_thread(self.track_all, frame)
+            aruco_ms = (time.perf_counter() - t_aruco0) * 1000.0
             if not self.enabled:
                 continue
             completed = time.monotonic()
             self.processing_ms = (completed - started) * 1000
+            perf = getattr(self.controller, "perf", None)
+            if perf is not None:
+                perf.record("aruco_ms", aruco_ms)
             self.completed_at.append(completed)
             self.source_at = captured_at
             if completed - captured_at > 0.45:

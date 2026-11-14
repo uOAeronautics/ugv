@@ -203,6 +203,7 @@ function render(next) {
 
   drawAruco(next);
   window.renderParking?.(next.parking, next);
+  schedulePerfDraw();
 }
 
 function connect() {
@@ -323,5 +324,293 @@ joystick.addEventListener("pointercancel", releaseStick);
 window.addEventListener("blur", () => stop("window-blur"));
 document.addEventListener("visibilitychange", () => { if (document.hidden) stop("hidden"); });
 window.addEventListener("pagehide", () => stop("pagehide"));
+
+const perfPanel = $("#perf-panel");
+const perfToggle = $("#perf-toggle");
+const perfClose = $("#perf-close");
+const perfChart = $("#perf-chart");
+const perfSummary = $("#perf-summary");
+const perfLegend = $("#perf-legend");
+const perfDetails = $("#perf-details");
+
+const PERF_LEGEND = [
+  ["Decode", "#38bdf8"],
+  ["Detect", "#818cf8"],
+  ["SubPix", "#c084fc"],
+  ["PnP", "#f472b6"],
+  ["Plan/Ctrl", "#34d399"],
+  ["Drive", "#fbbf24"],
+  ["ArUco", "#fb7185"],
+  ["Cam/IMU/IO", "#60a5fa"],
+];
+
+if (perfLegend) {
+  perfLegend.innerHTML = PERF_LEGEND.map(
+    ([label, color]) => `<span class="perf-legend-item"><span class="perf-swatch" style="background:${color}"></span>${label}</span>`
+  ).join("");
+}
+
+let perfRaf = 0;
+
+function readStage(stages, names, fallbackMs = 0) {
+  for (const name of names) {
+    const raw = stages?.[name];
+    if (raw == null) continue;
+    if (typeof raw === "number") {
+      const v = Number.isFinite(raw) ? raw : 0;
+      return { last_ms: v, p50_ms: v, p95_ms: v, hz: null };
+    }
+    if (typeof raw === "object") {
+      const last = Number(raw.last_ms ?? raw.ms ?? raw.last ?? 0);
+      return {
+        last_ms: Number.isFinite(last) ? last : 0,
+        p50_ms: raw.p50_ms != null && Number.isFinite(Number(raw.p50_ms)) ? Number(raw.p50_ms) : null,
+        p95_ms: raw.p95_ms != null && Number.isFinite(Number(raw.p95_ms)) ? Number(raw.p95_ms) : null,
+        hz: raw.hz != null && Number.isFinite(Number(raw.hz)) ? Number(raw.hz) : null,
+      };
+    }
+  }
+  const fb = Number(fallbackMs);
+  return { last_ms: Number.isFinite(fb) ? fb : 0, p50_ms: null, p95_ms: null, hz: null };
+}
+
+function sumStats(parts, agg) {
+  const last = agg?.last_ms > 0 ? agg.last_ms : parts.reduce((s, p) => s + p.last_ms, 0);
+  const hasP50 = agg?.p50_ms != null || parts.some((p) => p.p50_ms != null);
+  const hasP95 = agg?.p95_ms != null || parts.some((p) => p.p95_ms != null);
+  const p50 = agg?.p50_ms != null ? agg.p50_ms : (hasP50 ? parts.reduce((s, p) => s + (p.p50_ms ?? p.last_ms), 0) : null);
+  const p95 = agg?.p95_ms != null ? agg.p95_ms : (hasP95 ? parts.reduce((s, p) => s + (p.p95_ms ?? p.last_ms), 0) : null);
+  return { last, p50, p95 };
+}
+
+function fmtMs(v) {
+  return v == null || !Number.isFinite(v) ? "—" : v.toFixed(1);
+}
+
+function drawPerfChart(next) {
+  if (!perfPanel || perfPanel.hidden || !perfChart) return;
+  const ctx = perfChart.getContext("2d");
+  if (!ctx) return;
+
+  const dpr = devicePixelRatio || 1;
+  const cssW = perfChart.clientWidth || 380;
+  const cssH = perfChart.clientHeight || 176;
+  const targetW = Math.round(cssW * dpr);
+  const targetH = Math.round(cssH * dpr);
+  if (perfChart.width !== targetW || perfChart.height !== targetH) {
+    perfChart.width = targetW;
+    perfChart.height = targetH;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const perf = next?.perf && typeof next.perf === "object" ? next.perf : {};
+  const stages = perf.stages && typeof perf.stages === "object" ? perf.stages : {};
+  const sys = perf.system && typeof perf.system === "object" ? perf.system : {};
+  const budgetMs = Number(perf.budget_ms) > 0 ? Number(perf.budget_ms) : 33.33;
+
+  const decode = readStage(stages, ["decode_ms", "decode"]);
+  const detect = readStage(stages, ["detect_ms", "detect"]);
+  const subpix = readStage(stages, ["subpix_ms", "subpix"]);
+  const pnp = readStage(stages, ["pnp_ms", "pnp"]);
+  const visionAgg = readStage(stages, ["autopark_vision", "vision", "vision_ms"]);
+  const plan = readStage(stages, ["plan_ms", "plan"]);
+  const driveSt = readStage(stages, ["drive_ms", "drive", "ctrl_ms", "ctrl"]);
+  const loopAgg = readStage(stages, ["park_loop", "autopark_loop", "loop_ms"]);
+  const aruco = readStage(stages, ["aruco_ms", "aruco"], next?.aruco_processing_ms ?? 0);
+  const camAge = readStage(stages, ["camera_frame_age_ms", "cam_age_ms", "camera_age"], next?.camera_frame_age_ms ?? 0);
+  const imuAge = readStage(stages, ["imu_age_ms", "imu_age"], next?.imu_age_ms ?? 0);
+  const bcast = readStage(stages, ["broadcast_ms", "broadcast"]);
+
+  const visionStat = sumStats([decode, detect, subpix, pnp], visionAgg.last_ms > 0 ? visionAgg : null);
+  const visionTotalMs = visionStat.last;
+  const loopStat = sumStats(
+    [{ last_ms: visionTotalMs, p50_ms: visionStat.p50, p95_ms: visionStat.p95 }, plan, driveSt],
+    loopAgg.last_ms > 0 ? loopAgg : null
+  );
+  const arucoStat = sumStats([aruco], aruco);
+  const ioStat = sumStats([camAge, imuAge, bcast], null);
+
+  const rows = [
+    {
+      label: "AutoPark Vision",
+      stat: visionStat,
+      segments: (decode.last_ms + detect.last_ms + subpix.last_ms + pnp.last_ms) > 0 || visionAgg.last_ms === 0
+        ? [
+            { value: decode.last_ms, color: "#38bdf8" },
+            { value: detect.last_ms, color: "#818cf8" },
+            { value: subpix.last_ms, color: "#c084fc" },
+            { value: pnp.last_ms, color: "#f472b6" },
+          ]
+        : [{ value: visionAgg.last_ms, color: "#38bdf8" }],
+    },
+    {
+      label: "Park Loop",
+      stat: loopStat,
+      segments: [
+        { value: visionTotalMs, color: "#38bdf8" },
+        { value: plan.last_ms, color: "#34d399" },
+        { value: driveSt.last_ms, color: "#fbbf24" },
+      ],
+    },
+    {
+      label: "ArUco Tags",
+      stat: arucoStat,
+      segments: [{ value: aruco.last_ms, color: "#fb7185" }],
+    },
+    {
+      label: "IO / Age",
+      stat: ioStat,
+      segments: [
+        { value: camAge.last_ms, color: "#60a5fa" },
+        { value: imuAge.last_ms, color: "#2dd4bf" },
+        { value: bcast.last_ms, color: "#a78bfa" },
+      ],
+    },
+  ];
+
+  const bars = rows.map((r) => Math.max(r.stat.last, r.segments.reduce((s, seg) => s + seg.value, 0)));
+  const maxMs = Math.max(60, ...bars);
+
+  const padL = 8;
+  const padR = 8;
+  const topY = 20;
+  const bottomY = cssH - 6;
+  const plotW = Math.max(40, cssW - padL - padR);
+  const rowH = (bottomY - topY) / rows.length;
+  const xOf = (ms) => padL + Math.min(1, Math.max(0, ms / maxMs)) * plotW;
+
+  // Budget & 50ms dashed vertical markers
+  const markers = [
+    { ms: budgetMs, label: `${budgetMs.toFixed(1)}ms (30Hz)`, color: "rgba(52, 211, 153, 0.72)" },
+    { ms: 50, label: "50ms (20Hz)", color: "rgba(251, 191, 36, 0.65)" },
+  ];
+  ctx.save();
+  ctx.font = "600 9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.textBaseline = "top";
+  for (const m of markers) {
+    const x = Math.round(xOf(m.ms)) + 0.5;
+    ctx.strokeStyle = m.color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, topY - 2);
+    ctx.lineTo(x, bottomY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = m.color;
+    const w = ctx.measureText(m.label).width;
+    const tx = Math.min(cssW - padR - w, Math.max(padL, x - w / 2));
+    ctx.fillText(m.label, tx, 4);
+  }
+  ctx.restore();
+
+  rows.forEach((row, idx) => {
+    const ry = topY + idx * rowH;
+    const barY = ry + 15;
+    const barH = Math.max(8, Math.min(13, rowH - 20));
+
+    ctx.font = "600 10.5px system-ui, -apple-system, sans-serif";
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fillText(row.label, padL, ry + 2);
+
+    const statsText = `${fmtMs(row.stat.last)} / ${fmtMs(row.stat.p50)} / ${fmtMs(row.stat.p95)} ms`;
+    ctx.font = "500 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fillText(statsText, cssW - padR, ry + 2);
+
+    // Track background
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.beginPath();
+    ctx.roundRect(padL, barY, plotW, barH, 3);
+    ctx.fill();
+
+    // Stacked segments
+    let cursorX = padL;
+    for (const seg of row.segments) {
+      if (!(seg.value > 0)) continue;
+      const segW = Math.max(1.5, (seg.value / maxMs) * plotW);
+      const drawW = Math.min(padL + plotW - cursorX, segW);
+      if (drawW <= 0) break;
+      ctx.fillStyle = seg.color;
+      ctx.fillRect(cursorX, barY, drawW, barH);
+      cursorX += drawW;
+    }
+  });
+
+  if (perfSummary) {
+    const parts = [];
+    if (sys.cpu_pct != null) parts.push(`CPU ${Number(sys.cpu_pct).toFixed(0)}%`);
+    if (sys.temp_c != null) parts.push(`${Number(sys.temp_c).toFixed(0)}°C`);
+    if (sys.rss_mb != null) parts.push(`${Number(sys.rss_mb).toFixed(0)}MB`);
+    if (!parts.length && next?.camera_fps != null) {
+      parts.push(`Cam ${Number(next.camera_fps).toFixed(1)}Hz`);
+    }
+    perfSummary.textContent = parts.length ? parts.join(" · ") : "—";
+  }
+
+  if (perfDetails) {
+    const sysLine = [
+      sys.cpu_pct != null ? `cpu ${Number(sys.cpu_pct).toFixed(0)}%` : null,
+      sys.load1 != null ? `load ${Number(sys.load1).toFixed(2)}${sys.cores ? `/${sys.cores}c` : ""}` : null,
+      sys.rss_mb != null ? `rss ${Number(sys.rss_mb).toFixed(0)}MB` : null,
+      sys.temp_c != null ? `temp ${Number(sys.temp_c).toFixed(1)}°C` : null,
+    ].filter(Boolean).join(" · ") || "system: awaiting perf telemetry";
+
+    const camHz = next?.camera_fps != null ? `${Number(next.camera_fps).toFixed(1)}Hz` : "—";
+    const imuHz = next?.imu_rate_hz != null ? `${Number(next.imu_rate_hz).toFixed(0)}Hz` : "—";
+    const arucoHz = aruco.hz != null ? `${aruco.hz.toFixed(1)}Hz` : (next?.aruco_fps != null ? `${Number(next.aruco_fps).toFixed(1)}Hz` : "—");
+    const rateLine = `cam ${camHz} · imu ${imuHz} · aruco ${arucoHz} · budget ${budgetMs.toFixed(1)}ms`;
+
+    const stageKeys = Object.keys(stages);
+    const stageLine = stageKeys.length
+      ? stageKeys.slice(0, 6).map((k) => {
+          const s = readStage(stages, [k]);
+          const hz = s.hz != null ? `@${s.hz.toFixed(0)}Hz` : "";
+          return `${k.replace(/_ms$/, "")} ${fmtMs(s.p50_ms)}/${fmtMs(s.p95_ms)}${hz}`;
+        }).join(" · ")
+      : "last / p50 / p95 ms shown per row";
+
+    perfDetails.textContent = `${sysLine}
+${rateLine}
+${stageLine}`;
+  }
+}
+
+function schedulePerfDraw() {
+  if (!perfPanel || perfPanel.hidden) return;
+  if (perfRaf) return;
+  perfRaf = requestAnimationFrame(() => {
+    perfRaf = 0;
+    drawPerfChart(state);
+  });
+}
+
+function setPerfOpen(open) {
+  if (!perfPanel || !perfToggle) return;
+  perfPanel.hidden = !open;
+  perfToggle.setAttribute("aria-pressed", String(open));
+  perfToggle.classList.toggle("active", open);
+  if (open) {
+    const parkingPanel = $("#parking-panel");
+    const mapToggle = $("#map-toggle");
+    if (parkingPanel) parkingPanel.hidden = true;
+    if (mapToggle) {
+      mapToggle.setAttribute("aria-pressed", "false");
+      mapToggle.classList.remove("active");
+    }
+    schedulePerfDraw();
+  }
+}
+
+perfToggle?.addEventListener("click", () => setPerfOpen(Boolean(perfPanel?.hidden)));
+perfClose?.addEventListener("click", () => setPerfOpen(false));
+$("#map-toggle")?.addEventListener("click", () => {
+  const parkingPanel = $("#parking-panel");
+  if (parkingPanel && !parkingPanel.hidden) setPerfOpen(false);
+});
 
 connect();

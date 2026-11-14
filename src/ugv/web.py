@@ -18,6 +18,7 @@ from .dynamics_telemetry import DynamicsTelemetry
 from .motion import GyroMotion, MotionFault, ramp_wheels
 from .autopark import AutoParkRunner, TagDetector
 from .parking import ParkingEstimator, Pose2, DockingFeedback, gear_obstacles
+from .perf import PerfMonitor
 
 STATIC = Path(__file__).parent / "static"
 WATCHDOG_SECONDS = .60
@@ -78,6 +79,7 @@ class RobotState:
     auto_park_stage: str = "idle"
     auto_park_status: str = ""
     auto_park_pose: list[float] | None = None
+    perf: dict[str, Any] = field(default_factory=dict)
 
 class CameraStream:
     def __init__(self):
@@ -213,6 +215,8 @@ class RobotController:
         self.auto_park_task: asyncio.Task | None = None
         self.auto_park_owner: str | None = None
         self.auto_park_epoch: int = 0
+        self.perf = PerfMonitor()
+        self._perf_snapshot_at: float = 0.0
 
     CONTROLLERS = ("manual", "staged_ekf", "rl_student")
     RL_INFERENCE_BUDGET_MS = 20.0
@@ -706,6 +710,7 @@ class RobotController:
             )
             last_seq = -1
             while self.state.auto_park and self.auto_park_epoch == epoch:
+                loop_t0 = time.perf_counter()
                 if self.state.owner != cid or not self.state.armed:
                     self.state.auto_park_stage = "error"
                     self.state.auto_park_status = "auto-park ownership lost"
@@ -720,6 +725,8 @@ class RobotController:
                 if frame is not None and seq != last_seq and frame_age is not None and frame_age <= 0.45:
                     last_seq = seq
                     rec = await asyncio.to_thread(detector.detect_jpeg, frame, cap)
+                    for k, v in detector.last_timings.items():
+                        self.perf.record(k, v)
                     if not self.state.auto_park or self.auto_park_epoch != epoch:
                         break
                 now = time.monotonic()
@@ -727,6 +734,7 @@ class RobotController:
                     self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None
                 ) else None
                 frame_age = (now - cap) if (frame is not None and cap) else None
+                plan_t0 = time.perf_counter()
                 cmd = runner.step(
                     now,
                     imu_age_s=imu_age,
@@ -735,15 +743,21 @@ class RobotController:
                     gyro_yaw_rad=math.radians(float(self.state.heading_deg)),
                     rec=rec,
                 )
+                self.perf.record("plan_ms", (time.perf_counter() - plan_t0) * 1000.0)
                 self.state.auto_park_stage = cmd.stage
                 self.state.auto_park_status = cmd.status
                 self.state.auto_park_pose = [round(float(v), 4) for v in cmd.pose] if cmd.pose is not None else None
+                drive_t0 = time.perf_counter()
                 if cmd.stop:
                     await self.stop(cmd.reason or "auto-park-stop", release=False)
+                    self.perf.record("drive_ms", (time.perf_counter() - drive_t0) * 1000.0)
+                    self.perf.record("autopark_loop_ms", (time.perf_counter() - loop_t0) * 1000.0)
                     if cmd.done or cmd.stage in ("parked", "blocked", "aborted", "error"):
                         break
                 else:
                     await self.drive(cid, cmd.forward, cmd.strafe, cmd.turn, 1800, autonomous=True, mode="auto-park")
+                    self.perf.record("drive_ms", (time.perf_counter() - drive_t0) * 1000.0)
+                    self.perf.record("autopark_loop_ms", (time.perf_counter() - loop_t0) * 1000.0)
                 await asyncio.sleep(0.03)
         except asyncio.CancelledError:
             raise
@@ -868,6 +882,10 @@ class RobotController:
             pass
         self.state.rls_scale = self._rls_scale()
         self.state.sysid_ready = self._sysid_ready()
+        now_perf = time.monotonic()
+        if not self.state.perf or (now_perf - self._perf_snapshot_at) >= 0.2:
+            self.state.perf = self.perf.snapshot()
+            self._perf_snapshot_at = now_perf
         p = asdict(self.state); p.update(clients=len(self.clients), you_are_owner=bool(cid and self.state.owner == cid), watchdog_ms=600)
         p.update(camera.metrics()); p.update(aruco.metrics())
         p["parking"] = self.parking.snapshot()
@@ -876,11 +894,13 @@ class RobotController:
         return {"type": "state", "state": p}
 
     async def broadcast(self):
+        t0 = time.perf_counter()
         dead = []
         for cid, ws in list(self.clients.items()):
             try: await ws.send_json(self.payload(cid))
             except Exception: dead.append(cid)
         for cid in dead: self.clients.pop(cid, None)
+        self.perf.record("broadcast_ms", (time.perf_counter() - t0) * 1000.0)
 
 controller = RobotController(); camera = CameraStream(); aruco = ArucoFollower(camera, controller)
 imu = ImuStream(controller.imu_sample, controller.imu_status)

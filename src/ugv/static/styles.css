@@ -126,3 +126,14 @@ html, body {
 .parking-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #parking-map { width: 100%; height: auto; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(4, 7, 12, 0.65); }
 .parking-panel .mono { font-size: 11px; color: #cbd5e1; white-space: pre-wrap; word-break: break-word; }
+
+.perf-panel { width: min(420px, calc(100vw - 28px)); }
+.perf-panel[hidden] { display: none; }
+#perf-chart {
+  width: 100%; height: auto; display: block;
+  border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(4, 7, 12, 0.65);
+}
+.perf-legend { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 10px; color: #cbd5e1; }
+.perf-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.perf-swatch { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+.perf-details { font-size: 11px; line-height: 1.45; }
