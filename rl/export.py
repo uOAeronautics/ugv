@@ -42,7 +42,7 @@ def main():
         h=ckpt.get("hidden", 64) or 64,
         head_w=ckpt.get("head_w", 64) or 64,
     )
-    model.load_state_dict(ckpt["student"] if "student" in ckpt else ckpt)
+    model.load_state_dict(ckpt["student"] if "student" in ckpt else ckpt, strict=False)
     model.eval()
     arrays = {
         k: v.detach().cpu().numpy()

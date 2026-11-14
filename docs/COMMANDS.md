@@ -108,6 +108,10 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 
 ### Developer, media & KB tools (`tools/`, `tests/`, `.agent_kb/`)
 
+| Command | Description |
+|---|---|
+| `uv run ugv-observatory` | UGV Research Observatory (port 8768) |
+
 | Purpose | Script |
 |---|---|
 | Read-only ArUco pipeline profiler on Pi | `tools/profile_aruco.py` |

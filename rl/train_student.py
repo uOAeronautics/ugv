@@ -16,12 +16,16 @@ cannot satisfy the <1 cm/s hold for 50 consecutive steps.
 from __future__ import annotations
 
 import argparse
+import json
 import math
+import statistics
 import time
+from collections import deque
+from pathlib import Path
 
 import torch
 import torch.nn as nn
-from models import RUNS, Critic, Student, gae_advantages
+from models import DYN_DIM, RUNS, Critic, Student, gae_advantages
 from sim import HIST, EnvConfig, MecanumVecEnv
 
 
@@ -90,11 +94,22 @@ def main():
         default=0.0,
         help="action-rate penalty weight (L0-gate teacher used 0.0)",
     )
-    ap.add_argument("--std0", type=float, default=0.3, help="initial exploration std")
+    ap.add_argument(
+        "--std0",
+        type=str,
+        default="0.3",
+        help="initial exploration std (scalar or comma-separated per-axis, e.g. '0.10,0.015,0.015')",
+    )
     ap.add_argument(
         "--reset-std",
         action="store_true",
         help="with --init, reset logstd to log(std0) instead of inheriting converged std",
+    )
+    ap.add_argument(
+        "--zero-yaw-init",
+        action="store_true",
+        help="with --init, zero row 2 of student.head[-2] so an L0/L1 mean_coef "
+        "checkpoint does not command uncalibrated yaw on L_real/consistent_particles",
     )
     ap.add_argument(
         "--aux-weight",
@@ -102,6 +117,55 @@ def main():
         default=0.1,
         help="LeWM/RMA aux supervision weight: MSE(aux_head(h), priv [pose,vel])",
     )
+    ap.add_argument(
+        "--adr",
+        action="store_true",
+        help="competence-gated Automatic Domain Randomization: advance the frontier "
+        "dr_scale when frontier envs clear the success/collision gate",
+    )
+    ap.add_argument(
+        "--adr-init",
+        type=float,
+        default=0.0,
+        help="initial frontier dr_scale when --adr is set (ignored without --adr)",
+    )
+    ap.add_argument(
+        "--dr-scale",
+        type=float,
+        default=1.0,
+        help="fixed dr_scale when --adr is NOT set (1.0 = current levels)",
+    )
+    ap.add_argument(
+        "--adr-step",
+        type=float,
+        default=0.05,
+        help="dr_scale increment when the competence gate passes",
+    )
+    ap.add_argument(
+        "--anchor-frac",
+        type=float,
+        default=0.20,
+        help="fraction of envs kept at low dr_scale [0, 0.2] under --adr",
+    )
+    ap.add_argument(
+        "--consistent-particles",
+        action="store_true",
+        help="sample only posterior particles with sound turn columns (L_chaos-style)",
+    )
+    ap.add_argument(
+        "--dyn-weight",
+        type=float,
+        default=0.05,
+        help="weight on dyn_head MSE loss predicting env.latent_dynamics()",
+    )
+    ap.add_argument(
+        "--metrics-jsonl",
+        type=str,
+        default="",
+        help="append per-iteration JSON metrics here (default: <out> with .metrics.jsonl suffix)",
+    )
+    ap.add_argument("--run-id", type=str, default="", help="tag this run (checkpoint + archive)")
+    ap.add_argument("--parent-id", type=str, default=None, help="parent run id for lineage")
     ap.add_argument(
         "--critic-warmup",
         type=int,
@@ -131,22 +195,35 @@ def main():
             use_mean_dynamics=not args.no_mean_dynamics,
             declare_parked=args.declare_parked,
             cam_hz=args.cam_hz,
+            dr_scale=args.adr_init if args.adr else args.dr_scale,
+            consistent_particles=args.consistent_particles,
         ),
     )
+    if args.adr:
+        env.set_dr_scale(args.adr_init, anchor_frac=args.anchor_frac)
+    if args.run_id:
+        print(f"run_id {args.run_id} parent {args.parent_id}", flush=True)
+    std_parts = [float(x) for x in str(args.std0).split(",") if x.strip()]
+    if len(std_parts) == 1:
+        std_init = torch.full((args.act_dim,), math.log(std_parts[0]), device=dev)
+    else:
+        assert len(std_parts) == args.act_dim, f"--std0 must have 1 or {args.act_dim} values"
+        std_init = torch.tensor([math.log(x) for x in std_parts], dtype=torch.float32, device=dev)
     student = Student(act_dim=args.act_dim, h=args.hidden, head_w=args.head_w).to(dev)
-    logstd = nn.Parameter(torch.full((args.act_dim,), math.log(args.std0), device=dev))
+    logstd = nn.Parameter(std_init.clone())
     ckpt_path = args.resume or args.init
     ck = None
     if ckpt_path:
         ck = torch.load(ckpt_path, map_location=dev)
-        try:
-            student.load_state_dict(ck["student"])
-        except RuntimeError:
-            student.load_state_dict(ck["student"], strict=False)  # pre-aux-head ckpt
+        # strict=False so legacy checkpoints (no dyn_head keys) warm-start cleanly
+        student.load_state_dict(ck["student"], strict=False)
+        if args.zero_yaw_init and args.init and args.act_dim >= 3:
+            student.head[-2].weight.data[2].zero_()
+            student.head[-2].bias.data[2].zero_()
         if "logstd" in ck and ck["logstd"].shape == logstd.shape:
             logstd.data.copy_(ck["logstd"])
         if args.reset_std and args.init:
-            logstd.data.fill_(math.log(args.std0))
+            logstd.data.copy_(std_init)
         print(f"{'resumed' if args.resume else 'warm-started'} from {ckpt_path}")
     critic = Critic().to(dev)
     if ck is not None and "critic" in ck:
@@ -167,6 +244,8 @@ def main():
     n = args.envs
     RUNS.mkdir(exist_ok=True)
     out = args.out or str(RUNS / f"student_ppo_{args.level}.pt")
+    metrics_jsonl_path = args.metrics_jsonl or str(Path(out).with_suffix(".metrics.jsonl"))
+    t_all = time.time()
 
     def save_ckpt():
         torch.save(
@@ -181,9 +260,24 @@ def main():
                 "head_w": args.head_w,
                 "act_dim": args.act_dim,
                 "stateful": args.stateful,
+                "run_id": args.run_id,
+                "parent_id": args.parent_id,
             },
             out,
         )
+
+    def _build_priv(obs_dict):
+        o = torch.cat([obs_dict["pose"], obs_dict["vel"]], dim=1)
+        c = env.coef.reshape(n, -1).clone()
+        # Pack Markov hold-timer progress + vision age + latent extrinsics into
+        # the trailing slots of c when real_plant (where coef rows 5..15 are 0)
+        # so the asymmetric critic predicts the +10 hold-still bonus accurately.
+        if env.real_plant:
+            c[:, 15] = env.still
+            c[:, 16] = env.vel_still
+            c[:, 17] = env.hist_age.clamp_max(5.0) / 5.0
+            c[:, 18:30] = env.latent_dynamics()
+        return torch.cat([o, c], dim=1)
 
     def apply_curric(it):
         # alpha=0 starts L0-like (dist 0.55-0.85 straight ahead, no latency,
@@ -210,21 +304,32 @@ def main():
             (float(tgt[0]), float(tgt[1])) if isinstance(tgt, tuple) else (float(tgt), float(tgt))
         )
         env.cfg.spawn_dist = (0.55 + alpha * (t_lo - 0.55), 0.85 + alpha * (t_hi - 0.85))
-        env.cfg.bearing_max = alpha * float(env.level["bearing"])
-        env.cfg.yaw_max = alpha * float(env.level["yaw"])
-        lat = env.level["latency"]
+        bearing = env.level.get("bearing")
+        env.cfg.bearing_max = alpha * float(bearing) if bearing is not None else None
+        yaw = env.level.get("yaw")
+        env.cfg.yaw_max = alpha * float(yaw) if yaw is not None else None
+        lat = env.level.get("latency")
         env.cfg.latency_override = (
             (alpha * float(lat[0]), alpha * float(lat[1]))
             if isinstance(lat, tuple)
-            else alpha * float(lat)
+            else (alpha * float(lat) if lat is not None else None)
         )
-        env.cfg.noise_override = alpha * float(env.level["noise"])
+        noise = env.level.get("noise")
+        env.cfg.noise_override = alpha * float(noise) if noise is not None else None
         cam_tgt = float(env.level.get("cam_hz", 50.0))
         env.cfg.cam_hz = env.cam_hz = 50.0 + alpha * (cam_tgt - 50.0)
 
     apply_curric(0)
     obs = env.reset()
     h_state = torch.zeros(1, n, args.hidden, device=dev) if args.stateful else None
+    # Rolling frontier-env outcomes for the ADR competence gate (frontier =
+    # envs [0, env.n_frontier) under --adr; all envs otherwise). Cohort tracking
+    # ensures pre-promotion episodes cannot contaminate post-promotion gates.
+    frontier_outcomes = {k: deque(maxlen=250) for k in ("succ", "coll", "timeout", "false_park")}
+    current_cohort = 0
+    env_cohort = torch.zeros(n, dtype=torch.long, device=dev)
+    episodes_since_adr_step = 0
+    iters_since_adr_step = 0
     # Critic warmup: the loaded critic was fitted to L0 returns, so its first
     # advantages on the noisy curriculum point the wrong way; 4 PPO epochs of
     # those gradients destroy the warm-started actor (iter1 coll 85->280 with
@@ -236,13 +341,14 @@ def main():
 
     for it in range(args.iters):
         t0 = time.time()
+        iters_since_adr_step += 1
         apply_curric(it)
         if it == args.critic_warmup and args.critic_warmup > 0:
             student.requires_grad_(True)
             logstd.requires_grad_(True)
-        HS, A, LP, R, D, V, PR = [], [], [], [], [], [], []
+        HS, A, LP, R, D, V, PR, BDYN = [], [], [], [], [], [], [], []
         h_init = h_state.clone() if args.stateful else None
-        ep_succ = ep_coll = 0
+        ep_succ = ep_coll = ep_tout = ep_fp = ep_done = 0
         for _t in range(args.steps):
             h = obs["student"]
             with torch.no_grad():
@@ -255,12 +361,12 @@ def main():
                 dist = torch.distributions.Normal(mean, logstd.exp())
                 a = dist.sample()
                 lp = dist.log_prob(a).sum(-1)
-                o = torch.cat([obs["pose"], obs["vel"]], dim=1)
-                priv = torch.cat([o, env.coef.reshape(n, -1)], dim=1)
+                priv = _build_priv(obs)
                 v = critic(priv)
             obs2, r, done, info = env.step(a)
             HS.append((h[:, -1, :] if args.stateful else h).detach())
             PR.append(priv.detach())
+            BDYN.append(env.latent_dynamics().detach())
             A.append(a.detach())
             LP.append(lp.detach())
             R.append(r.detach())
@@ -268,33 +374,76 @@ def main():
             V.append(v.detach())
             ep_succ += int(info["success"].sum())
             ep_coll += int(info["collision"].sum())
+            ep_tout += int(info["timeout"].sum())
+            ep_fp += int(info["false_park"].sum())
+            ep_done += int(done.sum())
             idx = torch.where(done)[0]
             if args.stateful:
                 h_state = h_next.detach()
                 if len(idx):
                     h_state[:, idx] = 0.0
             if len(idx):
+                fr = idx[(idx < env.n_frontier) & (env_cohort[idx] == current_cohort)]
+                if fr.numel():
+                    for name, key in (
+                        ("succ", "success"),
+                        ("coll", "collision"),
+                        ("timeout", "timeout"),
+                        ("false_park", "false_park"),
+                    ):
+                        frontier_outcomes[name].extend(bool(v) for v in info[key][fr].tolist())
+                    episodes_since_adr_step += int(fr.numel())
                 env.reset(idx.cpu())
+                env_cohort[idx] = current_cohort
                 obs2 = env._privileged()
             obs = obs2
         HSs = torch.stack(HS)
         PRs = torch.stack(PR)
+        DYNs = torch.stack(BDYN)
         A = torch.stack(A)
         LP = torch.stack(LP)
         R = torch.stack(R)
         D = torch.stack(D)
         V = torch.stack(V)
         with torch.no_grad():
-            o = torch.cat([obs["pose"], obs["vel"]], dim=1)
-            last_v = critic(torch.cat([o, env.coef.reshape(n, -1)], dim=1))
+            last_v = critic(_build_priv(obs))
             adv, ret = gae_advantages(R, V, D, last_v, args.gamma, args.lam)
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+        # Competence-gated ADR: only move the frontier once enough fresh
+        # cohort-matched frontier episodes AND iterations have passed.
+        if args.adr and episodes_since_adr_step >= 256 and iters_since_adr_step >= 8:
+
+            def _rate(k):
+                d = frontier_outcomes[k]
+                return statistics.fmean(d) if len(d) else 0.0
+
+            fsr, fcr = _rate("succ"), _rate("coll")
+            if fsr >= 0.78 and fcr <= 0.08:
+                env.set_dr_scale(
+                    min(1.0, env.frontier_scale + args.adr_step), anchor_frac=args.anchor_frac
+                )
+                current_cohort += 1
+                for d_q in frontier_outcomes.values():
+                    d_q.clear()
+                episodes_since_adr_step = 0
+                iters_since_adr_step = 0
+                print(f"adr: frontier -> {env.frontier_scale:.2f}", flush=True)
+            elif fsr < 0.35 and iters_since_adr_step >= 16:
+                env.set_dr_scale(
+                    max(0.0, env.frontier_scale - 0.5 * args.adr_step), anchor_frac=args.anchor_frac
+                )
+                current_cohort += 1
+                for d_q in frontier_outcomes.values():
+                    d_q.clear()
+                episodes_since_adr_step = 0
+                iters_since_adr_step = 0
+                print(f"adr: eased frontier -> {env.frontier_scale:.2f}", flush=True)
         if args.ent_anneal:
             ent = 0.01 * (1 - 0.9 * it / max(args.iters - 1, 1))
         else:
             ent = args.ent
         mb = max(1, n // args.minibatches)
-        pl = vl = 0.0
+        pl = vl = al = dl = 0.0
         for _e in range(args.epochs):
             idx_all = torch.randperm(n, device=dev)
             for b in range(0, n, mb):
@@ -322,6 +471,10 @@ def main():
                 loss_aux = (aux_pred - aux_tgt).pow(2).mean() + 0.01 * torch.relu(
                     1.0 - h_last.std(dim=0)
                 ).mean()
+                # RMA/privileged extrinsics: hidden state -> normalized dynamics
+                dyn_pred = student.predict_dynamics(h_last)
+                dyn_tgt = DYNs[:, sl].reshape(-1, DYN_DIM)
+                loss_dyn = (dyn_pred - dyn_tgt).pow(2).mean()
                 dist = torch.distributions.Normal(mean, logstd.exp())
                 nlp = dist.log_prob(A[:, sl].reshape(-1, args.act_dim)).sum(-1)
                 ratio = torch.exp(nlp - LP[:, sl].reshape(-1))
@@ -338,25 +491,84 @@ def main():
                 if it < args.critic_warmup:
                     loss = loss_v
                 else:
-                    loss = loss_p + loss_v + ent * loss_e + args.aux_weight * loss_aux
+                    loss = (
+                        loss_p
+                        + loss_v
+                        + ent * loss_e
+                        + args.aux_weight * loss_aux
+                        + args.dyn_weight * loss_dyn
+                    )
                 loss.backward()
                 nn.utils.clip_grad_norm_(params, 0.5)
                 opt.step()
                 opt.zero_grad()
-                pl, vl, al = (
+                pl, vl, al, dl = (
                     float(loss_p.detach()),
                     float(loss_v.detach()),
                     float(loss_aux.detach()),
+                    float(loss_dyn.detach()),
                 )
         sched.step()
+        std = float(logstd.exp().mean().detach())
+        sps = int(args.steps * n / max(time.time() - t0, 1e-9))
+        if ep_done > 0:
+            sr, cr, tr, fpr = (
+                ep_succ / ep_done,
+                ep_coll / ep_done,
+                ep_tout / ep_done,
+                ep_fp / ep_done,
+            )
+        else:
+            sr = cr = tr = fpr = 0.0
+        metrics = {
+            "iter": it,
+            "dr_scale": round(env.frontier_scale, 4),
+            "succ": round(sr, 4),
+            "coll": round(cr, 4),
+            "timeout": round(tr, 4),
+            "false_park": round(fpr, 4),
+            "pol": round(pl, 5),
+            "val": round(vl, 5),
+            "aux": round(al, 5),
+            "dyn": round(dl, 5),
+            "std": round(std, 4),
+            "sps": sps,
+            "wall_s": round(time.time() - t0, 2),
+        }
+        with open(metrics_jsonl_path, "a") as mf:
+            mf.write(json.dumps(metrics) + "\n")
         print(
-            f"iter {it} pol {pl:.4f} val {vl:.4f} aux {al:.4f} std {float(logstd.exp().mean().detach()):.3f} succ {ep_succ} coll {ep_coll} {time.time() - t0:.1f}s",
+            f"iter {it} pol {pl:.4f} val {vl:.4f} aux {al:.4f} std {std:.3f} succ {ep_succ} coll {ep_coll} {time.time() - t0:.1f}s",
             flush=True,
         )
         if args.ckpt_every > 0 and (it + 1) % args.ckpt_every == 0:
             save_ckpt()
     save_ckpt()
     print(f"saved {out}")
+    if args.run_id:
+        # Un-evaluated run: record lineage with empty eval metrics so it is
+        # dominated on every Pareto frontier. Run evaluate.py for the gate.
+        try:
+            from experiment_tree import record_run
+
+            record_run(
+                args.run_id,
+                args.parent_id,
+                "student",
+                args.level,
+                {
+                    "dr_scale": round(env.frontier_scale, 4),
+                    "adr": bool(args.adr),
+                    "hidden": args.hidden,
+                    "head_w": args.head_w,
+                    "seed": args.seed,
+                    "note": "un-evaluated rollout metrics; run evaluate.py for the gate",
+                },
+                round(time.time() - t_all, 2),
+                {},
+            )
+        except Exception as exc:  # never fail the run on archive bookkeeping
+            print(f"warning: experiment_tree record failed: {exc}", flush=True)
 
 
 if __name__ == "__main__":

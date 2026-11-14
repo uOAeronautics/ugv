@@ -15,6 +15,7 @@ from sim import STUDENT_DIM
 RUNS = Path(__file__).resolve().parent / "runs"  # gitignored checkpoints/logs
 TEACHER_OBS = 6  # true pose(3) + true body velocity(3)
 PRIV_EXTRA = 48  # posterior-draw coefficients [16,3], critic only
+DYN_DIM = 12  # env.latent_dynamics() width; dyn_head predicts it (RMA extrinsics)
 
 
 class Actor(nn.Module):
@@ -55,12 +56,17 @@ class Student(nn.Module):
     """GRU history encoder + MLP head. Deploy architecture (default h=64).
 
     aux_head is training-only LeWM/RMA latent supervision: predicts privileged
-    [pose(3), vel(3)] from the GRU hidden state. export.py ships gru+head only,
-    so the .npz and src/ugv/policy.py forward are unchanged (0.0 ms Pi delta).
+    [pose(3), vel(3)] from the GRU hidden state. dyn_head is the RMA extrinsics
+    head: predicts the normalized privileged dynamics vector
+    (env.latent_dynamics(), DYN_DIM=12) for dynamics-aware training. Both are
+    training-only; export.py ships gru+head only, so the .npz and
+    src/ugv/policy.py forward are unchanged (0.0 ms Pi delta).
     """
 
     def __init__(self, obs_dim=STUDENT_DIM, act_dim=3, h=64, head_w=64):
         super().__init__()
+        # Module creation order (gru, head, aux_head, dyn_head) is fixed so
+        # existing checkpoints load; dyn_head is appended last.
         self.gru = nn.GRU(obs_dim, h, batch_first=True)
         self.head = nn.Sequential(
             nn.Linear(h, head_w),
@@ -71,6 +77,9 @@ class Student(nn.Module):
             nn.Tanh(),
         )
         self.aux_head = nn.Linear(h, 6)
+        self.dyn_head = nn.Linear(h, DYN_DIM)
+        nn.init.orthogonal_(self.dyn_head.weight, gain=1.0)
+        nn.init.zeros_(self.dyn_head.bias)
 
     def forward(self, hist, h0=None):
         _, h = self.gru(hist, h0)
@@ -79,6 +88,10 @@ class Student(nn.Module):
     def forward_seq(self, seq, h0=None):
         out, h = self.gru(seq, h0)
         return self.head(out), h
+
+    def predict_dynamics(self, h_seq: torch.Tensor) -> torch.Tensor:
+        """Normalized privileged dynamics vector from hidden state [.., h]."""
+        return self.dyn_head(h_seq)
 
     def n_params(self):
         return sum(p.numel() for p in self.parameters())

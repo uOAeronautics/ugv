@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UGV Research Observatory</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">UGV Research Observatory</div>
+    <div class="pills">
+      <span class="pill" id="pill-eval">Eval runs: —</span>
+      <span class="pill" id="pill-train">Training logs: —</span>
+      <span class="pill" id="pill-l7">L7 field runs: —</span>
+      <span class="pill" id="pill-pi">Pi4B: —</span>
+    </div>
+    <label class="autorefresh"><input type="checkbox" id="auto-refresh"> Auto-refresh 5s</label>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="leaderboard">Leaderboard</button>
+    <button class="tab" data-tab="curves">Training & ADR Curves</button>
+    <button class="tab" data-tab="replay">2D Layout & Episode Replay</button>
+    <button class="tab" data-tab="contract">Sim-vs-Real Contract</button>
+  </nav>
+
+  <main>
+    <section id="tab-leaderboard" class="tabpane active">
+      <div class="filters">
+        <div class="filter-group" id="level-filters"></div>
+        <div class="filter-group" id="track-filters"></div>
+        <label class="toggle"><input type="checkbox" id="pareto-only"> Pareto only</label>
+        <input type="search" id="search-box" placeholder="Search run id...">
+      </div>
+      <div class="cards" id="level-cards"></div>
+      <div class="table-wrap">
+        <table id="leaderboard-table"><thead><tr>
+          <th data-col="run_id">Run ID</th><th data-col="track">Track</th><th data-col="level">Level</th>
+          <th data-col="success">Success/Eps</th><th>Wilson 95% CI</th><th data-col="collisions">Collisions</th><th data-col="timeouts">Timeouts</th>
+          <th data-col="time_median">Med Time (s)</th><th data-col="pos_p95">Pos p95 (mm)</th><th data-col="yaw_p95_deg">Yaw p95 (deg)</th><th>Badges</th><th>Parent ID</th><th>Diff</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="diff-panel" id="diff-panel" hidden></div>
+      <details class="l7-section">
+        <summary>Real Pi L7 Field Runs</summary>
+        <div class="table-wrap">
+          <table id="l7-table"><thead><tr>
+            <th>Run</th><th>Mode</th><th>Outcome</th><th>Duration</th><th>Hz</th><th>vision_ms_p50</th><th>loop_ms_p50</th><th>loop_ms_p95</th><th>Replay</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </details>
+    </section>
+
+    <section id="tab-curves" class="tabpane">
+      <div class="curves-layout">
+        <aside class="run-selector" id="curve-runs"></aside>
+        <div class="charts">
+          <div class="chart-card"><canvas id="chart1"></canvas><div class="chart-title">dr_scale & succ/coll rate</div></div>
+          <div class="chart-card"><canvas id="chart2"></canvas><div class="chart-title">pol_loss & val_loss</div></div>
+          <div class="chart-card"><canvas id="chart3"></canvas><div class="chart-title">aux_loss & dyn_loss</div></div>
+          <div class="chart-card"><canvas id="chart4"></canvas><div class="chart-title">std & entropy / mean_return & sps</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-replay" class="tabpane">
+      <div class="replay-layout">
+        <aside class="controls">
+          <h3>Bundle</h3>
+          <select id="bundle-select"></select>
+          <h3>Rollout Trigger</h3>
+          <form id="rollout-form">
+            <label>Policy <select name="policy"><option value="student">student</option></select></label>
+            <label>Level <select name="level"><option value="L1">L1</option></select></label>
+            <label>Episodes <input name="episodes" type="number" min="1" max="20" value="5"></label>
+            <label>Seed <input name="seed" type="number" value="11"></label>
+            <button type="submit">Run</button>
+          </form>
+          <div id="rollout-status"></div>
+          <h3>Episodes</h3>
+          <div class="ep-filters" id="ep-filters"></div>
+          <ul id="episode-list"></ul>
+          <h3>Transport</h3>
+          <div class="transport">
+            <button id="btn-play">Play</button>
+            <button id="btn-step-back">-1</button>
+            <button id="btn-step-fwd">+1</button>
+            <select id="speed-sel"><option>0.25x</option><option>0.5x</option><option selected>1x</option><option>2x</option><option>4x</option></select>
+          </div>
+          <input type="range" id="scrubber" min="0" max="0" value="0">
+          <div id="time-readout" class="mono">t=0.00s step 0</div>
+          <h3>Layers</h3>
+          <div id="layers"></div>
+        </aside>
+        <div class="canvas-area">
+          <canvas id="replay-canvas"></canvas>
+          <div id="endframe-card" class="endframe" hidden></div>
+          <div class="strips">
+            <canvas id="strip1"></canvas>
+            <canvas id="strip2"></canvas>
+            <canvas id="strip3"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-contract" class="tabpane">
+      <div class="contract-layout">
+        <select id="contract-run"></select>
+        <div id="contract-banner" class="banner"></div>
+        <div id="contract-sim-source" class="sim-source" style="font-size:11px;color:var(--muted);margin:4px 0 8px"></div>
+        <div id="contract-checks" class="checks"></div>
+        <div id="contract-channels" class="channels"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

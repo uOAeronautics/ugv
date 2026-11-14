@@ -109,6 +109,38 @@ LEVELS = {
         area=12.0,
         cam_hz=30.0,
     ),
+    "L_chaos": dict(
+        # Chaos level: wide spawn, full posterior with turn-column-consistent
+        # particles only, bursty vision drops, blind-approach blackouts, and
+        # heavy-but-bounded DR (see EnvConfig dr_scale and set_dr_scale()).
+        dist=(0.5, 2.5),
+        bearing_rad=(-1.2, 1.2),
+        yaw_rad=(-math.pi, math.pi),
+        pos_noise_xy=0.015,
+        pos_noise_z=0.03,  # SE(2): reserved, no z axis on the tag; kept for schema parity
+        yaw_noise=0.06,
+        latency_steps=(1, 6),
+        drops=(0.10, 0.30),
+        burst_drops=True,
+        outliers=0.02,
+        blackout_prob=0.008,
+        blackout_len=(15, 50),  # camera frames; converted to seconds via dt
+        under_drone_loss=True,
+        area_scale=2.5,
+        full_posterior=True,
+        randomize_dynamics=True,
+        consistent_particles=True,
+        wheel_fault_prob=0.10,
+        floor_slip_prob=0.015,
+        action_delay_prob=0.5,
+        real_plant=True,
+        duty_cap=0.44,
+        min_tag_range=0.40,
+        cam_hz_range=(10.0, 30.0),
+        gyro_noise_std=(0.05, 0.70),
+        disturbance_std=0.03,
+        reanchor_imu_yaw=True,
+    ),
     "L_real": dict(
         dist=(0.5, 1.5),
         bearing=30.0,
@@ -181,6 +213,17 @@ class EnvConfig:
     gyro_noise_std: float | tuple[float, float] | None = None  # gyro white noise std (rad/s)
     cam_hz_range: tuple[float, float] | None = None  # per-env valid-pose rate range (Hz)
     min_tag_range: float | None = None  # tag loss range threshold when under_drone_loss is True
+    # --- Domain-randomization scaling (Deliverable A) ---
+    dr_scale: float = 1.0  # 0 = nominal/easy anchor, 1 = full distribution
+    consistent_particles: bool = False  # sample only turn-consistent posterior particles
+    burst_drops: bool = False  # Markov-sticky vision dropouts (0.70*s retention)
+    disturbance_std: float = 0.0  # per-step body-frame impulse std (m/s, rad/s), x s
+    reanchor_imu_yaw: bool = False  # pull imu_yaw toward the tag on valid ticks
+    spawn_bearing: tuple | None = None  # rad, overrides level bearing (radians if set)
+    spawn_yaw: tuple | None = None  # rad, overrides level yaw
+    pos_noise_xy: float | None = None  # absolute XY tag noise std; overrides noise model
+    yaw_noise: float | None = None  # absolute yaw tag noise std; overrides noise model
+    pos_noise_z: float | None = None  # reserved (SE(2): no z); kept for schema parity
 
 
 class MecanumVecEnv:
@@ -270,7 +313,270 @@ class MecanumVecEnv:
         self.cmd_ring = torch.zeros(n, _CMD_K, 3, device=dev)
         self.cmd_count = torch.zeros(n, dtype=torch.long, device=dev)
         self.cmd_head = 0
+        # ---- effective config: cfg overrides level dict (existing levels carry
+        # none of the new keys, so they all resolve to the declared defaults) ----
+        self.eff_consistent = bool(
+            cfg.consistent_particles or self.level.get("consistent_particles", False)
+        )
+        self.eff_burst = bool(cfg.burst_drops or self.level.get("burst_drops", False))
+        self.eff_reanchor = bool(cfg.reanchor_imu_yaw or self.level.get("reanchor_imu_yaw", False))
+        self.eff_disturbance = float(
+            cfg.disturbance_std
+            if cfg.disturbance_std > 0
+            else self.level.get("disturbance_std", 0.0)
+        )
+        self.eff_floor_slip = float(self.level.get("floor_slip_prob", 0.0))
+        self.eff_wheel_fault = float(self.level.get("wheel_fault_prob", 0.0))
+        self.eff_action_delay = float(self.level.get("action_delay_prob", 0.0))
+        self.eff_randomize = bool(self.level.get("randomize_dynamics", True))
+        self.eff_latency_steps = self.level.get("latency_steps")
+        self.eff_blackout_prob = float(self.level.get("blackout_prob", 0.0))
+        self.eff_blackout_len = self.level.get("blackout_len_steps") or self.level.get(
+            "blackout_len"
+        )
+        self.area = (
+            float(self.level["area"])
+            if "area" in self.level
+            else (float(self.level.get("area_scale", 1.0)) * 1.5)
+        )
+        # Blackout is a per-env tensor (steps x dt); legacy levels hold the level
+        # constant in every slot (bit-identical values to the old float).
+        self.blackout_total = torch.zeros(n, device=dev)
+        # Integer latency in sim steps; _delayed_pose reads this.
+        self.latency_steps = torch.zeros(n, dtype=torch.long, device=dev)
+        # Camera period in sim steps (rounded 1/hz/dt); latent_dynamics col 11.
+        self.cam_period_steps = torch.ones(n, dtype=torch.long, device=dev)
+        # Per-env effective min tag range (0.15 m .. cfg.min_tag_range).
+        self.env_min_tag_range = torch.full((n,), 0.30, device=dev)
+        # ADR frontier bookkeeping: envs [0, n_frontier) train at frontier_scale,
+        # the rest anchor at low dr_scale (no RNG involved).
+        self.frontier_scale = float(cfg.dr_scale)
+        self.anchor_frac = 0.0
+        self.anchor_max = 0.2
+        self.n_frontier = n
+        self.dr_scale = torch.full((n,), float(cfg.dr_scale), device=dev)
+        # Per-episode action delay (posterior-plant path only).
+        self.action_delay = torch.zeros(n, dtype=torch.long, device=dev)
+        # Markov-sticky vision dropout state (burst_drops).
+        self.drop_streak = torch.zeros(n, dtype=torch.long, device=dev)
+        self.wheel_fault = torch.zeros(n, dtype=torch.bool, device=dev)
+        self.particle_id = torch.full((n,), -1, dtype=torch.long, device=dev)
+        # Posterior particles whose turn channel actually works at cmd=[0,0,±1].
+        self.valid_particle_ids = self._compute_valid_particle_ids()
         self.reset(torch.arange(n))
+
+    # ---- ADR frontier / DR scaling ----
+    def _compute_valid_particle_ids(self):
+        # The 16-feature wheel map and the [P,16,3] posterior coefficients are
+        # what this sim actually deploys, so the turn-authority check is done
+        # with a steady-state pass through the same map (no separate feature
+        # definition to drift). Checks both pure cardinal commands and combined
+        # forward+turn commands [0, -0.6, +-0.8] plus bounded forward coupling
+        # so combined maneuvers never invert turn/strafe signs.
+        dev = self.device
+        coef = torch.stack([p["coef"] for p in self.particles]).to(dev)  # [P,16,3]
+        dz = torch.tensor([p["dz"] for p in self.particles], dtype=torch.float32, device=dev)
+        ub = HALF_BASE * 4.0
+        cmds = torch.tensor(
+            [
+                [1, 0, 0],
+                [-1, 0, 0],
+                [0, 1, 0],
+                [0, -1, 0],
+                [0, 0, 1],
+                [0, 0, -1],
+                [0, -0.6, 0.8],
+                [0, -0.6, -0.8],
+            ],
+            dtype=torch.float32,
+            device=dev,
+        )
+
+        def wheels_for(c):
+            # Same inverse mixer as step() with gain=1 and zero sag.
+            vx, vy, w = float(c[0]), float(c[1]), float(c[2]) * ub
+            trans = torch.tensor([vx - vy, vx + vy, vx + vy, vx - vy], device=dev)
+            turn = torch.tensor([-w, -w, w, w], device=dev)
+            return -trans + turn
+
+        tgt = []
+        for c in cmds:
+            u = wheels_for(c).unsqueeze(0).expand(coef.shape[0], 4).contiguous()
+            feat = _wheel_features(u, dz)
+            tgt.append(torch.bmm(feat.unsqueeze(1), coef).squeeze(1))  # [P,3]
+        dxp, dxm, dyp, dym, wp, wm, fwp, fwm = tgt
+        ok = (
+            (dxp[:, 0] > 0.25)
+            & (dxm[:, 0] < -0.25)
+            & (dyp[:, 1] > 0.15)
+            & (dym[:, 1] < -0.15)
+            & (wp[:, 2] > 0.40)
+            & (wm[:, 2] < -0.40)
+            & (fwp[:, 2] > 0.15)
+            & (fwm[:, 2] < -0.15)
+            & (dym[:, 0].abs() < 0.55)
+            & (dym[:, 2].abs() < 1.5)
+        )
+        ids = torch.nonzero(ok).squeeze(1)
+        if ids.numel() == 0:
+            ids = torch.arange(coef.shape[0], device=dev)
+        return ids
+
+    def set_dr_scale(
+        self, frontier_scale: float, anchor_frac: float = 0.0, anchor_max: float = 0.2
+    ) -> None:
+        """ADR frontier step. Deterministic: no RNG draws. Envs [0, n_frontier)
+        train at `frontier_scale`; the remaining anchor envs are evenly spaced in
+        [0, min(anchor_max, frontier_scale)]."""
+        frontier_scale = min(max(float(frontier_scale), 0.0), 1.0)
+        anchor_frac = float(anchor_frac)
+        anchor_max = float(anchor_max)
+        self.frontier_scale = frontier_scale
+        self.anchor_frac = anchor_frac
+        self.anchor_max = anchor_max
+        self.n_frontier = int(round((1.0 - anchor_frac) * self.n))
+        self.dr_scale[: self.n_frontier] = frontier_scale
+        n_anchor = self.n - self.n_frontier
+        if n_anchor > 0:
+            lo = min(anchor_max, frontier_scale)
+            self.dr_scale[self.n_frontier :] = torch.linspace(0.0, lo, n_anchor, device=self.device)
+        self._apply_dr_env_fields()
+
+    def _apply_dr_env_fields(self):
+        """Recompute deterministic per-env DR fields (min tag range)."""
+        base = (
+            self.cfg.min_tag_range
+            if self.cfg.min_tag_range is not None
+            else self.level.get("min_tag_range")
+        )
+        if base is not None and float(base) > 0.0:
+            self.env_min_tag_range[:] = torch.clamp(
+                (self.dr_scale - 0.35) / 0.65, 0.0, 1.0
+            ) * float(base)
+        else:
+            self.env_min_tag_range[:] = torch.clamp((self.dr_scale - 0.35) / 0.65, 0.0, 1.0) * 0.30
+        steps = (1.0 / self.env_cam_hz.clamp_min(1e-3) / self.dt).round().long().clamp_min(1)
+        self.cam_period_steps[:] = steps
+
+    # ---- snapshot API (bit-identical branching) ----
+    _SNAPSHOT_TENSORS = (
+        "pose",
+        "vel",
+        "time",
+        "still",
+        "vel_still",
+        "done",
+        "latched_success",
+        "latched_coll",
+        "latched_timeout",
+        "latched_false_park",
+        "prev_act",
+        "hist",
+        "hist_age",
+        "tag_ema",
+        "prev_tag",
+        "prev_valid",
+        "dt_since_valid",
+        "cam_accum",
+        "imu_bias",
+        "imu_yaw",
+        "tag_raw",
+        "tag_valid",
+        "imu_w",
+        "coef",
+        "dz",
+        "drive_tau",
+        "brake_tau",
+        "cov",
+        "wheel_gain",
+        "yaw_scale",
+        "sag",
+        "latency",
+        "latency_steps",
+        "drop_p",
+        "blackout_start",
+        "blackout_total",
+        "pose_ring",
+        "ring_count",
+        "env_cam_hz",
+        "cam_period_steps",
+        "gyro_noise_std",
+        "rf_gain",
+        "rf_dz",
+        "rf_onset_steps",
+        "rf_strafe_yaw",
+        "cmd_ring",
+        "cmd_count",
+        "action_delay",
+        "drop_streak",
+        "wheel_fault",
+        "particle_id",
+        "env_min_tag_range",
+        "dr_scale",
+    )
+    _SNAPSHOT_SCALARS = (
+        "ring_head",
+        "cmd_head",
+        "frontier_scale",
+        "anchor_frac",
+        "anchor_max",
+        "n_frontier",
+    )
+
+    def get_state(self) -> dict:
+        """Deep copy of every tensor and scalar that influences future steps,
+        plus both generator states. Restoring it and replaying the same actions
+        reproduces (obs, rew, done, info) bit-identically."""
+        state = {name: getattr(self, name).clone() for name in self._SNAPSHOT_TENSORS}
+        state.update({name: getattr(self, name) for name in self._SNAPSHOT_SCALARS})
+        state["gen_state"] = self.gen.get_state().clone()
+        state["gen_cpu_state"] = self.gen_cpu.get_state().clone()
+        return state
+
+    def set_state(self, state: dict) -> None:
+        for name in self._SNAPSHOT_TENSORS:
+            getattr(self, name).copy_(state[name])
+        for name in self._SNAPSHOT_SCALARS:
+            setattr(self, name, state[name])
+        self.gen.set_state(state["gen_state"].clone())
+        self.gen_cpu.set_state(state["gen_cpu_state"].clone())
+
+    # ---- privileged latent dynamics for the extrinsics head (RMA) ----
+    def latent_dynamics(self) -> torch.Tensor:
+        """Normalized ground-truth dynamics parameters per env, [N, 12] float32,
+        clamped to [-5, 5]. Column layout:
+          0..2  strafe/fwd/yaw gains (real plant) | wheel gains (posterior)
+          3..5  deadzones                          | wheel gain 4..6 replicated
+          6..8  onset delay steps / 6              | action delay / 2
+          9     mean drive tau (0.08 centre)       | mean drive tau (0.055 centre)
+          10    strafe-yaw coupling / 1.0          | yaw-rate scale deviation
+          11    camera period steps vs 2.5 (=20 Hz)
+        """
+        dev = self.device
+        if self.real_plant:
+            nom = torch.tensor([1.6, 2.3, 15.7], device=dev)
+            scale = torch.tensor([0.5, 0.7, 5.0], device=dev)
+            c0 = (self.rf_gain - nom) / scale
+            c3 = (self.rf_dz - 0.12) / 0.08
+            c6 = self.rf_onset_steps.float() / 6.0
+            c9 = ((self.drive_tau.mean(dim=1) - 0.08) / 0.05).unsqueeze(-1)
+            c10 = (self.rf_strafe_yaw / 1.0).unsqueeze(-1)
+        else:
+            c0 = (self.wheel_gain[:, :3] - 1.0) / 0.25
+            c3 = torch.stack(
+                [
+                    (self.wheel_gain[:, 3] - 1.0) / 0.25,
+                    (self.dz - 0.025) / 0.025,
+                    (self.sag - 0.95) / 0.05,
+                ],
+                dim=1,
+            )
+            c6 = self.coef[:, 0, :] + self.action_delay.float().unsqueeze(-1) / 2.0
+            c9 = ((self.drive_tau.mean(dim=1) - 0.30) / 0.10).unsqueeze(-1)
+            c10 = ((self.yaw_scale - 1.0) / 0.2).unsqueeze(-1)
+        c11 = ((self.cam_period_steps.float() - 2.5) / 2.5).unsqueeze(-1)
+        out = torch.cat([c0, c3, c6, c9, c10, c11], dim=1)
+        return out.clamp(-5.0, 5.0).float()
 
     # ---- reset ----
     def _sample_dynamics(self, idx: torch.Tensor):
@@ -282,60 +588,137 @@ class MecanumVecEnv:
             if self.cfg.full_posterior is None
             else self.cfg.full_posterior
         )
+        s_ = self.dr_scale[idx_d]  # [m] per-env DR scale
+        all_s_one = bool((s_ == 1.0).all())
+        self.particle_id[idx_d] = -1
         if self.real_plant:
             # Real-car fit (2026-11-13 calibration): axes [left (+x), fwd (-y), ccw (+yaw)].
             # Nominal gains: [1.6 m/s, 2.3 m/s, 15.7 rad/s] per duty; +-30% DR.
             # Nominal deadzones: [0.13, 0.05, 0.10]; 0.5x-1.5x DR.
             nom_gain = torch.tensor([1.6, 2.3, 15.7], device=dev)
             nom_dz = torch.tensor([0.13, 0.05, 0.10], device=dev)
-            g_scale = 0.7 + 0.6 * torch.rand(m, 3, device=dev, generator=self.gen)
-            dz_scale = 0.5 + 1.0 * torch.rand(m, 3, device=dev, generator=self.gen)
-            self.rf_gain[idx_d] = nom_gain * g_scale
-            self.rf_dz[idx_d] = nom_dz * dz_scale
-            # Onset lag = pure delay + first-order tau matching measured onset times:
-            # strafe 0.25-0.37 s, fwd ~0.18 s, yaw ~0.07 s.
-            d_left = 0.16 + 0.10 * torch.rand(m, device=dev, generator=self.gen)
-            d_fwd = 0.08 + 0.06 * torch.rand(m, device=dev, generator=self.gen)
-            d_ccw = 0.02 + 0.04 * torch.rand(m, device=dev, generator=self.gen)
-            delay_s = torch.stack([d_left, d_fwd, d_ccw], dim=1)
-            self.rf_onset_steps[idx_d] = (delay_s / self.dt).round().long().clamp(0, _CMD_K - 1)
-            tau_left = 0.08 + 0.06 * torch.rand(m, device=dev, generator=self.gen)
-            tau_fwd = 0.05 + 0.05 * torch.rand(m, device=dev, generator=self.gen)
-            tau_ccw = 0.03 + 0.03 * torch.rand(m, device=dev, generator=self.gen)
+            if self.eff_randomize:
+                g_scale = 0.7 + 0.6 * torch.rand(m, 3, device=dev, generator=self.gen)
+                dz_scale = 0.5 + 1.0 * torch.rand(m, 3, device=dev, generator=self.gen)
+                # Onset lag = pure delay + first-order tau matching measured onset times:
+                # strafe 0.25-0.37 s, fwd ~0.18 s, yaw ~0.07 s.
+                d_left = 0.16 + 0.10 * torch.rand(m, device=dev, generator=self.gen)
+                d_fwd = 0.08 + 0.06 * torch.rand(m, device=dev, generator=self.gen)
+                d_ccw = 0.02 + 0.04 * torch.rand(m, device=dev, generator=self.gen)
+                delay_s = torch.stack([d_left, d_fwd, d_ccw], dim=1)
+                tau_left = 0.08 + 0.06 * torch.rand(m, device=dev, generator=self.gen)
+                tau_fwd = 0.05 + 0.05 * torch.rand(m, device=dev, generator=self.gen)
+                tau_ccw = 0.03 + 0.03 * torch.rand(m, device=dev, generator=self.gen)
+                strafe_yaw = math.radians(5.0) + math.radians(10.0) * torch.rand(
+                    m, device=dev, generator=self.gen
+                )
+            else:
+                g_scale = torch.ones(m, 3, device=dev)
+                dz_scale = torch.ones(m, 3, device=dev)
+                delay_s = torch.tensor([[0.21, 0.11, 0.04]], device=dev).expand(m, 3).clone()
+                tau_left = torch.full((m,), 0.11, device=dev)
+                tau_fwd = torch.full((m,), 0.075, device=dev)
+                tau_ccw = torch.full((m,), 0.045, device=dev)
+                strafe_yaw = torch.full((m,), math.radians(10.0), device=dev)
             drive = torch.stack([tau_left, tau_fwd, tau_ccw], dim=1)
+            rf_gain = nom_gain * g_scale
+            rf_dz = nom_dz * dz_scale
+            rf_onset = (delay_s / self.dt).round().long().clamp(0, _CMD_K - 1)
             brake = torch.tensor([0.08, 0.08, 0.05], device=dev).unsqueeze(0).expand(m, -1)
-            # Strafe-induced yaw coupling ~5-15 deg/s
-            self.rf_strafe_yaw[idx_d] = math.radians(5.0) + math.radians(10.0) * torch.rand(
-                m, device=dev, generator=self.gen
-            )
             cov = (
                 torch.diag(torch.tensor([0.015**2, 0.015**2, 0.04**2], device=dev))
                 .unsqueeze(0)
                 .expand(m, -1, -1)
             )
+            if not all_s_one:
+                s2 = s_.unsqueeze(-1)
+                dz_anc = 0.5 * nom_dz
+                rf_gain = nom_gain + s2 * (rf_gain - nom_gain)
+                rf_dz = dz_anc + s2 * (rf_dz - dz_anc)
+                rf_onset = (s2 * rf_onset.float()).round().long()
+                drive = 0.05 + s2 * (drive - 0.05)
+                strafe_yaw = s_ * strafe_yaw
+                cov = (s_[:, None, None] ** 2) * cov
+            self.rf_gain[idx_d] = rf_gain
+            self.rf_dz[idx_d] = rf_dz
+            self.rf_onset_steps[idx_d] = rf_onset
+            self.rf_strafe_yaw[idx_d] = strafe_yaw
             self.wheel_gain[idx_d] = 1.0
             self.yaw_scale[idx_d] = 1.0
             self.sag[idx_d] = 1.0
+            self.action_delay[idx_d] = 0
             coef = torch.zeros(m, 16, 3, device=dev)
-            coef[:, 0, :] = g_scale
-            coef[:, 1, :] = dz_scale
-            coef[:, 2, :] = delay_s * 5.0
+            coef[:, 0, :] = rf_gain / nom_gain
+            coef[:, 1, :] = rf_dz / nom_dz
+            coef[:, 2, :] = rf_onset.float() * self.dt * 5.0
             coef[:, 3, :] = drive * 5.0
-            coef[:, 4, 0] = self.rf_strafe_yaw[idx_d]
+            coef[:, 4, 0] = strafe_yaw
             dz = self.rf_dz[idx_d, 1]
         elif full:
-            pick = torch.randint(0, len(self.particles), (m,), generator=self.gen_cpu)
-            coef = torch.stack([self.particles[int(i)]["coef"] for i in pick]).to(dev)
+            if self.eff_consistent:
+                sel = torch.randint(
+                    0, self.valid_particle_ids.numel(), (m,), generator=self.gen_cpu
+                )
+                pick_list = [int(self.valid_particle_ids[int(i)]) for i in sel]
+            else:
+                pick_list = [
+                    int(i)
+                    for i in torch.randint(0, len(self.particles), (m,), generator=self.gen_cpu)
+                ]
+            pick = torch.tensor(pick_list, dtype=torch.long)
+            coef = torch.stack([self.particles[i]["coef"] for i in pick_list]).to(dev)
             dz = torch.tensor(
-                [self.particles[int(i)]["dz"] for i in pick], dtype=torch.float32, device=dev
+                [self.particles[i]["dz"] for i in pick_list], dtype=torch.float32, device=dev
             )
-            drive = torch.stack([self.particles[int(i)]["drive"] for i in pick]).to(dev)
-            brake = torch.stack([self.particles[int(i)]["brake"] for i in pick]).to(dev)
-            cov = torch.stack([self.particles[int(i)]["cov"] for i in pick]).to(dev)
+            drive = torch.stack([self.particles[i]["drive"] for i in pick_list]).to(dev)
+            brake = torch.stack([self.particles[i]["brake"] for i in pick_list]).to(dev)
+            cov = torch.stack([self.particles[i]["cov"] for i in pick_list]).to(dev)
+            self.particle_id[idx_d] = pick.to(dev)
             # extra DR grounded in observed run-to-run variation
-            self.wheel_gain[idx_d] = 0.85 + 0.30 * torch.rand(m, 4, device=dev, generator=self.gen)
-            self.yaw_scale[idx_d] = 0.5 + 1.0 * torch.rand(m, device=dev, generator=self.gen)
-            self.sag[idx_d] = 0.90 + 0.10 * torch.rand(m, device=dev, generator=self.gen)
+            if self.eff_randomize:
+                wheel_gain_s = 0.85 + 0.30 * torch.rand(m, 4, device=dev, generator=self.gen)
+                yaw_scale_s = 0.5 + 1.0 * torch.rand(m, device=dev, generator=self.gen)
+                sag_s = 0.90 + 0.10 * torch.rand(m, device=dev, generator=self.gen)
+            else:
+                wheel_gain_s = torch.ones(m, 4, device=dev)
+                yaw_scale_s = torch.ones(m, device=dev)
+                sag_s = torch.ones(m, device=dev)
+            if self.eff_action_delay > 0.0:
+                has = torch.rand(m, device=dev, generator=self.gen) < self.eff_action_delay
+                self.action_delay[idx_d] = torch.where(
+                    has,
+                    torch.randint(1, 3, (m,), device=dev, generator=self.gen),
+                    torch.zeros(m, dtype=torch.long, device=dev),
+                )
+            else:
+                self.action_delay[idx_d] = 0
+            if all_s_one:
+                self.wheel_gain[idx_d] = wheel_gain_s
+                self.yaw_scale[idx_d] = yaw_scale_s
+                self.sag[idx_d] = sag_s
+            else:
+                s2 = s_.unsqueeze(-1)
+                s3 = s_[:, None, None]
+                if self.cfg.use_mean_dynamics and not self.eff_consistent:
+                    anc_coef = self.mean_coef.unsqueeze(0)
+                    anc_dz = self.mean_dz
+                    anc_drive = self.mean_drive.unsqueeze(0)
+                    anc_brake = self.mean_brake.unsqueeze(0)
+                else:
+                    p0 = self.particles[0]
+                    anc_coef = p0["coef"].unsqueeze(0)
+                    anc_dz = p0["dz"]
+                    anc_drive = p0["drive"].unsqueeze(0)
+                    anc_brake = p0["brake"].unsqueeze(0)
+                coef = anc_coef + s3 * (coef - anc_coef)
+                dz = anc_dz + s_ * (dz - anc_dz)
+                drive = anc_drive + s2 * (drive - anc_drive)
+                brake = anc_brake + s2 * (brake - anc_brake)
+                cov = (s3**2) * cov
+                self.wheel_gain[idx_d] = 1.0 + s2 * (wheel_gain_s - 1.0)
+                self.yaw_scale[idx_d] = 1.0 + s_ * (yaw_scale_s - 1.0)
+                self.sag[idx_d] = 1.0 + s_ * (sag_s - 1.0)
+                self.action_delay[idx_d] = (s_ * self.action_delay[idx_d].float()).round().long()
         elif self.cfg.use_mean_dynamics:
             coef = self.mean_coef.unsqueeze(0).expand(m, -1, -1)
             dz = torch.full((m,), self.mean_dz, dtype=torch.float32, device=dev)
@@ -345,6 +728,7 @@ class MecanumVecEnv:
             self.wheel_gain[idx_d] = 1.0
             self.yaw_scale[idx_d] = 1.0
             self.sag[idx_d] = 1.0
+            self.action_delay[idx_d] = 0
         else:
             p0 = self.particles[0]
             coef = p0["coef"].unsqueeze(0).expand(m, -1, -1)
@@ -355,6 +739,33 @@ class MecanumVecEnv:
             self.wheel_gain[idx_d] = 1.0
             self.yaw_scale[idx_d] = 1.0
             self.sag[idx_d] = 1.0
+            self.action_delay[idx_d] = 0
+        # per-episode wheel fault: one axis/wheel loses gain (U(0.3, 0.7)).
+        # No draws at all unless the level configures a fault probability.
+        self.wheel_fault[idx_d] = False
+        if self.eff_wheel_fault > 0.0:
+            has = torch.rand(m, device=dev, generator=self.gen) < self.eff_wheel_fault
+            self.wheel_fault[idx_d] = has
+            if bool(has.any()):
+                mag = 0.3 + 0.4 * torch.rand(m, device=dev, generator=self.gen)
+                if self.real_plant:
+                    sel = torch.randint(0, 3, (m,), device=dev, generator=self.gen)
+                    g = self.rf_gain[idx_d].clone()
+                    for a in range(3):
+                        msk = has & (sel == a)
+                        if bool(msk.any()):
+                            g[msk, a] *= mag[msk]
+                    self.rf_gain[idx_d] = g
+                    coef = coef.clone()
+                    coef[:, 0, :] = g / torch.tensor([1.6, 2.3, 15.7], device=dev)
+                else:
+                    sel = torch.randint(0, 4, (m,), device=dev, generator=self.gen)
+                    w = self.wheel_gain[idx_d].clone()
+                    for wi in range(4):
+                        msk = has & (sel == wi)
+                        if bool(msk.any()):
+                            w[msk, wi] *= mag[msk]
+                    self.wheel_gain[idx_d] = w
         self.coef[idx_d] = coef
         self.dz[idx_d] = dz
         self.drive_tau[idx_d] = drive
@@ -366,32 +777,57 @@ class MecanumVecEnv:
             idx = torch.arange(self.n)
         idx = idx.cpu()
         m = len(idx)
-        area = self.level["area"]
+        dev = self.device
+        di = idx.to(dev)
+        m = len(idx)
+        area = self.area
         g = self.gen_cpu
+        s_ = self.dr_scale[di]
+        all_s_one = bool((s_ == 1.0).all())
+        s_cpu = None if all_s_one else s_.cpu()
         span = self.cfg.spawn_dist if self.cfg.spawn_dist is not None else self.level["dist"]
         if isinstance(span, float):
             d = torch.full((m,), span)
         else:
             d = span[0] + (span[1] - span[0]) * torch.rand(m, generator=g)
-        bmax = math.radians(
-            self.cfg.bearing_max if self.cfg.bearing_max is not None else self.level["bearing"]
+        # Radians-range overrides (e.g. L_chaos); otherwise degree bearing/yaw.
+        b_spec = (
+            self.cfg.spawn_bearing
+            if self.cfg.spawn_bearing is not None
+            else self.level.get("bearing_rad")
         )
-        b = (torch.rand(m, generator=g) * 2 - 1) * bmax
-        ymax = math.radians(self.cfg.yaw_max if self.cfg.yaw_max is not None else self.level["yaw"])
-        yaw = (torch.rand(m, generator=g) * 2 - 1) * ymax
-        dev = self.device
+        if b_spec is not None:
+            b = b_spec[0] + (b_spec[1] - b_spec[0]) * torch.rand(m, generator=g)
+        else:
+            bmax = math.radians(
+                self.cfg.bearing_max if self.cfg.bearing_max is not None else self.level["bearing"]
+            )
+            b = (torch.rand(m, generator=g) * 2 - 1) * bmax
+        y_spec = self.cfg.spawn_yaw if self.cfg.spawn_yaw is not None else self.level.get("yaw_rad")
+        if y_spec is not None:
+            yaw = y_spec[0] + (y_spec[1] - y_spec[0]) * torch.rand(m, generator=g)
+        else:
+            ymax = math.radians(
+                self.cfg.yaw_max if self.cfg.yaw_max is not None else self.level["yaw"]
+            )
+            yaw = (torch.rand(m, generator=g) * 2 - 1) * ymax
+        if not all_s_one:
+            # dr_scale=0 anchors spawns at 0.75 m dead-ahead (curriculum entry)
+            d = 0.75 + s_cpu * (d - 0.75)
+            b = s_cpu * b
+            yaw = s_cpu * yaw
         # Spawn strictly inside the out-of-bounds termination (|pose| > area):
         # spawning exactly ON the kill boundary outs to sub-mm plant noise /
         # blind pre-acquisition sweep drag before the first tag. No policy can
         # survive that; it is a spawn-support artifact, not task difficulty.
         lim = area - 0.20
-        self.pose[idx.to(dev)] = torch.stack(
+        self.pose[di] = torch.stack(
             [(d * torch.sin(b)).clamp(-lim, lim), (d * torch.cos(b)).clamp(-lim, lim), yaw], dim=1
         ).to(dev)
-        self.vel[idx.to(dev)] = 0
-        self.time[idx.to(dev)] = 0
-        self.still[idx.to(dev)] = 0
-        self.vel_still[idx.to(dev)] = 0
+        self.vel[di] = 0
+        self.time[di] = 0
+        self.still[di] = 0
+        self.vel_still[di] = 0
         for name in (
             "done",
             "latched_success",
@@ -399,37 +835,90 @@ class MecanumVecEnv:
             "latched_timeout",
             "latched_false_park",
         ):
-            getattr(self, name)[idx.to(dev)] = False
+            getattr(self, name)[di] = False
         self._sample_dynamics(idx)
         # sensor state
-        lat = (
-            self.cfg.latency_override
-            if self.cfg.latency_override is not None
-            else self.level["latency"]
+        if self.eff_latency_steps is not None:
+            ls = self.eff_latency_steps
+            if isinstance(ls, (tuple, list)):
+                lo_s, hi_s = float(ls[0]), float(ls[1])
+            else:
+                lo_s = hi_s = float(ls)
+            sampled = lo_s + (hi_s - lo_s) * torch.rand(m, device=dev, generator=self.gen)
+            if all_s_one:
+                steps = sampled.round().long()
+            else:
+                steps = (s_ * sampled).round().long()
+            self.latency_steps[di] = steps.clamp_min(0)
+            self.latency[di] = steps.float() * self.dt
+        else:
+            lat = (
+                self.cfg.latency_override
+                if self.cfg.latency_override is not None
+                else self.level.get("latency", 0.0)
+            )
+            if isinstance(lat, tuple):
+                sampled = lat[0] + (lat[1] - lat[0]) * torch.rand(m, device=dev, generator=self.gen)
+                if all_s_one:
+                    self.latency[di] = sampled
+                else:
+                    self.latency[di] = s_ * sampled
+            else:
+                if all_s_one:
+                    self.latency[di] = float(lat)
+                else:
+                    self.latency[di] = s_ * float(lat)
+            self.latency_steps[di] = (self.latency[di] / self.dt).round().long().clamp_min(0)
+        dr = (
+            self.cfg.drops_override
+            if self.cfg.drops_override is not None
+            else self.level.get("drops", self.level.get("drop_prob", 0.0))
         )
-        di_lat = idx.to(dev)
-        if isinstance(lat, tuple):
-            self.latency[di_lat] = lat[0] + (lat[1] - lat[0]) * torch.rand(
-                m, device=dev, generator=self.gen
-            )
-        else:
-            self.latency[di_lat] = float(lat)
-        dr = self.cfg.drops_override if self.cfg.drops_override is not None else self.level["drops"]
         if isinstance(dr, tuple):
-            self.drop_p[di_lat] = dr[0] + (dr[1] - dr[0]) * torch.rand(
-                m, device=dev, generator=self.gen
-            )
+            sampled_dr = dr[0] + (dr[1] - dr[0]) * torch.rand(m, device=dev, generator=self.gen)
         else:
-            self.drop_p[di_lat] = float(dr)
-        self.blackout_total = float(self.level["blackout"])
-        if self.blackout_total > 0:
-            # one random blackout window per episode
-            self.blackout_start[di_lat] = torch.rand(m, device=dev, generator=self.gen) * (
-                self.cfg.max_time - self.blackout_total
-            )
+            sampled_dr = torch.full((m,), float(dr), device=dev)
+        if all_s_one:
+            self.drop_p[di] = sampled_dr
         else:
-            self.blackout_start[di_lat] = 1e9
-        di = idx.to(dev)
+            self.drop_p[di] = s_ * sampled_dr
+        if self.eff_blackout_prob > 0.0 or self.eff_blackout_len is not None:
+            # Bernoulli blackout episodes with a length in camera frames, e.g. L_chaos
+            bl = self.eff_blackout_len
+            if bl is not None:
+                lo_b, hi_b = float(bl[0]), float(bl[1])
+            else:
+                lo_b, hi_b = 15.0, 50.0
+            maybe = torch.rand(m, device=dev, generator=self.gen) < self.eff_blackout_prob
+            len_samp = lo_b + (hi_b - lo_b) * torch.rand(m, device=dev, generator=self.gen)
+            if all_s_one:
+                total = maybe.float() * len_samp.round() * self.dt
+            else:
+                total = maybe.float() * (s_ * len_samp).round() * self.dt
+            self.blackout_total[di] = total
+            start = torch.rand(m, device=dev, generator=self.gen) * (self.cfg.max_time - total)
+            self.blackout_start[di] = torch.where(maybe, start, torch.full_like(start, 1e9))
+        else:
+            total = float(self.level.get("blackout", 0.0))
+            if all_s_one:
+                self.blackout_total[di] = total
+                if total > 0:
+                    # one random blackout window per episode
+                    self.blackout_start[di] = torch.rand(m, device=dev, generator=self.gen) * (
+                        self.cfg.max_time - total
+                    )
+                else:
+                    self.blackout_start[di] = 1e9
+            else:
+                total_i = s_ * total
+                self.blackout_total[di] = total_i
+                if total > 0:
+                    self.blackout_start[di] = torch.rand(m, device=dev, generator=self.gen) * (
+                        self.cfg.max_time - total_i
+                    )
+                else:
+                    self.blackout_start[di] = 1e9
+        self.drop_streak[di] = 0
         self.prev_act[di] = 0
         self.hist[di] = 0
         self.hist_age[di] = 1e9
@@ -449,6 +938,12 @@ class MecanumVecEnv:
             self.env_cam_hz[di] = hz_rng[0] + (hz_rng[1] - hz_rng[0]) * torch.rand(
                 m, device=dev, generator=self.gen
             )
+            if not all_s_one:
+                # quantize the camera period to whole sim steps and ramp it with s:
+                # s=0 -> every step, s=1 -> the sampled rate
+                steps_sampled = (1.0 / self.env_cam_hz[di] / self.dt).round()
+                eff = 1 + (s_ * (steps_sampled - 1)).round()
+                self.env_cam_hz[di] = 1.0 / (eff.clamp_min(1.0) * self.dt)
         fast_cam = self.env_cam_hz[di] >= (1.0 / self.dt - 1e-6)
         self.cam_accum[di] = torch.where(
             fast_cam, torch.zeros(m, device=dev), (1.0 / self.env_cam_hz[di]) - self.dt
@@ -464,6 +959,9 @@ class MecanumVecEnv:
             )
         else:
             self.gyro_noise_std[di] = float(g_std)
+        if not all_s_one:
+            self.gyro_noise_std[di] = 0.002 + s_ * (self.gyro_noise_std[di] - 0.002)
+        self._apply_dr_env_fields()
         if self.real_plant:
             self.coef[di, 4, 1] = self.gyro_noise_std[di]
             self.coef[di, 4, 2] = self.env_cam_hz[di] / 30.0
@@ -483,7 +981,7 @@ class MecanumVecEnv:
 
     def _delayed_pose(self):
         # per-env delayed read; clamped to available history
-        sb = (self.latency / self.dt).round().long().clamp_min(0)
+        sb = self.latency_steps.clamp_min(0)
         avail = (self.ring_count - 1).clamp_min(0)
         use = torch.minimum(sb, avail)
         pos = (self.ring_head - 1 - use) % _RING_K
@@ -496,6 +994,19 @@ class MecanumVecEnv:
         dev = self.device
         act_t = act.to(dev)
         cmd = act_t[:, :3].clamp(-1, 1)
+        any_s_neq = bool((self.dr_scale != 1.0).any())
+        if not self.real_plant and bool((self.action_delay > 0).any()):
+            # Posterior-plant onset delay: hold the command in the shared ring
+            # and read it back delayed by the per-env action_delay steps.
+            self.cmd_ring[:, self.cmd_head % _CMD_K] = cmd
+            self.cmd_head += 1
+            self.cmd_count += 1
+            avail_c = (self.cmd_count - 1).clamp_min(0)[:, None]
+            use_c = torch.minimum(self.action_delay[:, None], avail_c)
+            pos_c = (self.cmd_head - 1 - use_c) % _CMD_K
+            env_idx = torch.arange(self.n, device=dev)[:, None]
+            ax_idx = torch.arange(3, device=dev)[None, :]
+            cmd = self.cmd_ring[env_idx, pos_c, ax_idx]
         prev_done = self.done.clone()
         saved = {
             "pose": self.pose.clone(),
@@ -584,6 +1095,19 @@ class MecanumVecEnv:
             self.vel += (activity * scale)[:, None] * torch.bmm(L, z[:, :, None]).squeeze(2)
         except torch.linalg.LinAlgError:
             pass
+        # Body-frame impulse disturbance (m/s, rad/s), scaled by dr_scale.
+        if self.eff_disturbance > 0.0:
+            dscale = self.eff_disturbance * (self.dr_scale if any_s_neq else 1.0)
+            self.vel += torch.randn(self.n, 3, device=dev, generator=self.gen) * (
+                dscale[:, None] if torch.is_tensor(dscale) else dscale
+            )
+        # Floor slip: transient horizontal grip loss.
+        if self.eff_floor_slip > 0.0:
+            rate = self.eff_floor_slip * (self.dr_scale if any_s_neq else 1.0)
+            slip = torch.rand(self.n, device=dev, generator=self.gen) < rate
+            if bool(slip.any()):
+                mag = 0.6 + 0.3 * torch.rand(self.n, device=dev, generator=self.gen)
+                self.vel[slip, :2] = self.vel[slip, :2] * mag[slip].unsqueeze(1)
         prev_pose = self.pose.clone()
         th = self.pose[:, 2] + self.vel[:, 2] * self.dt / 2
         c, s = torch.cos(th), torch.sin(th)
@@ -596,7 +1120,9 @@ class MecanumVecEnv:
 
         # ---- sensors ----
         noise = float(
-            self.cfg.noise_override if self.cfg.noise_override is not None else self.level["noise"]
+            self.cfg.noise_override
+            if self.cfg.noise_override is not None
+            else self.level.get("noise", 1.0)
         )
         delayed = self._delayed_pose()
         dist = delayed[:, :2].norm(dim=1)
@@ -610,11 +1136,7 @@ class MecanumVecEnv:
         # L0-L2 keep the tag (spec: perfect state / tags visible), L3+ lose it.
         # The camera minimum range (~0.10 m) lies inside this zone, so it is
         # covered by under_drone_loss rather than applied at every level.
-        min_range = float(
-            self.cfg.min_tag_range
-            if self.cfg.min_tag_range is not None
-            else self.level.get("min_tag_range", 0.30)
-        )
+        min_range = self.env_min_tag_range
         near_deck = dist < min_range
         in_fov = (bearing.abs() < FOV_HALF) & (dist < 5.0)
         if self.level["under_drone_loss"]:
@@ -634,15 +1156,45 @@ class MecanumVecEnv:
             self.time < self.blackout_start + self.blackout_total
         )
         dropped = torch.rand(self.n, device=dev, generator=self.gen) < self.drop_p
+        if self.eff_burst:
+            # Markov-sticky vision dropouts: if the previous camera frame was
+            # dropped, this frame stays dropped with probability 0.70 * s.
+            stick = torch.rand(self.n, device=dev, generator=self.gen) < (0.70 * self.dr_scale)
+            stay = (self.drop_streak > 0) & stick & cam_tick
+            dropped = dropped | stay
+            self.drop_streak = torch.where(
+                cam_tick,
+                torch.where(dropped, self.drop_streak + 1, torch.zeros_like(self.drop_streak)),
+                self.drop_streak,
+            )
         valid = seen & cam_tick & (~in_blackout) & (~dropped)
-        pos_std = noise * (0.008 + 0.020 * dist)
-        yaw_std = noise * (math.radians(2) + math.radians(2) * dist)
+        pos_xy = (
+            self.cfg.pos_noise_xy
+            if self.cfg.pos_noise_xy is not None
+            else self.level.get("pos_noise_xy")
+        )
+        yn = self.cfg.yaw_noise if self.cfg.yaw_noise is not None else self.level.get("yaw_noise")
+        if pos_xy is not None:
+            pos_std = torch.full((self.n,), float(pos_xy), device=dev)
+        else:
+            pos_std = noise * (0.008 + 0.020 * dist)
+        if yn is not None:
+            yaw_std = torch.full((self.n,), float(yn), device=dev)
+        else:
+            yaw_std = noise * (math.radians(2) + math.radians(2) * dist)
+        if any_s_neq:
+            pos_std = pos_std * self.dr_scale
+            yaw_std = yaw_std * self.dr_scale
         tag = delayed + torch.randn(delayed.shape, device=dev, generator=self.gen) * torch.stack(
             [pos_std, pos_std, yaw_std], dim=1
         )
-        out_p = float(self.level.get("outliers", 0.0))
+        out_p = float(self.level.get("outliers", self.level.get("outlier_prob", 0.0)))
+        spike = torch.zeros(self.n, dtype=torch.bool, device=dev)
         if out_p > 0:
-            spike = torch.rand(self.n, device=dev, generator=self.gen) < out_p
+            if any_s_neq:
+                spike = torch.rand(self.n, device=dev, generator=self.gen) < out_p * self.dr_scale
+            else:
+                spike = torch.rand(self.n, device=dev, generator=self.gen) < out_p
             tag[spike, :2] += 0.15 * torch.randn(
                 int(spike.sum()), 2, device=dev, generator=self.gen
             )
@@ -681,6 +1233,15 @@ class MecanumVecEnv:
             * torch.randn(self.n, device=dev, generator=self.gen)
         )
         self.imu_yaw += imu_w * self.dt
+        if self.eff_reanchor:
+            # Re-anchor the integrated yaw toward the tag yaw on valid,
+            # non-outlier camera ticks (50% pull) so imu_yaw cannot drift
+            # unboundedly before the blind final approach.
+            tick = valid & ~spike
+            if bool(tick.any()):
+                delta = tag[:, 2] - torch.atan2(torch.sin(self.imu_yaw), torch.cos(self.imu_yaw))
+                delta = torch.atan2(torch.sin(delta), torch.cos(delta))
+                self.imu_yaw = torch.where(tick, self.imu_yaw + 0.5 * delta, self.imu_yaw)
 
         # ---- termination ----
         slow = (self.vel.abs() < torch.tensor([0.01, 0.01, math.radians(2)], device=dev)).all(dim=1)
@@ -708,7 +1269,7 @@ class MecanumVecEnv:
         )
         touch_y = self.pose[:, 1].abs() < GEAR_LEN / 2 + hl
         collision = touch_x & touch_y
-        area = self.level["area"]
+        area = self.area
         out = (self.pose[:, 0].abs() > area) | (self.pose[:, 1].abs() > area)
         timeout = (self.time >= self.cfg.max_time) | out
         done = success | collision | timeout | false_park

@@ -5,10 +5,16 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
+from pathlib import Path
 
 import torch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from models import load_student, load_teacher, teacher_obs
 from sim import EnvConfig, MecanumVecEnv
+
+from ugv.parking import pose2_from_ccw, pose2_to_ccw  # noqa: E402  (frame boundary)
 
 BASELINES = ("random", "brake", "oracle_pd")
 
@@ -84,6 +90,10 @@ def run(
     use_mean_dynamics=True,
     cam_hz=None,
     fov_search=False,
+    dr_scale=1.0,
+    consistent_particles=False,
+    save_traces="",
+    max_trace_episodes=20,
 ):
     env = MecanumVecEnv(
         min(episodes, 512),
@@ -94,6 +104,8 @@ def run(
             declare_parked=declare_parked,
             use_mean_dynamics=use_mean_dynamics,
             cam_hz=cam_hz,
+            dr_scale=dr_scale,
+            consistent_particles=consistent_particles,
         ),
     )
     kind, model, meta = load_policy(policy, env.device)
@@ -101,6 +113,10 @@ def run(
     stateful = meta["stateful"]
     succ = coll = false_p = tout = 0
     times, epos, eyaw, jerk = [], [], [], []
+    # Replay trace recording (ugv_replay_v1): at most max_trace_episodes
+    # complete episodes, per-step frames in the Observatory schema.
+    recording = bool(save_traces)
+    trace_episodes = []
     left = episodes
     while left > 0:
         n = min(left, env.n)
@@ -111,6 +127,9 @@ def run(
         t = torch.zeros(n, device=env.device)
         j = torch.zeros(n, device=env.device)
         steps = 0
+        m_tr = min(n, max_trace_episodes) if recording else 0
+        frames = [[] for _ in range(m_tr)] if recording else None
+        ep_active = [True] * m_tr if recording else None
         while not bool(done.all()):
             a, h_state = policy_act(
                 kind,
@@ -144,6 +163,92 @@ def run(
             t = torch.where(~done, t + env.cfg.dt, t)
             done = done | d[:n].to(env.device)
             steps += 1
+            if recording and len(trace_episodes) < max_trace_episodes and any(ep_active):
+                delayed = env._delayed_pose()[:m_tr].detach().cpu().tolist()
+                blk = (
+                    (
+                        (env.time[:m_tr] > env.blackout_start[:m_tr])
+                        & (env.time[:m_tr] < env.blackout_start[:m_tr] + env.blackout_total[:m_tr])
+                    )
+                    .detach()
+                    .cpu()
+                    .tolist()
+                )
+                poses_cpu = env.pose[:m_tr].detach().cpu().tolist()
+                valid_cpu = obs_full["valid"][:m_tr].detach().cpu().tolist()
+                age_cpu = (env.hist_age[:m_tr] / env.dt).round().long().detach().cpu().tolist()
+                imu_w_cpu = env.imu_w[:m_tr].detach().cpu().tolist()
+                imu_yaw_cpu = env.imu_yaw[:m_tr].detach().cpu().tolist()
+                act_cpu = a[:m_tr].detach().cpu().tolist()
+                d_cpu = d[:m_tr].detach().cpu().tolist()
+                ok_cpu = info["success"][:m_tr].detach().cpu().tolist()
+                co_cpu = info["collision"][:m_tr].detach().cpu().tolist()
+                fp_cpu = info["false_park"][:m_tr].detach().cpu().tolist()
+                if kind == "student" and hasattr(model, "aux_head"):
+                    with torch.no_grad():
+                        _, hh = model.gru(obs["student"][:m_tr])
+                        aux_cpu = model.aux_head(hh.squeeze(0))[:, :3].detach().cpu().tolist()
+                else:
+                    aux_cpu = poses_cpu
+                for i in range(m_tr):
+                    if not ep_active[i]:
+                        continue
+                    if len(trace_episodes) >= max_trace_episodes:
+                        break
+                    fi = len(frames[i])
+                    p_i = poses_cpu[i]
+                    yaw_ccw = float(p_i[2])
+                    ccw = pose2_to_ccw(pose2_from_ccw(float(p_i[0]), float(p_i[1]), yaw_ccw))
+                    aux_i = aux_cpu[i]
+                    frames[i].append(
+                        {
+                            "t": round(fi * env.dt, 3),
+                            "true_pose": [
+                                round(float(p_i[0]), 4),
+                                round(float(p_i[1]), 4),
+                                round(yaw_ccw, 4),
+                            ],
+                            "true_pose_ccw": [round(ccw[0], 4), round(ccw[1], 4), round(ccw[2], 4)],
+                            "delayed_tag": [
+                                round(float(delayed[i][0]), 4),
+                                round(float(delayed[i][1]), 4),
+                                round(float(delayed[i][2]), 4),
+                            ],
+                            "aux_pose": [round(float(v), 4) for v in aux_i],
+                            "valid": bool(valid_cpu[i]),
+                            "blackout": bool(blk[i]),
+                            "steps_since_valid": int(age_cpu[i]),
+                            "imu_w": float(imu_w_cpu[i]),
+                            "imu_yaw": float(imu_yaw_cpu[i]),
+                            "action": [
+                                round(float(act_cpu[i][0]), 4),
+                                round(float(act_cpu[i][1]), 4),
+                                round(float(act_cpu[i][2]), 4),
+                            ],
+                            "shield_clear": True,
+                        }
+                    )
+                    if bool(d_cpu[i]):
+                        ep_active[i] = False
+                        outcome = (
+                            "success"
+                            if ok_cpu[i]
+                            else "collision"
+                            if co_cpu[i]
+                            else "false_park"
+                            if fp_cpu[i]
+                            else "timeout"
+                        )
+                        trace_episodes.append(
+                            {
+                                "episode_id": len(trace_episodes),
+                                "seed": seed,
+                                "outcome": outcome,
+                                "steps": len(frames[i]),
+                                "frames": frames[i],
+                            }
+                        )
+                        frames[i] = []
             if steps > 5000:
                 break
         ok = info["success"][:n] if info["success"].shape[0] == env.n else info["success"]
@@ -159,6 +264,21 @@ def run(
         eyaw += obs["pose"][:, 2].abs().tolist()
         jerk += (j / t.clamp_min(0.02)).tolist()
         left -= n
+    if recording:
+        Path(save_traces).parent.mkdir(parents=True, exist_ok=True)
+        bundle = {
+            "schema": "ugv_replay_v1",
+            "format": "ugv_replay_v1",
+            "source": "sim_eval",
+            "run_id": Path(policy).stem,
+            "level": level,
+            "dr_scale": dr_scale,
+            "dt": env.dt,
+            "episodes": trace_episodes,
+        }
+        with open(save_traces, "w") as f:
+            json.dump(bundle, f)
+        print(f"wrote {save_traces} ({len(trace_episodes)} episodes)")
     lo, hi = wilson(succ, episodes)
     times.sort()
     epos.sort()
@@ -210,6 +330,29 @@ def main():
     )
     ap.add_argument("--cam-hz", type=float, default=None)
     ap.add_argument(
+        "--dr-scale",
+        type=float,
+        default=1.0,
+        help="fixed DR intensity for every env (1.0 = current levels)",
+    )
+    ap.add_argument(
+        "--consistent-particles",
+        action="store_true",
+        help="sample only posterior particles with sound turn columns",
+    )
+    ap.add_argument(
+        "--save-traces",
+        type=str,
+        default="",
+        help="write a ugv_replay_v1 JSON replay bundle here",
+    )
+    ap.add_argument(
+        "--max-trace-episodes",
+        type=int,
+        default=20,
+        help="max episodes recorded in the replay bundle",
+    )
+    ap.add_argument(
         "--fov-search",
         action="store_true",
         help="student blind-search spin reflex after 1 s without a tag",
@@ -226,6 +369,10 @@ def main():
         use_mean_dynamics=not args.no_mean_dynamics,
         cam_hz=args.cam_hz,
         fov_search=args.fov_search,
+        dr_scale=args.dr_scale,
+        consistent_particles=args.consistent_particles,
+        save_traces=args.save_traces,
+        max_trace_episodes=args.max_trace_episodes,
     )
     if args.json:
         with open(args.json, "w") as f:

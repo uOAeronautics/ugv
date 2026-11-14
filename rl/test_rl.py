@@ -1,7 +1,9 @@
+import json
+
 import torch
 from export import parity_error
-from models import Student
-from sim import EnvConfig, MecanumVecEnv
+from models import DYN_DIM, Student
+from sim import LEVELS, EnvConfig, MecanumVecEnv, _wheel_features
 
 
 def test_env_steps():
@@ -534,3 +536,142 @@ def test_real_fit_plant():
         assert not bool(obs["valid"][0])
         saw_1 = saw_1 or bool(obs["valid"][1])
     assert saw_1
+
+
+def test_dr_scale_equivalence_and_bounds():
+    # dr_scale=1.0 (the default) is bit-identical to an explicit dr_scale=1.0;
+    # dr_scale=0.0 collapses spawn variance/DR to the curriculum anchor.
+    acts = [
+        torch.randn(8, 3, generator=torch.Generator().manual_seed(i)).clamp(-1, 1)
+        for i in range(12)
+    ]
+    a = MecanumVecEnv(8, EnvConfig(level="L3", device="cpu", seed=11))
+    b = MecanumVecEnv(8, EnvConfig(level="L3", device="cpu", seed=11, dr_scale=1.0))
+    for act in acts:
+        obs_a, rew_a, done_a, _ = a.step(act)
+        obs_b, rew_b, done_b, _ = b.step(act)
+        assert torch.equal(obs_a["pose"], obs_b["pose"])
+        assert torch.equal(obs_a["student"], obs_b["student"])
+        assert torch.equal(rew_a, rew_b) and torch.equal(done_a, done_b)
+    z = MecanumVecEnv(16, EnvConfig(level="L3", device="cpu", seed=13, dr_scale=0.0))
+    # zero spawn bearing/yaw: every env dead-ahead at 0.75 m
+    assert torch.allclose(z.pose[:, 0], torch.zeros(16))
+    assert torch.allclose(z.pose[:, 1], torch.full((16,), 0.75))
+    assert torch.allclose(z.pose[:, 2], torch.zeros(16))
+    # zero drops/blackouts/latency
+    assert torch.equal(z.drop_p, torch.zeros(16))
+    assert torch.equal(z.blackout_total, torch.zeros(16))
+    assert torch.equal(z.latency, torch.zeros(16))
+    assert torch.equal(z.latency_steps, torch.zeros(16, dtype=torch.long))
+    # dynamics collapse to nominal (smaller spread than the full DR)
+    assert torch.equal(z.wheel_gain, torch.ones(16, 4))
+    assert torch.equal(z.yaw_scale, torch.ones(16))
+    assert torch.equal(z.sag, torch.ones(16))
+    full = MecanumVecEnv(16, EnvConfig(level="L3", device="cpu", seed=13, dr_scale=1.0))
+    assert full.wheel_gain.std() > 0.02
+
+
+def test_env_get_set_state_exact_branching():
+    env = MecanumVecEnv(6, EnvConfig(level="L3", device="cpu", seed=7))
+    env.reset()
+    gen = torch.Generator().manual_seed(123)
+    acts = [torch.randn(6, 3, generator=gen).clamp(-1, 1) for _ in range(15)]
+    st = env.get_state()
+    out1 = []
+    for act in acts:
+        out1.append(env.step(act))
+    pose1 = env.pose.clone()
+    env.set_state(st)
+    out2 = []
+    for act in acts:
+        out2.append(env.step(act))
+    for (o1, r1, d1, i1), (o2, r2, d2, i2) in zip(out1, out2, strict=True):
+        for key in ("pose", "vel", "student", "tag", "valid"):
+            assert torch.equal(o1[key], o2[key]), key
+        assert torch.equal(r1, r2)
+        assert torch.equal(d1, d2)
+        for key in ("success", "collision", "timeout", "false_park", "done", "out"):
+            assert torch.equal(i1[key], i2[key]), key
+    assert torch.equal(pose1, env.pose)
+
+
+def test_consistent_particles_and_l_chaos():
+    env = MecanumVecEnv(8, EnvConfig(level="L_chaos", device="cpu", seed=3))
+    ids = env.valid_particle_ids
+    assert ids.numel() > 0
+    # turn-authority check on the retained particles (same steady-state map)
+    coef = torch.stack([env.particles[int(i)]["coef"] for i in ids.cpu()]).to(env.device)
+    dz = torch.tensor(
+        [env.particles[int(i)]["dz"] for i in ids.cpu()], dtype=torch.float32, device=env.device
+    )
+    from sim import HALF_BASE
+
+    ub = HALF_BASE * 4.0
+    for sign in (1.0, -1.0):
+        u = torch.tensor([-1.0, -1.0, 1.0, 1.0], device=env.device) * sign * ub
+        feat = _wheel_features(u.unsqueeze(0).expand(coef.shape[0], 4).contiguous(), dz)
+        tgt = torch.bmm(feat.unsqueeze(1), coef).squeeze(1)
+        if sign > 0:
+            assert (tgt[:, 2] > 0.40).all()
+        else:
+            assert (tgt[:, 2] < -0.40).all()
+    assert env.eff_burst
+    assert env.eff_disturbance > 0.0
+    obs, rew, done, info = env.step(torch.zeros(8, 3))
+    assert torch.isfinite(obs["pose"]).all()
+    env.reset(torch.tensor([0, 2]))
+    obs, rew, done, info = env.step(torch.zeros(8, 3))
+    assert torch.isfinite(obs["student"]).all()
+    assert LEVELS["L_chaos"]["burst_drops"]
+
+
+def test_student_dyn_head_and_export_parity():
+    s = Student()
+    s.eval()
+    dyn = s.predict_dynamics(torch.randn(4, s.gru.hidden_size))
+    assert dyn.shape == (4, DYN_DIM) and DYN_DIM == 12
+    env = MecanumVecEnv(4, EnvConfig(level="L3", device="cpu", seed=2))
+    lat = env.latent_dynamics()
+    assert lat.shape == (4, 12)
+    assert torch.isfinite(lat).all()
+    assert lat.abs().max() <= 5.0
+    # export ships gru.* and head.* only; parity against deployed NumPy forward
+    arrays = {k: v.detach().cpu().numpy() for k, v in s.state_dict().items()}
+    deploy = {k: v for k, v in arrays.items() if k.startswith("gru.") or k.startswith("head.")}
+    assert not any(k.startswith("dyn_head") for k in deploy)
+    assert not any(k.startswith("aux_head") for k in deploy)
+    assert parity_error(s, deploy, batch=2) < 1e-5
+
+
+def test_evaluate_save_traces(tmp_path):
+    from evaluate import run
+
+    out = tmp_path / "traces.json"
+    run(4, "L0", "random", "cpu", seed=3, save_traces=str(out), max_trace_episodes=2)
+    data = json.loads(out.read_text())
+    assert data["schema"] == "ugv_replay_v1"
+    assert data["source"] == "sim_eval"
+    assert data["level"] == "L0"
+    assert data["episodes"], "no episodes recorded"
+    assert len(data["episodes"]) <= 2
+    for ep in data["episodes"]:
+        assert ep["outcome"] in ("success", "collision", "timeout", "false_park")
+        assert ep["steps"] == len(ep["frames"])
+        for k, frame in enumerate(ep["frames"]):
+            assert frame["t"] == round(k * data["dt"], 3)
+        for frame in ep["frames"]:
+            for key in (
+                "t",
+                "true_pose",
+                "true_pose_ccw",
+                "delayed_tag",
+                "aux_pose",
+                "valid",
+                "blackout",
+                "steps_since_valid",
+                "imu_w",
+                "imu_yaw",
+                "action",
+                "shield_clear",
+            ):
+                assert key in frame, key
