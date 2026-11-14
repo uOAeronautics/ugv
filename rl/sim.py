@@ -37,6 +37,11 @@ LEVELS = {
     "L5": dict(dist=(0.5, 8.0), bearing=180.0, yaw=180.0, noise=1.0, latency=(0.08, 0.20),
                drops=(0.25, 0.45), outliers=0.02, blackout=3.0, under_drone_loss=True,
                full_posterior=True, area=12.0, cam_hz=30.0),
+    "L_real": dict(dist=(0.5, 1.5), bearing=30.0, yaw=60.0, noise=1.0, latency=(0.05, 0.10),
+                   drops=0.0, outliers=0.0, blackout=0.0, under_drone_loss=True,
+                   full_posterior=False, area=1.5, cam_hz=20.0,
+                   cam_hz_range=(10.0, 30.0), min_tag_range=0.40,
+                   gyro_noise_std=(0.05, 0.7), duty_cap=0.44, real_plant=True),
 }
 
 # Provisional geometry (config/parking.json unverified): car 0.16 x 0.22 m,
@@ -47,6 +52,7 @@ SKID_X = GEAR_GAP / 2 + GEAR_R  # 0.157
 HALF_BASE = (0.21 + 0.149) / 2  # wheelbase+track mixer arm
 HIST = 50  # 1 s at 50 Hz
 _RING_K = 32  # latency ring depth; covers 0.64 s at 50 Hz
+_CMD_K = 24   # command onset delay ring depth; covers 0.48 s at 50 Hz
 # Frame: tag x,y,yaw + age + valid + imu_w + imu_yaw + prev_act(3) + tag vel est(3).
 # The smoothed tag velocity is explicit because the GRU could not extract
 # transit-critical velocity from raw poses (fit error 100x worse at the slot
@@ -84,6 +90,11 @@ class EnvConfig:
     use_mean_dynamics: bool = True  # L0/L1 use posterior mean unless False (particles[0])
     full_posterior: bool | None = None  # override LEVELS full_posterior if set
     declare_parked: bool = False  # enable 3-dim still-outside-goal false_park detection
+    real_plant: bool | None = None  # override LEVELS real_plant (real-car physical axes + fit)
+    duty_cap: float | None = None  # wheel-level duty cap (e.g. 0.44 on real car)
+    gyro_noise_std: float | tuple[float, float] | None = None  # gyro white noise std (rad/s)
+    cam_hz_range: tuple[float, float] | None = None  # per-env valid-pose rate range (Hz)
+    min_tag_range: float | None = None  # tag loss range threshold when under_drone_loss is True
 
 
 class MecanumVecEnv:
@@ -108,6 +119,7 @@ class MecanumVecEnv:
             "cov": torch.tensor(p["innovation_covariance"], dtype=torch.float32, device=self.device),
         } for p in prof["posterior_particles"]]
         self.level = LEVELS[cfg.level]
+        self.real_plant = bool(self.level.get("real_plant", False) if cfg.real_plant is None else cfg.real_plant)
         self.cam_hz = float(cfg.cam_hz if cfg.cam_hz is not None else self.level.get("cam_hz", 50.0))
         # Persistent generators: every stochastic draw in reset/step comes from
         # these streams, so a fixed seed + fixed call pattern is reproducible.
@@ -152,6 +164,15 @@ class MecanumVecEnv:
         self.pose_ring = torch.zeros(n, _RING_K, 3, device=dev)
         self.ring_count = torch.zeros(n, dtype=torch.long, device=dev)
         self.ring_head = 0
+        self.env_cam_hz = torch.full((n,), self.cam_hz, device=dev)
+        self.gyro_noise_std = torch.full((n,), 0.002, device=dev)
+        self.rf_gain = torch.zeros(n, 3, device=dev)
+        self.rf_dz = torch.zeros(n, 3, device=dev)
+        self.rf_onset_steps = torch.zeros(n, 3, dtype=torch.long, device=dev)
+        self.rf_strafe_yaw = torch.zeros(n, device=dev)
+        self.cmd_ring = torch.zeros(n, _CMD_K, 3, device=dev)
+        self.cmd_count = torch.zeros(n, dtype=torch.long, device=dev)
+        self.cmd_head = 0
         self.reset(torch.arange(n))
 
     # ---- reset ----
@@ -160,7 +181,42 @@ class MecanumVecEnv:
         idx_d = idx.to(dev)
         m = len(idx)
         full = self.level["full_posterior"] if self.cfg.full_posterior is None else self.cfg.full_posterior
-        if full:
+        if self.real_plant:
+            # Real-car fit (2026-11-13 calibration): axes [left (+x), fwd (-y), ccw (+yaw)].
+            # Nominal gains: [1.6 m/s, 2.3 m/s, 15.7 rad/s] per duty; +-30% DR.
+            # Nominal deadzones: [0.13, 0.05, 0.10]; 0.5x-1.5x DR.
+            nom_gain = torch.tensor([1.6, 2.3, 15.7], device=dev)
+            nom_dz = torch.tensor([0.13, 0.05, 0.10], device=dev)
+            g_scale = 0.7 + 0.6 * torch.rand(m, 3, device=dev, generator=self.gen)
+            dz_scale = 0.5 + 1.0 * torch.rand(m, 3, device=dev, generator=self.gen)
+            self.rf_gain[idx_d] = nom_gain * g_scale
+            self.rf_dz[idx_d] = nom_dz * dz_scale
+            # Onset lag = pure delay + first-order tau matching measured onset times:
+            # strafe 0.25-0.37 s, fwd ~0.18 s, yaw ~0.07 s.
+            d_left = 0.16 + 0.10 * torch.rand(m, device=dev, generator=self.gen)
+            d_fwd = 0.08 + 0.06 * torch.rand(m, device=dev, generator=self.gen)
+            d_ccw = 0.02 + 0.04 * torch.rand(m, device=dev, generator=self.gen)
+            delay_s = torch.stack([d_left, d_fwd, d_ccw], dim=1)
+            self.rf_onset_steps[idx_d] = (delay_s / self.dt).round().long().clamp(0, _CMD_K - 1)
+            tau_left = 0.08 + 0.06 * torch.rand(m, device=dev, generator=self.gen)
+            tau_fwd = 0.05 + 0.05 * torch.rand(m, device=dev, generator=self.gen)
+            tau_ccw = 0.03 + 0.03 * torch.rand(m, device=dev, generator=self.gen)
+            drive = torch.stack([tau_left, tau_fwd, tau_ccw], dim=1)
+            brake = torch.tensor([0.08, 0.08, 0.05], device=dev).unsqueeze(0).expand(m, -1)
+            # Strafe-induced yaw coupling ~5-15 deg/s
+            self.rf_strafe_yaw[idx_d] = math.radians(5.0) + math.radians(10.0) * torch.rand(m, device=dev, generator=self.gen)
+            cov = torch.diag(torch.tensor([0.015**2, 0.015**2, 0.04**2], device=dev)).unsqueeze(0).expand(m, -1, -1)
+            self.wheel_gain[idx_d] = 1.0
+            self.yaw_scale[idx_d] = 1.0
+            self.sag[idx_d] = 1.0
+            coef = torch.zeros(m, 16, 3, device=dev)
+            coef[:, 0, :] = g_scale
+            coef[:, 1, :] = dz_scale
+            coef[:, 2, :] = delay_s * 5.0
+            coef[:, 3, :] = drive * 5.0
+            coef[:, 4, 0] = self.rf_strafe_yaw[idx_d]
+            dz = self.rf_dz[idx_d, 1]
+        elif full:
             pick = torch.randint(0, len(self.particles), (m,), generator=self.gen_cpu)
             coef = torch.stack([self.particles[int(i)]["coef"] for i in pick]).to(dev)
             dz = torch.tensor([self.particles[int(i)]["dz"] for i in pick],
@@ -257,15 +313,29 @@ class MecanumVecEnv:
         self.prev_tag[di] = 0
         self.prev_valid[di] = False
         self.dt_since_valid[di] = 0
-        if self.cam_hz < 1.0 / self.dt - 1e-6:
-            self.cam_accum[di] = (1.0 / self.cam_hz) - self.dt
+        hz_rng = self.cfg.cam_hz_range if self.cfg.cam_hz_range is not None else self.level.get("cam_hz_range")
+        if self.cfg.cam_hz is not None or hz_rng is None:
+            hz_val = float(self.cfg.cam_hz if self.cfg.cam_hz is not None else self.cam_hz)
+            self.env_cam_hz[di] = hz_val
         else:
-            self.cam_accum[di] = 0.0
+            self.env_cam_hz[di] = hz_rng[0] + (hz_rng[1] - hz_rng[0]) * torch.rand(m, device=dev, generator=self.gen)
+        fast_cam = self.env_cam_hz[di] >= (1.0 / self.dt - 1e-6)
+        self.cam_accum[di] = torch.where(fast_cam, torch.zeros(m, device=dev), (1.0 / self.env_cam_hz[di]) - self.dt)
+        g_std = self.cfg.gyro_noise_std if self.cfg.gyro_noise_std is not None else self.level.get("gyro_noise_std", 0.002)
+        if isinstance(g_std, tuple):
+            self.gyro_noise_std[di] = g_std[0] + (g_std[1] - g_std[0]) * torch.rand(m, device=dev, generator=self.gen)
+        else:
+            self.gyro_noise_std[di] = float(g_std)
+        if self.real_plant:
+            self.coef[di, 4, 1] = self.gyro_noise_std[di]
+            self.coef[di, 4, 2] = self.env_cam_hz[di] / 30.0
         self.imu_bias[di] = 0.002 * torch.randn(len(di), device=dev, generator=self.gen)
         self.imu_yaw[di] = self.pose[di, 2].clone()
         # latency ring: prefill with the spawn pose so delayed reads are valid
         self.pose_ring[di] = self.pose[di].unsqueeze(1).expand(-1, _RING_K, -1)
         self.ring_count[di] = 1
+        self.cmd_ring[di] = 0.0
+        self.cmd_count[di] = 1
         return self._privileged()
 
     def _push_buffer(self):
@@ -300,15 +370,41 @@ class MecanumVecEnv:
         # translation needs negation (+cmd -> +body vel) while the turn
         # channel matches the ideal convention un-negated (verified empirically
         # per-channel on posterior-mean dynamics).
-        vx, vy, w = cmd[:, 0], cmd[:, 1], cmd[:, 2] * HALF_BASE * 4.0
-        trans = torch.stack([vx - vy, vx + vy, vx + vy, vx - vy], dim=1)
-        turn = torch.stack([-w, -w, w, w], dim=1).expand_as(trans)
-        wheels = (-trans + turn)
-        wheels = (wheels * self.wheel_gain * self.sag[:, None]).clamp(-1, 1)
-        feat = _wheel_features(wheels, self.dz)
-        target = torch.bmm(feat[:, None, :], self.coef).squeeze(1)  # [N,3]
-        target[:, 2] *= self.yaw_scale
-        braking = wheels.abs().max(dim=1).values < 1e-8
+        if self.real_plant:
+            dcap = float(self.cfg.duty_cap if self.cfg.duty_cap is not None
+                         else self.level.get("duty_cap", 0.44))
+            # Physical axes: cmd[:,0] -> left (+x), cmd[:,1] -> -fwd (+y), cmd[:,2] -> ccw (+yaw)
+            u_raw = torch.stack([cmd[:, 0], -cmd[:, 1], cmd[:, 2]], dim=1) * dcap
+            w_scale = (u_raw.abs().sum(dim=1) / max(dcap, 1e-6)).clamp_min(1.0)
+            u_capped = u_raw / w_scale[:, None]
+            self.cmd_ring[:, self.cmd_head % _CMD_K] = u_capped
+            self.cmd_head += 1
+            self.cmd_count += 1
+            avail_c = (self.cmd_count - 1).clamp_min(0)[:, None]
+            use_c = torch.minimum(self.rf_onset_steps, avail_c)
+            pos_c = (self.cmd_head - 1 - use_c) % _CMD_K
+            env_idx = torch.arange(self.n, device=dev)[:, None]
+            ax_idx = torch.arange(3, device=dev)[None, :]
+            u_del = self.cmd_ring[env_idx, pos_c, ax_idx]
+            eff = torch.sign(u_del) * torch.clamp(u_del.abs() - self.rf_dz, min=0.0)
+            vx_tgt = self.rf_gain[:, 0] * eff[:, 0]
+            vy_tgt = -self.rf_gain[:, 1] * eff[:, 1]
+            w_tgt = self.rf_gain[:, 2] * eff[:, 2]
+            w_tgt = w_tgt + torch.sign(u_del[:, 0]) * (u_del[:, 0].abs() / 0.15).clamp_max(1.0) * self.rf_strafe_yaw
+            target = torch.stack([vx_tgt, vy_tgt, w_tgt], dim=1)
+            braking = u_del.abs().max(dim=1).values < 1e-8
+            cmd_lvl = (u_del.abs().mean(dim=1) / max(dcap, 1e-6)).clamp_max(1.0)
+        else:
+            vx, vy, w = cmd[:, 0], cmd[:, 1], cmd[:, 2] * HALF_BASE * 4.0
+            trans = torch.stack([vx - vy, vx + vy, vx + vy, vx - vy], dim=1)
+            turn = torch.stack([-w, -w, w, w], dim=1).expand_as(trans)
+            wheels = (-trans + turn)
+            wheels = (wheels * self.wheel_gain * self.sag[:, None]).clamp(-1, 1)
+            feat = _wheel_features(wheels, self.dz)
+            target = torch.bmm(feat[:, None, :], self.coef).squeeze(1)  # [N,3]
+            target[:, 2] *= self.yaw_scale
+            braking = wheels.abs().max(dim=1).values < 1e-8
+            cmd_lvl = wheels.abs().mean(dim=1)
         tau = torch.where(braking[:, None].expand_as(self.drive_tau), self.brake_tau, self.drive_tau)
         decay = torch.exp(-self.dt / tau.clamp_min(0.02))
         self.vel = decay * self.vel + (1 - decay) * target
@@ -320,7 +416,6 @@ class MecanumVecEnv:
         # sensor emulator). Coasting keeps disturbances via the velocity term.
         tau_mean = tau.mean(dim=1, keepdim=True).clamp_min(0.02)
         scale = torch.sqrt(1 - torch.exp(-2 * self.dt / tau_mean)).squeeze(1)
-        cmd_lvl = wheels.abs().mean(dim=1)
         spd_lvl = (self.vel[:, :2].norm(dim=1) / 0.6 + self.vel[:, 2].abs() / 2.5).clamp_max(1.0)
         activity = torch.maximum(cmd_lvl, spd_lvl).clamp(0.03, 1.0)
         try:
@@ -354,19 +449,20 @@ class MecanumVecEnv:
         # L0-L2 keep the tag (spec: perfect state / tags visible), L3+ lose it.
         # The camera minimum range (~0.10 m) lies inside this zone, so it is
         # covered by under_drone_loss rather than applied at every level.
-        near_deck = dist < 0.30
+        min_range = float(self.cfg.min_tag_range if self.cfg.min_tag_range is not None
+                          else self.level.get("min_tag_range", 0.30))
+        near_deck = dist < min_range
         in_fov = (bearing.abs() < FOV_HALF) & (dist < 5.0)
         if self.level["under_drone_loss"]:
             seen = in_fov & ~near_deck
         else:
             seen = in_fov | near_deck
-        if self.cam_hz >= 1.0 / self.dt - 1e-6:
-            cam_tick = torch.ones(self.n, dtype=torch.bool, device=dev)
-        else:
-            cam_period = 1.0 / self.cam_hz
-            self.cam_accum += self.dt
-            cam_tick = self.cam_accum >= (cam_period - 1e-6)
-            self.cam_accum = torch.where(cam_tick, self.cam_accum - cam_period, self.cam_accum)
+        fast_cam = self.env_cam_hz >= (1.0 / self.dt - 1e-6)
+        cam_period = 1.0 / self.env_cam_hz.clamp_min(1e-3)
+        self.cam_accum += self.dt
+        cam_tick = fast_cam | (self.cam_accum >= (cam_period - 1e-6))
+        self.cam_accum = torch.where(fast_cam, torch.zeros_like(self.cam_accum),
+                                     torch.where(cam_tick, self.cam_accum - cam_period, self.cam_accum))
         in_blackout = (self.time > self.blackout_start) & (self.time < self.blackout_start + self.blackout_total)
         dropped = torch.rand(self.n, device=dev, generator=self.gen) < self.drop_p
         valid = seen & cam_tick & (~in_blackout) & (~dropped)
@@ -398,7 +494,7 @@ class MecanumVecEnv:
         self.prev_valid = self.prev_valid | valid
         self.dt_since_valid = torch.where(valid, torch.zeros_like(self.dt_since_valid), self.dt_since_valid)
         # IMU: true yaw rate + white + bias, yaw integrated with drift
-        gyro_white = noise * 0.002 * torch.randn(self.n, device=dev, generator=self.gen)
+        gyro_white = noise * self.gyro_noise_std * torch.randn(self.n, device=dev, generator=self.gen)
         imu_w = self.vel[:, 2] + gyro_white + self.imu_bias
         self.imu_w = imu_w
         self.imu_bias *= (1 - self.dt / 0.5)

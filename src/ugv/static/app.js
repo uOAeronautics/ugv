@@ -1,3 +1,4 @@
+let needleDeg = 0;
 const keys = new Set();
 let socket;
 let heartbeat;
@@ -150,8 +151,10 @@ function render(next) {
   $("#imu-accel").textContent = vectorText(next.imu_accel_g, 3);
   $("#imu-gyro").textContent = vectorText(next.imu_gyro_dps, 1);
   const heading = Number(next.heading_deg) || 0;
-  $("#heading-needle").style.transform = `rotate(${heading}deg)`;
-  $("#heading-degrees").textContent = next.heading_calibrated ? String(Math.round(heading) % 360).padStart(3, "0") : "—";
+  // heading_deg wraps at 360; turn the needle by the shortest arc so it never sweeps backwards.
+  needleDeg += ((heading - needleDeg) % 360 + 540) % 360 - 180;
+  $("#heading-needle").style.transform = `rotate(${needleDeg}deg)`;
+  $("#heading-degrees").textContent = next.heading_calibrated ? String(((Math.round(heading) % 360) + 360) % 360).padStart(3, "0") : "—";
   const headingStatus = (next.heading_status || "hold still · zeroing").toUpperCase();
   const headingRate = Number(next.heading_rate_dps) || 0;
   $("#heading-status").textContent = next.heading_calibrated && !next.heading_stationary

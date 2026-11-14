@@ -327,3 +327,52 @@ def test_train_teacher_reset_every_iter_flag():
     r = subprocess.run([sys.executable, "train_teacher.py", "--help"],
                        capture_output=True, text=True)
     assert r.returncode == 0 and "--reset-every-iter" in r.stdout
+
+
+def test_real_fit_plant():
+    # Defaults unchanged; L_real models physical axes, duty cap, deadzone, onset lag,
+    # strafe-induced yaw, gyro noise [0.05, 0.7], cam_hz [10, 30], and tag loss < 0.4 m.
+    cfg_def = EnvConfig()
+    assert cfg_def.real_plant is None and cfg_def.min_tag_range is None and cfg_def.duty_cap is None
+
+    env = MecanumVecEnv(16, EnvConfig(level="L_real", device="cpu", seed=3))
+    assert env.real_plant
+    assert (env.gyro_noise_std >= 0.05).all() and (env.gyro_noise_std <= 0.7).all()
+    assert (env.env_cam_hz >= 10.0).all() and (env.env_cam_hz <= 30.0).all()
+    assert env.gyro_noise_std.std() > 0.05 and env.env_cam_hz.std() > 1.0
+
+    # Partial reset(idx=[0]) leaves env 1 parameters untouched
+    g1 = env.rf_gain[1].clone()
+    hz1 = env.env_cam_hz[1].clone()
+    env.reset(torch.tensor([0]))
+    assert torch.equal(env.rf_gain[1], g1) and torch.equal(env.env_cam_hz[1], hz1)
+
+    # Physical axes & onset lag: forward (-y) responds faster and faster peak than strafe (+x);
+    # strafing induces yaw coupling.
+    env_f = MecanumVecEnv(4, EnvConfig(level="L_real", device="cpu", seed=7))
+    env_f.reset()
+    for _ in range(25):  # 0.5 s
+        env_f.step(torch.tensor([[0.0, -1.0, 0.0]] * 4))
+    assert (env_f.vel[:, 1] < -0.5).all() and env_f.vel[:, 0].abs().max() < 0.1
+
+    env_s = MecanumVecEnv(4, EnvConfig(level="L_real", device="cpu", seed=7))
+    env_s.reset()
+    for _ in range(3):  # 0.06 s: before strafe onset lag
+        env_s.step(torch.tensor([[1.0, 0.0, 0.0]] * 4))
+    assert env_s.vel[:, 0].abs().max() < 0.05
+    for _ in range(25):  # 0.56 s: after onset, strafe moves +x and induces +yaw
+        env_s.step(torch.tensor([[1.0, 0.0, 0.0]] * 4))
+    assert (env_s.vel[:, 0] > 0.2).all() and (env_s.vel[:, 2] > 0.05).all()
+
+    # Tag loss below 0.4 m range
+    env_t = MecanumVecEnv(2, EnvConfig(level="L_real", device="cpu", seed=5))
+    env_t.reset()
+    env_t.pose[0] = torch.tensor([0.0, 0.35, 0.0])  # < 0.40 m -> blind
+    env_t.pose[1] = torch.tensor([0.0, 0.65, 0.0])  # >= 0.40 m -> visible on cam ticks
+    env_t.pose_ring.copy_(env_t.pose.unsqueeze(1).expand_as(env_t.pose_ring))
+    saw_1 = False
+    for _ in range(6):
+        obs, _, _, _ = env_t.step(torch.zeros(2, 3))
+        assert not bool(obs["valid"][0])
+        saw_1 = saw_1 or bool(obs["valid"][1])
+    assert saw_1
