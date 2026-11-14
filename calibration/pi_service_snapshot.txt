@@ -1,0 +1,284 @@
+=== systemctl cat ugv-dashboard.service ===
+# /etc/systemd/system/ugv-dashboard.service
+[Unit]
+Description=UGV robot dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=advanced
+Group=advanced
+WorkingDirectory=/home/advanced/ugv
+ExecStart=/home/advanced/ugv/.venv/bin/uvicorn ugv.web:app --host 0.0.0.0 --port 8765
+# Freeze the controller before the independent brake command, preventing an
+# autonomous loop from rewriting motor PWM during shutdown.
+ExecStop=/bin/kill -STOP $MAINPID
+ExecStop=/home/advanced/ugv/.venv/bin/ugv emergency-stop
+Restart=on-failure
+RestartSec=2
+KillSignal=SIGINT
+TimeoutStopSec=2
+NoNewPrivileges=true
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/ugv-dashboard.service.d/vision-camera.conf
+[Service]
+# 2026-11-13 L7: 16000us/gain3 blurred tags during yaw; shorter shutter, higher gain
+Environment=UGV_CAMERA_SHUTTER_US=4000
+Environment=UGV_CAMERA_GAIN=8
+
+=== /etc/systemd/system/ugv-dashboard.service.d ===
+total 12
+drwxr-xr-x  2 root root 4096 Oct 23 21:41 .
+drwxr-xr-x 22 root root 4096 Oct 23 21:41 ..
+-rw-r--r--  1 root root  164 Nov 13 18:17 vision-camera.conf
+
+=== ls -la ~ ~/ugv ~/l7_runs ~/ugv/runs ~/ugv/calibration ~/ugv/calibration/runs ===
+/home/advanced:
+total 208
+drwx------ 34 advanced advanced  4096 Nov 13 19:45 .
+drwxr-xr-x  3 root     root      4096 Jun 17 20:32 ..
+drwxr-xr-x  3 advanced advanced  4096 Sep 27 16:13 Arduino
+drwxr-xr-x  5 advanced advanced  4096 Sep 27 16:09 .arduino15
+drwx------  2 advanced advanced  4096 Sep 27 17:09 aruco-backup-20260927
+-rw-------  1 advanced advanced 33922 Sep 28 00:57 .bash_history
+-rw-r--r--  1 advanced advanced   220 Jun 17 20:20 .bash_logout
+-rw-r--r--  1 advanced advanced  3523 Jun 17 20:20 .bashrc
+drwx------ 10 advanced advanced  4096 Sep 28 01:14 .cache
+drwxrwxr-x 10 advanced advanced  4096 Sep 28 00:19 .config
+drwx------  4 advanced advanced  4096 Sep 27 20:47 .copilot
+drwxrwxr-x  3 advanced advanced  4096 Sep 27 20:46 .cursor-server
+drwxrwxr-x  2 advanced advanced  4096 Jun 17 20:32 Desktop
+drwxr-xr-x  2 advanced advanced  4096 Jun 17 20:32 Documents
+drwxr-xr-x  2 advanced advanced  4096 Jun 17 20:32 Downloads
+drwx------  2 advanced advanced  4096 Sep 27 16:54 heading-hud-backup-20260927
+drwxrwxr-x  4 advanced advanced  4096 Nov 13 18:46 l7
+drwxrwxr-x 26 advanced advanced  4096 Nov 13 18:52 l7_runs
+drwx------  4 advanced advanced  4096 Jun 17 20:32 .local
+drwxr-xr-x  2 advanced advanced  4096 Jun 17 20:32 Music
+drwxr-xr-x  2 advanced advanced  4096 Jun 17 20:32 Pictures
+-rw-r--r--  1 advanced advanced   807 Jun 17 20:20 .profile
+drwxr-xr-x  2 advanced advanced  4096 Jun 17 20:32 Public
+drwxrwxr-x  3 advanced advanced  4096 Sep 27 16:25 src
+drwx------  2 advanced advanced  4096 Jun 17 20:32 .ssh
+-rw-r--r--  1 advanced advanced     0 Jun 17 21:29 .sudo_as_admin_successful
+drwxr-xr-x  2 advanced advanced  4096 Jun 17 20:32 Templates
+drwxr-xr-x 19 advanced advanced  4096 Nov 13 19:30 ugv
+drwx------  2 advanced advanced  4096 Sep 27 17:50 ugv-angle-backup-VqDnUW
+drwx------  2 advanced advanced  4096 Sep 27 18:49 ugv-arc-backup-jIZ3GD
+drwx------  2 advanced advanced  4096 Sep 28 00:31 ugv-camera-tuning-backup-20261017
+drwx------  2 advanced advanced  4096 Sep 27 20:17 ugv-curved-tag-backup-WzCwZj
+drwx------  2 advanced advanced  4096 Sep 27 20:40 ugv-follow-center-backup-obbyd7zl
+drwx------  3 advanced advanced  4096 Sep 27 18:40 ugv-gyro-backup-fxSrOC
+drwx------  3 advanced advanced  4096 Sep 28 03:43 ugv-power-backup-0901n2
+drwx------  2 advanced advanced  4096 Sep 27 19:46 ugv-simple-controls-backup-JwLzjy
+drwx------  2 advanced advanced  4096 Sep 27 17:45 ugv-vision-backup-bqgZIM
+drwxr-xr-x  2 advanced advanced  4096 Jun 17 20:32 Videos
+drwxr-x---  5 advanced advanced  4096 Sep 27 23:46 .vscode-server
+-rw-rw-r--  1 advanced advanced   165 Sep 27 16:26 .wget-hsts
+-rw-r--r--  1 advanced advanced   479 Aug 29 18:23 whats-that-smoke-dashboard.service
+-rw-------  1 advanced advanced    51 Nov 13 19:45 .Xauthority
+-rw-------  1 advanced advanced  2953 Nov 13 19:45 .xsession-errors
+-rw-------  1 advanced advanced  3867 Nov 13 16:34 .xsession-errors.old
+
+/home/advanced/l7_runs:
+total 112
+drwxrwxr-x 26 advanced advanced 4096 Nov 13 18:52 .
+drwx------ 34 advanced advanced 4096 Nov 13 19:45 ..
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:00 20261113-180033-watch-first
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:03 20261113-180312-watch-klt
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:11 20261113-181040-probe-axes
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:14 20261113-181438-stage-toD
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:16 20261113-181622-stage-front
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:18 20261113-181848-watch-shutter4ms
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:20 20261113-182030-watch-shutter4ms-b
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:22 20261113-182150-policy-ep1-front
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:24 20261113-182413-stage-front2
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:25 20261113-182536-stage-front3
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:26 20261113-182645-policy-ep2-mean
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:30 20261113-183026-stage-front4
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:32 20261113-183140-policy-ep3-p0
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:33 20261113-183316-stage-front5
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:34 20261113-183432-policy-ep3-p0
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:36 20261113-183626-watch-spawn
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:38 20261113-183731-stage-front6
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:40 20261113-183857-policy-ep3-p0
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:45 20261113-184454-stage-restage
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:47 20261113-184652-policy-gyro-zero
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:48 20261113-184814-stage-restage-lp
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:49 20261113-184908-policy-gyro-lp
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:50 20261113-185039-stage-park-0.7
+drwxrwxr-x  3 advanced advanced 4096 Nov 13 18:52 20261113-185204-stage-park-0.45
+-rw-rw-r--  1 advanced advanced  187 Nov 13 19:33 tagmap.json
+-rw-r--r--  1 root     root       80 Nov 13 18:17 vision-camera.conf.bak-20261113
+
+/home/advanced/ugv:
+total 184
+drwxr-xr-x 19 advanced advanced  4096 Nov 13 19:30 .
+drwx------ 34 advanced advanced  4096 Nov 13 19:45 ..
+drwxr-xr-x  5 advanced advanced  4096 Oct 13 15:56 arduino
+drwxr-xr-x  3 advanced advanced  4096 Nov 13 19:30 calibration
+drwxr-xr-x  2 advanced advanced  4096 Oct 13 17:28 config
+drwxr-xr-x  3 advanced advanced  4096 Nov 13 19:30 docs
+drwxr-xr-x  3 advanced advanced  4096 Oct 13 15:56 firmware
+drwxrwxr-x  8 advanced advanced  4096 Nov 13 19:30 .git
+-rw-r--r--  1 advanced advanced    13 Oct 17 18:03 .gitattributes
+-rw-rw-r--  1 advanced advanced   379 Nov 13 19:30 .gitignore
+drwxrwxr-x  3 advanced advanced  4096 Nov 13 19:30 .opencode
+-rw-rw-r--  1 advanced advanced   695 Nov 13 19:30 pyproject.toml
+drwxr-xr-x  3 advanced advanced  4096 Oct 13 15:57 .pytest_cache
+-rw-r--r--  1 advanced advanced     5 Aug 29 17:57 .python-version
+-rw-r--r--  1 advanced advanced  2829 Oct 17 17:58 README.md
+drwxrwxr-x  3 advanced advanced  4096 Nov 13 19:30 rl
+drwxrwxr-x  2 advanced advanced  4096 Nov 13 16:57 runs
+drwxr-xr-x  3 advanced advanced  4096 Oct 17 14:41 simulation
+drwxr-xr-x  3 advanced advanced  4096 Oct 17 17:46 src
+drwxr-xr-x  4 advanced advanced  4096 Nov 13 19:30 tests
+drwxr-xr-x  3 advanced advanced  4096 Sep 27 23:56 tmp
+drwxr-xr-x  4 advanced advanced  4096 Nov 13 19:30 tools
+-rw-r--r--  1 advanced advanced   653 Oct 17 17:46 ugv-dashboard.service
+-rw-r--r--  1 advanced advanced 85757 Oct 17 17:52 uv.lock
+drwxrwxr-x  4 advanced advanced  4096 Sep 28 01:14 .venv
+drwxrwxr-x  4 advanced advanced  4096 Sep 27 22:36 work
+
+/home/advanced/ugv/calibration:
+total 36
+drwxr-xr-x  3 advanced advanced  4096 Nov 13 19:30 .
+drwxr-xr-x 19 advanced advanced  4096 Nov 13 19:30 ..
+-rw-rw-r--  1 advanced advanced 17058 Nov 13 19:30 dataset_catalog.json
+-rw-rw-r--  1 advanced advanced  1180 Nov 13 19:30 README.md
+drwxrwxr-x 22 advanced advanced  4096 Nov 13 19:30 runs
+
+/home/advanced/ugv/calibration/runs:
+total 3292
+drwxrwxr-x 22 advanced advanced   4096 Nov 13 19:30 .
+drwxr-xr-x  3 advanced advanced   4096 Nov 13 19:30 ..
+drwxrwxr-x  2 advanced advanced   4096 Nov 13 19:30 2026-10-17-floor-01
+drwxrwxr-x  2 advanced advanced   4096 Nov 13 19:30 2026-10-17-floor-long-01
+drwxrwxr-x  2 advanced advanced   4096 Sep 28 01:11 2026-10-17-floor-long-02
+drwxrwxr-x  2 advanced advanced   4096 Nov 13 19:30 2026-10-17-floor-long-03
+drwxrwxr-x  2 advanced advanced   4096 Nov 13 19:30 2026-10-17-laps-observed-01
+drwxrwxr-x  2 advanced advanced   4096 Nov 13 19:30 2026-10-17-laps-right-01
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-continuous-loops-01
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-continuous-loops-02
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-continuous-loops-03
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-continuous-loops-04
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-continuous-pilot-01
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-continuous-pilot-02
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-continuous-yaw-01
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-imu-rest-01
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-long-guard-03
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-long-guard-04
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-probe-01
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-reorient-01
+drwxrwxr-x  3 advanced advanced   4096 Nov 13 19:30 2026-10-23-mecanum-sharp-guard-01
+-rw-rw-r--  1 advanced advanced 206916 Nov 13 19:30 brake-refit-basis.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 brake-refit-basis.log
+-rw-rw-r--  1 advanced advanced 104971 Nov 13 19:30 braking-before.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 braking-before.log
+-rw-rw-r--  1 advanced advanced 105132 Nov 13 19:30 braking-grip12.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 braking-grip12.log
+drwxrwxr-x 26 advanced advanced   4096 Nov 13 19:30 l7
+-rw-rw-r--  1 advanced advanced  74774 Nov 13 19:30 lap-candidate-001.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 lap-candidate-001.log
+-rw-rw-r--  1 advanced advanced  74589 Nov 13 19:30 lap-candidate-003.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 lap-candidate-003.log
+-rw-rw-r--  1 advanced advanced  74514 Nov 13 19:30 lap-candidate-006.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 lap-candidate-006.log
+-rw-rw-r--  1 advanced advanced 252454 Nov 13 19:30 lap-final-motions.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 lap-final-motions.log
+-rw-rw-r--  1 advanced advanced 166847 Nov 13 19:30 laps-before.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 laps-before.log
+-rw-rw-r--  1 advanced advanced 167067 Nov 13 19:30 laps-candidate2.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 laps-candidate2.log
+-rw-rw-r--  1 advanced advanced 167126 Nov 13 19:30 laps-candidate3.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 laps-candidate3.log
+-rw-rw-r--  1 advanced advanced 167255 Nov 13 19:30 laps-candidate4.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 laps-candidate4.log
+-rw-rw-r--  1 advanced advanced 166942 Nov 13 19:30 laps-candidate.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 laps-candidate.log
+-rw-rw-r--  1 advanced advanced 139919 Nov 13 19:30 reset-fixed.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 reset-fixed.log
+-rw-rw-r--  1 advanced advanced  69560 Nov 13 19:30 reset-reproduction.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 reset-reproduction.log
+-rw-rw-r--  1 advanced advanced 252454 Nov 13 19:30 sim-calibrated-validation.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-calibrated-validation.log
+-rw-rw-r--  1 advanced advanced 206764 Nov 13 19:30 sim-default.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-default.log
+-rw-rw-r--  1 advanced advanced  69986 Nov 13 19:30 sim-gain025-slip030.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain025-slip030.log
+-rw-rw-r--  1 advanced advanced  70155 Nov 13 19:30 sim-gain05-slip030.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain05-slip030.log
+-rw-rw-r--  1 advanced advanced  70239 Nov 13 19:30 sim-gain08-slip030.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain08-slip030.log
+-rw-rw-r--  1 advanced advanced  69957 Nov 13 19:30 sim-gain12-slip030.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain12-slip030.log
+-rw-rw-r--  1 advanced advanced  69448 Nov 13 19:30 sim-gain15-slip030.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain15-slip030.log
+-rw-rw-r--  1 advanced advanced  69782 Nov 13 19:30 sim-gain18-slip030.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain18-slip030.log
+-rw-rw-r--  1 advanced advanced 138716 Nov 13 19:30 sim-gain22-slip003.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain22-slip003.log
+-rw-rw-r--  1 advanced advanced 137422 Nov 13 19:30 sim-gain22-slip012.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain22-slip012.log
+-rw-rw-r--  1 advanced advanced 137729 Nov 13 19:30 sim-gain22-slip030.json
+-rw-rw-r--  1 advanced advanced      0 Nov 13 19:30 sim-gain22-slip030.log
+
+/home/advanced/ugv/runs:
+total 104
+drwxrwxr-x  2 advanced advanced  4096 Nov 13 16:57 .
+drwxr-xr-x 19 advanced advanced  4096 Nov 13 19:30 ..
+-rw-rw-r--  1 advanced advanced 98169 Nov 13 16:57 student.npz
+
+=== v4l2-ctl --list-devices ===
+bcm2835-codec-decode (platform:bcm2835-codec):
+	/dev/video10
+	/dev/video11
+	/dev/video12
+	/dev/video18
+	/dev/video31
+
+bcm2835-isp (platform:bcm2835-isp):
+	/dev/video13
+	/dev/video14
+	/dev/video15
+	/dev/video16
+	/dev/video20
+	/dev/video21
+	/dev/video22
+	/dev/video23
+	/dev/media1
+	/dev/media3
+
+unicam (platform:fe801000.csi):
+	/dev/video0
+	/dev/media0
+
+rpi-hevc-dec (platform:rpi-hevc-dec):
+	/dev/video19
+	/dev/media2
+
+bcm2835-codec (vchiq:bcm2835-codec):
+	/dev/media4
+
+=== /dev/tty* /dev/video* ===
+crw-rw----  1 root dialout 166,  0 Nov 13 19:45 /dev/ttyACM0
+crw-rw----+ 1 root video    81, 14 Nov 13 19:45 /dev/video0
+crw-rw----+ 1 root video    81,  9 Nov 13 19:45 /dev/video10
+crw-rw----+ 1 root video    81, 10 Nov 13 19:45 /dev/video11
+crw-rw----+ 1 root video    81, 11 Nov 13 19:45 /dev/video12
+crw-rw----+ 1 root video    81,  0 Nov 13 19:45 /dev/video13
+crw-rw----+ 1 root video    81,  1 Nov 13 19:45 /dev/video14
+crw-rw----+ 1 root video    81,  2 Nov 13 19:45 /dev/video15
+crw-rw----+ 1 root video    81,  3 Nov 13 19:45 /dev/video16
+crw-rw----+ 1 root video    81, 12 Nov 13 19:45 /dev/video18
+crw-rw----+ 1 root video    81,  4 Nov 13 19:45 /dev/video19
+crw-rw----+ 1 root video    81,  5 Nov 13 19:45 /dev/video20
+crw-rw----+ 1 root video    81,  6 Nov 13 19:45 /dev/video21
+crw-rw----+ 1 root video    81,  7 Nov 13 19:45 /dev/video22
+crw-rw----+ 1 root video    81,  8 Nov 13 19:45 /dev/video23
+crw-rw----+ 1 root video    81, 13 Nov 13 19:45 /dev/video31
