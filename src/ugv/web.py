@@ -954,12 +954,14 @@ class RobotController:
                 )
                 frame_age = (now - cap) if (frame is not None and cap) else None
                 plan_t0 = time.perf_counter()
+                # RelativeHeading (heading.py) emits CW+ heading_deg & heading_rate_dps;
+                # AutoParkRunner.step expects CCW+ gyro_yaw_rad & imu_w_dps.
                 cmd = runner.step(
                     now,
                     imu_age_s=imu_age,
                     frame_age_s=frame_age,
-                    imu_w_dps=float(self.state.heading_rate_dps),
-                    gyro_yaw_rad=math.radians(float(self.state.heading_deg)),
+                    imu_w_dps=-float(self.state.heading_rate_dps),
+                    gyro_yaw_rad=-math.radians(float(self.state.heading_deg)),
                     rec=rec,
                 )
                 self.perf.record("plan_ms", (time.perf_counter() - plan_t0) * 1000.0)

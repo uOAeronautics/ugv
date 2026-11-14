@@ -465,3 +465,70 @@ def test_staging_perimeter_orbit_clears_skids_from_side_and_rear_poses():
         assert runner._check_swept(cmd.pose, df, dl, dc), (
             f"{label}: orbit command failed _check_swept"
         )
+
+
+def test_autopark_cw_to_ccw_imu_sign_chain_converges_and_unnegated_diverges():
+    from ugv.heading import RelativeHeading
+
+    def _run_closed_loop(negate_imu: bool) -> tuple[float, float, float]:
+        rh = RelativeHeading()
+        t = 10.0
+        for _ in range(35):
+            rh.update([0.0, 0.0, 1.0], [0.0, 0.0, 0.0], t, moving=False)
+            t += 0.1
+        assert rh.snapshot()["heading_calibrated"] is True
+
+        # Perturb physical yaw +5 deg CCW (sensor +Z up sees +50 dps CCW for 0.1s).
+        yaw_true_deg = 5.0
+        snap = rh.update([0.0, 0.0, 1.0], [0.0, 0.0, 50.0], t, moving=True)
+        assert snap["heading_deg"] == pytest.approx(355.0, abs=1e-6)  # CW+
+
+        tagmap = {"14": [-0.028, 0.0, math.pi / 2, -1]}
+        loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
+        runner = autopark.AutoParkRunner(localizer=loc, obstacles=[])
+
+        sign = -1.0 if negate_imu else 1.0
+        tz = 0.55 - (-0.08) - autopark.CAM_FWD_M
+        rec0 = {
+            "cap": t,
+            "tags": [
+                {
+                    "id": 14,
+                    "px": 900.0,
+                    "sol": [_make_pose_sols(math.radians(yaw_true_deg), tx=-0.028, tz=tz, err=0.1)],
+                }
+            ],
+        }
+        cmd0 = runner.step(
+            t,
+            imu_age_s=0.01,
+            frame_age_s=0.01,
+            imu_w_dps=sign * float(snap["heading_rate_dps"]),
+            gyro_yaw_rad=sign * math.radians(float(snap["heading_deg"])),
+            rec=rec0,
+        )
+        first_turn = cmd0.turn
+
+        dt = 0.05
+        for _ in range(25):
+            w_ccw_dps = cmd0.turn * 40.0
+            yaw_true_deg += w_ccw_dps * dt
+            t += dt
+            snap = rh.update([0.0, 0.0, 1.0], [0.0, 0.0, w_ccw_dps], t, moving=abs(w_ccw_dps) > 0.5)
+            cmd0 = runner.step(
+                t,
+                imu_age_s=0.01,
+                frame_age_s=0.01,
+                imu_w_dps=sign * float(snap["heading_rate_dps"]),
+                gyro_yaw_rad=sign * math.radians(float(snap["heading_deg"])),
+                rec=None,
+            )
+        return first_turn, abs(yaw_true_deg), abs(math.degrees(loc.dr_pose[2]))
+
+    first_turn, final_true_deg, final_est_deg = _run_closed_loop(negate_imu=True)
+    assert first_turn < 0.0  # opposes +5 deg CCW perturbation
+    assert final_true_deg < 2.0
+    assert final_est_deg == pytest.approx(final_true_deg, abs=0.5)
+
+    _, bug_true_deg, _ = _run_closed_loop(negate_imu=False)
+    assert bug_true_deg > 5.0  # unnegated CW+ diverges away from 0 deg

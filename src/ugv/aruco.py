@@ -1290,7 +1290,8 @@ class ArucoFollower:
                 continue
             yaw_rate = 0.0
             try:
-                yaw_rate = float(self.controller.state.heading_rate_dps or 0.0)
+                # RelativeHeading (heading.py) is CW+; HolonomicFollowPolicy expects CCW+ command-frame rate.
+                yaw_rate = -float(self.controller.state.heading_rate_dps or 0.0)
             except Exception:
                 yaw_rate = 0.0
             if self.smooth_enabled():

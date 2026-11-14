@@ -21,7 +21,7 @@
 `UGV := FNK0043/Freenove-4WD control+observe repo`
 
 Canonical repository: https://github.com/uOAeronautics/ugv. Local checkout:
-`~/Projects/ugv`; Pi checkout: `/home/advanced/ugv`. For SSH and dashboard URL
+`~/Documents/ugv`; Pi checkout: `/home/advanced/ugv`. For SSH and dashboard URL
 see [docs/NETWORK.md](docs/NETWORK.md).
 The Pi runs `ugv-dashboard.service`; commands are `uv run ugv` and
 `uv run ugv-dashboard`. See [dynamics calibration](docs/DYNAMICS.md) for measured
