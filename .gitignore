@@ -18,3 +18,11 @@ simulation/gazebo/lockstep/build/
 
 # Calibration telemetry and reports are versioned. Camera images remain covered
 # by the image exclusions above and are retained in Pi/local raw-data backups.
+calibration/runs/**/*.jsonl
+calibration/runs/**/*.log
+
+# Generated media, regenerated sim reference cache, and local run outputs
+*.mp4
+tools/l7/sim_reference_L1.npz
+runs/*
+!runs/student.npz
