@@ -128,6 +128,33 @@ def test_correlation_is_lazy_and_preserves_full_resolution_coordinates():
         assert abs(result.center_y - original.center_y) < 12
 
 
+def test_create_tracker_prefers_mosse_and_falls_back_without_it():
+    follower = ArucoFollower(None, None)
+    detection = follower.track_all(sample_frame())[0]
+    gray = follower.previous_gray
+    bbox = follower.expanded_bbox(detection, gray.shape[1], gray.shape[0])
+
+    class FakeMosse:
+        def __init__(self):
+            self.bbox = None
+
+        def init(self, image, box):
+            self.bbox = box
+
+    class FakeLegacy:
+        @staticmethod
+        def TrackerMOSSE_create():
+            return FakeMosse()
+
+    with patch.object(cv2, "legacy", FakeLegacy):
+        assert isinstance(follower.create_tracker(gray, bbox), FakeMosse)
+    with patch.object(cv2, "legacy", None, create=True):
+        tracker = follower.create_tracker(gray, bbox)
+        assert tracker is not None
+        ok, tracked_box = tracker.update(gray)
+        assert ok and abs(tracked_box[0] - bbox[0]) < 2 and abs(tracked_box[1] - bbox[1]) < 2
+
+
 def test_stale_camera_clears_overlay_and_stops_follow():
     async def scenario(follow):
         state = SimpleNamespace(aruco_status="tracking", aruco_visible=True)

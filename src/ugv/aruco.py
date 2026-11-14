@@ -119,6 +119,52 @@ class FollowSteering:
         )
 
 
+class TemplateTracker:
+    """Deterministic last-resort correlation tracker for builds without MOSSE.
+
+    OpenCV 5 dropped ``cv2.legacy.TrackerMOSSE`` and the KCF/CSRT trackers, and
+    its remaining ``cv2.TrackerMIL`` draws its samples at random: on a 1.8x
+    marker box it re-converges up to ~10% of the box off centre, which makes the
+    correlation measurement irreproducible. This tracker matches the previous
+    patch once per frame and refuses a weak match, so the same frame always
+    yields the same box.
+    """
+
+    def __init__(self) -> None:
+        self.patch: Any | None = None
+        self.bbox = (0, 0, 0, 0)
+
+    def init(self, image: Any, bbox: tuple[float, float, float, float]) -> None:
+        import numpy as np
+
+        x, y, width, height = (int(round(value)) for value in bbox)
+        width = max(2, min(width, image.shape[1] - x))
+        height = max(2, min(height, image.shape[0] - y))
+        patch = np.array(image[y : y + height, x : x + width], copy=True)
+        self.patch = patch if patch.size and patch.std() > 1.0 else None
+        self.bbox = (x, y, width, height)
+
+    def update(self, image: Any) -> tuple[bool, tuple[int, int, int, int] | None]:
+        import cv2
+
+        if self.patch is None:
+            return False, None
+        x, y, width, height = self.bbox
+        margin = max(16, max(width, height))
+        left, top = max(0, x - margin), max(0, y - margin)
+        right = min(image.shape[1], x + width + margin)
+        bottom = min(image.shape[0], y + height + margin)
+        window = image[top:bottom, left:right]
+        if window.shape[0] < height or window.shape[1] < width:
+            return False, None
+        scores = cv2.matchTemplate(window, self.patch, cv2.TM_CCOEFF_NORMED)
+        _, score, _, (offset_x, offset_y) = cv2.minMaxLoc(scores)
+        if score < 0.5:
+            return False, None
+        self.bbox = (left + offset_x, top + offset_y, width, height)
+        return True, self.bbox
+
+
 class ArucoFollower:
     def __init__(
         self, camera: CameraStream, controller: RobotController, follow_mode: str = "legacy"
@@ -890,14 +936,32 @@ class ArucoFollower:
 
     @staticmethod
     def create_tracker(image: Any, bbox: tuple[float, float, float, float]) -> Any | None:
+        """Return a correlation tracker initialised on ``image`` for ``bbox``.
+
+        OpenCV 4.x on the Pi ships MOSSE under ``cv2.legacy``; OpenCV 5 removed
+        it and its other correlation trackers, so fall back to whatever the
+        build offers before using the deterministic template tracker.
+        """
         import cv2
 
-        try:
-            tracker = cv2.legacy.TrackerMOSSE_create()
-            tracker.init(image, bbox)
+        legacy = getattr(cv2, "legacy", None)
+        factories = [
+            getattr(legacy, "TrackerMOSSE_create", None),
+            getattr(cv2, "TrackerCSRT_create", None),
+            getattr(legacy, "TrackerCSRT_create", None),
+        ]
+        for create in factories:
+            if create is None:
+                continue
+            try:
+                tracker = create()
+                tracker.init(image, bbox)
+            except cv2.error:
+                continue
             return tracker
-        except (AttributeError, cv2.error):
-            return None
+        tracker = TemplateTracker()
+        tracker.init(image, bbox)
+        return tracker if tracker.patch is not None else None
 
     def update_motion(self, memory: TrackMemory, detection: Detection, now: float) -> None:
         dt = now - memory.updated_at
