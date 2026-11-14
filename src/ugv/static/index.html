@@ -1,127 +1,133 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UGV · ADV034 Control</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UGV Rover Control</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <main>
-    <section class="viewport">
-      <div class="media-layer" id="media-layer">
-        <img id="camera-feed" src="/stream.mjpg" alt="Live robot camera" />
-        <canvas id="vision-overlay"></canvas>
-        <canvas id="aruco-overlay"></canvas>
+  <div id="media-layer">
+    <img id="camera-feed" src="/stream.mjpg" alt="UGV live camera feed">
+    <canvas id="aruco-overlay"></canvas>
+    <canvas id="vision-overlay"></canvas>
+  </div>
+
+  <header class="glass pill feed-label">
+    <span id="feed-stats" class="mono">CONNECTING</span>
+    <span id="connection" class="connection offline"><span class="dot"></span><span class="conn-text">Offline</span></span>
+    <span id="auto-park-pill" class="park-pill" hidden>AUTO PARK</span>
+  </header>
+
+  <aside class="glass status" aria-label="Rover telemetry">
+    <div id="heading-widget" class="heading-widget uncalibrated">
+      <div class="compass-ring" aria-hidden="true">
+        <span class="compass-n">N</span>
+        <div id="heading-needle" class="compass-needle"></div>
+        <span id="heading-degrees" class="mono compass-deg">—</span>
       </div>
+      <div class="heading-meta">
+        <div id="heading-status" class="heading-status mono">HOLD STILL · ZEROING</div>
+        <button id="heading-calibrate" type="button" class="mini-btn" title="Zero heading gyro">Zero Yaw</button>
+      </div>
+    </div>
 
-      <div class="feed-label"><span id="feed-stats">CAMERA · 1280×720 · MONO GS</span><span class="connection" id="connection"><i></i> Connecting</span></div>
+    <dl class="hud-rows">
+      <div><dt>Motion</dt><dd id="motion" class="mono">STOPPED</dd></div>
+      <div><dt>Pose / Tag</dt><dd id="pose-tag" class="mono">—</dd></div>
+      <div><dt>IMU</dt><dd id="imu-status" class="mono">—</dd></div>
+      <div><dt>Cmd F/S/T</dt><dd class="mono"><span id="forward">0.00</span> / <span id="strafe">0.00</span> / <span id="turn">0.00</span></dd></div>
+    </dl>
 
-      <section id="parking-panel" hidden aria-label="Drone parking map">
-        <strong>DRONE PARKING</strong><p id="parking-status">Observing</p>
-        <canvas id="parking-map" width="320" height="230" aria-label="Estimated tag and camera map"></canvas>
-        <small id="parking-reference"></small><p id="parking-detail"></p>
-        <small>Gear estimate: 10 in spacing · 12 in bars. Full car envelope unknown.</small>
-        <p id="parking-blockers"></p><details><summary>Calibration details</summary><small id="parking-calibration-details"></small></details><p id="parking-plan-result"></p>
-        <button id="park-preview" disabled>PREVIEW ROUTE</button><button id="park-start" disabled>PARK</button><button id="park-stop" disabled>STOP PARKING</button>
-      </section>
-      <dl class="status" aria-live="polite">
-        <div id="l7-banner" class="l7-ok" role="status">L7 INTERLOCK · NOMINAL</div>
-        <div id="heading-widget" class="heading-widget">
-          <div class="heading-dial" aria-label="Relative heading compass">
-            <span class="compass-north">N</span><span class="compass-east">E</span>
-            <span class="compass-south">S</span><span class="compass-west">W</span>
-            <i id="heading-needle"></i><b aria-hidden="true"></b>
-          </div>
-          <div class="heading-copy">
-            <dt>Relative heading</dt>
-            <dd><span id="heading-degrees">—</span><small>°</small></dd>
-            <small id="heading-status">HOLD STILL · ZEROING</small>
-            <button id="heading-calibrate" type="button">ZERO · HOLD STILL</button>
-          </div>
+    <details class="hud-more">
+      <summary>Telemetry</summary>
+      <dl class="hud-rows sub">
+        <div><dt>Reason</dt><dd id="reason" class="mono">startup</dd></div>
+        <div><dt>Turn Rate</dt><dd id="turn-feedback" class="mono">—</dd></div>
+        <div><dt>Owner</dt><dd id="ownership" class="mono">available</dd></div>
+        <div><dt>Clients</dt><dd id="clients" class="mono">0</dd></div>
+        <div><dt>Watchdog</dt><dd id="watchdog" class="mono">600 ms</dd></div>
+        <div><dt>Pan / Tilt</dt><dd class="mono"><span id="pan">1500 µs</span> · <span id="tilt">1500 µs</span></dd></div>
+        <div><dt>ArUco</dt><dd id="aruco-readout" class="mono">—</dd></div>
+        <div><dt>Vision FPS</dt><dd id="vision-rate" class="mono">—</dd></div>
+        <div><dt>Vision Age</dt><dd id="vision-time" class="mono">—</dd></div>
+        <div><dt>Accel (g)</dt><dd id="imu-accel" class="mono">—</dd></div>
+        <div><dt>Gyro (°/s)</dt><dd id="imu-gyro" class="mono">—</dd></div>
+        <div>
+          <dt>Controller</dt>
+          <dd>
+            <select id="controller-select" class="hud-select">
+              <option value="manual">manual</option>
+              <option value="staged_ekf">staged_ekf</option>
+              <option value="rl_student">rl_student</option>
+            </select>
+          </dd>
         </div>
-        <div><dt>Motion</dt><dd id="motion">STOPPED</dd></div>
-        <div><dt>Reason</dt><dd id="reason">startup</dd></div>
-        <div><dt>Turn · CW+</dt><dd id="turn-feedback">0°/s target · 0°/s actual</dd></div>
-        <div><dt>Control</dt><dd id="ownership">observer</dd></div>
-        <div><dt>Clients</dt><dd id="clients">0</dd></div>
-        <div><dt>Vector F/S/R</dt><dd><span id="forward">0.00</span> / <span id="strafe">0.00</span> / <span id="turn">0.00</span></dd></div>
-        <div><dt>Camera</dt><dd><span id="pan">1500 µs</span> / <span id="tilt">1500 µs</span></dd></div>
-        <div><dt>ArUco</dt><dd id="aruco-readout">OFF</dd></div>
-        <div><dt>Vision rate</dt><dd id="vision-rate">—</dd></div>
-        <div><dt>Vision time</dt><dd id="vision-time">—</dd></div>
-        <div><dt>IMU</dt><dd id="imu-status">CONNECTING</dd></div>
-        <div><dt>Accel g</dt><dd id="imu-accel">— / — / —</dd></div>
-        <div><dt>Gyro °/s</dt><dd id="imu-gyro">— / — / —</dd></div>
       </dl>
+    </details>
+  </aside>
 
-      <div class="key-overlay" aria-label="Keyboard input status">
-        <div><span>MOVE</span><i data-key="KeyW">W</i><i data-key="KeyA">A</i><i data-key="KeyS">S</i><i data-key="KeyD">D</i></div>
-        <div><span>ROTATE</span><i data-key="KeyQ">Q</i><i data-key="KeyE">E</i></div>
-        <div><span>CAMERA</span><i data-key="ArrowUp">↑</i><i data-key="ArrowLeft">←</i><i data-key="ArrowDown">↓</i><i data-key="ArrowRight">→</i></div>
+  <div class="glass pill keys-hint mono" aria-hidden="true"><span data-key="KeyW">WASD</span> · QE · Arrows · Space Stop</div>
+
+  <div id="joystick" class="glass joystick" aria-label="Drive joystick">
+    <div id="joystick-knob" class="joystick-knob"></div>
+  </div>
+
+  <nav class="glass control-bar" aria-label="Rover controls">
+    <div class="btn-group">
+      <button id="arm" type="button" class="btn btn-primary">Arm</button>
+      <button id="auto-park-toggle" type="button" class="btn btn-park" aria-pressed="false" disabled title="Arm controls to Auto Park">Auto Park</button>
+      <button id="stop" type="button" class="btn btn-stop">Stop</button>
+    </div>
+    <label class="speed-wrap" title="Speed limit">
+      <span class="speed-lbl">SPD</span>
+      <input id="speed" type="range" min="500" max="1800" step="50" value="1800">
+      <span id="speed-value" class="mono">1800</span>
+    </label>
+    <div class="btn-group">
+      <button id="camera-toggle" type="button" class="btn" aria-pressed="true" title="Toggle camera stream">Cam</button>
+      <button id="aruco-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco detection">Tags</button>
+      <button id="follow-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco follow">Follow</button>
+      <button id="detect-toggle" type="button" class="btn" aria-pressed="false" title="Toggle vision detections">Detect</button>
+      <button id="stabilize-toggle" type="button" class="btn" aria-pressed="false" title="Toggle horizon stabilization">Stab</button>
+      <button id="view-fit-toggle" type="button" class="btn active" aria-pressed="true" title="Fit: Cover (click for Contain)">Fit</button>
+      <button id="map-toggle" type="button" class="btn" aria-pressed="false" title="Toggle parking map">Map</button>
+    </div>
+  </nav>
+
+  <section id="parking-panel" class="glass parking-panel" hidden aria-label="Parking planner">
+    <div class="parking-head">
+      <strong>Parking Map</strong>
+      <span id="parking-status" class="mono">—</span>
+      <div class="btn-group">
+        <button id="park-preview" type="button" class="mini-btn">Preview</button>
+        <button id="park-start" type="button" class="mini-btn btn-park">Start</button>
+        <button id="park-stop" type="button" class="mini-btn btn-stop">Stop</button>
       </div>
+    </div>
+    <canvas id="parking-map" width="320" height="220"></canvas>
+    <div id="parking-reference" class="mono"></div>
+    <div id="parking-detail" class="mono"></div>
+    <div id="parking-blockers" class="mono"></div>
+    <div id="parking-plan-result" class="mono"></div>
+    <details><summary>Calibration</summary><small id="parking-calibration-details"></small></details>
+  </section>
 
-      <div id="joystick" class="joystick" role="application" aria-label="Movement joystick. Drag to move, release to stop." tabindex="0">
-        <span class="joy-up">▲</span><span class="joy-right">▶</span><span class="joy-down">▼</span><span class="joy-left">◀</span>
-        <i id="joystick-knob"></i><small>MOVE</small>
-      </div>
+  <div id="telemetry-rail" hidden aria-hidden="true">
+    <div id="speed-meter"></div>
+    <canvas id="tactical-bev"></canvas>
+    <span id="follow-state"></span>
+    <div id="l7-banner"></div>
+    <button id="follow-mode-toggle" type="button"></button>
+    <canvas id="spark-loop"></canvas><canvas id="spark-cam"></canvas><canvas id="spark-imu"></canvas>
+    <div id="wheel-fl"></div><div id="wheel-fr"></div><div id="wheel-rl"></div><div id="wheel-rr"></div>
+    <span data-wheel="front-left">0</span>
+  </div>
 
-      <aside id="telemetry-rail" aria-label="Technical telemetry rail">
-        <h2>TELEMETRY</h2>
-        <div class="rail-row"><span>Follow</span><b id="follow-state">IDLE</b></div>
-        <div class="rail-row"><span>Loop / infer</span><canvas id="spark-loop" width="220" height="36"></canvas></div>
-        <div class="rail-row"><span>Cam FPS / age</span><canvas id="spark-cam" width="220" height="36"></canvas></div>
-        <div class="rail-row"><span>Yaw / gyro</span><canvas id="spark-imu" width="220" height="36"></canvas></div>
-        <div class="rail-wheels" aria-label="Wheel PWM">
-          <div><span>FL</span><i><b id="wheel-fl"></b></i><em data-wheel-bar="front-left">0</em></div>
-          <div><span>FR</span><i><b id="wheel-fr"></b></i><em data-wheel-bar="front-right">0</em></div>
-          <div><span>RL</span><i><b id="wheel-rl"></b></i><em data-wheel-bar="rear-left">0</em></div>
-          <div><span>RR</span><i><b id="wheel-rr"></b></i><em data-wheel-bar="rear-right">0</em></div>
-        </div>
-        <div class="rail-row"><span>Lead err / z</span><b id="follow-lead">—</b></div>
-        <div class="rail-row"><span>Sigma / coast</span><b id="follow-sigma">—</b></div>
-        <div class="rail-row"><span>SysID</span><b id="sysid-readiness">—</b></div>
-      </aside>
-
-      <section id="tactical-panel" aria-label="Tactical BEV">
-        <h2>TACTICAL BEV</h2>
-        <canvas id="tactical-bev" width="300" height="300" aria-label="Bird's-eye tactical view"></canvas>
-      </section>
-
-      <div class="control-bar">
-        <button id="arm">ARM</button>
-        <button id="detect-toggle" aria-pressed="false">DETECT OFF</button>
-        <button id="stabilize-toggle" aria-pressed="false">STABILIZE OFF</button>
-        <button id="camera-toggle" aria-pressed="true" title="Pause capture, streaming and Pi vision; applies to all viewers">CAMERA ON</button>
-        <button id="aruco-toggle" aria-pressed="false">ARUCO OFF</button>
-        <button id="follow-toggle" aria-pressed="false">FOLLOW OFF</button>
-        <button id="map-toggle">MAP</button>
-        <label for="speed">Speed <output id="speed-value">1800</output></label>
-        <input id="speed" type="range" min="500" max="1800" step="50" value="1800" />
-        <span class="meter" aria-hidden="true"><i id="speed-meter"></i></span>
-        <button id="stop">STOP</button>
-        <label for="controller-select">Controller</label>
-        <select id="controller-select" aria-label="Controller select">
-          <option value="manual">manual</option>
-          <option value="staged_ekf">staged_ekf</option>
-          <option value="rl_student">rl_student</option>
-        </select>
-        <button id="follow-mode-toggle" aria-pressed="false" title="Toggle smooth vs legacy follow">SMOOTH OFF</button>
-        <button id="view-fit-toggle" aria-pressed="false" title="Toggle camera fit contain/cover">FIT: CONTAIN</button>
-      </div>
-
-      <div class="wheel-data" aria-hidden="true">
-        <b data-wheel="front-left">0</b><b data-wheel="front-right">0</b>
-        <b data-wheel="rear-left">0</b><b data-wheel="rear-right">0</b>
-      </div>
-    </section>
-
-    <span id="watchdog" hidden>600 ms</span>
-  </main>
-  <script src="/static/vendor/ort.wasm.min.js" defer></script>
-  <script src="/static/parking.js" defer></script>
-  <script src="/static/tactical.js" defer></script>
-  <script src="/static/app.js" defer></script>
-  <script src="/static/vision.js" defer></script>
+  <script src="/static/ort.wasm.min.js"></script>
+  <script src="/static/vision.js"></script>
+  <script src="/static/parking.js"></script>
+  <script src="/static/app.js"></script>
 </body>
 </html>

@@ -26,7 +26,7 @@ new ResizeObserver(resizeOverlay).observe(overlay);
 
 async function loadModel() {
   if (session) return session;
-  detectButton.textContent = "LOADING…";
+  detectButton.textContent = "Loading…";
   ort.env.wasm.wasmPaths = "/static/vendor/";
   ort.env.wasm.numThreads = crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
   session = await ort.InferenceSession.create("/static/models/yolo11n-320.onnx", {
@@ -38,15 +38,26 @@ async function loadModel() {
 detectButton.addEventListener("click", async () => {
   detecting = !detecting;
   detectButton.setAttribute("aria-pressed", String(detecting));
-  if (!detecting) { detectButton.textContent = "DETECT OFF"; clearBoxes(); return; }
-  try { await loadModel(); detectButton.textContent = "DETECT ON"; }
-  catch (error) { detecting = false; detectButton.setAttribute("aria-pressed", "false"); detectButton.textContent = "DETECT ERROR"; console.error(error); }
+  detectButton.classList.toggle("active", detecting);
+  if (!detecting) { detectButton.textContent = "Detect"; clearBoxes(); return; }
+  try {
+    await loadModel();
+    if (!detecting) return;
+    detectButton.textContent = "Detecting";
+  } catch (error) {
+    detecting = false;
+    detectButton.setAttribute("aria-pressed", "false");
+    detectButton.classList.remove("active");
+    detectButton.textContent = "Detect Err";
+    console.error(error);
+  }
 });
 
 stabilizeButton.addEventListener("click", () => {
   stabilizing = !stabilizing; previousGray = null; offsetX = offsetY = 0;
   stabilizeButton.setAttribute("aria-pressed", String(stabilizing));
-  stabilizeButton.textContent = stabilizing ? "STABILIZE ON" : "STABILIZE OFF";
+  stabilizeButton.classList.toggle("active", stabilizing);
+  stabilizeButton.textContent = "Stab";
   if (!stabilizing) mediaLayer.style.transform = "";
 });
 
@@ -54,8 +65,10 @@ function clearBoxes() { ctx.clearRect(0, 0, overlay.clientWidth, overlay.clientH
 
 function contentRect() {
   const w = overlay.clientWidth, h = overlay.clientHeight;
-  const ratio = Math.min(w / (feed.naturalWidth || 640), h / (feed.naturalHeight || 480));
-  const cw = (feed.naturalWidth || 640) * ratio, ch = (feed.naturalHeight || 480) * ratio;
+  const nw = feed.naturalWidth || 640, nh = feed.naturalHeight || 480;
+  const fit = feed.style.objectFit || window.__viewFit || "cover";
+  const ratio = fit === "contain" ? Math.min(w / nw, h / nh) : Math.max(w / nw, h / nh);
+  const cw = nw * ratio, ch = nh * ratio;
   return { x: (w - cw) / 2, y: (h - ch) / 2, w: cw, h: ch };
 }
 

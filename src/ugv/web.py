@@ -16,6 +16,7 @@ from .heading import RelativeHeading
 from .imu import ImuStream
 from .dynamics_telemetry import DynamicsTelemetry
 from .motion import GyroMotion, MotionFault, ramp_wheels
+from .autopark import AutoParkRunner, TagDetector
 from .parking import ParkingEstimator, Pose2, DockingFeedback, gear_obstacles
 
 STATIC = Path(__file__).parent / "static"
@@ -73,6 +74,10 @@ class RobotState:
     rls_scale: float = 1.0
     joystick_deadzone: float = 0.08
     sysid_ready: bool = False
+    auto_park: bool = False
+    auto_park_stage: str = "idle"
+    auto_park_status: str = ""
+    auto_park_pose: list[float] | None = None
 
 class CameraStream:
     def __init__(self):
@@ -205,6 +210,9 @@ class RobotController:
         self.inference_ms: float | None = None
         self.tick_ms: float | None = None
         self.rls_lateral_scale: float = 1.0
+        self.auto_park_task: asyncio.Task | None = None
+        self.auto_park_owner: str | None = None
+        self.auto_park_epoch: int = 0
 
     CONTROLLERS = ("manual", "staged_ekf", "rl_student")
     RL_INFERENCE_BUDGET_MS = 20.0
@@ -270,8 +278,35 @@ class RobotController:
                 if breach:
                     self._fallback_manual(breach)
                     return
-            if not self.state.armed: return
+            if not self.state.armed:
+                if self.state.auto_park:
+                    self.state.auto_park = False
+                    self.state.auto_park_stage = "idle"
+                    self.state.auto_park_status = "disarmed"
+                    self._brake_locked("autopark-disarmed", release=False)
+                return
             reason = None
+            if self.state.auto_park:
+                imu_age = (now - self.imu_sample_at) if (
+                    self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None
+                ) else None
+                try:
+                    cam_age_ms = camera.metrics().get("camera_frame_age_ms")
+                except Exception:
+                    cam_age_ms = None
+                if imu_age is None or imu_age > 0.25:
+                    self.state.auto_park = False
+                    self.state.auto_park_stage = "error"
+                    self.state.auto_park_status = "autopark-imu-stale"
+                    reason = "autopark-imu-stale"
+                elif cam_age_ms is None or cam_age_ms > 450:
+                    self.state.auto_park = False
+                    self.state.auto_park_stage = "error"
+                    self.state.auto_park_status = "autopark-frame-stale"
+                    reason = "autopark-frame-stale"
+            if reason:
+                self._brake_locked(reason, release=False)
+                return
             if self.parking_active and (not self._imu_ready(now) or now-self.parking.last_localized>.30):
                 self.parking_active = False
                 reason = "parking-sensors-stale"
@@ -325,6 +360,7 @@ class RobotController:
                 await self.broadcast()
 
     async def close(self):
+        await self.cancel_auto_park("shutdown")
         await self.cancel_parking("shutdown")
         if self.motion_task:
             self.motion_task.cancel()
@@ -603,18 +639,142 @@ class RobotController:
             await self.stop("parking-stopped", release=False)
             await self.broadcast()
 
+    async def cancel_auto_park(self, reason="auto-park-stopped", cid=None):
+        if cid is not None and self.state.owner not in (None, cid) and self.auto_park_owner not in (None, cid):
+            raise PermissionError("only the controller can stop auto-park")
+        self.auto_park_epoch += 1
+        was_active = self.state.auto_park or self.auto_park_task is not None
+        self.state.auto_park = False
+        task = self.auto_park_task
+        self.auto_park_task = None
+        if task and task is not asyncio.current_task():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        self.auto_park_owner = None
+        if was_active:
+            if self.state.auto_park_stage not in ("parked", "blocked", "aborted", "error"):
+                self.state.auto_park_stage = "idle"
+            self.state.auto_park_status = reason
+            await self.stop(reason, release=False)
+
+    async def start_auto_park(self, cid):
+        if self.state.owner != cid or not self.state.armed:
+            raise PermissionError("arm controls before auto-park")
+        if not camera.enabled:
+            raise PermissionError("enable camera capture before auto-park")
+        now = time.monotonic()
+        if not (self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None and (now - self.imu_sample_at) <= 0.25):
+            raise PermissionError("fresh calibrated IMU required for auto-park")
+        await self.cancel_parking("auto-park-started")
+        self.motion.cancel()
+        await aruco.disable_follow("auto-park-started")
+        try:
+            await aruco.configure(aruco.owner or cid, False, False)
+        except Exception:
+            aruco.enabled = False
+        await self.cancel_auto_park("auto-park-restarted")
+        self.auto_park_epoch += 1
+        epoch = self.auto_park_epoch
+        self.auto_park_owner = cid
+        self.state.auto_park = True
+        self.state.auto_park_stage = "acquiring"
+        self.state.auto_park_status = "starting"
+        self.state.auto_park_pose = None
+        self.auto_park_task = asyncio.create_task(self._auto_park_loop(cid, epoch), name="auto-park")
+        await self.broadcast()
+
+    async def _auto_park_loop(self, cid, epoch):
+        try:
+            detector = TagDetector()
+            cfg = self.parking.config
+            veh = cfg["vehicle"]
+            emp = cfg.get("empirical_fit") or {}
+            veh_height = float(veh.get("height_m") or cfg["gear"].get("height_clearance_m") or 0.12)
+            veh_width = float(veh.get("width_m") or emp.get("approx_vehicle_width_m") or 0.16)
+            veh_length = float(veh.get("length_m") or emp.get("approx_vehicle_length_m") or 0.21)
+            obstacles = gear_obstacles(cfg["gear"], veh_height)
+            sigma = float(getattr(self.parking, "sigma", None) or 0.0)
+            inflation = float(cfg.get("clearance_margin_m") or 0.015) + sigma
+            runner = AutoParkRunner(
+                obstacles=obstacles,
+                vehicle_width=veh_width,
+                vehicle_length=veh_length,
+                inflation=inflation,
+            )
+            last_seq = -1
+            while self.state.auto_park and self.auto_park_epoch == epoch:
+                if self.state.owner != cid or not self.state.armed:
+                    self.state.auto_park_stage = "error"
+                    self.state.auto_park_status = "auto-park ownership lost"
+                    break
+                now = time.monotonic()
+                imu_age = (now - self.imu_sample_at) if (
+                    self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None
+                ) else None
+                frame, seq, cap = camera.latest_sample()
+                frame_age = (now - cap) if (frame is not None and cap) else None
+                rec = None
+                if frame is not None and seq != last_seq and frame_age is not None and frame_age <= 0.45:
+                    last_seq = seq
+                    rec = await asyncio.to_thread(detector.detect_jpeg, frame, cap)
+                    if not self.state.auto_park or self.auto_park_epoch != epoch:
+                        break
+                now = time.monotonic()
+                imu_age = (now - self.imu_sample_at) if (
+                    self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None
+                ) else None
+                frame_age = (now - cap) if (frame is not None and cap) else None
+                cmd = runner.step(
+                    now,
+                    imu_age_s=imu_age,
+                    frame_age_s=frame_age,
+                    imu_w_dps=float(self.state.heading_rate_dps),
+                    gyro_yaw_rad=math.radians(float(self.state.heading_deg)),
+                    rec=rec,
+                )
+                self.state.auto_park_stage = cmd.stage
+                self.state.auto_park_status = cmd.status
+                self.state.auto_park_pose = [round(float(v), 4) for v in cmd.pose] if cmd.pose is not None else None
+                if cmd.stop:
+                    await self.stop(cmd.reason or "auto-park-stop", release=False)
+                    if cmd.done or cmd.stage in ("parked", "blocked", "aborted", "error"):
+                        break
+                else:
+                    await self.drive(cid, cmd.forward, cmd.strafe, cmd.turn, 1800, autonomous=True, mode="auto-park")
+                await asyncio.sleep(0.03)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            self.state.auto_park_stage = "error"
+            self.state.auto_park_status = f"auto-park-error: {exc}"
+        finally:
+            if self.auto_park_epoch == epoch:
+                self.state.auto_park = False
+                self.auto_park_owner = None
+                self.auto_park_task = None
+                if self.state.auto_park_stage not in ("parked", "blocked", "aborted", "error"):
+                    self.state.auto_park_stage = "idle"
+                await self.stop(self.state.auto_park_status or "auto-park-stopped", release=False)
+                await self.broadcast()
+
     async def camera_capture(self, cid, enabled):
         if self.state.owner not in (None, cid):
             raise PermissionError("only the controller can change camera capture")
         if not isinstance(enabled, bool):
             raise ValueError("camera enabled must be a boolean")
         if not enabled:
+            await self.cancel_auto_park("camera-paused")
             await self.cancel_parking("camera-paused")
             await aruco.configure(cid, False, False)
         camera.set_enabled(enabled)
         await self.broadcast()
 
-    async def drive(self, cid, forward, strafe, turn, limit, autonomous=False, duration=None):
+    async def drive(self, cid, forward, strafe, turn, limit, autonomous=False, duration=None, mode: str = "aruco-follow"):
+        if not autonomous and self.state.auto_park and self.state.owner == cid:
+            await self.cancel_auto_park("manual-drive-override", cid=cid)
         async with self.lock:
             if self.state.owner != cid or not self.state.armed: raise PermissionError("arm controls first")
             if self.parking_active and not autonomous: raise PermissionError("stop parking before manual driving")
@@ -630,7 +790,7 @@ class RobotController:
                 self.state.strafe = strafe
                 if autonomous:
                     self.motion.cancel()
-                    self.state.motion_mode = "aruco-follow"
+                    self.state.motion_mode = mode
                     self.state.turn_target_dps = 0
                     self._apply_vector(forward, turn, limit, strafe=strafe)
                     if duration is not None:
@@ -646,12 +806,16 @@ class RobotController:
         await self.broadcast()
 
     async def stop(self, reason, release=False):
+        if release and self.state.auto_park and self.auto_park_task is not asyncio.current_task():
+            await self.cancel_auto_park(reason)
         async with self.lock:
             with self.hw_lock:
                 self._brake_locked(reason, release)
         await self.broadcast()
 
     async def disconnect(self, cid):
+        if self.auto_park_owner == cid or (self.state.owner == cid and self.state.auto_park):
+            await self.cancel_auto_park("auto-park-owner-disconnected")
         if self.parking_owner == cid: await self.cancel_parking("parking-owner-disconnected")
         self.clients.pop(cid, None)
         if self.state.owner == cid: await self.stop("controller-disconnected", True)
@@ -773,6 +937,10 @@ async def websocket_endpoint(ws: WebSocket):
                         raise PermissionError("enable camera capture before ArUco")
                     await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"), m.get("follow_mode"))
                 elif kind == "controller": await controller.select_controller(cid, str(m.get("controller", "manual")))
+                elif kind == "auto-park":
+                    if not isinstance(m.get("enabled"), bool): raise ValueError("auto-park enabled must be a boolean")
+                    if m["enabled"]: await controller.start_auto_park(cid)
+                    else: await controller.cancel_auto_park("client-auto-park-stop", cid=cid)
                 elif kind == "parking":
                     if m.get("action") == "start": await controller.start_parking(cid)
                     elif m.get("action") == "stop" and controller.state.owner == cid: await controller.cancel_parking()
@@ -780,6 +948,7 @@ async def websocket_endpoint(ws: WebSocket):
                 elif kind == "heading-calibrate": controller.heading.request_calibration()
                 elif kind == "heartbeat": await ws.send_json(controller.payload(cid))
                 elif kind == "stop" and controller.state.owner in (None,cid):
+                    await controller.cancel_auto_park("client-stop")
                     await controller.cancel_parking("client-stop")
                     await aruco.disable_follow("client-stop")
                     await controller.stop("client-stop", m.get("reason") == "disarm")
