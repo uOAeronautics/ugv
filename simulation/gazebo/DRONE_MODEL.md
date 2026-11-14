@@ -31,7 +31,7 @@ Each skid meets a single splayed tube at its center (local X=0); the two tubes c
 
 ## Fiducials and simulation scope
 
-Four separate physical cards carry actual `DICT_4X4_50` markers: IDs **9** and **12** on the two landing legs, plus IDs **0** and **1** on opposite X sides of the suspended platform. Each has a 50 mm black square including its one-cell black border, plus a 9 mm white quiet zone on each side (68 mm card). Each card has one printed outward face. Payload ID 0 points toward local -X along the approach direction, and payload ID 1 points toward local +X. The two leg cards sit near the bases of the two central leg tubes. The literal grids were checked with OpenCV's ArUco detector; OpenCV is not required to build or load the model.
+The default `real` layout (observed 2026-11-13) places three readable `DICT_4X4_50` 50 mm cards: ID **14** facing the `+y_sim` (`-x_gz`) entry side (28 mm toward `-x_sim`, ~0.14 m high, pitched 25 deg), ID **6** facing `+x_sim` (`+y_gz`), and ID **3** facing `-x_sim` (`-y_gz`). A fourth `-y_sim` (`+x_gz`) card was unreadable behind wires and is omitted. Real paper cards have almost no white quiet zone (~1.5 mm) on the bottom edge; optional tilt/roll randomisation (10-25 deg) is supported via `randomize_tilt=True`. Pass `layout='legacy'` to select the earlier 4-card constellation (9, 12, 13, 14 with 68 mm symmetric cards) for reproducibility.
 
 This is a stationary obstacle and perception target. It has no aerial dynamics or spinning propellers. The car geometry and drive dynamics come from the existing UGV modules; the drone scene itself does not add autonomous driving.
 

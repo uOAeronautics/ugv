@@ -44,7 +44,8 @@ from ugv.staged_baseline import GAZEBO_GEOMETRY, MeanModel, StagedBaseline  # no
 
 
 def episode(gz: Gazebo, level: str, ep: int, seed: int, max_time: float, trace=None,
-            sensing: str = "emulated", photometric: bool = False, stats=None):
+            sensing: str = "emulated", photometric: bool = False, stats=None,
+            marker_layout: str = "real", randomize_tilt: bool = False):
     rng = np.random.default_rng([seed, ep])
     L = LEVELS[level]
     d = rng.uniform(*L["dist"])
@@ -55,7 +56,8 @@ def episode(gz: Gazebo, level: str, ep: int, seed: int, max_time: float, trace=N
     t, x, y, yaw = gz.reset_pose(wx, wy, wyaw)
     if sensing == "camera":
         from vision_in_loop import VisionSensors
-        sensors = VisionSensors(L, rng, max_time, photometric=photometric)
+        sensors = VisionSensors(L, rng, max_time, photometric=photometric,
+                                layout=marker_layout, randomize_tilt=randomize_tilt)
     else:
         sensors = Sensors(L, rng, max_time)
     ctl = StagedBaseline(1, latency=sensors.latency, dt=DT, model=MeanModel(axes="physical"),
@@ -107,6 +109,10 @@ def main():
                     default="emulated")
     ap.add_argument("--lighting-dr", action="store_true",
                     help="per-episode photometric DR on --sensing camera frames")
+    ap.add_argument("--marker-layout", choices=["real", "legacy"], default="real",
+                    help="ArUco constellation layout for --sensing camera (real=14/6/3, legacy=12/9/13/14)")
+    ap.add_argument("--card-tilt-dr", action="store_true",
+                    help="per-episode 10-25 deg card roll/pitch randomization on --sensing camera frames")
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
     if not BRIDGE.exists():
@@ -130,7 +136,8 @@ def main():
     try:
         for ep in range(a.episodes):
             r = episode(gz, a.level, ep, a.seed, a.max_time, trace,
-                        sensing=sensing, photometric=photometric, stats=stats)
+                        sensing=sensing, photometric=photometric, stats=stats,
+                        marker_layout=a.marker_layout, randomize_tilt=a.card_tilt_dr)
             results.append(r)
             print(json.dumps(dict(ep=ep, **{k: (round(v, 3) if isinstance(v, float) else
                                                [round(u, 3) for u in v] if isinstance(v, (tuple, list)) else v)

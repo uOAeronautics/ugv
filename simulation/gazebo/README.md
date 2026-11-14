@@ -53,8 +53,9 @@ The seven reference photographs now have a detailed stationary quadcopter model:
 carbon booms and stacked plates, motor windings and silver spinners, shaped
 white propellers, a GPS mast, exposed wiring, hanging electronics, splayed
 two central landing legs, and black foam skids with red rings. Four separate,
-valid 50mm ArUco markers use `DICT_4X4_50`: IDs 0/1 on opposite payload faces
-and IDs 9/12 on the two legs.
+valid 50mm ArUco markers use `DICT_4X4_50`: IDs 14/6/3 in the default `real`
+layout (2026-11-13; fourth -y tag omitted because wires obscure its ID), with
+`--marker-layout legacy` (9/12/13/14) kept selectable for older runs.
 
 Open `launch_drone.command` in Finder, or run from this directory:
 

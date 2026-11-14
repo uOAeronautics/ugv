@@ -23,6 +23,8 @@ def node(parent, tag, text=None, **attrs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--drone', action='store_true', help='Add the photo-informed drone docking target')
+    parser.add_argument('--marker-layout', choices=('real', 'legacy'), default='real',
+                        help='Drone ArUco marker layout (real=14/6/3, legacy=9/12/13/14)')
     parser.add_argument('--room', action='store_true', help='Add the photo-informed 24 by 12 metre lab')
     default_profile=HERE/'mecanum_native_profile_pilot02_v1.json'
     motors=parser.add_mutually_exclusive_group()
@@ -59,7 +61,7 @@ def main():
     room_config = json.loads((HERE/'room_dimensions.json').read_text()) if args.room else {}
     if args.drone:
         from drone_model import add_drone
-        add_drone(world, node, pose=room_config.get('drone_pose', (.75, 0, 0, 0, 0, 0)))
+        add_drone(world, node, pose=room_config.get('drone_pose', (.75, 0, 0, 0, 0, 0)), layout=args.marker_layout)
     model = node(world, 'model', name='freenove')
     node(model, 'pose', ' '.join(map(str,room_config.get('ugv_pose',(0,0,.001,0,0,0)))))
 

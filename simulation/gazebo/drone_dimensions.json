@@ -16,9 +16,9 @@
     "Photo 7 informs the underbody headroom. Physical payload collision geometry bottoms at 0.225m; visual marker card extends to 0.168m and a loose cable to about 0.195m.",
     "Photo 3 side view informs landing leg rake and cylindrical GPS mast; propeller and motor dimensions are proportional estimates.",
     "Static obstacle for UGV perception and parking; no aerial dynamics or spinning rotors.",
-    "Fiducial cards use real DICT_4X4_50 IDs 9 and 12 on the two landing legs and IDs 0 and 1 on separate opposite-X cards at the suspended platform; each is printed on its outward face with a 50mm black square and 9mm quiet zone.",
+    "Default real layout (2026-11-13) uses DICT_4X4_50 IDs 14 (entry +y_sim / -x_gz, pitched ~25 deg), 6 (+x_sim / +y_gz side), and 3 (-x_sim / -y_gz side); a fourth -y_sim/+x_gz card was unreadable behind wires and is omitted. Cards are 50mm black squares with ~1.5mm bottom quiet zone. Legacy layout (9, 12, 13, 14) stays selectable.",
     "These values describe the built photo model. Only deck_diameter and skid_center_spacing currently directly drive geometry; other detail coordinates are authored in drone_model.py and are not independent scaling controls.",
-    "Landing gear has exactly TWO splayed tubes: one from each skid center to the central deck, as shown in photos 1/3/5/7. There are four distinct physical marker cards total."
+    "Landing gear has exactly TWO splayed tubes: one from each skid center to the central deck, as shown in photos. Default model has 3 readable marker cards (14, 6, 3); legacy layout has 4."
   ],
   "skid_collision_length": 0.47,
   "skid_foam_covered_length": 0.4575,
@@ -30,11 +30,16 @@
   "loose_cable_bottom_height": 0.195,
   "corridor_width_evaluation_height": 0.2,
   "landing_leg_count": 2,
-  "marker_card_count": 4,
+  "marker_card_count": 3,
   "marker_ids": {
+    "entry_plus_y_sim": 14,
+    "side_plus_x_sim": 6,
+    "side_minus_x_sim": 3
+  },
+  "legacy_marker_ids": {
     "left_leg": 12,
     "right_leg": 9,
-    "payload_negative_x": 0,
-    "payload_positive_x": 1
+    "payload_negative_x": 13,
+    "payload_positive_x": 14
   }
 }

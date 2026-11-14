@@ -6,6 +6,7 @@ Collision follows separate tubes/plates: the central drive-under space stays ope
 """
 import json
 import math
+import random
 import tempfile
 from pathlib import Path
 
@@ -19,6 +20,45 @@ DRONE_COLORS = {
     'yellow': (.98,.62,.015), 'blue': (.015,.25,.65),
     'wire_white': (.75,.76,.67), 'gold': (.67,.40,.08),
 }
+MARKER_LAYOUTS = ('real', 'legacy')
+DEFAULT_MARKER_LAYOUT = 'real'
+REAL_MARKER_IDS = (14, 6, 3)
+LEGACY_MARKER_IDS = (12, 9, 13, 14)
+# Real loose paper cards (observed 2026-11-13): 50mm tag with ~1.5mm bottom quiet zone,
+# ~3mm sides, and ~18mm top hanging margin (left, right, bottom, top in card frame).
+REAL_PAPER_BOUNDS = (-0.028, 0.028, -0.0265, 0.043)
+
+
+def _rot_xyz(rx, ry, rz):
+    cx, sx = math.cos(rx), math.sin(rx)
+    cy, sy = math.cos(ry), math.sin(ry)
+    cz, sz = math.cos(rz), math.sin(rz)
+    return ((cz*cy, cz*sy*sx-sz*cx, cz*sy*cx+sz*sx),
+            (sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx),
+            (-sy,   cy*sx,          cy*cx))
+
+
+def _mat_mul(a, b):
+    return tuple(tuple(sum(a[i][k]*b[k][j] for k in range(3)) for j in range(3)) for i in range(3))
+
+
+def _euler_xyz(m):
+    ry = math.asin(max(-1.0, min(1.0, -m[2][0])))
+    if abs(math.cos(ry)) > 1e-6:
+        rx = math.atan2(m[2][1], m[2][2])
+        rz = math.atan2(m[1][0], m[0][0])
+    else:
+        rx = 0.0
+        rz = math.atan2(-m[0][1], m[1][1])
+    return (rx, ry, rz)
+
+
+def _apply_card_tilt(rot, rng, tilt_deg):
+    lo, hi = tilt_deg
+    def signed():
+        return math.radians(rng.choice((-1.0, 1.0)) * rng.uniform(lo, hi))
+    # Pitch/tilt around card X and roll around card Z (loose hanging paper card).
+    return _euler_xyz(_mat_mul(_rot_xyz(*rot), _rot_xyz(signed(), 0.0, signed())))
 
 def _prop_mesh():
     """Cambered tapered two-blade propeller, closed triangle surface, SI units."""
@@ -66,8 +106,16 @@ def _prop_mesh():
                 temporary.unlink(missing_ok=True)
     return 'assets/drone/propeller.obj'
 
-def drone_assembly():
-    """Return reusable visual/collision part dictionaries (all dimensions SI)."""
+def drone_assembly(layout=DEFAULT_MARKER_LAYOUT, randomize_tilt=False, rng=None,
+                   tilt_deg=(10.0, 25.0)):
+    """Return reusable visual/collision part dictionaries (all dimensions SI).
+
+    layout='real' (default, 2026-11-13): DICT_4X4_50 IDs 14 (+y_sim entry, 25 deg pitch),
+    6 (+x_sim side), 3 (-x_sim side); fourth -y_sim tag omitted (unreadable behind wires).
+    layout='legacy': original 4-card constellation (9, 12, 13, 14) for reproducibility.
+    """
+    if layout not in MARKER_LAYOUTS:
+        raise ValueError(f'layout must be one of {MARKER_LAYOUTS}, got {layout!r}')
     p=json.loads((HERE/'drone_dimensions.json').read_text())
     parts=[]
     def add(name,shape,pos,size,color,rot=(0,0,0),collision=False,**extra):
@@ -179,15 +227,16 @@ def drone_assembly():
     for j in (-1,1):cyl('xt60_socket_'+str(j),(.092+j*.004,-.11,.295),.0025,.003,'gold')
     wire('servo_cable',[(-.012,-.04,.245),(-.03,-.05,.21),(-.019,-.06,.196)],'black',.0011)
 
-    # Real DICT_4X4_50 markers, 50mm black square plus 9mm white quiet zone.
+    # Real DICT_4X4_50 markers, 50mm black square.
     grids={0: ("1011","0101","0011","0010"),
            1: ("0000","1111","1001","1010"),
+           3: ("1001","1001","0100","0110"),
+           6: ("1001","1110","0010","1110"),
            9: ("1100","1111","0101","0110"),
            12:("0000","1110","1011","0111"),
            13:("0010","1010","0000","1111"),
            14:("0010","0100","1011","0001")}
-    # Side cards face outward across Y; payload card faces -X toward approach.
-    def card(name,pos,rot,size,marker_id):
+    def card(name,pos,rot,size,marker_id,paper_bounds=None):
         # Local XY plane, normal +Z; rotate whole card into vertical plane.
         rx,ry,rz=rot
         def transform(v):
@@ -195,9 +244,13 @@ def drone_assembly():
             x,z=x*math.cos(ry)+z*math.sin(ry),-x*math.sin(ry)+z*math.cos(ry)
             x,y=x*math.cos(rz)-y*math.sin(rz),x*math.sin(rz)+y*math.cos(rz)
             return tuple(pos[i]+(x,y,z)[i] for i in range(3))
-        box(name+'_paper',pos,(size,size,.0008),'white',rot)
+        if paper_bounds is None:
+            box(name+'_paper',pos,(size,size,.0008),'white',rot)
+        else:
+            l,r,b,t=paper_bounds
+            box(name+'_paper',transform((0.5*(l+r),0.5*(b+t),0.0)),(r-l,t-b,.0008),'white',rot)
         cell=.05/6
-        # One printed face per physical card; four distinct cards in total.
+        # One printed face per physical card; ink stays centred at pos.
         for face in (1,):
             box(name+'_ink_'+str(face),transform((0,0,face*.0006)),(.05,.05,.0003),'black',rot)
             for row,line in enumerate(grids[marker_id],1):
@@ -206,19 +259,34 @@ def drone_assembly():
                         xx=(col-2.5)*cell*face
                         box(f'{name}_pixel_{face}_{row}_{col}',transform((xx,(2.5-row)*cell,face*.0009)),
                             (cell,cell,.0003),'white',rot)
-    card('payload_marker_front',(-.058,-.005,.202),(math.pi/2,0,-math.pi/2),.068,13)
-    card('payload_marker_rear',(.058,-.005,.202),(math.pi/2,0,math.pi/2),.068,14)
-    for s in (-1,1):
-        card('leg_marker_'+str(s),(0,s*.168,.092),(-s*math.pi/2,0,0),.068,
-             9 if s==-1 else 12)
+    if layout=='legacy':
+        card('payload_marker_front',(-.058,-.005,.202),(math.pi/2,0,-math.pi/2),.068,13)
+        card('payload_marker_rear',(.058,-.005,.202),(math.pi/2,0,math.pi/2),.068,14)
+        for s in (-1,1):
+            card('leg_marker_'+str(s),(0,s*.168,.092),(-s*math.pi/2,0,0),.068,
+                 9 if s==-1 else 12)
+    else:
+        # Gazebo drone frame G maps to rl/sim.py frame S via x_G=-y_S, y_G=+x_S, z_G=z_S.
+        # Fourth -y_S card omitted (ID unreadable behind wires).
+        tilt_rng=(rng if rng is not None else random.Random(0)) if randomize_tilt else None
+        specs=(
+            ('entry_marker_14', (0.0,  -0.028, 0.14), (math.pi/2-math.radians(25.0), 0.0, -math.pi/2), 14),
+            ('side_marker_6',   (0.09,  0.14,  0.15), (math.pi/2, 0.0, math.pi), 6),
+            ('side_marker_3',   (0.0,  -0.13,  0.16), (math.pi/2, 0.0, 0.0),     3),
+        )
+        for cname,pos,rot,mid in specs:
+            if tilt_rng is not None:
+                rot=_apply_card_tilt(rot,tilt_rng,tilt_deg)
+            card(cname,pos,rot,.068,mid,paper_bounds=REAL_PAPER_BOUNDS)
     return parts
 
-def add_drone(world,node,pose=(.8,0,0,0,0,0)):
+def add_drone(world,node,pose=(.8,0,0,0,0,0),layout=DEFAULT_MARKER_LAYOUT,
+              randomize_tilt=False,rng=None,tilt_deg=(10.0,25.0)):
     """Insert static photo model with only local solid collision components."""
     model=node(world,'model',name='photo_quadcopter')
     node(model,'static','true');node(model,'pose',' '.join(map(str,pose)))
     link=node(model,'link',name='drone_frame')
-    for part in drone_assembly():
+    for part in drone_assembly(layout=layout,randomize_tilt=randomize_tilt,rng=rng,tilt_deg=tilt_deg):
         for kind in (('visual','collision') if part['collision'] else ('visual',)):
             obj=node(link,kind,name=part['name']+'_'+kind)
             node(obj,'pose',' '.join(map(str,(*part['pos'],*part['rot']))))

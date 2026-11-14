@@ -3,7 +3,7 @@ import math
 import json
 import unittest
 from pathlib import Path
-from drone_model import drone_assembly
+from drone_model import DEFAULT_MARKER_LAYOUT, drone_assembly
 
 
 def bounds(part):
@@ -21,13 +21,51 @@ def bounds(part):
 
 
 class DroneGeometry(unittest.TestCase):
-    def test_two_central_landing_legs_and_four_marker_cards(self):
+    def test_two_central_landing_legs_and_marker_layouts(self):
+        self.assertEqual(DEFAULT_MARKER_LAYOUT, 'real')
         parts = drone_assembly()
         legs = [p for p in parts if p['name'].startswith('landing_leg_')]
         cards = [p for p in parts if p['name'].endswith('_paper')]
         self.assertEqual(len(legs), 2)
-        self.assertEqual(len(cards), 4)
+        self.assertEqual({p['name'] for p in cards},
+                         {'entry_marker_14_paper', 'side_marker_6_paper', 'side_marker_3_paper'})
         self.assertTrue(all(abs(p['pos'][0]) < 1e-9 for p in legs))
+
+        legacy_cards = [p for p in drone_assembly(layout='legacy') if p['name'].endswith('_paper')]
+        self.assertEqual(len(legacy_cards), 4)
+
+    def test_real_marker_poses_match_vision_in_loop_frame(self):
+        import vision_in_loop as vil
+        self.assertEqual(vil.MARKER_IDS, (14, 6, 3))
+        ink = {p['name']: p for p in drone_assembly(layout='real') if p['name'].endswith('_ink_1')}
+        markers = vil.marker_world_poses('real')
+        self.assertEqual(set(markers), {14, 6, 3})
+        mapping = {14: 'entry_marker_14_ink_1', 6: 'side_marker_6_ink_1', 3: 'side_marker_3_ink_1'}
+        for mid, part_name in mapping.items():
+            px, py, pz = ink[part_name]['pos']
+            # to_drone transform: x_sim = y_gz, y_sim = -x_gz, z_sim = z_gz
+            center_sim, _ = markers[mid]
+            self.assertAlmostEqual(py, float(center_sim[0]), places=2)
+            self.assertAlmostEqual(-px, float(center_sim[1]), places=2)
+            self.assertAlmostEqual(pz, float(center_sim[2]), places=2)
+
+    def test_vision_in_loop_smoke_real_and_legacy(self):
+        try:
+            import cv2  # noqa: F401
+        except ImportError:
+            self.skipTest('opencv not installed')
+        import vision_in_loop as vil
+        real = vil.selftest('real')
+        self.assertEqual(real['marker_ids'], [14, 6, 3])
+        self.assertTrue(all(r['ok'] for r in real['roundtrip']), real)
+        self.assertGreaterEqual(real['dr_decode_rate'], 0.8)
+
+        tilted = vil.selftest('real', randomize_tilt=True, seed=7)
+        self.assertTrue(all(r['ok'] for r in tilted['roundtrip']), tilted)
+
+        legacy = vil.selftest('legacy')
+        self.assertEqual(legacy['marker_ids'], [12, 9, 13, 14])
+        self.assertTrue(legacy['roundtrip'][0]['ok'])
 
     def test_ugv_center_approach_has_clear_structural_corridor(self):
         # Use current car dimensions, including independently configured

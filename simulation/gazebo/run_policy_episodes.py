@@ -126,7 +126,8 @@ class GazeboBridge:
 
     def __init__(self, level: str, seed: int, max_time: float, world_sdf: Path,
                  out_dir: Path, axes: str = "rl_sim", sensing: str = "emulated",
-                 log_name: str = "policy_gazebo", photometric: bool = False):
+                 log_name: str = "policy_gazebo", photometric: bool = False,
+                 marker_layout: str = "real", randomize_tilt: bool = False):
         if sensing == "camera_aruco":
             sensing = "camera"
         if sensing == "camera_dr":
@@ -154,6 +155,8 @@ class GazeboBridge:
         self.axes = axes
         self.sensing = sensing
         self.photometric = bool(photometric and sensing == "camera")
+        self.marker_layout = marker_layout
+        self.randomize_tilt = bool(randomize_tilt and sensing == "camera")
         self.pose = (0.0, 0.0, 0.0)
         self.vel = [0.0, 0.0, 0.0]
         self.collision = False
@@ -186,7 +189,9 @@ class GazeboBridge:
             assert VisionSensors is not None
             self.sensors = VisionSensors(self.L, rng, self.max_time,
                                          init_pose=self.pose,
-                                         photometric=self.photometric)
+                                         photometric=self.photometric,
+                                         layout=self.marker_layout,
+                                         randomize_tilt=self.randomize_tilt)
         else:
             self.sensors = Sensors(self.L, rng, self.max_time, init_pose=self.pose)
         z, seen = self.sensors.tag(self.pose)
@@ -327,6 +332,10 @@ def main():
     ap.add_argument("--lighting-dr", action="store_true",
                     help="per-episode photometric DR (brightness/contrast/gamma, shadow "
                          "gradient, glare, sensor noise, blur) on --sensing camera frames")
+    ap.add_argument("--marker-layout", choices=["real", "legacy"], default="real",
+                    help="ArUco constellation layout for --sensing camera (real=14/6/3, legacy=12/9/13/14)")
+    ap.add_argument("--card-tilt-dr", action="store_true",
+                    help="per-episode 10-25 deg card roll/pitch randomization on --sensing camera frames")
     ap.add_argument("--world", type=Path, default=REPO / "rl/runs/gazebo_l6/world_generated.sdf")
     ap.add_argument("--out", type=Path, default=REPO / "rl/runs/gazebo_l6")
     ap.add_argument("--json", default=None)
@@ -361,7 +370,9 @@ def main():
         log_tag = f"policy_gazebo_{meta['controller']}_{args.level}"
         bridge = GazeboBridge(args.level, args.seed, args.max_time, args.world, args.out,
                               axes=axes, sensing=args.sensing, log_name=log_tag,
-                              photometric=args.lighting_dr)
+                              photometric=args.lighting_dr,
+                              marker_layout=args.marker_layout,
+                              randomize_tilt=args.card_tilt_dr)
         meta.update(level=args.level, seed=args.seed, sensing=args.sensing,
                     photometric_dr=bool(args.lighting_dr and args.sensing.startswith("camera")))
     else:

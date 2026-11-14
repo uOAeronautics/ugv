@@ -8444,7 +8444,7 @@
           </material>
         </visual>
         <visual name="ref_power_lead2_visual">
-          <pose>3.9450000000000003 0.8700000000000001 0.77 0 1.7310993751452133 -1.3258176636680326</pose>
+          <pose>3.9450000000000003 0.8700000000000001 0.77 0 1.7310993751452135 -1.3258176636680326</pose>
           <geometry>
             <cylinder>
               <radius>0.004</radius>
@@ -8672,7 +8672,7 @@
           </geometry>
         </collision>
         <visual name="ref_stool0_spoke0_visual">
-          <pose>-2.9 6.275 0.095 0 1.7681918866447772 -1.5707963267948966</pose>
+          <pose>-2.9 6.275 0.095 0 1.7681918866447774 -1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8686,7 +8686,7 @@
           </material>
         </visual>
         <collision name="ref_stool0_spoke0_collision">
-          <pose>-2.9 6.275 0.095 0 1.7681918866447772 -1.5707963267948966</pose>
+          <pose>-2.9 6.275 0.095 0 1.7681918866447774 -1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8709,7 +8709,7 @@
           </material>
         </visual>
         <visual name="ref_stool0_spoke1_visual">
-          <pose>-2.7811179354631057 6.361372875703132 0.095 0 1.7681918866447772 -0.3141592653589793</pose>
+          <pose>-2.7811179354631057 6.361372875703132 0.095 0 1.7681918866447774 -0.3141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8723,7 +8723,7 @@
           </material>
         </visual>
         <collision name="ref_stool0_spoke1_collision">
-          <pose>-2.7811179354631057 6.361372875703132 0.095 0 1.7681918866447772 -0.3141592653589793</pose>
+          <pose>-2.7811179354631057 6.361372875703132 0.095 0 1.7681918866447774 -0.3141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8746,7 +8746,7 @@
           </material>
         </visual>
         <visual name="ref_stool0_spoke2_visual">
-          <pose>-2.8265268434634407 6.501127124296869 0.095 0 1.7681918866447772 0.9424777960769379</pose>
+          <pose>-2.8265268434634407 6.501127124296869 0.095 0 1.7681918866447774 0.9424777960769379</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8760,7 +8760,7 @@
           </material>
         </visual>
         <collision name="ref_stool0_spoke2_collision">
-          <pose>-2.8265268434634407 6.501127124296869 0.095 0 1.7681918866447772 0.9424777960769379</pose>
+          <pose>-2.8265268434634407 6.501127124296869 0.095 0 1.7681918866447774 0.9424777960769379</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8783,11 +8783,11 @@
           </material>
         </visual>
         <visual name="ref_stool0_spoke3_visual">
-          <pose>-2.973473156536559 6.501127124296869 0.095 0 1.7681918866447772 -4.084070449666731</pose>
+          <pose>-2.973473156536559 6.501127124296869 0.095 0 1.7681918866447774 -4.084070449666731</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
-              <length>0.2549509756796392</length>
+              <length>0.25495097567963926</length>
             </cylinder>
           </geometry>
           <material>
@@ -8797,11 +8797,11 @@
           </material>
         </visual>
         <collision name="ref_stool0_spoke3_collision">
-          <pose>-2.973473156536559 6.501127124296869 0.095 0 1.7681918866447772 -4.084070449666731</pose>
+          <pose>-2.973473156536559 6.501127124296869 0.095 0 1.7681918866447774 -4.084070449666731</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
-              <length>0.2549509756796392</length>
+              <length>0.25495097567963926</length>
             </cylinder>
           </geometry>
         </collision>
@@ -8820,7 +8820,7 @@
           </material>
         </visual>
         <visual name="ref_stool0_spoke4_visual">
-          <pose>-3.018882064536894 6.361372875703132 0.095 0 1.7681918866447772 -2.827433388230814</pose>
+          <pose>-3.018882064536894 6.361372875703132 0.095 0 1.7681918866447774 -2.827433388230814</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8834,7 +8834,7 @@
           </material>
         </visual>
         <collision name="ref_stool0_spoke4_collision">
-          <pose>-3.018882064536894 6.361372875703132 0.095 0 1.7681918866447772 -2.827433388230814</pose>
+          <pose>-3.018882064536894 6.361372875703132 0.095 0 1.7681918866447774 -2.827433388230814</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8903,7 +8903,7 @@
           </geometry>
         </collision>
         <visual name="ref_stool1_spoke0_visual">
-          <pose>-3.2 7.675 0.095 0 1.7681918866447772 -1.5707963267948966</pose>
+          <pose>-3.2 7.675 0.095 0 1.7681918866447774 -1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8917,7 +8917,7 @@
           </material>
         </visual>
         <collision name="ref_stool1_spoke0_collision">
-          <pose>-3.2 7.675 0.095 0 1.7681918866447772 -1.5707963267948966</pose>
+          <pose>-3.2 7.675 0.095 0 1.7681918866447774 -1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8940,7 +8940,7 @@
           </material>
         </visual>
         <visual name="ref_stool1_spoke1_visual">
-          <pose>-3.081117935463106 7.761372875703131 0.095 0 1.7681918866447772 -0.3141592653589793</pose>
+          <pose>-3.081117935463106 7.761372875703131 0.095 0 1.7681918866447774 -0.3141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8954,7 +8954,7 @@
           </material>
         </visual>
         <collision name="ref_stool1_spoke1_collision">
-          <pose>-3.081117935463106 7.761372875703131 0.095 0 1.7681918866447772 -0.3141592653589793</pose>
+          <pose>-3.081117935463106 7.761372875703131 0.095 0 1.7681918866447774 -0.3141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8977,7 +8977,7 @@
           </material>
         </visual>
         <visual name="ref_stool1_spoke2_visual">
-          <pose>-3.126526843463441 7.901127124296869 0.095 0 1.7681918866447772 0.9424777960769379</pose>
+          <pose>-3.126526843463441 7.901127124296869 0.095 0 1.7681918866447774 0.9424777960769379</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -8991,7 +8991,7 @@
           </material>
         </visual>
         <collision name="ref_stool1_spoke2_collision">
-          <pose>-3.126526843463441 7.901127124296869 0.095 0 1.7681918866447772 0.9424777960769379</pose>
+          <pose>-3.126526843463441 7.901127124296869 0.095 0 1.7681918866447774 0.9424777960769379</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -9014,11 +9014,11 @@
           </material>
         </visual>
         <visual name="ref_stool1_spoke3_visual">
-          <pose>-3.2734731565365593 7.901127124296869 0.095 0 1.7681918866447772 -4.084070449666731</pose>
+          <pose>-3.2734731565365593 7.901127124296869 0.095 0 1.7681918866447774 -4.084070449666731</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
-              <length>0.2549509756796392</length>
+              <length>0.25495097567963926</length>
             </cylinder>
           </geometry>
           <material>
@@ -9028,11 +9028,11 @@
           </material>
         </visual>
         <collision name="ref_stool1_spoke3_collision">
-          <pose>-3.2734731565365593 7.901127124296869 0.095 0 1.7681918866447772 -4.084070449666731</pose>
+          <pose>-3.2734731565365593 7.901127124296869 0.095 0 1.7681918866447774 -4.084070449666731</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
-              <length>0.2549509756796392</length>
+              <length>0.25495097567963926</length>
             </cylinder>
           </geometry>
         </collision>
@@ -9051,7 +9051,7 @@
           </material>
         </visual>
         <visual name="ref_stool1_spoke4_visual">
-          <pose>-3.3188820645368944 7.761372875703131 0.095 0 1.7681918866447772 -2.827433388230814</pose>
+          <pose>-3.3188820645368944 7.761372875703131 0.095 0 1.7681918866447774 -2.827433388230814</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -9065,7 +9065,7 @@
           </material>
         </visual>
         <collision name="ref_stool1_spoke4_collision">
-          <pose>-3.3188820645368944 7.761372875703131 0.095 0 1.7681918866447772 -2.827433388230814</pose>
+          <pose>-3.3188820645368944 7.761372875703131 0.095 0 1.7681918866447774 -2.827433388230814</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -14010,7 +14010,7 @@
           </material>
         </visual>
         <visual name="detail_steer_rim_0_visual">
-          <pose>4.91 -4.337814250313029 0.9877684771765595 0 0.15707963267949862 -1.5707963267948966</pose>
+          <pose>4.91 -4.337814250313029 0.9877684771765595 0 0.1570796326794986 -1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -14220,7 +14220,7 @@
           </material>
         </visual>
         <visual name="detail_steer_rim_15_visual">
-          <pose>4.91 -4.432231522823441 0.8578142503130286 0 1.4137166941154056 1.5707963267948966</pose>
+          <pose>4.91 -4.432231522823441 0.8578142503130286 0 1.4137166941154058 1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -14276,7 +14276,7 @@
           </material>
         </visual>
         <visual name="detail_steer_rim_19_visual">
-          <pose>4.91 -4.337814250313029 0.9522315228234405 0 0.15707963267949862 1.5707963267948966</pose>
+          <pose>4.91 -4.337814250313029 0.9522315228234405 0 0.1570796326794986 1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -14304,7 +14304,7 @@
           </material>
         </visual>
         <visual name="detail_steer_spoke_1_visual">
-          <pose>4.91 -4.47875 1.0197964607176053 0 0.5235987755982997 -1.5707963267948966</pose>
+          <pose>4.91 -4.47875 1.0197964607176053 0 0.5235987755982996 -1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -15040,7 +15040,7 @@
           </material>
         </visual>
         <visual name="detail_red_x_a_0.65_visual">
-          <pose>-4.775 0.65 0.445 0 0.7973023629557585 0.0</pose>
+          <pose>-4.775 0.65 0.445 0 0.7973023629557586 0.0</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15054,7 +15054,7 @@
           </material>
         </visual>
         <collision name="detail_red_x_a_0.65_collision">
-          <pose>-4.775 0.65 0.445 0 0.7973023629557585 0.0</pose>
+          <pose>-4.775 0.65 0.445 0 0.7973023629557586 0.0</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15063,7 +15063,7 @@
           </geometry>
         </collision>
         <visual name="detail_red_x_b_0.65_visual">
-          <pose>-4.775 0.65 0.445 0 0.7973023629557585 3.141592653589793</pose>
+          <pose>-4.775 0.65 0.445 0 0.7973023629557586 3.141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15077,7 +15077,7 @@
           </material>
         </visual>
         <collision name="detail_red_x_b_0.65_collision">
-          <pose>-4.775 0.65 0.445 0 0.7973023629557585 3.141592653589793</pose>
+          <pose>-4.775 0.65 0.445 0 0.7973023629557586 3.141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15086,7 +15086,7 @@
           </geometry>
         </collision>
         <visual name="detail_red_x_a_0.95_visual">
-          <pose>-4.775 0.95 0.445 0 0.7973023629557585 0.0</pose>
+          <pose>-4.775 0.95 0.445 0 0.7973023629557586 0.0</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15100,7 +15100,7 @@
           </material>
         </visual>
         <collision name="detail_red_x_a_0.95_collision">
-          <pose>-4.775 0.95 0.445 0 0.7973023629557585 0.0</pose>
+          <pose>-4.775 0.95 0.445 0 0.7973023629557586 0.0</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15109,7 +15109,7 @@
           </geometry>
         </collision>
         <visual name="detail_red_x_b_0.95_visual">
-          <pose>-4.775 0.95 0.445 0 0.7973023629557585 3.141592653589793</pose>
+          <pose>-4.775 0.95 0.445 0 0.7973023629557586 3.141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15123,7 +15123,7 @@
           </material>
         </visual>
         <collision name="detail_red_x_b_0.95_collision">
-          <pose>-4.775 0.95 0.445 0 0.7973023629557585 3.141592653589793</pose>
+          <pose>-4.775 0.95 0.445 0 0.7973023629557586 3.141592653589793</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -15529,11 +15529,11 @@
           </material>
         </visual>
         <visual name="detail_north_stool_foot_0_3_visual">
-          <pose>-3.897082039324993 9.829465769724903 0.0775 0 1.7561442767905913 -2.513274122871832</pose>
+          <pose>-3.8970820393249936 9.829465769724903 0.0775 0 1.756144276790591 -2.513274122871833</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
-              <length>0.2441823089414958</length>
+              <length>0.24418230894149615</length>
             </cylinder>
           </geometry>
           <material>
@@ -15924,7 +15924,7 @@
           </geometry>
         </collision>
         <visual name="detail_north_stool_foot_1_0_visual">
-          <pose>-1.23 9.9 0.0775 0 1.7561442767905913 0.0</pose>
+          <pose>-1.23 9.9 0.0775 0 1.7561442767905915 0.0</pose>
           <geometry>
             <cylinder>
               <radius>0.012</radius>
@@ -21281,7 +21281,7 @@
           </geometry>
         </collision>
         <visual name="westbay_airframe_fuselage_visual">
-          <pose>-3.7199999999999998 4.375 0.995 0 1.553254266737494 1.5707963267948966</pose>
+          <pose>-3.7199999999999998 4.375 0.995 0 1.5532542667374942 1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.024</radius>
@@ -22440,7 +22440,7 @@
           </material>
         </visual>
         <visual name="westbay_shop_stool_foot1_visual">
-          <pose>-4.511372875703131 3.0688820645368944 0.0775 0 1.748889265026094 1.2566370614359181</pose>
+          <pose>-4.511372875703131 3.0688820645368944 0.0775 0 1.7488892650260943 1.2566370614359181</pose>
           <geometry>
             <cylinder>
               <radius>0.014</radius>
@@ -22468,7 +22468,7 @@
           </material>
         </visual>
         <visual name="westbay_shop_stool_foot2_visual">
-          <pose>-4.651127124296869 3.0234731565365593 0.0775 0 1.748889265026094 2.513274122871834</pose>
+          <pose>-4.651127124296869 3.0234731565365593 0.0775 0 1.7488892650260943 2.513274122871834</pose>
           <geometry>
             <cylinder>
               <radius>0.014</radius>
@@ -22496,7 +22496,7 @@
           </material>
         </visual>
         <visual name="westbay_shop_stool_foot3_visual">
-          <pose>-4.651127124296869 2.876526843463441 0.0775 0 1.748889265026094 -2.513274122871834</pose>
+          <pose>-4.651127124296869 2.876526843463441 0.0775 0 1.7488892650260943 -2.513274122871834</pose>
           <geometry>
             <cylinder>
               <radius>0.014</radius>
@@ -22524,7 +22524,7 @@
           </material>
         </visual>
         <visual name="westbay_shop_stool_foot4_visual">
-          <pose>-4.511372875703131 2.831117935463106 0.0775 0 1.748889265026094 -1.2566370614359181</pose>
+          <pose>-4.511372875703131 2.831117935463106 0.0775 0 1.7488892650260943 -1.2566370614359181</pose>
           <geometry>
             <cylinder>
               <radius>0.014</radius>
@@ -28938,7 +28938,7 @@
           </material>
         </visual>
         <visual name="leg_lower_collar_-1_visual">
-          <pose>0.0 -0.167 0.0475 0 0.1607627406258344 1.5707963267948966</pose>
+          <pose>0.0 -0.167 0.0475 0 0.16076274062583437 1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -29711,7 +29711,7 @@
           </material>
         </visual>
         <visual name="leg_lower_collar_1_visual">
-          <pose>0.0 0.167 0.0475 0 0.1607627406258344 -1.5707963267948966</pose>
+          <pose>0.0 0.167 0.0475 0 0.16076274062583437 -1.5707963267948966</pose>
           <geometry>
             <cylinder>
               <radius>0.013</radius>
@@ -29971,7 +29971,7 @@
           </material>
         </visual>
         <visual name="plate_bolt_0.41_7_visual">
-          <pose>-0.09093266739736608 -0.05249999999999998 0.413 0 0 0</pose>
+          <pose>-0.09093266739736608 -0.05249999999999997 0.413 0 0 0</pose>
           <geometry>
             <cylinder>
               <radius>0.0032</radius>
@@ -29985,7 +29985,7 @@
           </material>
         </visual>
         <visual name="plate_spacer_7_visual">
-          <pose>-0.09093266739736608 -0.05249999999999998 0.424 0 0 0</pose>
+          <pose>-0.09093266739736608 -0.05249999999999997 0.424 0 0 0</pose>
           <geometry>
             <cylinder>
               <radius>0.003</radius>
@@ -30232,7 +30232,7 @@
           </material>
         </visual>
         <visual name="plate_bolt_0.438_7_visual">
-          <pose>-0.09093266739736608 -0.05249999999999998 0.441 0 0 0</pose>
+          <pose>-0.09093266739736608 -0.05249999999999997 0.441 0 0 0</pose>
           <geometry>
             <cylinder>
               <radius>0.0032</radius>
@@ -30899,7 +30899,7 @@
           </material>
         </visual>
         <visual name="esc_wire_0_0_visual">
-          <pose>0.08485281374238571 0.0848528137423857 0.4495 0 1.508377516798939 0.7853981633974482</pose>
+          <pose>0.08485281374238571 0.0848528137423857 0.4495 0 1.5083775167989393 0.7853981633974482</pose>
           <geometry>
             <cylinder>
               <radius>0.002</radius>
@@ -30927,7 +30927,7 @@
           </material>
         </visual>
         <visual name="esc_wire_0_2_visual">
-          <pose>0.22980970388562794 0.22980970388562794 0.453 0 1.401018052826558 0.7853981633974486</pose>
+          <pose>0.22980970388562794 0.22980970388562794 0.453 0 1.4010180528265581 0.7853981633974486</pose>
           <geometry>
             <cylinder>
               <radius>0.002</radius>
@@ -31551,7 +31551,7 @@
           </material>
         </visual>
         <visual name="esc_wire_1_0_visual">
-          <pose>-0.0848528137423857 0.08485281374238571 0.4495 0 1.508377516798939 2.356194490192345</pose>
+          <pose>-0.0848528137423857 0.08485281374238571 0.4495 0 1.5083775167989393 2.356194490192345</pose>
           <geometry>
             <cylinder>
               <radius>0.002</radius>
@@ -31579,7 +31579,7 @@
           </material>
         </visual>
         <visual name="esc_wire_1_2_visual">
-          <pose>-0.22980970388562794 0.22980970388562794 0.453 0 1.401018052826558 2.3561944901923453</pose>
+          <pose>-0.22980970388562794 0.22980970388562794 0.453 0 1.4010180528265581 2.3561944901923453</pose>
           <geometry>
             <cylinder>
               <radius>0.002</radius>
@@ -32203,7 +32203,7 @@
           </material>
         </visual>
         <visual name="esc_wire_2_0_visual">
-          <pose>-0.08485281374238572 -0.0848528137423857 0.4495 0 1.508377516798939 -2.3561944901923453</pose>
+          <pose>-0.08485281374238572 -0.0848528137423857 0.4495 0 1.5083775167989393 -2.3561944901923453</pose>
           <geometry>
             <cylinder>
               <radius>0.002</radius>
@@ -32855,7 +32855,7 @@
           </material>
         </visual>
         <visual name="esc_wire_3_0_visual">
-          <pose>0.08485281374238568 -0.08485281374238572 0.4495 0 1.508377516798939 -0.7853981633974485</pose>
+          <pose>0.08485281374238568 -0.08485281374238572 0.4495 0 1.5083775167989393 -0.7853981633974485</pose>
           <geometry>
             <cylinder>
               <radius>0.002</radius>
@@ -32883,7 +32883,7 @@
           </material>
         </visual>
         <visual name="esc_wire_3_2_visual">
-          <pose>0.22980970388562788 -0.229809703885628 0.453 0 1.401018052826558 -0.7853981633974486</pose>
+          <pose>0.22980970388562788 -0.229809703885628 0.453 0 1.4010180528265581 -0.7853981633974486</pose>
           <geometry>
             <cylinder>
               <radius>0.002</radius>
@@ -33241,7 +33241,7 @@
           </material>
         </visual>
         <visual name="harness_0_2_visual">
-          <pose>0.035 -0.0005000000000000004 0.47 0 1.8986310097810761 -1.9583201325751753</pose>
+          <pose>0.035 -0.0005000000000000004 0.47 0 1.8986310097810764 -1.9583201325751753</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33283,7 +33283,7 @@
           </material>
         </visual>
         <visual name="harness_1_2_visual">
-          <pose>0.028699999999999996 0.002 0.47150000000000003 0 1.938555988298868 -1.7069850884448088</pose>
+          <pose>0.028699999999999996 0.002 0.47150000000000003 0 1.9385559882988683 -1.7069850884448088</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33297,7 +33297,7 @@
           </material>
         </visual>
         <visual name="harness_2_0_visual">
-          <pose>-0.028499999999999994 -0.005999999999999999 0.462 0 0.47960088136302653 -0.9994588469612697</pose>
+          <pose>-0.028499999999999994 -0.005999999999999999 0.462 0 0.4796008813630265 -0.9994588469612697</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33325,7 +33325,7 @@
           </material>
         </visual>
         <visual name="harness_2_2_visual">
-          <pose>0.022399999999999996 0.0045000000000000005 0.473 0 1.9557850519739723 -1.4828878848062077</pose>
+          <pose>0.022399999999999996 0.0045000000000000005 0.473 0 1.9557850519739726 -1.4828878848062077</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33367,7 +33367,7 @@
           </material>
         </visual>
         <visual name="harness_3_2_visual">
-          <pose>0.0161 0.006999999999999999 0.47450000000000003 0 1.9568486809957206 -1.2995271557585326</pose>
+          <pose>0.0161 0.006999999999999999 0.47450000000000003 0 1.9568486809957208 -1.2995271557585326</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33423,7 +33423,7 @@
           </material>
         </visual>
         <visual name="harness_5_0_visual">
-          <pose>0.03450000000000002 -0.039 0.462 0 0.47960088136302653 -0.9994588469612697</pose>
+          <pose>0.03450000000000002 -0.039 0.462 0 0.4796008813630265 -0.9994588469612697</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33437,7 +33437,7 @@
           </material>
         </visual>
         <visual name="harness_5_1_visual">
-          <pose>0.010500000000000004 -0.008499999999999999 0.47850000000000004 0 1.5601812295952988 2.2206667762068446</pose>
+          <pose>0.010500000000000004 -0.008499999999999999 0.47850000000000004 0 1.560181229595299 2.2206667762068446</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33493,7 +33493,7 @@
           </material>
         </visual>
         <visual name="harness_6_2_visual">
-          <pose>-0.0028000000000000004 0.0045000000000000005 0.47150000000000003 0 1.8242603739286611 -0.8150578750021618</pose>
+          <pose>-0.0028000000000000004 0.0045000000000000005 0.47150000000000003 0 1.8242603739286614 -0.8150578750021618</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33549,7 +33549,7 @@
           </material>
         </visual>
         <visual name="harness_8_0_visual">
-          <pose>-0.04949999999999999 -0.07200000000000001 0.462 0 0.47960088136302653 -0.9994588469612697</pose>
+          <pose>-0.04949999999999999 -0.07200000000000001 0.462 0 0.4796008813630265 -0.9994588469612697</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33675,7 +33675,7 @@
           </material>
         </visual>
         <visual name="harness_11_0_visual">
-          <pose>0.013500000000000009 0.027000000000000003 0.462 0 0.47960088136302653 -0.9994588469612697</pose>
+          <pose>0.013500000000000009 0.027000000000000003 0.462 0 0.4796008813630265 -0.9994588469612697</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33801,7 +33801,7 @@
           </material>
         </visual>
         <visual name="harness_14_0_visual">
-          <pose>-0.07050000000000001 -0.005999999999999999 0.462 0 0.47960088136302653 -0.9994588469612701</pose>
+          <pose>-0.07050000000000001 -0.005999999999999999 0.462 0 0.4796008813630265 -0.9994588469612701</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33815,7 +33815,7 @@
           </material>
         </visual>
         <visual name="harness_14_1_visual">
-          <pose>-0.010500000000000002 0.010500000000000002 0.48450000000000004 0 1.4633639469660784 0.400534515385786</pose>
+          <pose>-0.010500000000000002 0.010500000000000002 0.48450000000000004 0 1.4633639469660786 0.400534515385786</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33871,7 +33871,7 @@
           </material>
         </visual>
         <visual name="harness_15_2_visual">
-          <pose>0.028699999999999996 0.006999999999999999 0.47 0 1.8432379961735577 -1.6859101519914759</pose>
+          <pose>0.028699999999999996 0.006999999999999999 0.47 0 1.8432379961735579 -1.6859101519914759</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -33927,7 +33927,7 @@
           </material>
         </visual>
         <visual name="harness_17_0_visual">
-          <pose>-0.007499999999999997 -0.039 0.462 0 0.47960088136302653 -0.9994588469612699</pose>
+          <pose>-0.007499999999999997 -0.039 0.462 0 0.4796008813630265 -0.9994588469612699</pose>
           <geometry>
             <cylinder>
               <radius>0.00075</radius>
@@ -34428,7 +34428,7 @@
           </material>
         </visual>
         <visual name="power_dangle_0_1_visual">
-          <pose>0.08249999999999999 -0.10500000000000001 0.3325 0 2.665954938098869 -0.5880026035475674</pose>
+          <pose>0.08249999999999999 -0.10500000000000001 0.3325 0 2.6659549380988685 -0.5880026035475674</pose>
           <geometry>
             <cylinder>
               <radius>0.0022</radius>
@@ -34456,7 +34456,7 @@
           </material>
         </visual>
         <visual name="power_dangle_1_1_visual">
-          <pose>0.08249999999999999 -0.101 0.3325 0 2.665954938098869 -0.5880026035475674</pose>
+          <pose>0.08249999999999999 -0.101 0.3325 0 2.6659549380988685 -0.5880026035475674</pose>
           <geometry>
             <cylinder>
               <radius>0.0022</radius>
@@ -34538,11 +34538,11 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_paper_visual">
-          <pose>-0.058 -0.005 0.202 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_paper_visual">
+          <pose>0.00348660065936077 -0.028 0.1474770392430524 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
-              <size>0.068 0.068 0.0008</size>
+              <size>0.056 0.06949999999999999 0.0008</size>
             </box>
           </geometry>
           <material>
@@ -34551,8 +34551,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_ink_1_visual">
-          <pose>-0.058600000000000006 -0.005 0.202 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_ink_1_visual">
+          <pose>-0.0005437846722219899 -0.028 0.14025357095704444 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
               <size>0.05 0.05 0.0003</size>
@@ -34564,8 +34564,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_1_1_visual">
-          <pose>-0.0589 0.007500000000000001 0.21450000000000002 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_pixel_1_1_3_visual">
+          <pose>0.004467051263425758 -0.03216666666666667 0.15170920377352476 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34577,8 +34577,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_1_3_visual">
-          <pose>-0.0589 -0.009166666666666667 0.21450000000000002 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_pixel_1_2_2_visual">
+          <pose>0.0009452324155865959 -0.023833333333333335 0.1441566388815527 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34590,8 +34590,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_1_4_visual">
-          <pose>-0.0589 -0.0175 0.21450000000000002 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_pixel_1_3_1_visual">
+          <pose>-0.0025765864322525667 -0.0155 0.1366040739895806 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34603,8 +34603,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_2_2_visual">
-          <pose>-0.0589 -0.0008333333333333335 0.2061666666666667 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_pixel_1_3_3_visual">
+          <pose>-0.0025765864322525654 -0.03216666666666667 0.1366040739895806 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34616,8 +34616,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_2_4_visual">
-          <pose>-0.0589 -0.0175 0.2061666666666667 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_pixel_1_3_4_visual">
+          <pose>-0.002576586432252565 -0.0405 0.1366040739895806 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34629,8 +34629,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_3_3_visual">
-          <pose>-0.0589 -0.009166666666666667 0.19783333333333333 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="entry_marker_14_pixel_1_4_4_visual">
+          <pose>-0.006098405280091728 -0.0405 0.1290515090976085 1.1344640137963142 0.0 -1.5707963267948966</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34642,11 +34642,11 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_3_4_visual">
-          <pose>-0.0589 -0.0175 0.19783333333333333 1.5707963267948966 0 -1.5707963267948966</pose>
+        <visual name="side_marker_6_paper_visual">
+          <pose>0.09 0.14 0.15825 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
+              <size>0.056 0.06949999999999999 0.0008</size>
             </box>
           </geometry>
           <material>
@@ -34655,34 +34655,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_front_pixel_1_4_3_visual">
-          <pose>-0.0589 -0.009166666666666667 0.1895 1.5707963267948966 0 -1.5707963267948966</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="payload_marker_rear_paper_visual">
-          <pose>0.058 -0.005 0.202 1.5707963267948966 0 1.5707963267948966</pose>
-          <geometry>
-            <box>
-              <size>0.068 0.068 0.0008</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="payload_marker_rear_ink_1_visual">
-          <pose>0.058600000000000006 -0.005 0.202 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_ink_1_visual">
+          <pose>0.09 0.1406 0.15 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.05 0.05 0.0003</size>
@@ -34694,8 +34668,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_2_1_visual">
-          <pose>0.0589 -0.0175 0.2061666666666667 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_1_1_visual">
+          <pose>0.1025 0.1409 0.1625 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34707,8 +34681,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_2_2_visual">
-          <pose>0.0589 -0.009166666666666667 0.2061666666666667 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_1_4_visual">
+          <pose>0.0775 0.14090000000000003 0.1625 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34720,8 +34694,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_2_3_visual">
-          <pose>0.0589 -0.0008333333333333335 0.2061666666666667 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_2_1_visual">
+          <pose>0.1025 0.14090000000000003 0.15416666666666667 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34733,8 +34707,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_2_4_visual">
-          <pose>0.0589 0.007500000000000001 0.2061666666666667 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_2_2_visual">
+          <pose>0.09416666666666666 0.14090000000000003 0.15416666666666667 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34746,8 +34720,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_3_1_visual">
-          <pose>0.0589 -0.0175 0.19783333333333333 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_2_3_visual">
+          <pose>0.08583333333333333 0.14090000000000003 0.15416666666666667 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34759,8 +34733,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_3_4_visual">
-          <pose>0.0589 0.007500000000000001 0.19783333333333333 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_3_3_visual">
+          <pose>0.08583333333333333 0.14090000000000003 0.14583333333333331 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34772,8 +34746,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_4_1_visual">
-          <pose>0.0589 -0.0175 0.1895 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_4_1_visual">
+          <pose>0.1025 0.14090000000000003 0.13749999999999998 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34785,8 +34759,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="payload_marker_rear_pixel_1_4_3_visual">
-          <pose>0.0589 -0.0008333333333333335 0.1895 1.5707963267948966 0 1.5707963267948966</pose>
+        <visual name="side_marker_6_pixel_1_4_2_visual">
+          <pose>0.09416666666666666 0.14090000000000003 0.13749999999999998 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34798,11 +34772,11 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_paper_visual">
-          <pose>0 -0.168 0.092 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_6_pixel_1_4_3_visual">
+          <pose>0.08583333333333333 0.14090000000000003 0.13749999999999998 1.5707963267948966 0.0 3.141592653589793</pose>
           <geometry>
             <box>
-              <size>0.068 0.068 0.0008</size>
+              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
             </box>
           </geometry>
           <material>
@@ -34811,8 +34785,21 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_ink_1_visual">
-          <pose>0.0 -0.1686 0.092 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_paper_visual">
+          <pose>0.0 -0.13 0.16825 1.5707963267948966 0.0 0.0</pose>
+          <geometry>
+            <box>
+              <size>0.056 0.06949999999999999 0.0008</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.93 0.94 0.9 1</ambient>
+            <diffuse>0.93 0.94 0.9 1</diffuse>
+            <specular>.025 .025 .025 1</specular>
+          </material>
+        </visual>
+        <visual name="side_marker_3_ink_1_visual">
+          <pose>0.0 -0.1306 0.16 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.05 0.05 0.0003</size>
@@ -34824,8 +34811,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_pixel_1_1_1_visual">
-          <pose>-0.0125 -0.16890000000000002 0.1045 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_pixel_1_1_1_visual">
+          <pose>-0.0125 -0.13090000000000002 0.17250000000000001 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34837,8 +34824,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_pixel_1_1_2_visual">
-          <pose>-0.004166666666666667 -0.16890000000000002 0.1045 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_pixel_1_1_4_visual">
+          <pose>0.0125 -0.13090000000000002 0.17250000000000001 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34850,8 +34837,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_pixel_1_2_1_visual">
-          <pose>-0.0125 -0.16890000000000002 0.09616666666666666 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_pixel_1_2_1_visual">
+          <pose>-0.0125 -0.13090000000000002 0.16416666666666668 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34863,8 +34850,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_pixel_1_2_2_visual">
-          <pose>-0.004166666666666667 -0.16890000000000002 0.09616666666666666 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_pixel_1_2_4_visual">
+          <pose>0.0125 -0.13090000000000002 0.16416666666666668 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34876,8 +34863,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_pixel_1_2_3_visual">
-          <pose>0.004166666666666667 -0.16890000000000002 0.09616666666666666 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_pixel_1_3_2_visual">
+          <pose>-0.004166666666666667 -0.13090000000000002 0.15583333333333332 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34889,8 +34876,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_pixel_1_2_4_visual">
-          <pose>0.0125 -0.16890000000000002 0.09616666666666666 1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_pixel_1_4_2_visual">
+          <pose>-0.004166666666666667 -0.13090000000000002 0.1475 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -34902,190 +34889,8 @@
             <specular>.025 .025 .025 1</specular>
           </material>
         </visual>
-        <visual name="leg_marker_-1_pixel_1_3_2_visual">
-          <pose>-0.004166666666666667 -0.16890000000000002 0.08783333333333333 1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_-1_pixel_1_3_4_visual">
-          <pose>0.0125 -0.16890000000000002 0.08783333333333333 1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_-1_pixel_1_4_2_visual">
-          <pose>-0.004166666666666667 -0.16890000000000002 0.0795 1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_-1_pixel_1_4_3_visual">
-          <pose>0.004166666666666667 -0.16890000000000002 0.0795 1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_paper_visual">
-          <pose>0 0.168 0.092 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.068 0.068 0.0008</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_ink_1_visual">
-          <pose>0.0 0.1686 0.092 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.05 0.05 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.006 0.008 0.009 1</ambient>
-            <diffuse>0.006 0.008 0.009 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_2_1_visual">
-          <pose>-0.0125 0.16890000000000002 0.08783333333333333 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_2_2_visual">
-          <pose>-0.004166666666666667 0.16890000000000002 0.08783333333333333 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_2_3_visual">
-          <pose>0.004166666666666667 0.16890000000000002 0.08783333333333333 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_3_1_visual">
-          <pose>-0.0125 0.16890000000000002 0.09616666666666666 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_3_3_visual">
-          <pose>0.004166666666666667 0.16890000000000002 0.09616666666666666 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_3_4_visual">
-          <pose>0.0125 0.16890000000000002 0.09616666666666666 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_4_2_visual">
-          <pose>-0.004166666666666667 0.16890000000000002 0.1045 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_4_3_visual">
-          <pose>0.004166666666666667 0.16890000000000002 0.1045 -1.5707963267948966 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008333333333333333 0.008333333333333333 0.0003</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.93 0.94 0.9 1</ambient>
-            <diffuse>0.93 0.94 0.9 1</diffuse>
-            <specular>.025 .025 .025 1</specular>
-          </material>
-        </visual>
-        <visual name="leg_marker_1_pixel_1_4_4_visual">
-          <pose>0.0125 0.16890000000000002 0.1045 -1.5707963267948966 0 0</pose>
+        <visual name="side_marker_3_pixel_1_4_3_visual">
+          <pose>0.004166666666666667 -0.13090000000000002 0.1475 1.5707963267948966 0.0 0.0</pose>
           <geometry>
             <box>
               <size>0.008333333333333333 0.008333333333333333 0.0003</size>
@@ -41603,7 +41408,7 @@
         </axis>
       </joint>
       <link name="front_left_wheel_roller_4">
-        <pose>0.06985 0.07 0.005999999999999998 0 1.5707963267948966 2.356194490192345</pose>
+        <pose>0.06985 0.07 0.005999999999999998 0 1.5707963267948968 2.356194490192345</pose>
         <inertial>
           <mass>0.002</mass>
           <inertia>
@@ -42027,7 +41832,7 @@
         </axis>
       </joint>
       <link name="front_right_wheel_roller_4">
-        <pose>0.06985 -0.07 0.005999999999999998 0 1.5707963267948966 -2.356194490192345</pose>
+        <pose>0.06985 -0.07 0.005999999999999998 0 1.5707963267948968 -2.356194490192345</pose>
         <inertial>
           <mass>0.002</mass>
           <inertia>
@@ -42451,7 +42256,7 @@
         </axis>
       </joint>
       <link name="rear_left_wheel_roller_4">
-        <pose>-0.06985 0.07 0.005999999999999998 0 1.5707963267948966 -2.356194490192345</pose>
+        <pose>-0.06985 0.07 0.005999999999999998 0 1.5707963267948968 -2.356194490192345</pose>
         <inertial>
           <mass>0.002</mass>
           <inertia>
@@ -42875,7 +42680,7 @@
         </axis>
       </joint>
       <link name="rear_right_wheel_roller_4">
-        <pose>-0.06985 -0.07 0.005999999999999998 0 1.5707963267948966 2.356194490192345</pose>
+        <pose>-0.06985 -0.07 0.005999999999999998 0 1.5707963267948968 2.356194490192345</pose>
         <inertial>
           <mass>0.002</mass>
           <inertia>
