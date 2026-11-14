@@ -9,7 +9,7 @@ import pytest
 from fastapi import WebSocketDisconnect
 
 from ugv import autopark, web
-from ugv.parking import Capsule
+from ugv.parking import Capsule, gear_obstacles
 
 
 def _make_pose_sols(tag_yaw: float, tx: float = 0.0, tz: float = 0.7, err: float = 0.1):
@@ -351,3 +351,34 @@ def test_autopark_adaptive_imu_breakaway_ramp_and_damping():
     cmd_run = runner.step(0.90, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=30.0, gyro_yaw_rad=0.0, rec=None)
     assert runner.stall_s == 0.0
     assert abs(cmd_run.turn) < abs(cmd3.turn)
+def test_staging_perimeter_orbit_clears_skids_from_side_and_rear_poses():
+    obstacles = gear_obstacles({
+        "clear_width_m": 0.314,
+        "bar_length_m": 0.305,
+        "bar_radius_m": 0.03,
+        "inward_slope": 0.0,
+    })
+    tagmap = {"14": [-0.028, 0.0, math.pi / 2, -1]}
+    cases = [
+        ("right", 0.74, -0.05, math.radians(-85.0)),
+        ("left", -0.88, -0.02, math.radians(88.0)),
+        ("rear", 0.0, -0.80, math.radians(180.0)),
+    ]
+    for label, x, y, yaw in cases:
+        loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
+        loc.dr_pose = np.array([x, y, yaw], dtype=float)
+        loc.pose_t = 1.0
+        loc.last_gyro = 0.0
+        loc.last_used_calibrated = True
+        runner = autopark.AutoParkRunner(localizer=loc, obstacles=obstacles)
+        runner.stage = "staging"
+
+        cmd = runner.step(1.05, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+        assert cmd.stage == "staging", f"{label}: unexpected stage {cmd.stage} ({cmd.reason})"
+        assert cmd.stop is False, f"{label}: unexpected stop"
+        assert math.hypot(cmd.forward, cmd.strafe) > 0.0, f"{label}: expected nonzero tangential translation"
+        # Verify the emitted command itself passes swept_clear against real gear_obstacles
+        df = cmd.forward * autopark.KDUTY
+        dl = -cmd.strafe * autopark.KDUTY
+        dc = cmd.turn * autopark.KDUTY
+        assert runner._check_swept(cmd.pose, df, dl, dc), f"{label}: orbit command failed _check_swept"

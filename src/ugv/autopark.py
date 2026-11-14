@@ -381,20 +381,15 @@ class GoTo:
         self.min_fwd_speed = min_fwd_speed
         self.ok_since: float | None = None
 
-    def step(self, pose: Sequence[float], now: float) -> tuple[tuple[float, float, float], bool]:
+    def command_for(self, pose: Sequence[float], target: Sequence[float]) -> tuple[float, float, float]:
         x, y, yaw = float(pose[0]), float(pose[1]), float(pose[2])
-        ex, ey = self.t[0] - x, self.t[1] - y
+        ex, ey = float(target[0]) - x, float(target[1]) - y
         dist = math.hypot(ex, ey)
-        yaw_goal = self.t[2] if dist < self.face_origin_dist else wrap(-math.atan2(x, y))
+        yaw_goal = float(target[2]) if dist < self.face_origin_dist else wrap(-math.atan2(x, y))
         eyaw = wrap(yaw_goal - yaw)
         th = yaw - math.pi / 2.0
         e_f = ex * math.cos(th) + ey * math.sin(th)
         e_l = -ex * math.sin(th) + ey * math.cos(th)
-
-        if dist < self.tol_pos and abs(wrap(self.t[2] - yaw)) < self.tol_yaw:
-            self.ok_since = self.ok_since if self.ok_since is not None else now
-            return (0.0, 0.0, 0.0), (now - self.ok_since) >= self.settle_s
-        self.ok_since = None
 
         def duty(e: float, kp: float, vcap: float, gain: float, dz: float, tol: float, vmin: float = 0.0) -> float:
             if abs(e) < tol:
@@ -406,7 +401,16 @@ class GoTo:
             duty(e_f, self.kp_pos, self.vcap_fwd, self.gain_fwd, self.dz_fwd, self.tol_pos * 0.5, self.min_fwd_speed),
             duty(e_l, self.kp_pos, self.vcap_left, self.gain_left, self.dz_left, self.tol_pos * 0.5),
             duty(eyaw, self.kp_yaw, self.vcap_yaw, self.gain_yaw, self.dz_yaw, self.tol_yaw * 0.5),
-        ), False
+        )
+
+    def step(self, pose: Sequence[float], now: float) -> tuple[tuple[float, float, float], bool]:
+        x, y, yaw = float(pose[0]), float(pose[1]), float(pose[2])
+        dist = math.hypot(self.t[0] - x, self.t[1] - y)
+        if dist < self.tol_pos and abs(wrap(self.t[2] - yaw)) < self.tol_yaw:
+            self.ok_since = self.ok_since if self.ok_since is not None else now
+            return (0.0, 0.0, 0.0), (now - self.ok_since) >= self.settle_s
+        self.ok_since = None
+        return self.command_for(pose, self.t), False
 
 
 @dataclass(frozen=True)
@@ -544,6 +548,30 @@ class AutoParkRunner:
             self.inflation,
         )
 
+    def _staging_orbit_waypoints(self, x: float, y: float) -> list[tuple[float, float, float]]:
+        r = math.hypot(x, y)
+        r_orbit = min(1.15, max(0.72, max(0.75, r)))
+        theta = math.atan2(y, x) if r > 1e-6 else -math.pi / 2.0
+        dtheta = wrap(math.pi / 2.0 - theta)
+        arc_dir = 1.0 if dtheta >= 0.0 else -1.0
+        step = arc_dir * min(0.6, abs(dtheta))
+
+        candidates: list[tuple[float, float]] = [
+            (r_orbit * math.cos(theta + step), r_orbit * math.sin(theta + step)),
+        ]
+        if r < 0.72:
+            r_out = max(0.75, r + 0.30)
+            for frac in (0.4, 0.0, 0.7):
+                ang = theta + arc_dir * min(0.6 * frac, abs(dtheta))
+                candidates.append((r_out * math.cos(ang), r_out * math.sin(ang)))
+        for ang_off in (arc_dir * 0.35, arc_dir * 0.9, -arc_dir * 0.6, -arc_dir * 0.35):
+            candidates.append((r_orbit * math.cos(theta + ang_off), r_orbit * math.sin(theta + ang_off)))
+        if r >= 0.72:
+            r_out = min(1.15, r + 0.30)
+            candidates.append((r_out * math.cos(theta), r_out * math.sin(theta)))
+
+        return [(wx, wy, wrap(-math.atan2(wx, wy))) for wx, wy in candidates]
+
     def _to_cmd(self, stage: str, status: str, df: float, dl: float, dc: float, pose: tuple[float, float, float] | None) -> AutoParkCommand:
         F, S, T, scale = duty_to_dashboard(df, dl, dc)
         self.last_duty = (F * KDUTY, -S * KDUTY)
@@ -619,13 +647,38 @@ class AutoParkRunner:
                 self.stage = "entering"
                 self.stall_s = 0.0
             else:
-                (df, dl, dc), _ = self.stage_goto.step(cur_pose, now)
-                dc = self._boost_turn_duty(dc, dt, imu_w_dps, acquiring=False)
-                if not self._check_swept(cur_pose, df, dl, dc):
+                saved_stall = self.stall_s
+                (df_dir, dl_dir, dc_dir), _ = self.stage_goto.step(cur_pose, now)
+                dc_dir = self._boost_turn_duty(dc_dir, dt, imu_w_dps, acquiring=False)
+                stall_after_dir = self.stall_s
+                direct_ok = self._check_swept(cur_pose, df_dir, dl_dir, dc_dir)
+
+                outside_corridor = y < 0.42 and (abs(x) > 0.20 or y < 0.10)
+                chosen: tuple[float, float, float] | None = None
+                chosen_stall = stall_after_dir
+                if not outside_corridor and direct_ok:
+                    chosen = (df_dir, dl_dir, dc_dir)
+                else:
+                    for wp in self._staging_orbit_waypoints(x, y):
+                        self.stall_s = saved_stall
+                        df_w, dl_w, dc_w = self.stage_goto.command_for(cur_pose, wp)
+                        dc_w = self._boost_turn_duty(dc_w, dt, imu_w_dps, acquiring=False)
+                        if self._check_swept(cur_pose, df_w, dl_w, dc_w):
+                            chosen = (df_w, dl_w, dc_w)
+                            chosen_stall = self.stall_s
+                            break
+                    if chosen is None and direct_ok:
+                        chosen = (df_dir, dl_dir, dc_dir)
+                        chosen_stall = stall_after_dir
+
+                if chosen is None:
                     self.stage = "blocked"
                     self.last_duty = (0.0, 0.0)
                     self.stall_s = 0.0
                     return AutoParkCommand(stage="blocked", status="swept-clear-blocked", stop=True, reason="swept-clear-blocked", pose=cur_pose)
+
+                self.stall_s = chosen_stall
+                df, dl, dc = chosen
                 status = "staging to (0.00, 0.55)" if self.loc.last_used_calibrated else "staging (awaiting calibrated tag)"
                 return self._to_cmd("staging", status, df, dl, dc, cur_pose)
 
