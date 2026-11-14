@@ -6,6 +6,7 @@ snapshots/
 *.jpg
 *.jpeg
 *.png
+!docs/assets/banner.png
 .DS_Store
 
 # Local runtime output and macOS transfer metadata
