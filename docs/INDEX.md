@@ -24,7 +24,7 @@ L3 PROTOCOL.md
 
 ## Document map
 
-- [`README.md`](../README.md) — project overview, hardware delta summary, and links to subsystem docs.
+- [`README.md`](../README.md) — project overview, verified status metrics, layout, and quickstart.
 - [`HANDOFF.md`](../HANDOFF.md) — pre-charging Pi pause state, sync warnings, and next-step runbook.
 - [`docs/STATE.md`](STATE.md) — current hardware/software status and pointers to field notes and archive.
 - [`docs/NETWORK.md`](NETWORK.md) — single source of truth for Pi SSH (`ssh pi` via `glinet`), IP, and Wi-Fi hardening.
