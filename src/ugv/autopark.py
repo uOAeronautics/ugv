@@ -32,13 +32,18 @@ def wrap(a: float) -> float:
     return (a + math.pi) % (2.0 * math.pi) - math.pi
 
 
-def load_tagmap(path: Path | str | None = None, tag_y: float = 0.0) -> dict[int, list[float]]:
+def load_tagmap(
+    path: Path | str | None = None,
+    tag_y: float = 0.0,
+    *,
+    include_uncalibrated: bool = False,
+) -> dict[int, list[float]]:
     p = Path(path) if path is not None else DEFAULT_TAGMAP_PATH
     raw = json.loads(p.read_text())
     out: dict[int, list[float]] = {}
     for k, v in raw.items():
         obs = int(v[3])
-        if obs == 0:
+        if obs == 0 and not include_uncalibrated:
             continue
         entry = [float(v[0]), float(v[1]), float(v[2]), obs]
         if tag_y and obs != -2:
@@ -166,21 +171,25 @@ class Localizer:
         tau: float = 0.2,
     ):
         if tagmap is None:
-            self.map = load_tagmap(DEFAULT_TAGMAP_PATH, tag_y=tag_y)
+            full_map = load_tagmap(DEFAULT_TAGMAP_PATH, tag_y=tag_y, include_uncalibrated=True)
         else:
-            self.map = {}
+            full_map = {}
             for k, v in tagmap.items():
                 obs = int(v[3])
-                if obs == 0:
-                    continue
                 entry = [float(v[0]), float(v[1]), float(v[2]), obs]
                 if tag_y and obs != -2:
                     entry[1] += tag_y
-                self.map[int(k)] = entry
+                full_map[int(k)] = entry
+        self.cal_map: dict[int, list[float]] = {k: v for k, v in full_map.items() if int(v[3]) != 0}
+        self.uncal_map: dict[int, list[float]] = {k: v for k, v in full_map.items() if int(v[3]) == 0}
+        self.map = self.cal_map
+        self.cal_ids: set[int] = set(self.cal_map)
         self.tag_y = tag_y
         self.primary = primary
         self.off: float | None = None
         self.outliers = 0
+        self.last_used_calibrated: bool = False
+        self._has_calibrated_fix: bool = False
         self.pose: tuple[float, float, float] | None = None
         self.pose_t = 0.0
         self.dr_pose: list[float] | None = None
@@ -203,20 +212,10 @@ class Localizer:
         nx, nz = sol[3], sol[5]
         return wrap(phi - math.atan2(-nx, nz) + math.pi / 2.0)
 
-    def update(
-        self,
-        rec: dict,
-        gyro_at_cap: float,
-        now: float | None = None,
-        gyro_now: float | None = None,
-        duty_fwd: float = 0.0,
-        duty_left: float = 0.0,
-    ) -> bool:
-        cap = float(rec["cap"])
-        pred = None if self.off is None else wrap(gyro_at_cap + self.off)
+    def _pick_cands(self, tags: Sequence[dict], tag_map: dict[int, list[float]], pred: float | None) -> list[tuple[dict, list[float], list[float]]]:
         cands = []
-        for t in rec.get("tags", []):
-            m = self.map.get(int(t["id"]))
+        for t in tags:
+            m = tag_map.get(int(t["id"]))
             sols = t.get("sol") or []
             if m is None or not sols:
                 continue
@@ -229,6 +228,26 @@ class Localizer:
                     if d1 < d0:
                         best = sols[1]
             cands.append((t, m, best))
+        return cands
+
+    def update(
+        self,
+        rec: dict,
+        gyro_at_cap: float,
+        now: float | None = None,
+        gyro_now: float | None = None,
+        duty_fwd: float = 0.0,
+        duty_left: float = 0.0,
+        allow_uncalibrated: bool = False,
+    ) -> bool:
+        cap = float(rec["cap"])
+        pred = None if self.off is None else wrap(gyro_at_cap + self.off)
+        raw_tags = rec.get("tags", [])
+        cands = self._pick_cands(raw_tags, self.cal_map, pred if self._has_calibrated_fix else None)
+        used_calibrated = True
+        if not cands and allow_uncalibrated and self.uncal_map:
+            cands = self._pick_cands(raw_tags, self.uncal_map, pred)
+            used_calibrated = False
         if not cands:
             return False
 
@@ -238,7 +257,7 @@ class Localizer:
         yc = sum(max(1.0, float(c[0].get("px", 1.0))) * math.cos(self._tag_yaw(c[1][2], c[2])) for c in trusted)
         tag_yaw = math.atan2(ys / wsum, yc / wsum)
 
-        if self.off is None:
+        if self.off is None or (used_calibrated and not self._has_calibrated_fix):
             self.off = wrap(tag_yaw - gyro_at_cap)
             self.outliers = 0
         else:
@@ -264,7 +283,7 @@ class Localizer:
         self.pose = (float(car[0]), float(car[1]), yaw)
         self.pose_t = cap
 
-        if self.dr_pose is None or math.hypot(car[0] - self.dr_pose[0], car[1] - self.dr_pose[1]) > 0.25:
+        if self.dr_pose is None or (used_calibrated and not self._has_calibrated_fix) or math.hypot(car[0] - self.dr_pose[0], car[1] - self.dr_pose[1]) > 0.25:
             self.dr_pose = [float(car[0]), float(car[1]), yaw]
             self.dr_t = cap
         else:
@@ -280,12 +299,16 @@ class Localizer:
             yaw_now = wrap((gyro_now if gyro_now is not None else gyro_at_cap) + self.off)
             self.propagate(now, yaw_now, duty_fwd, duty_left)
 
+        if used_calibrated:
+            self._has_calibrated_fix = True
+        self.last_used_calibrated = used_calibrated
         self.last = {
             "id": int(t["id"]),
             "tag_yaw": tag_yaw,
             "range": float(math.hypot(s[0], s[2])),
             "h": float(-s[1]),
             "n": len(cands),
+            "calibrated": used_calibrated,
         }
         return True
 
@@ -332,7 +355,7 @@ class GoTo:
         gain_yaw: float = 15.7,
         dz_fwd: float = 0.05,
         dz_left: float = 0.13,
-        dz_yaw: float = 0.10,
+        dz_yaw: float = 0.16,
         tol_pos: float = 0.04,
         tol_yaw_deg: float = 4.0,
         settle_s: float = 0.2,
@@ -419,6 +442,7 @@ class AutoParkRunner:
         acquire_timeout_s: float = 16.0,
     ):
         self.localizer = localizer or Localizer()
+        self.loc = self.localizer
         self.obstacles = list(obstacles)
         self.vehicle_width = float(vehicle_width)
         self.vehicle_length = float(vehicle_length)
@@ -449,6 +473,36 @@ class AutoParkRunner:
         self.last_duty = (0.0, 0.0)
         self.brake_at: float | None = None
         self.gyro_hist: list[tuple[float, float]] = []
+        self.stall_s: float = 0.0
+        self._prev_step_t: float | None = None
+        self._acquire_moving: bool = False
+
+    def _boost_turn_duty(self, dc: float, dt: float, imu_w_dps: float, *, acquiring: bool) -> float:
+        if acquiring:
+            w_rad = math.radians(self.acquire_dps)
+            dc_base = math.copysign(self.stage_goto.dz_yaw + abs(w_rad) / self.stage_goto.gain_yaw, w_rad) if w_rad else 0.0
+            if not dc_base:
+                self.stall_s = 0.0
+                return 0.0
+            sign = math.copysign(1.0, dc_base)
+            w_abs = abs(imu_w_dps)
+            if w_abs >= 6.0 or (self._acquire_moving and w_abs >= 4.0):
+                self._acquire_moving = True
+                self.stall_s = 0.0
+                dc_mag = max(0.05, min(0.26, abs(dc_base) + 0.002 * (abs(self.acquire_dps) - w_abs)))
+            else:
+                self._acquire_moving = False
+                self.stall_s += dt
+                ramp = self.stage_goto.dz_yaw + 0.08 * min(self.stall_s / 0.8, 1.0)
+                dc_mag = min(0.26, ramp + abs(w_rad) / self.stage_goto.gain_yaw)
+            return sign * dc_mag
+        self._acquire_moving = False
+        if abs(dc) > 1e-6 and abs(imu_w_dps) < 3.0:
+            self.stall_s += dt
+            ramp = self.stage_goto.dz_yaw + 0.08 * min(self.stall_s / 0.8, 1.0)
+            return math.copysign(min(0.26, max(abs(dc), ramp)), dc)
+        self.stall_s = 0.0
+        return dc
 
     def record_gyro(self, t: float, yaw_rad: float):
         if not self.gyro_hist or t > self.gyro_hist[-1][0]:
@@ -505,6 +559,8 @@ class AutoParkRunner:
         gyro_yaw_rad: float,
         rec: dict | None = None,
     ) -> AutoParkCommand:
+        dt = min(0.25, max(0.0, now - self._prev_step_t)) if self._prev_step_t is not None else 0.0
+        self._prev_step_t = now
         self.record_gyro(now, gyro_yaw_rad)
         cur_pose = tuple(self.localizer.dr_pose) if self.localizer.dr_pose is not None else None
 
@@ -520,7 +576,15 @@ class AutoParkRunner:
         if rec is not None and rec.get("tags"):
             cap = float(rec["cap"])
             g_cap = self.gyro_yaw_at(cap, gyro_yaw_rad)
-            self.localizer.update(rec, g_cap, now=now, gyro_now=gyro_yaw_rad, duty_fwd=self.last_duty[0], duty_left=self.last_duty[1])
+            self.localizer.update(
+                rec,
+                g_cap,
+                now=now,
+                gyro_now=gyro_yaw_rad,
+                duty_fwd=self.last_duty[0],
+                duty_left=self.last_duty[1],
+                allow_uncalibrated=(self.stage in ("acquiring", "staging")),
+            )
         elif self.localizer.dr_pose is not None:
             self.localizer.propagate(now, gyro_yaw_rad, self.last_duty[0], self.last_duty[1], is_gyro=True)
 
@@ -533,6 +597,8 @@ class AutoParkRunner:
                 elif now - self.acquire_started_at >= self.acquire_timeout_s:
                     self.stage = "aborted"
                     self.last_duty = (0.0, 0.0)
+                    self.stall_s = 0.0
+                    self._acquire_moving = False
                     return AutoParkCommand(
                         stage="aborted",
                         status="No tag found after 360 deg scan",
@@ -540,23 +606,28 @@ class AutoParkRunner:
                         reason="acquire-timeout",
                         pose=None,
                     )
-                w_rad = math.radians(self.acquire_dps)
-                dc = math.copysign(self.stage_goto.dz_yaw + abs(w_rad) / self.stage_goto.gain_yaw, w_rad) if w_rad else 0.0
+                dc = self._boost_turn_duty(0.0, dt, imu_w_dps, acquiring=True)
                 return self._to_cmd("acquiring", "searching for drone tags", 0.0, 0.0, dc, None)
             self.stage = "staging"
+            self.stall_s = 0.0
+            self._acquire_moving = False
 
         if self.stage == "staging":
             assert cur_pose is not None
             x, y, yaw = cur_pose
-            if abs(x) < 0.06 and abs(y - 0.55) < 0.06 and abs(wrap(yaw)) < math.radians(4.0):
+            if abs(x) < 0.06 and abs(y - 0.55) < 0.06 and abs(wrap(yaw)) < math.radians(4.0) and self.loc.last_used_calibrated:
                 self.stage = "entering"
+                self.stall_s = 0.0
             else:
                 (df, dl, dc), _ = self.stage_goto.step(cur_pose, now)
+                dc = self._boost_turn_duty(dc, dt, imu_w_dps, acquiring=False)
                 if not self._check_swept(cur_pose, df, dl, dc):
                     self.stage = "blocked"
                     self.last_duty = (0.0, 0.0)
+                    self.stall_s = 0.0
                     return AutoParkCommand(stage="blocked", status="swept-clear-blocked", stop=True, reason="swept-clear-blocked", pose=cur_pose)
-                return self._to_cmd("staging", "staging to (0.00, 0.55)", df, dl, dc, cur_pose)
+                status = "staging to (0.00, 0.55)" if self.loc.last_used_calibrated else "staging (awaiting calibrated tag)"
+                return self._to_cmd("staging", status, df, dl, dc, cur_pose)
 
         if self.stage == "entering":
             assert cur_pose is not None
@@ -564,18 +635,22 @@ class AutoParkRunner:
             if abs(x) >= self.corridor_x_limit:
                 self.stage = "aborted"
                 self.last_duty = (0.0, 0.0)
+                self.stall_s = 0.0
                 return AutoParkCommand(stage="aborted", status="corridor-x-limit", stop=True, reason="corridor-x-limit", pose=cur_pose)
             blind_dt = max(0.0, now - self.localizer.pose_t)
             if y < 0.40 and blind_dt > self.max_blind_dr_s:
                 self.stage = "aborted"
                 self.last_duty = (0.0, 0.0)
+                self.stall_s = 0.0
                 return AutoParkCommand(stage="aborted", status="blind-dr-timeout", stop=True, reason="blind-dr-timeout", pose=cur_pose)
             if abs(x) < 0.06 and abs(y - 0.02) < 0.05 and abs(wrap(yaw)) < math.radians(5.0):
                 self.stage = "braking"
                 self.brake_at = now
                 self.last_duty = (0.0, 0.0)
+                self.stall_s = 0.0
                 return AutoParkCommand(stage="braking", status="braking at dock", stop=True, reason="entering-arrived", pose=cur_pose)
             (df, dl, dc), _ = self.enter_goto.step(cur_pose, now)
+            dc = self._boost_turn_duty(dc, dt, imu_w_dps, acquiring=False)
             return self._to_cmd("entering", "entering dock corridor", df, dl, dc, cur_pose)
 
         if self.stage == "braking":

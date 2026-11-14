@@ -753,7 +753,7 @@ def main():
     ap.add_argument("--gain-yaw", type=float, default=15.7, help="rad/s per duty")
     ap.add_argument("--dz-fwd", type=float, default=0.05)
     ap.add_argument("--dz-left", type=float, default=0.13)
-    ap.add_argument("--dz-yaw", type=float, default=0.10)
+    ap.add_argument("--dz-yaw", type=float, default=0.16)
     ap.add_argument("--adapter", choices=["vel", "raw"], default="vel",
                     help="policy: vel = reproduce the sim plant's body velocity with the fitted real "
                          "plant; raw = identical wheel pattern to rl/sim.py")

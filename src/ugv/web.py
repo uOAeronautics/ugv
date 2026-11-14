@@ -920,8 +920,8 @@ async def parking_plan(): return await asyncio.to_thread(controller.parking.plan
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept(); cid = uuid.uuid4().hex[:8]; controller.clients[cid] = ws
-    await ws.send_json(controller.payload(cid)); await controller.broadcast()
     try:
+        await ws.send_json(controller.payload(cid)); await controller.broadcast()
         while True:
             try:
                 m = json.loads(await ws.receive_text()); kind = m.get("type")
@@ -933,6 +933,8 @@ async def websocket_endpoint(ws: WebSocket):
                 elif kind == "camera": await controller.camera_move(cid, str(m.get("axis")), int(m.get("delta", 0)))
                 elif kind == "camera-capture": await controller.camera_capture(cid, m.get("enabled"))
                 elif kind == "aruco":
+                    if m.get("enabled") and controller.state.auto_park:
+                        continue
                     if m.get("enabled") and not camera.enabled:
                         raise PermissionError("enable camera capture before ArUco")
                     await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"), m.get("follow_mode"))
@@ -955,7 +957,7 @@ async def websocket_endpoint(ws: WebSocket):
                 else: await ws.send_json({"type":"error","error":"unknown message"})
             except PermissionError as e: await ws.send_json({"type":"error","error":str(e)})
             except (TypeError, ValueError, json.JSONDecodeError): await ws.send_json({"type":"error","error":"invalid message"})
-    except WebSocketDisconnect: pass
+    except (WebSocketDisconnect, RuntimeError): pass
     finally:
         if aruco.owner == cid: await aruco.disable_follow("aruco-owner-disconnected")
         await controller.disconnect(cid)

@@ -272,3 +272,82 @@ def test_autopark_runner_acquiring_timeout_aborts():
     assert cmd_to.status == "No tag found after 360 deg scan"
     assert cmd_to.forward == 0.0 and cmd_to.strafe == 0.0 and cmd_to.turn == 0.0
     assert runner.last_duty == (0.0, 0.0)
+
+
+def test_uncalibrated_tag6_bootstraps_staging_and_blocks_entering_until_calibrated():
+    tagmap = {
+        "14": [-0.028, 0.0, math.pi / 2, -1],
+        "6": [0.06, -0.05, 0.0, 0],
+    }
+    loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
+    assert 6 not in loc.map
+    assert 6 in loc.uncal_map
+    runner = autopark.AutoParkRunner(localizer=loc, obstacles=[])
+
+    # Tag 6 (obs==0) drives acquiring -> staging toward (0.0, 0.55)
+    # Place car right at (0.0, 0.55, 0.0) seen via uncalibrated Tag 6:
+    # tag6_map = [0.06, -0.13, 0.0, 0] (with tag_y=-0.08), car at (0, 0.55, 0) => cam at (0, 0.55 + CAM_FWD_M)
+    # f = (0, 1), r = (1, 0), cam = tag6 - (tz*f + tx*r) => tx = 0.06, tz = -0.13 - (0.55 + CAM_FWD_M)
+    # Use a pose in front of Tag 6 (e.g., tag_yaw=0 => phi=0, nx=0, nz=1? Wait: phi=0 means tag faces +X)
+    # Better: put car at (0.55 + CAM_FWD_M + 0.06?): let's compute exact tag6 sol for pose (0.0, 0.55, 0.0):
+    # At yaw=0: th=-pi/2 => f=(0, 1), r=(-1, 0)? Wait: f=(cos(-pi/2), sin(-pi/2))=(0, -1), r=(sin(-pi/2), -cos(-pi/2))=(-1, 0).
+    # cam = (0, 0.55) + CAM_FWD_M*(0, -1) = (0, 0.55 - CAM_FWD_M).
+    # m - cam = (0.06, -0.13 - (0.55 - CAM_FWD_M)) = tz*(0, -1) + tx*(-1, 0) => tx = -0.06, tz = 0.68 - CAM_FWD_M.
+    # For tag_yaw=0 with phi=0: _tag_yaw(0, sol) = 0 - atan2(-nx, nz) + pi/2 = 0 => atan2(-nx, nz) = pi/2 => nx=-1, nz=0.
+    sol6 = [-0.06, 0.0, 0.68 - autopark.CAM_FWD_M, -1.0, 0.0, 0.0, 0.1]
+    rec6 = {"cap": 1.0, "tags": [{"id": 6, "px": 700.0, "sol": [sol6]}]}
+
+    cmd1 = runner.step(1.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec6)
+    assert loc.last_used_calibrated is False
+    # Even when already at (0.0, 0.55, 0.0), uncalibrated Tag 6 must NOT enter "entering"
+    assert cmd1.stage == "staging"
+    assert cmd1.stop is False
+
+    # Now calibrated Tag 14 confirms alignment at (0.0, 0.55, 0.0) -> transitions to "entering"
+    tz14 = 0.55 - (-0.08) - autopark.CAM_FWD_M
+    rec14 = {"cap": 1.1, "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=-0.028, tz=tz14, err=0.1)]}]}
+    cmd2 = runner.step(1.1, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec14)
+    assert loc.last_used_calibrated is True
+    assert cmd2.stage == "entering"
+    assert cmd2.forward > 0.0
+
+
+def test_first_calibrated_fix_snaps_dr_pose_within_25cm():
+    tagmap = {
+        "14": [-0.028, 0.0, math.pi / 2, -1],
+        "6": [0.06, -0.05, 0.0, 0],
+    }
+    loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
+    sol6 = [-0.16, 0.0, 0.68 - autopark.CAM_FWD_M, -1.0, 0.0, 0.0, 0.1]
+    assert loc.update({"cap": 1.0, "tags": [{"id": 6, "px": 700.0, "sol": [sol6]}]}, gyro_at_cap=0.0, allow_uncalibrated=True)
+    assert loc.last_used_calibrated is False
+    assert loc.dr_pose[:2] == pytest.approx([-0.10, 0.55], abs=1e-6)
+
+    tz14 = 0.55 - (-0.08) - autopark.CAM_FWD_M
+    rec14 = {"cap": 1.1, "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=0.028, tz=tz14, err=0.1)]}]}
+    assert loc.update(rec14, gyro_at_cap=0.0)
+    assert loc.last_used_calibrated is True
+    assert loc.dr_pose[:2] == pytest.approx([0.0, 0.55], abs=1e-6)
+
+
+def test_autopark_adaptive_imu_breakaway_ramp_and_damping():
+    tagmap = {"14": [-0.028, 0.0, math.pi / 2, -1]}
+    loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
+    runner = autopark.AutoParkRunner(localizer=loc, obstacles=[])
+    assert runner.stage_goto.dz_yaw == pytest.approx(0.16)
+
+    cmd0 = runner.step(0.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd1 = runner.step(0.25, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd2 = runner.step(0.50, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd3 = runner.step(0.80, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+
+    assert cmd0.stage == "acquiring"
+    assert abs(cmd1.turn) > abs(cmd0.turn)
+    assert abs(cmd2.turn) > abs(cmd1.turn)
+    assert abs(cmd3.turn) >= abs(cmd2.turn)
+    assert abs(cmd3.turn) * autopark.KDUTY <= 0.26 + 1e-9
+
+    # Once robot breaks away (imu_w_dps >= 6.0), stall timer resets and damping moderates turn
+    cmd_run = runner.step(0.90, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=30.0, gyro_yaw_rad=0.0, rec=None)
+    assert runner.stall_s == 0.0
+    assert abs(cmd_run.turn) < abs(cmd3.turn)

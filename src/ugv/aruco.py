@@ -969,6 +969,8 @@ class ArucoFollower:
             self.last_sequence = sequence
             started = time.monotonic()
             detections = await asyncio.to_thread(self.track_all, frame)
+            if not self.enabled:
+                continue
             completed = time.monotonic()
             self.processing_ms = (completed - started) * 1000
             self.completed_at.append(completed)
@@ -982,6 +984,8 @@ class ArucoFollower:
             parking = getattr(self.controller, "parking", None)
             if parking is not None:
                 await asyncio.to_thread(parking.update, detections, self.controller.state, captured_at, completed, self.previous_gray)
+                if not self.enabled:
+                    continue
             if not detections:
                 # A tiny/distant marker may miss an individual compressed
                 # frame. Preserve the previous overlay/command briefly rather
