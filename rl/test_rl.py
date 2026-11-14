@@ -65,6 +65,7 @@ def test_partial_reset_preserves_other_envs():
 def test_same_seed_same_results():
     # one persistent generator per env: same seed + same call pattern repeats.
     from evaluate import run
+
     a = run(32, "L0", "brake", "cpu", seed=7)
     b = run(32, "L0", "brake", "cpu", seed=7)
     assert a == b
@@ -73,42 +74,49 @@ def test_same_seed_same_results():
 def test_action_rate_penalty_nonzero_on_step_change():
     # 0.4: the rate term must see the previous action, not the current one twice.
     from reward import step_reward
+
     n = 4
-    kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
-              vel=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
-              near=torch.zeros(n, dtype=torch.bool),
-              collision=torch.zeros(n, dtype=torch.bool),
-              false_park=torch.zeros(n, dtype=torch.bool))
+    kw = dict(
+        prev_pose=torch.zeros(n, 3),
+        pose=torch.zeros(n, 3),
+        vel=torch.zeros(n, 3),
+        success=torch.zeros(n, dtype=torch.bool),
+        near=torch.zeros(n, dtype=torch.bool),
+        collision=torch.zeros(n, dtype=torch.bool),
+        false_park=torch.zeros(n, dtype=torch.bool),
+    )
     flat = step_reward(act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3), **kw)
     step = step_reward(act=torch.ones(n, 3), prev_act=torch.zeros(n, 3), **kw)
     # rate -0.01*3 = -0.03 (near false, so no act_pen)
     assert torch.allclose(flat - step, torch.full((n,), 0.03), atol=1e-4)
-    off = step_reward(act=torch.ones(n, 3), prev_act=torch.zeros(n, 3),
-                      rate_w=0.0, **kw)
+    off = step_reward(act=torch.ones(n, 3), prev_act=torch.zeros(n, 3), rate_w=0.0, **kw)
     assert torch.allclose(flat - off, torch.zeros(n), atol=1e-6)
 
 
 def test_terminal_bonus_only_on_success():
     # 0.5: a collision or timeout near the goal must not pay the +10 bonus.
     from reward import step_reward
+
     n = 3
-    kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
-              act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3),
-              vel=torch.zeros(n, 3), near=torch.ones(n, dtype=torch.bool),
-              collision=torch.tensor([True, False, False]),
-              false_park=torch.zeros(n, dtype=torch.bool))
+    kw = dict(
+        prev_pose=torch.zeros(n, 3),
+        pose=torch.zeros(n, 3),
+        act=torch.zeros(n, 3),
+        prev_act=torch.zeros(n, 3),
+        vel=torch.zeros(n, 3),
+        near=torch.ones(n, dtype=torch.bool),
+        collision=torch.tensor([True, False, False]),
+        false_park=torch.zeros(n, dtype=torch.bool),
+    )
     r = step_reward(success=torch.tensor([False, True, False]), **kw)
     assert r[0] < r[1] and abs(r[1] - r[0] - 15.0) < 1e-5  # 10 bonus + 5 collision avoided
-
-
-
-
 
 
 def test_gae_resets_at_terminal():
     # 0.6: R=ones, V=0, terminal at t=1, gamma=lam=1 -> adv=[2,1,2,1].
     # The old code carried gae through D[t+1], leaking adv 2.0 back into t=1 (3.0).
     from models import gae_advantages
+
     R = torch.ones(4, 2)
     V = torch.zeros(4, 2)
     D = torch.tensor([[0, 0], [1, 1], [0, 0], [0, 0]])
@@ -122,6 +130,7 @@ def test_yaw_priced_in_potential():
     # price yaw materially (old weight 0.3 made 5 deg worth ~0.026).
     import math
     from reward import progress_potential
+
     flat = progress_potential(torch.zeros(1, 3))
     tilted = progress_potential(torch.tensor([[0.0, 0.0, math.radians(5)]]))
     assert abs((flat - tilted).item() - math.radians(5)) < 1e-6
@@ -130,11 +139,14 @@ def test_yaw_priced_in_potential():
 def test_lateral_weight_prices_offset():
     # s1 failures held +52 mm mean lateral offset; lat_w prices it explicitly.
     from reward import progress_potential
+
     centered = progress_potential(torch.zeros(1, 3))
     off = progress_potential(torch.tensor([[0.08, 0.0, 0.0]]))
     gap_default = (centered - off).item()
-    gap_zero = (progress_potential(torch.zeros(1, 3), lat_w=0.0)
-                - progress_potential(torch.tensor([[0.08, 0.0, 0.0]]), lat_w=0.0)).item()
+    gap_zero = (
+        progress_potential(torch.zeros(1, 3), lat_w=0.0)
+        - progress_potential(torch.tensor([[0.08, 0.0, 0.0]]), lat_w=0.0)
+    ).item()
     assert abs(gap_default - (gap_zero + 2.0 * 0.08)) < 1e-6
 
 
@@ -183,6 +195,7 @@ def test_under_drone_loss_only_from_l3():
 def test_fov_behind_drone_y_negative():
     # Car behind the drone (y < 0) facing +y (yaw=pi) sees the drone; facing -y (yaw=0) doesn't.
     import math
+
     env = MecanumVecEnv(1, EnvConfig(level="L0", device="cpu"))
     env.reset()
     env.pose[0] = torch.tensor([0.0, -1.0, math.pi])
@@ -249,46 +262,174 @@ def test_baselines_no_mean_dynamics_flag():
     # baselines.py mirrors train_teacher/train_student: default mean_coef,
     # --no-mean-dynamics selects the particle-0 plant.
     import subprocess, sys
-    r = subprocess.run([sys.executable, "baselines.py", "--help"],
-                       capture_output=True, text=True)
+
+    r = subprocess.run([sys.executable, "baselines.py", "--help"], capture_output=True, text=True)
     assert r.returncode == 0 and "--no-mean-dynamics" in r.stdout
 
 
 def test_trainers_and_archive_smoke(tmp_path):
     import subprocess, sys
     from experiment_tree import record_run, load_archive, pareto_frontier
+
     # Teacher 1-iter smoke + --init vs --resume
     t_ckpt = tmp_path / "t.pt"
-    subprocess.run([sys.executable, "train_teacher.py", "--level", "L0", "--envs", "8",
-                    "--iters", "1", "--steps", "8", "--minibatches", "2", "--hidden", "32",
-                    "--out", str(t_ckpt)], check=True)
-    subprocess.run([sys.executable, "train_teacher.py", "--level", "L0", "--envs", "8",
-                    "--iters", "1", "--steps", "8", "--minibatches", "2", "--hidden", "32",
-                    "--init", str(t_ckpt), "--out", str(t_ckpt)], check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            "train_teacher.py",
+            "--level",
+            "L0",
+            "--envs",
+            "8",
+            "--iters",
+            "1",
+            "--steps",
+            "8",
+            "--minibatches",
+            "2",
+            "--hidden",
+            "32",
+            "--out",
+            str(t_ckpt),
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "train_teacher.py",
+            "--level",
+            "L0",
+            "--envs",
+            "8",
+            "--iters",
+            "1",
+            "--steps",
+            "8",
+            "--minibatches",
+            "2",
+            "--hidden",
+            "32",
+            "--init",
+            str(t_ckpt),
+            "--out",
+            str(t_ckpt),
+        ],
+        check=True,
+    )
     # Student 1-iter stateful smoke + --init + --resume
     s_ckpt = tmp_path / "s.pt"
-    subprocess.run([sys.executable, "train_student.py", "--level", "L0", "--envs", "8",
-                    "--iters", "1", "--steps", "8", "--minibatches", "2", "--stateful",
-                    "--ent", "0.002", "--curric", "1", "--spawn-dist", "0.3,0.6",
-                    "--out", str(s_ckpt)], check=True)
-    subprocess.run([sys.executable, "train_student.py", "--level", "L0", "--envs", "8",
-                    "--iters", "1", "--steps", "8", "--minibatches", "2", "--stateful",
-                    "--resume", str(s_ckpt), "--out", str(s_ckpt)], check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            "train_student.py",
+            "--level",
+            "L0",
+            "--envs",
+            "8",
+            "--iters",
+            "1",
+            "--steps",
+            "8",
+            "--minibatches",
+            "2",
+            "--stateful",
+            "--ent",
+            "0.002",
+            "--curric",
+            "1",
+            "--spawn-dist",
+            "0.3,0.6",
+            "--out",
+            str(s_ckpt),
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "train_student.py",
+            "--level",
+            "L0",
+            "--envs",
+            "8",
+            "--iters",
+            "1",
+            "--steps",
+            "8",
+            "--minibatches",
+            "2",
+            "--stateful",
+            "--resume",
+            str(s_ckpt),
+            "--out",
+            str(s_ckpt),
+        ],
+        check=True,
+    )
     # Distill 1-iter smoke
     d_ckpt = tmp_path / "d.pt"
-    subprocess.run([sys.executable, "distill.py", "--teacher", str(t_ckpt), "--level", "L0",
-                    "--iters", "1", "--episodes", "4", "--envs", "4", "--epochs", "1",
-                    "--hidden", "32", "--head-w", "32", "--out", str(d_ckpt)], check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            "distill.py",
+            "--teacher",
+            str(t_ckpt),
+            "--level",
+            "L0",
+            "--iters",
+            "1",
+            "--episodes",
+            "4",
+            "--envs",
+            "4",
+            "--epochs",
+            "1",
+            "--hidden",
+            "32",
+            "--head-w",
+            "32",
+            "--out",
+            str(d_ckpt),
+        ],
+        check=True,
+    )
     ck = torch.load(d_ckpt, map_location="cpu")
     assert ck["hidden"] == 32 and ck["head_w"] == 32
     # Experiment archive
     arch = tmp_path / "archive.jsonl"
-    record_run("r1", None, "student", "L0", {}, 1.0,
-               {"success": 90, "episodes": 100, "success_lb": 0.82, "collision_rate": 0.0, "time_median": 5.0},
-               path=arch)
-    record_run("r2", "r1", "student", "L0", {"lr": 1e-4}, 1.0,
-               {"success": 99, "episodes": 100, "success_lb": 0.94, "collision_rate": 0.0, "time_median": 4.0},
-               path=arch)
+    record_run(
+        "r1",
+        None,
+        "student",
+        "L0",
+        {},
+        1.0,
+        {
+            "success": 90,
+            "episodes": 100,
+            "success_lb": 0.82,
+            "collision_rate": 0.0,
+            "time_median": 5.0,
+        },
+        path=arch,
+    )
+    record_run(
+        "r2",
+        "r1",
+        "student",
+        "L0",
+        {"lr": 1e-4},
+        1.0,
+        {
+            "success": 99,
+            "episodes": 100,
+            "success_lb": 0.94,
+            "collision_rate": 0.0,
+            "time_median": 4.0,
+        },
+        path=arch,
+    )
     front = pareto_frontier(load_archive(arch), level="L0")
     assert [e["run_id"] for e in front] == ["r2"]
 
@@ -299,33 +440,43 @@ def test_yaw_weight_plumbing_and_default():
     import math
     import subprocess, sys
     from reward import progress_potential, step_reward
+
     tilted = torch.tensor([[0.0, 0.0, math.radians(5)]])
     flat = torch.zeros(1, 3)
-    assert abs((progress_potential(flat) - progress_potential(tilted)).item()
-               - math.radians(5)) < 1e-6  # default yaw_w=1.0
-    gap_03 = (progress_potential(flat, yaw_w=0.3)
-              - progress_potential(tilted, yaw_w=0.3)).item()
+    assert (
+        abs((progress_potential(flat) - progress_potential(tilted)).item() - math.radians(5)) < 1e-6
+    )  # default yaw_w=1.0
+    gap_03 = (progress_potential(flat, yaw_w=0.3) - progress_potential(tilted, yaw_w=0.3)).item()
     assert abs(gap_03 - 0.3 * math.radians(5)) < 1e-6
     n = 2
-    kw = dict(prev_pose=torch.zeros(n, 3), pose=torch.zeros(n, 3),
-              act=torch.zeros(n, 3), prev_act=torch.zeros(n, 3),
-              vel=torch.zeros(n, 3), success=torch.zeros(n, dtype=torch.bool),
-              near=torch.zeros(n, dtype=torch.bool),
-              collision=torch.zeros(n, dtype=torch.bool),
-              false_park=torch.zeros(n, dtype=torch.bool))
+    kw = dict(
+        prev_pose=torch.zeros(n, 3),
+        pose=torch.zeros(n, 3),
+        act=torch.zeros(n, 3),
+        prev_act=torch.zeros(n, 3),
+        vel=torch.zeros(n, 3),
+        success=torch.zeros(n, dtype=torch.bool),
+        near=torch.zeros(n, dtype=torch.bool),
+        collision=torch.zeros(n, dtype=torch.bool),
+        false_park=torch.zeros(n, dtype=torch.bool),
+    )
     assert torch.equal(step_reward(**kw), step_reward(yaw_w=1.0, **kw))
     from sim import EnvConfig
+
     assert EnvConfig().yaw_w == 1.0 and EnvConfig(yaw_w=0.3).yaw_w == 0.3
-    r = subprocess.run([sys.executable, "train_teacher.py", "--help"],
-                       capture_output=True, text=True)
+    r = subprocess.run(
+        [sys.executable, "train_teacher.py", "--help"], capture_output=True, text=True
+    )
     assert r.returncode == 0 and "--yaw-weight" in r.stdout
 
 
 def test_train_teacher_reset_every_iter_flag():
     # OLD per-iter full reset restored only when set; default persistent.
     import subprocess, sys
-    r = subprocess.run([sys.executable, "train_teacher.py", "--help"],
-                       capture_output=True, text=True)
+
+    r = subprocess.run(
+        [sys.executable, "train_teacher.py", "--help"], capture_output=True, text=True
+    )
     assert r.returncode == 0 and "--reset-every-iter" in r.stdout
 
 

@@ -21,6 +21,7 @@ Shard JSON: [{"policy": "baseline"|"student", "weights": "...", "level": "L1",
               "episodes": 10, "seed": 11, "name": "student_L2_a"}, ...]
 Aggregation writes <out>/aggregate.json.
 """
+
 from __future__ import annotations
 import argparse
 import json
@@ -41,18 +42,31 @@ def run_shard(sh: dict, out_root: Path, max_time: float) -> dict:
     out = out_root / name
     out.mkdir(parents=True, exist_ok=True)
     js = out / f"{name}.json"
-    cmd = [sys.executable, str(RUNNER), "--bridge", "gazebo",
-           "--level", sh["level"], "--episodes", str(sh["episodes"]),
-           "--seed", str(sh["seed"]), "--out", str(out),
-           "--json", str(js), "--max-time", str(max_time)]
+    cmd = [
+        sys.executable,
+        str(RUNNER),
+        "--bridge",
+        "gazebo",
+        "--level",
+        sh["level"],
+        "--episodes",
+        str(sh["episodes"]),
+        "--seed",
+        str(sh["seed"]),
+        "--out",
+        str(out),
+        "--json",
+        str(js),
+        "--max-time",
+        str(max_time),
+    ]
     if sh["policy"] == "baseline":
         cmd.append("--baseline")
     elif sh["policy"] == "student":
         cmd += ["--weights", sh["weights"]]
     else:
         raise ValueError(f"unknown policy {sh['policy']}")
-    env = dict(__import__("os").environ,
-               GZ_PARTITION=f"ugv-par-{uuid.uuid4().hex[:8]}-{name}")
+    env = dict(__import__("os").environ, GZ_PARTITION=f"ugv-par-{uuid.uuid4().hex[:8]}-{name}")
     wall = time.monotonic()
     p = subprocess.run(cmd, capture_output=True, text=True, env=env, cwd=str(REPO))
     wall_s = time.monotonic() - wall
@@ -70,14 +84,24 @@ def run_shard(sh: dict, out_root: Path, max_time: float) -> dict:
             rec["dsteps_per_s"] = round((med / 0.02) / (wall_s / n), 1)
     else:
         rec["error"] = "no json produced"
-    print(json.dumps({k: (v if k != "summary" else {kk: vv for kk, vv in v.items()})
-                      for k, v in rec.items()}), flush=True)
+    print(
+        json.dumps(
+            {k: (v if k != "summary" else {kk: vv for kk, vv in v.items()}) for k, v in rec.items()}
+        ),
+        flush=True,
+    )
     return rec
 
 
 def aggregate(recs: list[dict]) -> dict:
-    tot = {"episodes": 0, "success": 0, "collisions": 0, "timeouts": 0,
-           "wall_s_max": 0.0, "wall_s_sum": 0.0}
+    tot = {
+        "episodes": 0,
+        "success": 0,
+        "collisions": 0,
+        "timeouts": 0,
+        "wall_s_max": 0.0,
+        "wall_s_sum": 0.0,
+    }
     meds = []
     for r in recs:
         s = r.get("summary")
@@ -95,7 +119,8 @@ def aggregate(recs: list[dict]) -> dict:
     if meds:
         meds.sort()
         tot["time_median_weighted"] = round(
-            sum(m * n for m, n in meds) / sum(n for _, n in meds), 2)
+            sum(m * n for m, n in meds) / sum(n for _, n in meds), 2
+        )
     tot["success_rate"] = round(tot["success"] / max(tot["episodes"], 1), 4)
     return tot
 
@@ -109,8 +134,16 @@ def main():
     ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args()
     if a.smoke:
-        shards = [{"policy": "baseline", "level": "L1", "episodes": 3,
-                   "seed": 11 + i, "name": f"smoke_w{i}"} for i in range(6)]
+        shards = [
+            {
+                "policy": "baseline",
+                "level": "L1",
+                "episodes": 3,
+                "seed": 11 + i,
+                "name": f"smoke_w{i}",
+            }
+            for i in range(6)
+        ]
     else:
         shards = json.loads(Path(a.plan).read_text())
     a.out = a.out.resolve()
@@ -118,8 +151,7 @@ def main():
     t0 = time.monotonic()
     with ThreadPoolExecutor(max_workers=a.workers) as ex:
         recs = list(ex.map(lambda sh: run_shard(sh, a.out, a.max_time), shards))
-    agg = {"shards": recs, "aggregate": aggregate(recs),
-           "wall_s": round(time.monotonic() - t0, 1)}
+    agg = {"shards": recs, "aggregate": aggregate(recs), "wall_s": round(time.monotonic() - t0, 1)}
     (a.out / "aggregate.json").write_text(json.dumps(agg, indent=2))
     print(json.dumps({"aggregate": agg["aggregate"], "wall_s": agg["wall_s"]}, indent=2))
 

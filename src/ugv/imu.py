@@ -25,7 +25,11 @@ def parse_imu_line(line: bytes) -> tuple[list[float], list[float]] | None:
 
 
 class ImuStream:
-    def __init__(self, on_sample: Callable[[list[float], list[float], float], None], on_status: Callable[[bool, str], None]):
+    def __init__(
+        self,
+        on_sample: Callable[[list[float], list[float], float], None],
+        on_status: Callable[[bool, str], None],
+    ):
         self.on_sample = on_sample
         self.on_status = on_status
         self.stop = threading.Event()

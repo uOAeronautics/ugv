@@ -14,6 +14,7 @@ detect_gray + PnP, with optional --lighting-dr photometric DR).
 Step rate is 50 Hz: the student history (50 frames = 1 s) and its tag-velocity
 estimator are trained at dt=0.02 (rl/sim.py).
 """
+
 from __future__ import annotations
 import argparse
 import inspect
@@ -92,8 +93,9 @@ class Scorer:
         end = (self.still >= HOLD_S, collision, self.t >= self.max_time)
         if any(end):
             ok, hit = end[0], end[1] and not end[0]
-            return EpisodeResult(ok, hit, not ok and not hit, self.t,
-                                 math.hypot(x, y), math.degrees(abs(yaw)))
+            return EpisodeResult(
+                ok, hit, not ok and not hit, self.t, math.hypot(x, y), math.degrees(abs(yaw))
+            )
         return None
 
 
@@ -124,10 +126,20 @@ class FakeBridge:
 class GazeboBridge:
     """Lockstep Gazebo Harmonic bridge with emulated or vision-in-the-loop sensing."""
 
-    def __init__(self, level: str, seed: int, max_time: float, world_sdf: Path,
-                 out_dir: Path, axes: str = "rl_sim", sensing: str = "emulated",
-                 log_name: str = "policy_gazebo", photometric: bool = False,
-                 marker_layout: str = "real", randomize_tilt: bool = False):
+    def __init__(
+        self,
+        level: str,
+        seed: int,
+        max_time: float,
+        world_sdf: Path,
+        out_dir: Path,
+        axes: str = "rl_sim",
+        sensing: str = "emulated",
+        log_name: str = "policy_gazebo",
+        photometric: bool = False,
+        marker_layout: str = "real",
+        randomize_tilt: bool = False,
+    ):
         if sensing == "camera_aruco":
             sensing = "camera"
         if sensing == "camera_dr":
@@ -143,8 +155,11 @@ class GazeboBridge:
             raise SystemExit(f"build {BRIDGE} first (see lockstep/CMakeLists.txt)")
         out_dir.mkdir(parents=True, exist_ok=True)
         if not world_sdf.exists():
-            subprocess.run([sys.executable, str(HERE / "generate.py"), "--drone", "--output", str(world_sdf)],
-                           check=True, cwd=HERE)
+            subprocess.run(
+                [sys.executable, str(HERE / "generate.py"), "--drone", "--output", str(world_sdf)],
+                check=True,
+                cwd=HERE,
+            )
         headless_sdf = out_dir / "world_headless.sdf"
         headless_world(world_sdf, headless_sdf)
         self.gz = Gazebo(headless_sdf, out_dir / f"{log_name}.gz.log")
@@ -187,11 +202,15 @@ class GazeboBridge:
             self._acc_decodes = getattr(self, "_acc_decodes", 0) + int(prev.decodes)
         if self.sensing == "camera":
             assert VisionSensors is not None
-            self.sensors = VisionSensors(self.L, rng, self.max_time,
-                                         init_pose=self.pose,
-                                         photometric=self.photometric,
-                                         layout=self.marker_layout,
-                                         randomize_tilt=self.randomize_tilt)
+            self.sensors = VisionSensors(
+                self.L,
+                rng,
+                self.max_time,
+                init_pose=self.pose,
+                photometric=self.photometric,
+                layout=self.marker_layout,
+                randomize_tilt=self.randomize_tilt,
+            )
         else:
             self.sensors = Sensors(self.L, rng, self.max_time, init_pose=self.pose)
         z, seen = self.sensors.tag(self.pose)
@@ -205,15 +224,13 @@ class GazeboBridge:
         return list(self.pose), list(self.vel), self.collision
 
     def sensor_observation(self):
-        return (self.tag, self.tag_age, self.tag_valid,
-                self.imu_w, self.imu_yaw, Pose2(*self.pose))
+        return (self.tag, self.tag_age, self.tag_valid, self.imu_w, self.imu_yaw, Pose2(*self.pose))
 
     @property
     def vision_stats(self) -> dict:
         acc_f = getattr(self, "_acc_frames", 0)
         acc_d = getattr(self, "_acc_decodes", 0)
-        return {"frames": acc_f, "decodes": acc_d,
-                "decode_rate": acc_d / max(acc_f, 1)}
+        return {"frames": acc_f, "decodes": acc_d, "decode_rate": acc_d / max(acc_f, 1)}
 
     def step(self, act, dt=DT):
         assert self.sensors is not None
@@ -228,8 +245,9 @@ class GazeboBridge:
         new_pose = to_drone(x, y, yaw)
         vx = (new_pose[0] - self.pose[0]) / dt
         vy = (new_pose[1] - self.pose[1]) / dt
-        dyaw = math.atan2(math.sin(new_pose[2] - self.pose[2]),
-                          math.cos(new_pose[2] - self.pose[2]))
+        dyaw = math.atan2(
+            math.sin(new_pose[2] - self.pose[2]), math.cos(new_pose[2] - self.pose[2])
+        )
         w_true = dyaw / dt
         self.pose = new_pose
         self.vel = [vx, vy, w_true]
@@ -255,8 +273,13 @@ def pcontrol_step(tag, age, valid, imu_w, imu_yaw, prev, est):
 def baseline_controller(latency, axes="rl_sim", geometry=None):
     """EKF + staged baseline behind the harness step signature. Gets the tag, its valid
     flag and the gyro rate only; `latency` is the tag capture delay in seconds."""
-    ctl = StagedBaseline(1, latency=latency, dt=DT, model=MeanModel(axes=axes),
-                         geometry=geometry if geometry is not None else Geometry())
+    ctl = StagedBaseline(
+        1,
+        latency=latency,
+        dt=DT,
+        model=MeanModel(axes=axes),
+        geometry=geometry if geometry is not None else Geometry(),
+    )
     names = ("search", "approach", "enter", "hold", "back")
 
     def step(tag, age, valid, imu_w, imu_yaw, prev, est):
@@ -288,8 +311,14 @@ def run_episodes(step_fn, reset_fn, bridge, episodes, dt=DT, max_time=45.0):
             pose, vel, collision = bridge.observation()
             res = scorer.update(*pose, *vel, collision, dt)
             if res is None and getattr(bridge, "out_of_bounds", False):
-                res = EpisodeResult(False, False, True, scorer.t,
-                                    math.hypot(pose[0], pose[1]), math.degrees(abs(pose[2])))
+                res = EpisodeResult(
+                    False,
+                    False,
+                    True,
+                    scorer.t,
+                    math.hypot(pose[0], pose[1]),
+                    math.degrees(abs(pose[2])),
+                )
             if res is not None:
                 results.append(res)
                 break
@@ -306,36 +335,65 @@ def run_episodes(step_fn, reset_fn, bridge, episodes, dt=DT, max_time=45.0):
 def summarize(results):
     n = len(results)
     ts = sorted(float(r.time_s) for r in results)
-    s, c, t = (int(sum(bool(getattr(r, k)) for r in results))
-               for k in ("success", "collision", "timeout"))
-    return {"episodes": n, "success": s, "success_rate": s / max(n, 1),
-            "collisions": c, "collision_rate": c / max(n, 1), "timeouts": t,
-            "time_median": ts[n // 2] if n else float("nan"),
-            "time_p95": ts[min(int(n * 0.95), n - 1)] if n else float("nan")}
+    s, c, t = (
+        int(sum(bool(getattr(r, k)) for r in results)) for k in ("success", "collision", "timeout")
+    )
+    return {
+        "episodes": n,
+        "success": s,
+        "success_rate": s / max(n, 1),
+        "collisions": c,
+        "collision_rate": c / max(n, 1),
+        "timeouts": t,
+        "time_median": ts[n // 2] if n else float("nan"),
+        "time_p95": ts[min(int(n * 0.95), n - 1)] if n else float("nan"),
+    }
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--weights", help=".npz student from rl/export.py (required unless --smoke or --baseline)")
+    ap.add_argument(
+        "--weights", help=".npz student from rl/export.py (required unless --smoke or --baseline)"
+    )
     ap.add_argument("--smoke", action="store_true", help="P-controller instead of the student")
-    ap.add_argument("--baseline", action="store_true", help="EKF + staged baseline instead of the student")
-    ap.add_argument("--latency", type=float, default=0.0, help="tag capture delay for --baseline on fake bridge (s)")
+    ap.add_argument(
+        "--baseline", action="store_true", help="EKF + staged baseline instead of the student"
+    )
+    ap.add_argument(
+        "--latency",
+        type=float,
+        default=0.0,
+        help="tag capture delay for --baseline on fake bridge (s)",
+    )
     ap.add_argument("--episodes", type=int, default=20)
     ap.add_argument("--bridge", choices=["fake", "gazebo"], default="fake")
     ap.add_argument("--level", choices=list(LEVELS), default="L1")
     ap.add_argument("--seed", type=int, default=11)
-    ap.add_argument("--sensing", choices=["emulated", "camera", "camera_aruco", "camera_dr"],
-                    default="emulated",
-                    help="emulated: rl/sim.py sensor model; camera: synthetic 3D render + "
-                         "real aruco.py detect_gray + PnP; camera_aruco: alias of camera; "
-                         "camera_dr: camera + photometric DR")
-    ap.add_argument("--lighting-dr", action="store_true",
-                    help="per-episode photometric DR (brightness/contrast/gamma, shadow "
-                         "gradient, glare, sensor noise, blur) on --sensing camera frames")
-    ap.add_argument("--marker-layout", choices=["real", "legacy"], default="real",
-                    help="ArUco constellation layout for --sensing camera (real=14/6/3, legacy=12/9/13/14)")
-    ap.add_argument("--card-tilt-dr", action="store_true",
-                    help="per-episode 10-25 deg card roll/pitch randomization on --sensing camera frames")
+    ap.add_argument(
+        "--sensing",
+        choices=["emulated", "camera", "camera_aruco", "camera_dr"],
+        default="emulated",
+        help="emulated: rl/sim.py sensor model; camera: synthetic 3D render + "
+        "real aruco.py detect_gray + PnP; camera_aruco: alias of camera; "
+        "camera_dr: camera + photometric DR",
+    )
+    ap.add_argument(
+        "--lighting-dr",
+        action="store_true",
+        help="per-episode photometric DR (brightness/contrast/gamma, shadow "
+        "gradient, glare, sensor noise, blur) on --sensing camera frames",
+    )
+    ap.add_argument(
+        "--marker-layout",
+        choices=["real", "legacy"],
+        default="real",
+        help="ArUco constellation layout for --sensing camera (real=14/6/3, legacy=12/9/13/14)",
+    )
+    ap.add_argument(
+        "--card-tilt-dr",
+        action="store_true",
+        help="per-episode 10-25 deg card roll/pitch randomization on --sensing camera frames",
+    )
     ap.add_argument("--world", type=Path, default=REPO / "rl/runs/gazebo_l6/world_generated.sdf")
     ap.add_argument("--out", type=Path, default=REPO / "rl/runs/gazebo_l6")
     ap.add_argument("--json", default=None)
@@ -349,7 +407,9 @@ def main():
         meta = {"controller": "pcontrol-smoke"}
     elif args.baseline:
         if is_gz:
-            step_fn, reset_fn = baseline_controller(args.latency, axes="physical", geometry=GAZEBO_GEOMETRY)
+            step_fn, reset_fn = baseline_controller(
+                args.latency, axes="physical", geometry=GAZEBO_GEOMETRY
+            )
             axes = "physical"
         else:
             step_fn, reset_fn = baseline_controller(args.latency)
@@ -368,19 +428,32 @@ def main():
 
     if is_gz:
         log_tag = f"policy_gazebo_{meta['controller']}_{args.level}"
-        bridge = GazeboBridge(args.level, args.seed, args.max_time, args.world, args.out,
-                              axes=axes, sensing=args.sensing, log_name=log_tag,
-                              photometric=args.lighting_dr,
-                              marker_layout=args.marker_layout,
-                              randomize_tilt=args.card_tilt_dr)
-        meta.update(level=args.level, seed=args.seed, sensing=args.sensing,
-                    photometric_dr=bool(args.lighting_dr and args.sensing.startswith("camera")))
+        bridge = GazeboBridge(
+            args.level,
+            args.seed,
+            args.max_time,
+            args.world,
+            args.out,
+            axes=axes,
+            sensing=args.sensing,
+            log_name=log_tag,
+            photometric=args.lighting_dr,
+            marker_layout=args.marker_layout,
+            randomize_tilt=args.card_tilt_dr,
+        )
+        meta.update(
+            level=args.level,
+            seed=args.seed,
+            sensing=args.sensing,
+            photometric_dr=bool(args.lighting_dr and args.sensing.startswith("camera")),
+        )
     else:
         bridge = FakeBridge()
 
     try:
-        summary = summarize(run_episodes(step_fn, reset_fn, bridge, args.episodes,
-                                         max_time=args.max_time))
+        summary = summarize(
+            run_episodes(step_fn, reset_fn, bridge, args.episodes, max_time=args.max_time)
+        )
     finally:
         if hasattr(bridge, "close"):
             bridge.close()

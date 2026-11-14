@@ -80,8 +80,15 @@ def test_yaw_coupling_adaptation():
     prior = c.sysid.A_lin[2, 0]
     c.sysid.u_lag[:] = np.array([0.5, 0.0, 0.0])
     for _ in range(100):
-        c.sysid.observe(np.zeros((1, 3)), np.zeros(1, bool), np.array([0.5]),
-                        0.02, np.zeros(1, int), np.zeros(1, bool), np.zeros(1, bool))
+        c.sysid.observe(
+            np.zeros((1, 3)),
+            np.zeros(1, bool),
+            np.array([0.5]),
+            0.02,
+            np.zeros(1, int),
+            np.zeros(1, bool),
+            np.zeros(1, bool),
+        )
         c.sysid.u_lag[:] = np.array([0.5, 0.0, 0.0])  # hold excitation
     assert abs(c.sysid.A_hat[0, 2, 0] - prior) > 1e-4
 
@@ -128,8 +135,7 @@ def test_swept_clear_brakes_into_skids():
     y = np.array([0.10])
     blocked = c._swept_clear(x, y, np.array([0.0]), v_fwd, np.array([0.0]))
     assert not blocked[0]
-    far = c._swept_clear(np.array([0.0]), np.array([1.2]), np.array([0.0]), v_fwd,
-                         np.array([0.0]))
+    far = c._swept_clear(np.array([0.0]), np.array([1.2]), np.array([0.0]), v_fwd, np.array([0.0]))
     assert far[0]
     # closed loop: FINAL near skid must not drive forward
     c.phase[:] = StagedBaseline.ENTER

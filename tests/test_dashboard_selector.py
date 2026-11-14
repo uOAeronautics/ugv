@@ -1,4 +1,5 @@
 """Dashboard controller selector: explicit transitions, gating, fallback, snapshot."""
+
 import asyncio
 from unittest.mock import patch
 import pytest
@@ -28,11 +29,16 @@ def test_staged_requires_armed_imu_and_zero_blockers():
         with patch.object(c, "_imu_ready", return_value=False):
             with pytest.raises(PermissionError):
                 await c.select_controller("t", "staged_ekf")
-        with patch.object(c, "_imu_ready", return_value=True), \
-             patch.object(c.parking, "snapshot", return_value={"blockers": ["x"], "position_sigma_m": None}):
+        with (
+            patch.object(c, "_imu_ready", return_value=True),
+            patch.object(
+                c.parking, "snapshot", return_value={"blockers": ["x"], "position_sigma_m": None}
+            ),
+        ):
             with pytest.raises(PermissionError):
                 await c.select_controller("t", "staged_ekf")
         assert c.state.controller == "manual"
+
     asyncio.run(scenario())
 
 
@@ -42,8 +48,10 @@ def test_staged_select_and_guard_fallback_to_manual():
         _armed(c)
         c._write = lambda wheels: None
         snap = {"blockers": [], "position_sigma_m": 0.005}
-        with patch.object(c, "_imu_ready", return_value=True), \
-             patch.object(c.parking, "snapshot", return_value=snap):
+        with (
+            patch.object(c, "_imu_ready", return_value=True),
+            patch.object(c.parking, "snapshot", return_value=snap),
+        ):
             await c.select_controller("t", "staged_ekf")
         assert c.state.controller == "staged_ekf"
         p = c.payload()["state"]
@@ -53,6 +61,7 @@ def test_staged_select_and_guard_fallback_to_manual():
         with patch.object(c, "_imu_ready", return_value=False):
             c._guard_check(99.0)
         assert c.state.controller == "manual" and c.state.stopped
+
     asyncio.run(scenario())
 
 
@@ -60,8 +69,12 @@ def test_rl_student_requires_artifact_and_budget(tmp_path):
     async def scenario():
         c = RobotController()
         _armed(c)
-        with patch.object(c, "_imu_ready", return_value=True), \
-             patch.object(c.parking, "snapshot", return_value={"blockers": [], "position_sigma_m": None}):
+        with (
+            patch.object(c, "_imu_ready", return_value=True),
+            patch.object(
+                c.parking, "snapshot", return_value={"blockers": [], "position_sigma_m": None}
+            ),
+        ):
             with patch.object(c, "_policy_artifact_path", return_value=tmp_path / "missing.npz"):
                 with pytest.raises(PermissionError):
                     await c.select_controller("t", "rl_student")
@@ -72,6 +85,7 @@ def test_rl_student_requires_artifact_and_budget(tmp_path):
                 with pytest.raises(PermissionError):
                     await c.select_controller("t", "rl_student")
         assert c.state.controller == "manual"
+
     asyncio.run(scenario())
 
 
@@ -80,4 +94,5 @@ def test_unknown_controller_rejected():
         c = RobotController()
         with pytest.raises(ValueError):
             await c.select_controller("t", "autopilot")
+
     asyncio.run(scenario())

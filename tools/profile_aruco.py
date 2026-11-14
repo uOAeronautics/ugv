@@ -1,4 +1,5 @@
 """Read-only live-frame benchmark; run with the dashboard's Python environment."""
+
 import cProfile
 import io
 import json
@@ -25,10 +26,20 @@ def main():
                 end = buffer.find(b"\xff\xd9", begin + 2)
                 if end < 0:
                     break
-                frames.append(buffer[begin:end + 2])
-                buffer = buffer[end + 2:]
+                frames.append(buffer[begin : end + 2])
+                buffer = buffer[end + 2 :]
     elapsed = time.monotonic() - started
-    print(json.dumps({"capture_seconds": elapsed, "frames": len(frames), "unique": len(set(frames)), "received_fps": len(frames) / elapsed}), flush=True)
+    print(
+        json.dumps(
+            {
+                "capture_seconds": elapsed,
+                "frames": len(frames),
+                "unique": len(set(frames)),
+                "received_fps": len(frames) / elapsed,
+            }
+        ),
+        flush=True,
+    )
     if not frames:
         return
     Path("/tmp/aruco-benchmark.jpg").write_bytes(frames[-1])
@@ -50,7 +61,18 @@ def main():
                 t = time.perf_counter()
                 _, ids, rejected = detector.detectMarkers(gray)
                 timings.append((time.perf_counter() - t) * 1000)
-            print(json.dumps({"cell": cell, "margin": margin, "ids": [] if ids is None else ids.flatten().tolist(), "rejected": len(rejected), "median_ms": statistics.median(timings[2:])}), flush=True)
+            print(
+                json.dumps(
+                    {
+                        "cell": cell,
+                        "margin": margin,
+                        "ids": [] if ids is None else ids.flatten().tolist(),
+                        "rejected": len(rejected),
+                        "median_ms": statistics.median(timings[2:]),
+                    }
+                ),
+                flush=True,
+            )
     follower = ArucoFollower(None, None)
     profile = cProfile.Profile()
     profile.enable()
@@ -60,7 +82,15 @@ def main():
         result = follower.track_all(frame)
         timings.append((time.perf_counter() - t) * 1000)
     profile.disable()
-    print("track_all", {"median_ms": statistics.median(timings), "max_ms": max(timings), "ids": [(d.tag_id, d.source) for d in result]}, flush=True)
+    print(
+        "track_all",
+        {
+            "median_ms": statistics.median(timings),
+            "max_ms": max(timings),
+            "ids": [(d.tag_id, d.source) for d in result],
+        },
+        flush=True,
+    )
     stream = io.StringIO()
     pstats.Stats(profile, stream=stream).sort_stats("cumtime").print_stats(18)
     print(stream.getvalue())

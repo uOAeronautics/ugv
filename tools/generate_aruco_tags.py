@@ -25,7 +25,11 @@ def main() -> None:
     pdf.setFont("Helvetica-Bold", 14)
     pdf.drawString(16 * mm, page_h - 16 * mm, "ARUCO DICT_4X4_50 - IDs 0-4")
     pdf.setFont("Helvetica", 8)
-    pdf.drawString(16 * mm, page_h - 22 * mm, "Print at 100% / Actual Size. Black marker boundary = exactly 50 x 50 mm.")
+    pdf.drawString(
+        16 * mm,
+        page_h - 22 * mm,
+        "Print at 100% / Actual Size. Black marker boundary = exactly 50 x 50 mm.",
+    )
 
     pdf.setLineWidth(0.4)
     pdf.line(16 * mm, page_h - 31 * mm, 116 * mm, page_h - 31 * mm)
@@ -40,7 +44,9 @@ def main() -> None:
         # 5 mm white quiet zone on every side; marker's black outer boundary remains 50 mm.
         pdf.setFillColorRGB(1, 1, 1)
         pdf.rect((x_mm - 5) * mm, (y_mm - 5) * mm, 60 * mm, 66 * mm, fill=1, stroke=0)
-        pdf.drawImage(str(png), x_mm * mm, y_mm * mm, 50 * mm, 50 * mm, preserveAspectRatio=True, mask="auto")
+        pdf.drawImage(
+            str(png), x_mm * mm, y_mm * mm, 50 * mm, 50 * mm, preserveAspectRatio=True, mask="auto"
+        )
         pdf.setFillColorRGB(0, 0, 0)
         pdf.setFont("Helvetica-Bold", 10)
         pdf.drawCentredString((x_mm + 25) * mm, (y_mm - 3) * mm, f"ID {tag_id}")

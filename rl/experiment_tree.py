@@ -4,6 +4,7 @@ Backed by rl/runs/archive.jsonl. Records each run's lineage (run_id, parent_id),
 track (teacher|student|baseline|oracle), level, config_delta, wall_s, eval_metrics,
 and pareto_score, and computes non-dominated Pareto frontiers per level.
 """
+
 from __future__ import annotations
 import argparse
 import json
@@ -40,9 +41,16 @@ def save_archive(entries: list[dict], path: Path = ARCHIVE_PATH) -> None:
             f.write(json.dumps(e) + "\n")
 
 
-def record_run(run_id: str, parent_id: str | None, track: str, level: str,
-               config_delta: dict, wall_s: float | None, eval_metrics: dict,
-               path: Path = ARCHIVE_PATH) -> dict:
+def record_run(
+    run_id: str,
+    parent_id: str | None,
+    track: str,
+    level: str,
+    config_delta: dict,
+    wall_s: float | None,
+    eval_metrics: dict,
+    path: Path = ARCHIVE_PATH,
+) -> dict:
     entry = {
         "run_id": run_id,
         "parent_id": parent_id,
@@ -70,21 +78,25 @@ def _dominates(a: dict, b: dict) -> bool:
     return not_worse and strict
 
 
-def pareto_frontier(entries: list[dict], level: str | None = None,
-                    track: str | None = None) -> list[dict]:
-    pool = [e for e in entries
-            if (level is None or e["level"] == level)
-            and (track is None or e["track"] == track)]
+def pareto_frontier(
+    entries: list[dict], level: str | None = None, track: str | None = None
+) -> list[dict]:
+    pool = [
+        e
+        for e in entries
+        if (level is None or e["level"] == level) and (track is None or e["track"] == track)
+    ]
     front = []
     for cand in pool:
-        same_lvl = [o for o in pool if o["level"] == cand["level"] and o["run_id"] != cand["run_id"]]
+        same_lvl = [
+            o for o in pool if o["level"] == cand["level"] and o["run_id"] != cand["run_id"]
+        ]
         if not any(_dominates(o, cand) for o in same_lvl):
             front.append(cand)
     return sorted(front, key=lambda e: (e["level"], -e["pareto_score"]))
 
 
-def format_frontier(entries: list[dict], level: str | None = None,
-                    track: str | None = None) -> str:
+def format_frontier(entries: list[dict], level: str | None = None, track: str | None = None) -> str:
     front = pareto_frontier(entries, level=level, track=track)
     lines = ["run_id | parent | track | lvl | succ/eps (lb) | coll | med_s | pareto"]
     lines.append("-" * 78)
@@ -104,10 +116,24 @@ def format_frontier(entries: list[dict], level: str | None = None,
 
 def seed_existing(path: Path = ARCHIVE_PATH) -> list[dict]:
     seeds = [
-        ("teacher_L0_gate", None, "teacher", "L0", {"rate_w": 0.0, "yaw_w_train": 0.3, "envs": 512, "iters": 120},
-         None, RUNS / "teacher_L0_gate.json"),
-        ("student_L0_lat_s1", None, "student", "L0", {"hidden": 64, "head_w": 64, "lat_w": 2.0, "iters": 300, "seed": 1},
-         None, RUNS / "student_L0_lat_s1.json"),
+        (
+            "teacher_L0_gate",
+            None,
+            "teacher",
+            "L0",
+            {"rate_w": 0.0, "yaw_w_train": 0.3, "envs": 512, "iters": 120},
+            None,
+            RUNS / "teacher_L0_gate.json",
+        ),
+        (
+            "student_L0_lat_s1",
+            None,
+            "student",
+            "L0",
+            {"hidden": 64, "head_w": 64, "lat_w": 2.0, "iters": 300, "seed": 1},
+            None,
+            RUNS / "student_L0_lat_s1.json",
+        ),
     ]
     for p in sorted(RUNS.glob("baseline_ekf_staged_L*.json")):
         lvl = p.stem.split("_")[-1]
@@ -119,7 +145,9 @@ def seed_existing(path: Path = ARCHIVE_PATH) -> list[dict]:
     for run_id, parent_id, track, lvl, delta, wall_s, json_path in seeds:
         if json_path.exists():
             metrics = json.loads(json_path.read_text())
-            recorded.append(record_run(run_id, parent_id, track, lvl, delta, wall_s, metrics, path=path))
+            recorded.append(
+                record_run(run_id, parent_id, track, lvl, delta, wall_s, metrics, path=path)
+            )
     return recorded
 
 
@@ -144,7 +172,9 @@ def main():
             ap.error("--record requires --run-id, --track, --level, --json")
         metrics = json.loads(Path(args.json).read_text())
         delta = json.loads(args.config_delta)
-        e = record_run(args.run_id, args.parent_id, args.track, args.level, delta, args.wall_s, metrics)
+        e = record_run(
+            args.run_id, args.parent_id, args.track, args.level, delta, args.wall_s, metrics
+        )
         print(f"recorded {e['run_id']} pareto={e['pareto_score']:.4f}")
     if args.frontier or (not args.seed and not args.record):
         print(format_frontier(load_archive(), level=args.level, track=args.track))

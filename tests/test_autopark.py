@@ -44,11 +44,15 @@ class _FakeWS:
 
 def test_load_tagmap_skips_zero_obs(tmp_path):
     p = tmp_path / "tagmap.json"
-    p.write_text(json.dumps({
-        "14": [-0.028, 0.0, math.pi / 2, -1],
-        "6": [0.06, -0.05, 0.0, 0],
-        "3": [-0.10, -0.05, 2.55, 129],
-    }))
+    p.write_text(
+        json.dumps(
+            {
+                "14": [-0.028, 0.0, math.pi / 2, -1],
+                "6": [0.06, -0.05, 0.0, 0],
+                "3": [-0.10, -0.05, 2.55, 129],
+            }
+        )
+    )
     m = autopark.load_tagmap(p, tag_y=-0.08)
     assert 14 in m and 3 in m
     assert 6 not in m
@@ -92,7 +96,10 @@ def test_localizer_ippe_branch_disambiguation_and_outlier_rejection():
     loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
     assert 6 not in loc.map
 
-    rec0 = {"cap": 10.0, "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tz=0.80, err=0.2)]}]}
+    rec0 = {
+        "cap": 10.0,
+        "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tz=0.80, err=0.2)]}],
+    }
     assert loc.update(rec0, gyro_at_cap=0.0, now=10.05, gyro_now=0.0, duty_fwd=0.2, duty_left=0.0)
     assert loc.dr_t == pytest.approx(10.05)
 
@@ -122,8 +129,13 @@ def test_autopark_runner_swept_clear_blocks_with_cw_negation():
     obs = [Capsule(ax=-0.10, az=0.72, bx=0.10, bz=0.72, radius=0.04)]
     runner = autopark.AutoParkRunner(localizer=loc, obstacles=obs)
     tz = 0.90 - (-0.08) - autopark.CAM_FWD_M
-    rec = {"cap": 1.0, "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=-0.028, tz=tz, err=0.1)]}]}
-    cmd = runner.step(1.0, imu_age_s=0.02, frame_age_s=0.02, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec)
+    rec = {
+        "cap": 1.0,
+        "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=-0.028, tz=tz, err=0.1)]}],
+    }
+    cmd = runner.step(
+        1.0, imu_age_s=0.02, frame_age_s=0.02, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec
+    )
     assert cmd.stage == "blocked"
     assert cmd.stop is True
     assert cmd.reason == "swept-clear-blocked"
@@ -134,17 +146,28 @@ def test_autopark_runner_corridor_and_blind_dr_timeout_and_parked():
     loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
     runner = autopark.AutoParkRunner(localizer=loc, obstacles=[])
 
-    cmd0 = runner.step(0.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd0 = runner.step(
+        0.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd0.stage == "acquiring" and not cmd0.stop and abs(cmd0.turn) > 0.0
 
     tz_stage = 0.55 - (-0.08) - autopark.CAM_FWD_M
-    rec_stage = {"cap": 1.0, "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=-0.028, tz=tz_stage, err=0.1)]}]}
-    cmd1 = runner.step(1.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec_stage)
+    rec_stage = {
+        "cap": 1.0,
+        "tags": [
+            {"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=-0.028, tz=tz_stage, err=0.1)]}
+        ],
+    }
+    cmd1 = runner.step(
+        1.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec_stage
+    )
     assert cmd1.stage == "entering" and not cmd1.stop and cmd1.forward > 0.0
 
     loc.dr_pose = [0.0, 0.30, 0.0]
     loc.pose_t = 1.0
-    cmd_to = runner.step(2.6, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd_to = runner.step(
+        2.6, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd_to.stage == "aborted" and cmd_to.stop is True and cmd_to.reason == "blind-dr-timeout"
 
     loc2 = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
@@ -154,7 +177,9 @@ def test_autopark_runner_corridor_and_blind_dr_timeout_and_parked():
     loc2.pose_t = 5.0
     loc2.dr_t = 5.0
     loc2.dr_pose = [0.16, 0.35, 0.0]
-    cmd_x = runner2.step(5.02, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd_x = runner2.step(
+        5.02, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd_x.stage == "aborted" and cmd_x.reason == "corridor-x-limit"
 
     loc3 = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
@@ -164,9 +189,13 @@ def test_autopark_runner_corridor_and_blind_dr_timeout_and_parked():
     loc3.pose_t = 5.0
     loc3.dr_t = 5.0
     loc3.dr_pose = [0.0, 0.03, 0.0]
-    cmd_brk = runner3.step(5.02, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=5.0, gyro_yaw_rad=0.0, rec=None)
+    cmd_brk = runner3.step(
+        5.02, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=5.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd_brk.stage == "braking" and cmd_brk.stop is True
-    cmd_done = runner3.step(5.05, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.5, gyro_yaw_rad=0.0, rec=None)
+    cmd_done = runner3.step(
+        5.05, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.5, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd_done.stage == "parked" and cmd_done.done is True and cmd_done.stop is True
 
 
@@ -196,13 +225,15 @@ def test_ws_autopark_start_stop_disarm_manual_override_and_stale(monkeypatch):
         arc.enabled = True
 
         # 1. Start auto-park then stop/disarm via WS
-        ws1 = _FakeWS([
-            {"type": "arm"},
-            {"type": "auto-park", "enabled": True},
-            0.08,
-            {"type": "stop", "reason": "disarm"},
-            0.05,
-        ])
+        ws1 = _FakeWS(
+            [
+                {"type": "arm"},
+                {"type": "auto-park", "enabled": True},
+                0.08,
+                {"type": "stop", "reason": "disarm"},
+                0.05,
+            ]
+        )
         await web.websocket_endpoint(ws1)
         states = [m["state"] for m in ws1.sent if m.get("type") == "state"]
         assert any(s["auto_park"] for s in states)
@@ -213,23 +244,27 @@ def test_ws_autopark_start_stop_disarm_manual_override_and_stale(monkeypatch):
 
         # 2. Manual drive cancels auto-park
         ctrl.imu_sample_at = time.monotonic()
-        ws2 = _FakeWS([
-            {"type": "arm"},
-            {"type": "auto-park", "enabled": True},
-            0.08,
-            {"type": "drive", "forward": 0.1, "strafe": 0.0, "turn": 0.0, "speed_limit": 1200},
-            0.05,
-        ])
+        ws2 = _FakeWS(
+            [
+                {"type": "arm"},
+                {"type": "auto-park", "enabled": True},
+                0.08,
+                {"type": "drive", "forward": 0.1, "strafe": 0.0, "turn": 0.0, "speed_limit": 1200},
+                0.05,
+            ]
+        )
         await web.websocket_endpoint(ws2)
         assert ctrl.state.auto_park is False
 
         # 3. Stale IMU (> 0.25s) in _guard_check immediately stops auto-park & brakes
         ctrl.imu_sample_at = time.monotonic()
-        ws3 = _FakeWS([
-            {"type": "arm"},
-            {"type": "auto-park", "enabled": True},
-            0.12,
-        ])
+        ws3 = _FakeWS(
+            [
+                {"type": "arm"},
+                {"type": "auto-park", "enabled": True},
+                0.12,
+            ]
+        )
         task3 = asyncio.create_task(web.websocket_endpoint(ws3))
         await asyncio.sleep(0.08)
         assert ctrl.state.auto_park is True
@@ -242,12 +277,16 @@ def test_ws_autopark_start_stop_disarm_manual_override_and_stale(monkeypatch):
         # 4. Stale frame (> 0.45s) immediately stops auto-park & brakes
         ctrl.imu_sample_at = time.monotonic()
         monkeypatch.setattr(cam, "latest_sample", lambda: (jpeg, 1, time.monotonic() - 0.50))
-        monkeypatch.setattr(cam, "metrics", lambda: {"camera_enabled": True, "camera_frame_age_ms": 500})
-        ws4 = _FakeWS([
-            {"type": "arm"},
-            {"type": "auto-park", "enabled": True},
-            0.10,
-        ])
+        monkeypatch.setattr(
+            cam, "metrics", lambda: {"camera_enabled": True, "camera_frame_age_ms": 500}
+        )
+        ws4 = _FakeWS(
+            [
+                {"type": "arm"},
+                {"type": "auto-park", "enabled": True},
+                0.10,
+            ]
+        )
         await web.websocket_endpoint(ws4)
         assert ctrl.state.auto_park is False
         assert ctrl.state.stopped is True
@@ -260,13 +299,19 @@ def test_autopark_runner_acquiring_timeout_aborts():
     loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
     runner = autopark.AutoParkRunner(localizer=loc, obstacles=[], acquire_timeout_s=16.0)
 
-    cmd0 = runner.step(10.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd0 = runner.step(
+        10.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd0.stage == "acquiring" and cmd0.stop is False
 
-    cmd1 = runner.step(25.9, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd1 = runner.step(
+        25.9, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd1.stage == "acquiring" and cmd1.stop is False
 
-    cmd_to = runner.step(26.1, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd_to = runner.step(
+        26.1, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert cmd_to.stage == "aborted"
     assert cmd_to.stop is True
     assert cmd_to.status == "No tag found after 360 deg scan"
@@ -297,7 +342,9 @@ def test_uncalibrated_tag6_bootstraps_staging_and_blocks_entering_until_calibrat
     sol6 = [-0.06, 0.0, 0.68 - autopark.CAM_FWD_M, -1.0, 0.0, 0.0, 0.1]
     rec6 = {"cap": 1.0, "tags": [{"id": 6, "px": 700.0, "sol": [sol6]}]}
 
-    cmd1 = runner.step(1.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec6)
+    cmd1 = runner.step(
+        1.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec6
+    )
     assert loc.last_used_calibrated is False
     # Even when already at (0.0, 0.55, 0.0), uncalibrated Tag 6 must NOT enter "entering"
     assert cmd1.stage == "staging"
@@ -305,8 +352,15 @@ def test_uncalibrated_tag6_bootstraps_staging_and_blocks_entering_until_calibrat
 
     # Now calibrated Tag 14 confirms alignment at (0.0, 0.55, 0.0) -> transitions to "entering"
     tz14 = 0.55 - (-0.08) - autopark.CAM_FWD_M
-    rec14 = {"cap": 1.1, "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=-0.028, tz=tz14, err=0.1)]}]}
-    cmd2 = runner.step(1.1, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec14)
+    rec14 = {
+        "cap": 1.1,
+        "tags": [
+            {"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=-0.028, tz=tz14, err=0.1)]}
+        ],
+    }
+    cmd2 = runner.step(
+        1.1, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=rec14
+    )
     assert loc.last_used_calibrated is True
     assert cmd2.stage == "entering"
     assert cmd2.forward > 0.0
@@ -319,12 +373,21 @@ def test_first_calibrated_fix_snaps_dr_pose_within_25cm():
     }
     loc = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
     sol6 = [-0.16, 0.0, 0.68 - autopark.CAM_FWD_M, -1.0, 0.0, 0.0, 0.1]
-    assert loc.update({"cap": 1.0, "tags": [{"id": 6, "px": 700.0, "sol": [sol6]}]}, gyro_at_cap=0.0, allow_uncalibrated=True)
+    assert loc.update(
+        {"cap": 1.0, "tags": [{"id": 6, "px": 700.0, "sol": [sol6]}]},
+        gyro_at_cap=0.0,
+        allow_uncalibrated=True,
+    )
     assert loc.last_used_calibrated is False
     assert loc.dr_pose[:2] == pytest.approx([-0.10, 0.55], abs=1e-6)
 
     tz14 = 0.55 - (-0.08) - autopark.CAM_FWD_M
-    rec14 = {"cap": 1.1, "tags": [{"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=0.028, tz=tz14, err=0.1)]}]}
+    rec14 = {
+        "cap": 1.1,
+        "tags": [
+            {"id": 14, "px": 900.0, "sol": [_make_pose_sols(0.0, tx=0.028, tz=tz14, err=0.1)]}
+        ],
+    }
     assert loc.update(rec14, gyro_at_cap=0.0)
     assert loc.last_used_calibrated is True
     assert loc.dr_pose[:2] == pytest.approx([0.0, 0.55], abs=1e-6)
@@ -336,10 +399,18 @@ def test_autopark_adaptive_imu_breakaway_ramp_and_damping():
     runner = autopark.AutoParkRunner(localizer=loc, obstacles=[])
     assert runner.stage_goto.dz_yaw == pytest.approx(0.16)
 
-    cmd0 = runner.step(0.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
-    cmd1 = runner.step(0.25, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
-    cmd2 = runner.step(0.50, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
-    cmd3 = runner.step(0.80, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+    cmd0 = runner.step(
+        0.0, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
+    cmd1 = runner.step(
+        0.25, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
+    cmd2 = runner.step(
+        0.50, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
+    cmd3 = runner.step(
+        0.80, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+    )
 
     assert cmd0.stage == "acquiring"
     assert abs(cmd1.turn) > abs(cmd0.turn)
@@ -348,16 +419,22 @@ def test_autopark_adaptive_imu_breakaway_ramp_and_damping():
     assert abs(cmd3.turn) * autopark.KDUTY <= 0.26 + 1e-9
 
     # Once robot breaks away (imu_w_dps >= 6.0), stall timer resets and damping moderates turn
-    cmd_run = runner.step(0.90, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=30.0, gyro_yaw_rad=0.0, rec=None)
+    cmd_run = runner.step(
+        0.90, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=30.0, gyro_yaw_rad=0.0, rec=None
+    )
     assert runner.stall_s == 0.0
     assert abs(cmd_run.turn) < abs(cmd3.turn)
+
+
 def test_staging_perimeter_orbit_clears_skids_from_side_and_rear_poses():
-    obstacles = gear_obstacles({
-        "clear_width_m": 0.314,
-        "bar_length_m": 0.305,
-        "bar_radius_m": 0.03,
-        "inward_slope": 0.0,
-    })
+    obstacles = gear_obstacles(
+        {
+            "clear_width_m": 0.314,
+            "bar_length_m": 0.305,
+            "bar_radius_m": 0.03,
+            "inward_slope": 0.0,
+        }
+    )
     tagmap = {"14": [-0.028, 0.0, math.pi / 2, -1]}
     cases = [
         ("right", 0.74, -0.05, math.radians(-85.0)),
@@ -373,12 +450,18 @@ def test_staging_perimeter_orbit_clears_skids_from_side_and_rear_poses():
         runner = autopark.AutoParkRunner(localizer=loc, obstacles=obstacles)
         runner.stage = "staging"
 
-        cmd = runner.step(1.05, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None)
+        cmd = runner.step(
+            1.05, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
+        )
         assert cmd.stage == "staging", f"{label}: unexpected stage {cmd.stage} ({cmd.reason})"
         assert cmd.stop is False, f"{label}: unexpected stop"
-        assert math.hypot(cmd.forward, cmd.strafe) > 0.0, f"{label}: expected nonzero tangential translation"
+        assert math.hypot(cmd.forward, cmd.strafe) > 0.0, (
+            f"{label}: expected nonzero tangential translation"
+        )
         # Verify the emitted command itself passes swept_clear against real gear_obstacles
         df = cmd.forward * autopark.KDUTY
         dl = -cmd.strafe * autopark.KDUTY
         dc = cmd.turn * autopark.KDUTY
-        assert runner._check_swept(cmd.pose, df, dl, dc), f"{label}: orbit command failed _check_swept"
+        assert runner._check_swept(cmd.pose, df, dl, dc), (
+            f"{label}: orbit command failed _check_swept"
+        )

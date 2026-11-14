@@ -1,4 +1,5 @@
 """Holonomic smooth-follow policy: lead, damping, simultaneity, CoastSearch."""
+
 import math
 
 from ugv.follow import AlphaBetaLead, HolonomicFollowPolicy, TargetState, smooth_deadzone
@@ -46,12 +47,12 @@ def test_damped_plant_overshoots_less_than_undamped():
             now = tick * 0.02
             # Gyro measures body rate in the command frame (same sign as
             # turn velocity), so -kd * yaw_rate_dps is negative feedback.
-            cmd = policy.step(error, TARGET_DISTANCE_M + 0.3, now,
-                              yaw_rate_dps=velocity * 30.0)
+            cmd = policy.step(error, TARGET_DISTANCE_M + 0.3, now, yaw_rate_dps=velocity * 30.0)
             velocity += (cmd.turn * 3.0 - velocity) * 0.02 / 0.35
             error += velocity * 0.02
             min_error = min(min_error, error)
         return min_error
+
     undamped_crossing = run(0.0)
     damped_crossing = run(0.006)
     assert undamped_crossing < 0.0  # control case genuinely overshoots

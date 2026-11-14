@@ -114,7 +114,9 @@ class RelativeHeading:
                 self._rest_since = None
                 self._stationary = False
                 self._rate = 0.0
-                self._status = "sample gap · heading held" if self._calibrated else "hold still · zeroing"
+                self._status = (
+                    "sample gap · heading held" if self._calibrated else "hold still · zeroing"
+                )
                 return self._snapshot()
 
             if self._calibration_requested:
@@ -160,7 +162,9 @@ class RelativeHeading:
                 self._rate = 0.0
                 self._rest_since = None
                 self._stationary = False
-                self._status = "sample gap · heading held" if self._calibrated else "hold still · zeroing"
+                self._status = (
+                    "sample gap · heading held" if self._calibrated else "hold still · zeroing"
+                )
                 return self._snapshot()
 
             if quiet:
@@ -174,10 +178,14 @@ class RelativeHeading:
             if self._stationary:
                 # Slowly follow true zero-rate bias only after a half-second of rest.
                 alpha = 1.0 - math.exp(-dt / 2.0)
-                self._bias = tuple(old + alpha * (value - old) for old, value in zip(self._bias, gyro))
+                self._bias = tuple(
+                    old + alpha * (value - old) for old, value in zip(self._bias, gyro)
+                )
 
             # Positive displayed heading is clockwise, like a game compass.
-            self._rate = -sum((value - bias) * up for value, bias, up in zip(gyro, self._bias, self._up))
+            self._rate = -sum(
+                (value - bias) * up for value, bias, up in zip(gyro, self._bias, self._up)
+            )
             if self._stationary and abs(self._rate) < 0.35:
                 self._rate = 0.0
             self._heading = (self._heading + self._rate * dt) % 360.0

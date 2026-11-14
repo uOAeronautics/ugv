@@ -7,6 +7,7 @@ JSON match evaluate.py.
 
 Usage: uv run python baselines.py --level L1 --episodes 1000 --seed 11 --json runs/baseline_L1.json
 """
+
 from __future__ import annotations
 import argparse
 import json
@@ -25,8 +26,10 @@ from ugv.staged_baseline import StagedBaseline, MeanModel  # noqa: E402  (numpy-
 
 
 def run(episodes, level, device, seed=0, use_mean_dynamics=False):
-    env = MecanumVecEnv(min(episodes, 512), EnvConfig(level=level, device=device, seed=seed,
-                                                      use_mean_dynamics=use_mean_dynamics))
+    env = MecanumVecEnv(
+        min(episodes, 512),
+        EnvConfig(level=level, device=device, seed=seed, use_mean_dynamics=use_mean_dynamics),
+    )
     model = MeanModel()
     max_steps = int(env.cfg.max_time / env.cfg.dt) + 5
     succ = coll = tout = 0
@@ -43,7 +46,9 @@ def run(episodes, level, device, seed=0, use_mean_dynamics=False):
         j = np.zeros(n)
         for _ in range(max_steps):
             obs, _, d, info = env.step(torch.as_tensor(cmd, dtype=torch.float32, device=env.device))
-            cmd = ctl.step(obs["tag"].cpu().numpy(), obs["valid"].cpu().numpy(), env.imu_w.cpu().numpy())
+            cmd = ctl.step(
+                obs["tag"].cpu().numpy(), obs["valid"].cpu().numpy(), env.imu_w.cpu().numpy()
+            )
             j += ((cmd - prev_a) ** 2).sum(1)
             prev_a = cmd
             t = np.where(~done, t + env.dt, t)
@@ -61,20 +66,38 @@ def run(episodes, level, device, seed=0, use_mean_dynamics=False):
         jerk += (j[:k] / np.maximum(t[:k], 0.02)).tolist()
         left -= k
     lo, hi = wilson(succ, episodes)
-    times.sort(); epos.sort(); eyaw.sort()
+    times.sort()
+    epos.sort()
+    eyaw.sort()
     q = lambda v, p: v[min(int(len(v) * p), len(v) - 1)] if v else float("nan")
-    out = {"policy": "ekf_staged", "level": level, "episodes": episodes, "seed": seed,
-           "use_mean_dynamics": use_mean_dynamics, "device": str(env.device),
-           "success": succ, "success_lb": lo, "success_hi": hi,
-           "collisions": coll, "collision_rate": coll / episodes,
-           "false_parked": None, "false_parked_rate": None,
-           "timeouts": tout, "timeout_rate": tout / episodes,
-           "time_median": q(times, 0.5), "time_p95": q(times, 0.95),
-           "pos_p95": q(epos, 0.95), "yaw_p95_deg": math.degrees(q(eyaw, 0.95)),
-           "jerk_mean": sum(jerk) / len(jerk) if jerk else float("nan")}
-    print(f"ekf_staged@{level}: success {succ}/{episodes} lb {lo:.3f} hi {hi:.3f} coll {coll} "
-          f"timeout {tout} med {out['time_median']:.1f}s p95 {out['time_p95']:.1f}s "
-          f"pos_p95 {out['pos_p95']*1000:.0f}mm yaw_p95 {out['yaw_p95_deg']:.1f}deg", flush=True)
+    out = {
+        "policy": "ekf_staged",
+        "level": level,
+        "episodes": episodes,
+        "seed": seed,
+        "use_mean_dynamics": use_mean_dynamics,
+        "device": str(env.device),
+        "success": succ,
+        "success_lb": lo,
+        "success_hi": hi,
+        "collisions": coll,
+        "collision_rate": coll / episodes,
+        "false_parked": None,
+        "false_parked_rate": None,
+        "timeouts": tout,
+        "timeout_rate": tout / episodes,
+        "time_median": q(times, 0.5),
+        "time_p95": q(times, 0.95),
+        "pos_p95": q(epos, 0.95),
+        "yaw_p95_deg": math.degrees(q(eyaw, 0.95)),
+        "jerk_mean": sum(jerk) / len(jerk) if jerk else float("nan"),
+    }
+    print(
+        f"ekf_staged@{level}: success {succ}/{episodes} lb {lo:.3f} hi {hi:.3f} coll {coll} "
+        f"timeout {tout} med {out['time_median']:.1f}s p95 {out['time_p95']:.1f}s "
+        f"pos_p95 {out['pos_p95'] * 1000:.0f}mm yaw_p95 {out['yaw_p95_deg']:.1f}deg",
+        flush=True,
+    )
     return out
 
 
@@ -84,16 +107,28 @@ def main():
     ap.add_argument("--episodes", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--json", default=None)
-    ap.add_argument("--device", default=None,
-                    help="torch device (default: cuda if available else cpu)")
-    ap.add_argument("--mean-dynamics", action="store_true",
-                    help="use posterior-mean plant on L0/L1 (default: particle-0/full-posterior plant)")
-    ap.add_argument("--no-mean-dynamics", action="store_true",
-                    help="deprecated alias: particle-0 plant is now the default")
+    ap.add_argument(
+        "--device", default=None, help="torch device (default: cuda if available else cpu)"
+    )
+    ap.add_argument(
+        "--mean-dynamics",
+        action="store_true",
+        help="use posterior-mean plant on L0/L1 (default: particle-0/full-posterior plant)",
+    )
+    ap.add_argument(
+        "--no-mean-dynamics",
+        action="store_true",
+        help="deprecated alias: particle-0 plant is now the default",
+    )
     a = ap.parse_args()
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
-    out = run(a.episodes, a.level, device, a.seed,
-              use_mean_dynamics=a.mean_dynamics and not a.no_mean_dynamics)
+    out = run(
+        a.episodes,
+        a.level,
+        device,
+        a.seed,
+        use_mean_dynamics=a.mean_dynamics and not a.no_mean_dynamics,
+    )
     if a.json:
         Path(a.json).write_text(json.dumps(out, indent=2))
         print(f"wrote {a.json}")

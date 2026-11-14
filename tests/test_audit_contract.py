@@ -1,4 +1,5 @@
 """Tests for tools/l7/audit_contract.py using synthetic fixtures (no real-log deps)."""
+
 from __future__ import annotations
 
 import json
@@ -95,7 +96,11 @@ def _make_profile_and_probe(tmp_path: Path, mismatch: bool = False) -> tuple[Pat
             "fit": {
                 "fwd": {"gain": 1.0, "deadzone": 0.0, "unit": "m/s per duty"},
                 "left": {"gain": 1.0, "deadzone": 0.0, "unit": "m/s per duty"},
-                "ccw": {"gain": math.degrees(1.0 / w_cmd), "deadzone": 0.0, "unit": "deg/s per duty"},
+                "ccw": {
+                    "gain": math.degrees(1.0 / w_cmd),
+                    "deadzone": 0.0,
+                    "unit": "deg/s per duty",
+                },
             },
         }
     (probe_dir / "fit.json").write_text(json.dumps(fit))
@@ -128,7 +133,9 @@ def _make_run(
             "loop_ms": 5.0,
         }
         if mode == "policy":
-            a2 = (0.95 if (k % 2 == 0) else -0.95) if saturate_turn else float(rng.normal(0.0, 0.05))
+            a2 = (
+                (0.95 if (k % 2 == 0) else -0.95) if saturate_turn else float(rng.normal(0.0, 0.05))
+            )
             rec["act"] = [0.0, -0.08, a2]
         rows.append(json.dumps(rec))
     (run_dir / "ticks.jsonl").write_text("\n".join(rows) + "\n")
@@ -144,7 +151,9 @@ def test_audit_passes_on_matching_synthetic_contract(tmp_path: Path) -> None:
     profile_path, probe_dir = _make_profile_and_probe(tmp_path, mismatch=False)
     l6_dir = tmp_path / "l6"
     l6_dir.mkdir()
-    (l6_dir / "ok.json").write_text(json.dumps({"sha": "deadbeef12345678", "bridge": "gazebo", "success": 15}))
+    (l6_dir / "ok.json").write_text(
+        json.dumps({"sha": "deadbeef12345678", "bridge": "gazebo", "success": 15})
+    )
 
     run_dir = tmp_path / "run_ok"
     _make_run(run_dir, mode="policy", noisy_gyro=False, saturate_turn=False)
@@ -183,7 +192,9 @@ def test_audit_fails_on_gyro_saturation_plant_and_l6_gate(tmp_path: Path) -> Non
     profile_path, probe_dir = _make_profile_and_probe(tmp_path, mismatch=True)
     l6_dir = tmp_path / "l6"
     l6_dir.mkdir()
-    (l6_dir / "fail.json").write_text(json.dumps({"sha": "deadbeef12345678", "bridge": "gazebo", "success": 0}))
+    (l6_dir / "fail.json").write_text(
+        json.dumps({"sha": "deadbeef12345678", "bridge": "gazebo", "success": 0})
+    )
 
     run_dir = tmp_path / "run_bad"
     _make_run(run_dir, mode="policy", noisy_gyro=True, saturate_turn=True)

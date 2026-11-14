@@ -5,6 +5,7 @@ Runs on CPU with rl/.venv against the default rl/sim.py L1 configuration
 (use_mean_dynamics=False, posterior particle 0) so audit_contract.py stays
 NumPy-only in the root venv.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -124,7 +125,9 @@ def dump_reference(
             if bool(blind.any()):
                 u_turn = (-1.8 * h_hist[:, -1, 6] - 0.3 * h_hist[:, -1, 5]).clamp(-0.6, 0.6)
                 zz = torch.zeros_like(u_turn)
-                act[blind] = torch.stack([zz[blind], zz[blind], u_turn[blind]], dim=1)[:, : act.shape[1]]
+                act[blind] = torch.stack([zz[blind], zz[blind], u_turn[blind]], dim=1)[
+                    :, : act.shape[1]
+                ]
 
             obs_next, _, d, info = env.step(act)
             frames_list.append(obs_next["student"][active_mask, -1, :].numpy().astype(np.float32))

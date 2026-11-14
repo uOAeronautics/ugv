@@ -44,6 +44,7 @@ windows would have halted 20261113-183857-policy-ep3-p0 within <= 2.0 s
      within 2.0 s of losing visual lock.
 ================================================================================
 """
+
 from __future__ import annotations
 
 import argparse
@@ -123,15 +124,15 @@ MAX_ACT_SAT_ADD = 0.10  # sim_sat + 0.10 (>70x sim max 0.0014, well below ep2 0.
 MAX_TRANS_FLIP_FACTOR = 2.0
 MAX_TRANS_FLIP_FLOOR = 1.5  # /s
 MAX_TURN_FLIP_FACTOR = 1.5
-MAX_TURN_FLIP_FLOOR = 8.5   # /s
+MAX_TURN_FLIP_FLOOR = 8.5  # /s
 
 # 5. Control-loop rate & jitter:
 #    Student policy and tag_vel EMA are trained at 50 Hz (dt = 0.020 s, 20 ms
 #    tick budget). Real ep1 dropped to 45.8 Hz with loop_ms p95 = 31.3 ms and
 #    dt p95 = 0.032 s; ep2 had loop_ms p95 = 28.1 ms.
-MIN_LOOP_HZ = 45.0       # >= 90% of 50 Hz nominal rate
+MIN_LOOP_HZ = 45.0  # >= 90% of 50 Hz nominal rate
 MAX_LOOP_DT_P95 = 0.030  # <= 1.5x nominal 0.020 s dt
-MAX_LOOP_MS_P95 = 25.0   # <= 1.25x 20 ms tick budget
+MAX_LOOP_MS_P95 = 25.0  # <= 1.25x 20 ms tick budget
 
 # 6. Remaining frame channel drift (dims 0..2, 6..12):
 #    prev_act std in sim L1 is [0.049, 0.089, 0.118]; ep1/ep3 hit 0.57/0.53 on
@@ -251,7 +252,9 @@ def compute_sim_stats(sim_ref_path: Path) -> dict[str, Any]:
     flips_arr = np.asarray(flips_ep, dtype=np.float64)
     for j, name in enumerate(ACTION_NAMES):
         act_stats[name]["flip_mean"] = float(np.mean(flips_arr[:, j])) if flips_arr.size else 0.0
-        act_stats[name]["flip_p95"] = float(np.percentile(flips_arr[:, j], 95)) if flips_arr.size else 0.0
+        act_stats[name]["flip_p95"] = (
+            float(np.percentile(flips_arr[:, j], 95)) if flips_arr.size else 0.0
+        )
 
     iv_arr = np.asarray(iv_dts, dtype=np.float64)
     near_tag_rate = float("nan")
@@ -391,11 +394,17 @@ def extract_run_metrics(run_dir: Path) -> dict[str, Any]:
 
     iv_arr = np.diff(valid_ts) if len(valid_ts) > 1 else np.array([], dtype=np.float64)
     it_arr = np.diff(tag_ts) if len(tag_ts) > 1 else np.array([], dtype=np.float64)
-    loop_ms_vals = [float(r["loop_ms"]) for r in rows if "loop_ms" in r and r["loop_ms"] is not None]
+    loop_ms_vals = [
+        float(r["loop_ms"]) for r in rows if "loop_ms" in r and r["loop_ms"] is not None
+    ]
     loop_ms_arr = np.array(loop_ms_vals, dtype=np.float64)
 
     policy_meta = meta.get("policy") or {}
-    mode = (meta.get("args") or {}).get("mode") or summary.get("mode") or ("policy" if has_actions else "unknown")
+    mode = (
+        (meta.get("args") or {}).get("mode")
+        or summary.get("mode")
+        or ("policy" if has_actions else "unknown")
+    )
 
     return {
         "run_id": meta.get("run_id") or run_dir.name,
@@ -417,7 +426,9 @@ def extract_run_metrics(run_dir: Path) -> dict[str, Any]:
         "inter_valid_dt": _quantiles(iv_arr),
         "inter_tag_dt": _quantiles(it_arr),
         "near_goal_ticks": near_total,
-        "near_goal_tag_rate": float(near_tag) / near_total if near_total >= MIN_NEAR_GOAL_TICKS else float("nan"),
+        "near_goal_tag_rate": float(near_tag) / near_total
+        if near_total >= MIN_NEAR_GOAL_TICKS
+        else float("nan"),
     }
 
 
@@ -473,7 +484,9 @@ def _load_probe_metrics(probe_dir: Path) -> dict[str, Any]:
         moved = [
             (abs(float(p["duty"])), abs(float(p[key])))
             for p in pulses
-            if p.get("axis") == axis and p.get(key) is not None and abs(float(p[key])) >= move_thresh
+            if p.get("axis") == axis
+            and p.get(key) is not None
+            and abs(float(p[key])) >= move_thresh
         ]
         max_stall_duty = max(stalled) if stalled else 0.0
         raw_dz = float(ax_fit["deadzone"]) if "deadzone" in ax_fit else float("nan")
@@ -524,8 +537,10 @@ def _check_l6_gate(l6_dir: Path, weights_sha: str | None) -> dict[str, Any]:
             continue
         if not isinstance(d, dict):
             continue
-        if d.get("sha") == weights_sha and ("success" in d) and (
-            d.get("bridge") == "gazebo" or "gazebo" in p.as_posix()
+        if (
+            d.get("sha") == weights_sha
+            and ("success" in d)
+            and (d.get("bridge") == "gazebo" or "gazebo" in p.as_posix())
         ):
             matches.append(
                 {
@@ -551,7 +566,9 @@ def _discover_probe(run_dir: Path) -> Path | None:
     parent = run_dir.parent
     if not parent.is_dir():
         return None
-    probes = sorted(p for p in parent.glob("*-probe-*") if p.is_dir() and (p / "fit.json").is_file())
+    probes = sorted(
+        p for p in parent.glob("*-probe-*") if p.is_dir() and (p / "fit.json").is_file()
+    )
     return probes[-1] if probes else None
 
 
@@ -568,7 +585,9 @@ def evaluate_contract(
 
     checks: list[dict[str, Any]] = []
 
-    def add_check(name: str, channel: str, value: float | str, limit: str, passed: bool, detail: str = ""):
+    def add_check(
+        name: str, channel: str, value: float | str, limit: str, passed: bool, detail: str = ""
+    ):
         checks.append(
             {
                 "name": name,
@@ -943,12 +962,19 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("run_dir", type=Path, help="L7 run directory (contains ticks.jsonl)")
     ap.add_argument("--sim-ref", type=Path, default=DEFAULT_SIM_REF)
-    ap.add_argument("--probe", type=Path, default=None, help="Probe run dir (auto-discovers *-probe-* if omitted)")
+    ap.add_argument(
+        "--probe",
+        type=Path,
+        default=None,
+        help="Probe run dir (auto-discovers *-probe-* if omitted)",
+    )
     ap.add_argument("--no-probe", action="store_true", help="Skip plant probe comparison")
     ap.add_argument("--profile", type=Path, default=DEFAULT_PROFILE)
     ap.add_argument("--l6-dir", type=Path, default=DEFAULT_L6_DIR)
     ap.add_argument("--no-l6", action="store_true", help="Skip Gazebo L6 gate check")
-    ap.add_argument("--weights", type=Path, default=None, help="Optional .npz weights override for L6 SHA check")
+    ap.add_argument(
+        "--weights", type=Path, default=None, help="Optional .npz weights override for L6 SHA check"
+    )
     ap.add_argument("--json", type=Path, default=None, help="Write full JSON report to this path")
     ap.add_argument("--json-only", action="store_true", help="Print only JSON to stdout")
     args = ap.parse_args()

@@ -13,6 +13,7 @@ geometry.
 
 Run (from the repo root): uv run python simulation/gazebo/run_baseline_gazebo.py --level L1 --episodes 20
 """
+
 from __future__ import annotations
 import argparse
 import json
@@ -43,9 +44,19 @@ from lockstep_env import (  # noqa: E402
 from ugv.staged_baseline import GAZEBO_GEOMETRY, MeanModel, StagedBaseline  # noqa: E402
 
 
-def episode(gz: Gazebo, level: str, ep: int, seed: int, max_time: float, trace=None,
-            sensing: str = "emulated", photometric: bool = False, stats=None,
-            marker_layout: str = "real", randomize_tilt: bool = False):
+def episode(
+    gz: Gazebo,
+    level: str,
+    ep: int,
+    seed: int,
+    max_time: float,
+    trace=None,
+    sensing: str = "emulated",
+    photometric: bool = False,
+    stats=None,
+    marker_layout: str = "real",
+    randomize_tilt: bool = False,
+):
     rng = np.random.default_rng([seed, ep])
     L = LEVELS[level]
     d = rng.uniform(*L["dist"])
@@ -56,12 +67,24 @@ def episode(gz: Gazebo, level: str, ep: int, seed: int, max_time: float, trace=N
     t, x, y, yaw = gz.reset_pose(wx, wy, wyaw)
     if sensing == "camera":
         from vision_in_loop import VisionSensors
-        sensors = VisionSensors(L, rng, max_time, photometric=photometric,
-                                layout=marker_layout, randomize_tilt=randomize_tilt)
+
+        sensors = VisionSensors(
+            L,
+            rng,
+            max_time,
+            photometric=photometric,
+            layout=marker_layout,
+            randomize_tilt=randomize_tilt,
+        )
     else:
         sensors = Sensors(L, rng, max_time)
-    ctl = StagedBaseline(1, latency=sensors.latency, dt=DT, model=MeanModel(axes="physical"),
-                         geometry=GAZEBO_GEOMETRY)
+    ctl = StagedBaseline(
+        1,
+        latency=sensors.latency,
+        dt=DT,
+        model=MeanModel(axes="physical"),
+        geometry=GAZEBO_GEOMETRY,
+    )
     prev = to_drone(x, y, yaw)
     still = 0.0
     cmd = np.zeros(3)
@@ -102,24 +125,42 @@ def main():
     ap.add_argument("--episodes", type=int, default=20)
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--max-time", type=float, default=45.0)
-    ap.add_argument("--world", type=Path, default=REPO / "rl/runs/gazebo_l6/world_generated.sdf",
-                    help="output of generate.py --drone (regenerated if missing)")
+    ap.add_argument(
+        "--world",
+        type=Path,
+        default=REPO / "rl/runs/gazebo_l6/world_generated.sdf",
+        help="output of generate.py --drone (regenerated if missing)",
+    )
     ap.add_argument("--out", type=Path, default=REPO / "rl/runs/gazebo_l6")
-    ap.add_argument("--sensing", choices=["emulated", "camera", "camera_aruco", "camera_dr"],
-                    default="emulated")
-    ap.add_argument("--lighting-dr", action="store_true",
-                    help="per-episode photometric DR on --sensing camera frames")
-    ap.add_argument("--marker-layout", choices=["real", "legacy"], default="real",
-                    help="ArUco constellation layout for --sensing camera (real=14/6/3, legacy=12/9/13/14)")
-    ap.add_argument("--card-tilt-dr", action="store_true",
-                    help="per-episode 10-25 deg card roll/pitch randomization on --sensing camera frames")
+    ap.add_argument(
+        "--sensing", choices=["emulated", "camera", "camera_aruco", "camera_dr"], default="emulated"
+    )
+    ap.add_argument(
+        "--lighting-dr",
+        action="store_true",
+        help="per-episode photometric DR on --sensing camera frames",
+    )
+    ap.add_argument(
+        "--marker-layout",
+        choices=["real", "legacy"],
+        default="real",
+        help="ArUco constellation layout for --sensing camera (real=14/6/3, legacy=12/9/13/14)",
+    )
+    ap.add_argument(
+        "--card-tilt-dr",
+        action="store_true",
+        help="per-episode 10-25 deg card roll/pitch randomization on --sensing camera frames",
+    )
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
     if not BRIDGE.exists():
         raise SystemExit(f"build {BRIDGE} first (see lockstep/CMakeLists.txt)")
     if not a.world.exists():
-        subprocess.run([sys.executable, str(HERE / "generate.py"), "--drone", "--output", str(a.world)],
-                       check=True, cwd=HERE)
+        subprocess.run(
+            [sys.executable, str(HERE / "generate.py"), "--drone", "--output", str(a.world)],
+            check=True,
+            cwd=HERE,
+        )
     world = a.out / "world_headless.sdf"
     headless_world(a.world, world)
     name = f"baseline_gazebo_{a.level}"
@@ -135,29 +176,68 @@ def main():
     wall = time.monotonic()
     try:
         for ep in range(a.episodes):
-            r = episode(gz, a.level, ep, a.seed, a.max_time, trace,
-                        sensing=sensing, photometric=photometric, stats=stats,
-                        marker_layout=a.marker_layout, randomize_tilt=a.card_tilt_dr)
+            r = episode(
+                gz,
+                a.level,
+                ep,
+                a.seed,
+                a.max_time,
+                trace,
+                sensing=sensing,
+                photometric=photometric,
+                stats=stats,
+                marker_layout=a.marker_layout,
+                randomize_tilt=a.card_tilt_dr,
+            )
             results.append(r)
-            print(json.dumps(dict(ep=ep, **{k: (round(v, 3) if isinstance(v, float) else
-                                               [round(u, 3) for u in v] if isinstance(v, (tuple, list)) else v)
-                                            for k, v in r.items()})), flush=True)
+            print(
+                json.dumps(
+                    dict(
+                        ep=ep,
+                        **{
+                            k: (
+                                round(v, 3)
+                                if isinstance(v, float)
+                                else [round(u, 3) for u in v]
+                                if isinstance(v, (tuple, list))
+                                else v
+                            )
+                            for k, v in r.items()
+                        },
+                    )
+                ),
+                flush=True,
+            )
     finally:
         gz.close()
     n = len(results)
     count = lambda k: sum(r["result"] == k for r in results)
     ts = sorted(r["t"] for r in results)
-    summary = dict(policy="ekf_staged", engine="gazebo-harmonic native mecanum rollers",
-                   sensing=("vision-in-the-loop (synthetic 3D render + aruco.py detect_gray/PnP"
-                            + (", photometric DR" if photometric else "")) if sensing == "camera"
-                           else "emulated from Gazebo pose (rl/sim.py model)", level=a.level,
-                   episodes=n, seed=a.seed, success=count("success"), collisions=count("collision"),
-                   timeouts=count("timeout"), out_of_bounds=count("out_of_bounds"),
-                   time_median=ts[n // 2] if n else None, wall_s=round(time.monotonic() - wall, 1))
+    summary = dict(
+        policy="ekf_staged",
+        engine="gazebo-harmonic native mecanum rollers",
+        sensing=(
+            "vision-in-the-loop (synthetic 3D render + aruco.py detect_gray/PnP"
+            + (", photometric DR" if photometric else "")
+        )
+        if sensing == "camera"
+        else "emulated from Gazebo pose (rl/sim.py model)",
+        level=a.level,
+        episodes=n,
+        seed=a.seed,
+        success=count("success"),
+        collisions=count("collision"),
+        timeouts=count("timeout"),
+        out_of_bounds=count("out_of_bounds"),
+        time_median=ts[n // 2] if n else None,
+        wall_s=round(time.monotonic() - wall, 1),
+    )
     if sensing == "camera":
         summary["vision"] = dict(stats, decode_rate=stats["decodes"] / max(stats["frames"], 1))
     print(json.dumps(summary, indent=2))
-    (a.out / f"{name}.json").write_text(json.dumps(dict(summary=summary, episodes=results), indent=2))
+    (a.out / f"{name}.json").write_text(
+        json.dumps(dict(summary=summary, episodes=results), indent=2)
+    )
     np.save(a.out / f"{name}_trace.npy", np.array(trace))
 
 

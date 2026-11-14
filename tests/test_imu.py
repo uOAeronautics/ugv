@@ -7,5 +7,5 @@ def test_parse_imu_line():
 
 
 def test_parse_imu_line_rejects_bad_messages():
-    assert parse_imu_line(b'not-json') is None
+    assert parse_imu_line(b"not-json") is None
     assert parse_imu_line(b'{"type":"other","a":[1,2,3],"g":[4,5,6]}') is None

@@ -7,6 +7,7 @@ is a parameter (winning L0-gate run used 0.0). Removed extras (zone grading,
 first-slow seed, terminal proximity, mouth creep/rush) showed no effect in
 single-seed runs and are gone; re-propose with 3-seed evidence if needed.
 """
+
 from __future__ import annotations
 import torch
 
@@ -20,10 +21,24 @@ def progress_potential(pose: torch.Tensor, lat_w: float = 2.0, yaw_w: float = 1.
     return -(dist + yaw_w * pose[:, 2].abs() + lat_w * pose[:, 0].abs())
 
 
-def step_reward(prev_pose, pose, act, prev_act, vel, success, near,
-                collision, false_park, dt=0.02, rate_w=0.01, lat_w=2.0, yaw_w=1.0):
-    prog = (progress_potential(pose, lat_w, yaw_w)
-            - progress_potential(prev_pose, lat_w, yaw_w)).clamp(-0.1, 0.1) * 5.0
+def step_reward(
+    prev_pose,
+    pose,
+    act,
+    prev_act,
+    vel,
+    success,
+    near,
+    collision,
+    false_park,
+    dt=0.02,
+    rate_w=0.01,
+    lat_w=2.0,
+    yaw_w=1.0,
+):
+    prog = (
+        progress_potential(pose, lat_w, yaw_w) - progress_potential(prev_pose, lat_w, yaw_w)
+    ).clamp(-0.1, 0.1) * 5.0
     bonus = success.float() * 10.0
     # settle shaping: dense gradient toward braking at the goal. The sparse 1 s
     # hold bonus alone is never discovered by chance (50 near-zero actions in

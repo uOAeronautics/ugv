@@ -8,6 +8,7 @@ damping and a smooth deadzone, plus a CoastSearch state machine:
           -> SEARCH (gentle bounded yaw scan <=1.2s)
           -> STOP
 """
+
 from __future__ import annotations
 
 import math
@@ -57,14 +58,16 @@ class AlphaBetaLead:
     def update(self, x: float, z: float, now: float) -> TargetState:
         st = self.state
         if not self._init:
-            self.state = TargetState(x=x, z=z, vx=0.0, vz=0.0,
-                                     sigma=self.base_sigma_m, updated_at=now)
+            self.state = TargetState(
+                x=x, z=z, vx=0.0, vz=0.0, sigma=self.base_sigma_m, updated_at=now
+            )
             self._init = True
             return self.state
         dt = now - st.updated_at
         if dt <= 0.0 or dt > 0.5:
-            self.state = TargetState(x=x, z=z, vx=0.0, vz=0.0,
-                                     sigma=self.base_sigma_m, updated_at=now)
+            self.state = TargetState(
+                x=x, z=z, vx=0.0, vz=0.0, sigma=self.base_sigma_m, updated_at=now
+            )
             return self.state
         predicted_x = st.x + st.vx * dt
         predicted_z = st.z + st.vz * dt
@@ -74,8 +77,9 @@ class AlphaBetaLead:
         new_z = predicted_z + self.alpha * residual_z
         new_vx = _clamp(st.vx + self.beta * residual_x / dt, -3.0, 3.0)
         new_vz = _clamp(st.vz + self.beta * residual_z / dt, -3.0, 3.0)
-        self.state = TargetState(x=new_x, z=new_z, vx=new_vx, vz=new_vz,
-                                 sigma=self.base_sigma_m, updated_at=now)
+        self.state = TargetState(
+            x=new_x, z=new_z, vx=new_vx, vz=new_vz, sigma=self.base_sigma_m, updated_at=now
+        )
         return self.state
 
     def lead(self, now: float) -> tuple[float, float, float]:
@@ -140,17 +144,23 @@ class HolonomicFollowPolicy:
         self.search_at: float | None = None
         self._coast_vec = (0.0, 0.0, 0.0)
         self._last_debug: dict = {
-            "mode": self.TRACK, "err_lead": 0.0, "z_lead": 0.0,
-            "vx": 0.0, "vz": 0.0, "sigma_m": 0.05,
-            "coast_age_ms": 0, "cmd_vec": [0.0, 0.0, 0.0],
+            "mode": self.TRACK,
+            "err_lead": 0.0,
+            "z_lead": 0.0,
+            "vx": 0.0,
+            "vz": 0.0,
+            "sigma_m": 0.05,
+            "coast_age_ms": 0,
+            "cmd_vec": [0.0, 0.0, 0.0],
         }
 
     @property
     def debug(self) -> dict:
         return dict(self._last_debug)
 
-    def _track_command(self, error_x: float, distance_m: float, now: float,
-                       yaw_rate_dps: float) -> tuple[float, float, float, dict]:
+    def _track_command(
+        self, error_x: float, distance_m: float, now: float, yaw_rate_dps: float
+    ) -> tuple[float, float, float, dict]:
         self.lead.update(error_x, distance_m, now)
         st = self.lead.state
         x_lead = st.x + st.vx * self.lead.predict_s
@@ -162,14 +172,20 @@ class HolonomicFollowPolicy:
         if z_lead <= self.target_distance_m + 0.035:
             forward = min(forward, 0.0)
         strafe = _clamp(-self.kp_strafe * err_smooth, -self.max_strafe, self.max_strafe)
-        turn = _clamp(-self.kp_turn * err_smooth - self.kd_yaw * yaw_rate_dps,
-                      -self.max_turn, self.max_turn)
-        info = {"err_lead": x_lead, "z_lead": z_lead, "vx": st.vx,
-                "vz": st.vz, "sigma_m": sigma}
+        turn = _clamp(
+            -self.kp_turn * err_smooth - self.kd_yaw * yaw_rate_dps, -self.max_turn, self.max_turn
+        )
+        info = {"err_lead": x_lead, "z_lead": z_lead, "vx": st.vx, "vz": st.vz, "sigma_m": sigma}
         return forward, strafe, turn, info
 
-    def step(self, error_x: float | None, distance_m: float | None, now: float,
-             yaw_rate_dps: float = 0.0, visible: bool = True):
+    def step(
+        self,
+        error_x: float | None,
+        distance_m: float | None,
+        now: float,
+        yaw_rate_dps: float = 0.0,
+        visible: bool = True,
+    ):
         """Compute one holonomic command. Returns (forward, strafe, turn, info).
 
         When visible is False (or inputs None) the CoastSearch machine runs:
@@ -178,31 +194,40 @@ class HolonomicFollowPolicy:
         from .aruco import FollowCommand  # local import: avoid cycle at module load
 
         yaw_rate_dps = yaw_rate_dps if math.isfinite(yaw_rate_dps or 0.0) else 0.0
-        if visible and error_x is not None and distance_m is not None \
-                and math.isfinite(error_x) and math.isfinite(distance_m):
+        if (
+            visible
+            and error_x is not None
+            and distance_m is not None
+            and math.isfinite(error_x)
+            and math.isfinite(distance_m)
+        ):
             if self.mode != self.TRACK:
                 self.mode = self.TRACK
             self.lost_at = None
             self.coast_at = None
             self.search_at = None
             forward, strafe, turn, info = self._track_command(
-                _clamp(error_x, -1.0, 1.0), max(0.0, distance_m), now, yaw_rate_dps)
-            close = info["z_lead"] <= self.target_distance_m + 0.035 \
-                and abs(info["err_lead"]) <= 0.04
+                _clamp(error_x, -1.0, 1.0), max(0.0, distance_m), now, yaw_rate_dps
+            )
+            close = (
+                info["z_lead"] <= self.target_distance_m + 0.035 and abs(info["err_lead"]) <= 0.04
+            )
             reason = "smooth-target-reached" if close else "smooth-track"
             if close:
                 forward = strafe = turn = 0.0
             else:
                 self._coast_vec = (forward, strafe, turn)
             self._last_debug = {
-                "mode": self.mode, "err_lead": round(info["err_lead"], 4),
+                "mode": self.mode,
+                "err_lead": round(info["err_lead"], 4),
                 "z_lead": round(info["z_lead"], 4),
-                "vx": round(info["vx"], 4), "vz": round(info["vz"], 4),
+                "vx": round(info["vx"], 4),
+                "vz": round(info["vz"], 4),
                 "sigma_m": round(info["sigma_m"], 4),
-                "coast_age_ms": 0, "cmd_vec": [round(forward, 4), round(strafe, 4), round(turn, 4)],
+                "coast_age_ms": 0,
+                "cmd_vec": [round(forward, 4), round(strafe, 4), round(turn, 4)],
             }
-            cmd = FollowCommand(forward=forward, turn=turn,
-                                duration=None, reason=reason)
+            cmd = FollowCommand(forward=forward, turn=turn, duration=None, reason=reason)
             cmd.strafe = strafe
             return cmd
 
@@ -224,8 +249,7 @@ class HolonomicFollowPolicy:
                 self.search_at = now
             self.mode = self.SEARCH
             phase = 2.0 * math.pi * self.search_scan_hz * (now - self.search_at)
-            turn = _clamp(self.search_scan_amp * math.sin(phase),
-                          -self.max_turn, self.max_turn)
+            turn = _clamp(self.search_scan_amp * math.sin(phase), -self.max_turn, self.max_turn)
             forward = strafe = 0.0
             reason = "smooth-search"
         else:
@@ -233,9 +257,11 @@ class HolonomicFollowPolicy:
             forward = strafe = turn = 0.0
             reason = "smooth-stop"
         self._last_debug = {
-            "mode": self.mode, "err_lead": round(x_lead, 4),
+            "mode": self.mode,
+            "err_lead": round(x_lead, 4),
             "z_lead": round(z_lead, 4),
-            "vx": round(self.lead.state.vx, 4), "vz": round(self.lead.state.vz, 4),
+            "vx": round(self.lead.state.vx, 4),
+            "vz": round(self.lead.state.vz, 4),
             "sigma_m": round(sigma, 4),
             "coast_age_ms": round(coast_age * 1000),
             "cmd_vec": [round(forward, 4), round(strafe, 4), round(turn, 4)],

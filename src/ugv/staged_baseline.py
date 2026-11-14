@@ -16,6 +16,7 @@ controller: out-of-FOV in-place yaw sweep -> gear-aware corridor funneling -> sm
             staging alignment -> swept-clear shielded entry with lateral/yaw integral trim
             and retreat on lateral drift -> brake at the dead-reckoned goal.
 """
+
 from __future__ import annotations
 import json
 import math
@@ -24,31 +25,34 @@ from pathlib import Path
 
 import numpy as np
 
-PROFILE = Path(__file__).resolve().parents[2] / "simulation" / "gazebo" / "mecanum_bayesian_profile.json"
+PROFILE = (
+    Path(__file__).resolve().parents[2] / "simulation" / "gazebo" / "mecanum_bayesian_profile.json"
+)
 HALF_BASE = (0.21 + 0.149) / 2  # mixer arm, mirrors rl/sim.py
-RING = 32                       # delayed-state history, 0.64 s at 50 Hz
-ENTER_V = 0.15                  # entry speed, m/s
-STOP_Y = 0.025                  # dead-reckoned brake point
-RETREAT_Y = 0.75                # safe re-alignment staging distance in front of drone
-SWEPT_HORIZON = 0.25            # stopping-horizon safety lookahead (s)
+RING = 32  # delayed-state history, 0.64 s at 50 Hz
+ENTER_V = 0.15  # entry speed, m/s
+STOP_Y = 0.025  # dead-reckoned brake point
+RETREAT_Y = 0.75  # safe re-alignment staging distance in front of drone
+SWEPT_HORIZON = 0.25  # stopping-horizon safety lookahead (s)
 
 
 @dataclass(frozen=True)
 class Geometry:
     """Gear + footprint in the drone frame (skids along y at x = +-skid_x). Defaults are the
     rl/sim.py provisional values (config/parking.json, unverified)."""
-    skid_x: float = 0.157      # skid centre line |x|
+
+    skid_x: float = 0.157  # skid centre line |x|
     skid_r: float = 0.03
     skid_half_len: float = 0.1524
     car_w: float = 0.16
     car_l: float = 0.22
 
     @property
-    def margin(self):          # lateral clearance per side when centred
+    def margin(self):  # lateral clearance per side when centred
         return self.skid_x - self.skid_r - self.car_w / 2
 
     @property
-    def zone_y(self):          # |y| below which the footprint overlaps the skid span
+    def zone_y(self):  # |y| below which the footprint overlaps the skid span
         return self.skid_half_len + self.car_l / 2 + 0.04
 
     @property
@@ -76,7 +80,9 @@ def wheel_features(wheels, deadzone):
     dz = np.clip(np.asarray(deadzone, float), 0, 0.3)[..., None]
     q = np.sign(wheels) * np.clip(np.abs(wheels) - dz, 0, None) / (1 - dz + 1e-6)
     mean_abs = np.abs(q).mean(axis=-1, keepdims=True)
-    return np.concatenate([np.clip(q, 0, None), np.clip(q, None, 0), q * np.abs(q), q * mean_abs], axis=-1)
+    return np.concatenate(
+        [np.clip(q, 0, None), np.clip(q, None, 0), q * np.abs(q), q * mean_abs], axis=-1
+    )
 
 
 def mix(cmd):
@@ -95,7 +101,8 @@ def tag_std(d):
 class MeanModel:
     """Posterior-mean steady-state body velocity. Translation is well identified across
     draws; the turn column is not, so only translation is inverted."""
-    LEVELS = (0, .01, .02, .035, .05, .07, .09, .12, .15, .19, .24, .3, .38, .48, .6)
+
+    LEVELS = (0, 0.01, 0.02, 0.035, 0.05, 0.07, 0.09, 0.12, 0.15, 0.19, 0.24, 0.3, 0.38, 0.48, 0.6)
 
     def __init__(self, profile: dict | None = None, axes: str = "rl_sim"):
         """axes: how the fitted (forward, left, ccw) columns map to the drone-frame body
@@ -148,6 +155,7 @@ class OnlineSysID:
     every active step from the instantaneous IMU gyro. Ridge regularization toward A_lin
     keeps A_hat bounded; determinant/condition-number guards live at inversion time.
     """
+
     GAMMA = 0.985
     LAM_XY = 0.35
     LAM_W = 0.15
@@ -195,8 +203,16 @@ class OnlineSysID:
         finite = np.all(np.isfinite(A), axis=(1, 2))
         return finite & (np.abs(det) > self.DET_MIN) & (cond < self.COND_MAX)
 
-    def observe(self, tag: np.ndarray, valid: np.ndarray, gyro: np.ndarray, dt: float,
-                lag: np.ndarray, ekf_ok: np.ndarray, ekf_reinit: np.ndarray):
+    def observe(
+        self,
+        tag: np.ndarray,
+        valid: np.ndarray,
+        gyro: np.ndarray,
+        dt: float,
+        lag: np.ndarray,
+        ekf_ok: np.ndarray,
+        ekf_reinit: np.ndarray,
+    ):
         # Row 2 (yaw rate + translation-to-yaw coupling) from instantaneous gyro
         u_cur = self.u_lag
         act_w = np.linalg.norm(u_cur, axis=1) > 0.03
@@ -219,7 +235,13 @@ class OnlineSysID:
             self.u_del_filt = np.where(reset_filt[:, None], 0.0, self.u_del_filt)
 
         # Rows 0..1 (body velocity + yaw-to-translation coupling) from valid tag pairs
-        pair = valid & self.has_prev & ekf_ok & (self.dt_since_valid > 1e-4) & (self.dt_since_valid <= 0.16)
+        pair = (
+            valid
+            & self.has_prev
+            & ekf_ok
+            & (self.dt_since_valid > 1e-4)
+            & (self.dt_since_valid <= 0.16)
+        )
         if pair.any():
             ds = np.maximum(self.dt_since_valid, 1e-4)
             v_w = (tag[:, :2] - self.prev_tag[:, :2]) / ds[:, None]
@@ -238,17 +260,20 @@ class OnlineSysID:
             self.u_del_filt = np.where(pair[:, None], u_f, self.u_del_filt)
 
             e_xy = self.v_xy_filt - (self.u_del_filt @ self.A_lin[:2].T)
-            good = (pair
-                    & (np.linalg.norm(self.v_xy_filt, axis=1) < 1.5)
-                    & (np.linalg.norm(e_xy, axis=1) < 1.0)
-                    & (np.linalg.norm(self.u_del_filt, axis=1) > 0.03))
+            good = (
+                pair
+                & (np.linalg.norm(self.v_xy_filt, axis=1) < 1.5)
+                & (np.linalg.norm(e_xy, axis=1) < 1.0)
+                & (np.linalg.norm(self.u_del_filt, axis=1) > 0.03)
+            )
             # Turn-drag (yaw-to-translation coupling) learns only here, on
             # turn-dominant pairs: residual / turn-command isolates the true
             # column-2 effect the frozen prior misses on monster draws.
             uw_f = self.u_del_filt[:, 2]
             uxy_f = np.abs(self.u_del_filt[:, :2]).max(1)
-            turn_dom = (pair & (np.abs(uw_f) > 0.2) & (uxy_f < 0.10)
-                        & (np.linalg.norm(e_xy, axis=1) < 1.0))
+            turn_dom = (
+                pair & (np.abs(uw_f) > 0.2) & (uxy_f < 0.10) & (np.linalg.norm(e_xy, axis=1) < 1.0)
+            )
             if turn_dom.any():
                 uw_safe = np.clip(uw_f, -1, 1)
                 uw_safe = np.where(np.abs(uw_safe) < 1e-6, 1e-6, uw_safe)
@@ -290,12 +315,14 @@ class EKF:
         self.m, self.n = model, n
         self.x = np.zeros((n, 5))
         self.v = np.zeros((n, 3))
-        self.P = np.tile(np.diag([1e3, 1e3, 1e3, 0.05 ** 2, 0.05 ** 2]), (n, 1, 1))
+        self.P = np.tile(np.diag([1e3, 1e3, 1e3, 0.05**2, 0.05**2]), (n, 1, 1))
         self.init = np.zeros(n, bool)
         self.age = np.full(n, 1e9)
         self.ring = np.zeros((n, RING, 5))
         self.head = 0
-        self.lag = np.clip(np.round(np.asarray(latency, float) / dt), 0, RING - 1).astype(int) * np.ones(n, int)
+        self.lag = np.clip(np.round(np.asarray(latency, float) / dt), 0, RING - 1).astype(
+            int
+        ) * np.ones(n, int)
         self.rejected = np.zeros(n)
         self.H = np.eye(3, 5)
         self.last_ok = np.zeros(n, bool)
@@ -310,7 +337,9 @@ class EKF:
         s = np.sqrt(np.clip(np.maximum(self.P[:, 0, 0], self.P[:, 1, 1]), 0, None))
         return np.where(self.init, s, 9.0)
 
-    def predict(self, cmd, gyro, dt, A_hat: np.ndarray | None = None, A_lin: np.ndarray | None = None):
+    def predict(
+        self, cmd, gyro, dt, A_hat: np.ndarray | None = None, A_lin: np.ndarray | None = None
+    ):
         target = self.m.f(cmd)
         if A_hat is not None and A_lin is not None:
             target = target + ((A_hat - A_lin[None]) @ cmd[:, :, None])[..., 0]
@@ -330,16 +359,25 @@ class EKF:
         F = np.tile(np.eye(5), (self.n, 1, 1))
         F[:, 0, 2] = dt * (-s * vb[:, 0] - c * vb[:, 1])
         F[:, 1, 2] = dt * (c * vb[:, 0] - s * vb[:, 1])
-        F[:, 0, 3] = dt * c * mv; F[:, 0, 4] = -dt * s * mv
-        F[:, 1, 3] = dt * s * mv; F[:, 1, 4] = dt * c * mv
+        F[:, 0, 3] = dt * c * mv
+        F[:, 0, 4] = -dt * s * mv
+        F[:, 1, 3] = dt * s * mv
+        F[:, 1, 4] = dt * c * mv
         spd = np.linalg.norm(self.v[:, :2], axis=1)
         qb = (0.02 + 0.3 * np.abs(cmd[:, 2])) ** 2 * dt  # bias walks faster while turning
         prolonged = (self.init & (self.age > 0.5)).astype(float)
         q_pos_infl = prolonged * ((0.25 + 0.45 * spd) ** 2) * dt
         q_yaw_infl = prolonged * ((0.20 + 0.15 * np.abs(gyro)) ** 2) * dt
-        q = np.stack([(0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
-                      (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
-                      0.002 ** 2 * dt + (0.05 * np.abs(gyro) * dt) ** 2 + q_yaw_infl, qb, qb], 1)
+        q = np.stack(
+            [
+                (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
+                (0.15 * spd * dt) ** 2 + (0.01 * dt) ** 2 + q_pos_infl,
+                0.002**2 * dt + (0.05 * np.abs(gyro) * dt) ** 2 + q_yaw_infl,
+                qb,
+                qb,
+            ],
+            1,
+        )
         self.P = F @ self.P @ F.transpose(0, 2, 1) + q[:, :, None] * np.eye(5)
         self.x = x
         self.age += dt
@@ -351,7 +389,7 @@ class EKF:
             ps, ys = tag_std(np.linalg.norm(tag[:, :2], axis=1))
         else:
             ps, ys = std
-        R = np.stack([ps ** 2, ps ** 2, ys ** 2], 1)[:, :, None] * np.eye(3)
+        R = np.stack([ps**2, ps**2, ys**2], 1)[:, :, None] * np.eye(3)
         idx = (self.head - 1 - self.lag) % RING
         past = self.ring[np.arange(self.n), idx, :3]
         innov = tag - past
@@ -361,7 +399,7 @@ class EKF:
         Sinv_i = np.linalg.solve(S, innov[:, :, None])[..., 0]
         m2 = (innov * Sinv_i).sum(1)
         ok = valid & self.init & (m2 < self.CHI2_GATE)
-        self.rejected += (valid & self.init & ~ok)
+        self.rejected += valid & self.init & ~ok
         K = np.linalg.solve(S, H @ self.P).transpose(0, 2, 1)  # [n,5,3]
         # yaw from gyro + tag yaw only: position innovations after dead reckoning would
         # otherwise rotate the heading through the linearised cross-covariance
@@ -374,10 +412,12 @@ class EKF:
         # but an unconstrained/frozen bias integrates phantom motion blind
         # (L3 under-drone/blackout finales). Cap at 8 cm/s and decay it
         # without tags (unobservable); sighted behavior is unchanged.
-        self.x[:, 3:5] = np.where(self.init[:, None],
-                                  np.clip(self.x[:, 3:5], -0.08, 0.08)
-                                  * np.exp(-np.clip(self.age, 0.0, 5.0) / 1.0)[:, None],
-                                  self.x[:, 3:5])
+        self.x[:, 3:5] = np.where(
+            self.init[:, None],
+            np.clip(self.x[:, 3:5], -0.08, 0.08)
+            * np.exp(-np.clip(self.age, 0.0, 5.0) / 1.0)[:, None],
+            self.x[:, 3:5],
+        )
         self.ring = self.ring + corr[:, None, :]
         IKH = np.eye(5) - K @ H
         Pn = IKH @ self.P @ IKH.transpose(0, 2, 1) + K @ R @ K.transpose(0, 2, 1)
@@ -389,7 +429,7 @@ class EKF:
             self.ring = np.where(reinit[:, None, None], xi[:, None, :], self.ring)
             P0 = np.zeros((self.n, 5, 5))
             P0[:, :3, :3] = R
-            P0[:, 3, 3] = P0[:, 4, 4] = 0.05 ** 2
+            P0[:, 3, 3] = P0[:, 4, 4] = 0.05**2
             self.P = np.where(reinit[:, None, None], P0, self.P)
         self.rejected = np.where(reinit | ok, 0.0, self.rejected)
         self.init |= valid
@@ -408,6 +448,7 @@ class AdaptiveYaw:
     posterior draws 70 deg+ and slides them into the skids (probe-slide
     clips); +/-0.15 still IDs (gyro SNR >> 1) with <25 deg worst-case yaw.
     Afterwards NLMS refines on steady-command samples only (|u - lowpass(u)| < STEADY)."""
+
     PROBE = 0.5
     WINDOW = 0.15
     STEADY = 0.08
@@ -438,7 +479,9 @@ class AdaptiveYaw:
     def observe(self, cmd, gyro, dt):
         h = self.PROBE / 2
         # probe windows: last WINDOW seconds of each half (t is the time the command was issued)
-        for k, (lo, hi) in enumerate(((h - self.WINDOW, h), (self.PROBE - self.WINDOW, self.PROBE))):
+        for k, (lo, hi) in enumerate(
+            ((h - self.WINDOW, h), (self.PROBE - self.WINDOW, self.PROBE))
+        ):
             inw = (self.t >= lo) & (self.t < hi)
             self.acc[:, k] += np.where(inw, gyro, 0.0)
             self.cnt[:, k] += inw
@@ -456,11 +499,17 @@ class AdaptiveYaw:
         phi = np.stack([np.clip(uw, 0, None), np.clip(uw, None, 0), cmd[:, 0], cmd[:, 1]], 1)
         e = gyro - (phi * self.th).sum(1)
         # turning: refine the active b only; no turn: refine the cross terms only
-        mask = np.where((np.abs(uw) > 0.08)[:, None], [1., 1., 0., 0.],
-                        np.where((np.abs(uw) < 0.03)[:, None], [0., 0., 1., 1.], 0.0))
+        mask = np.where(
+            (np.abs(uw) > 0.08)[:, None],
+            [1.0, 1.0, 0.0, 0.0],
+            np.where((np.abs(uw) < 0.03)[:, None], [0.0, 0.0, 1.0, 1.0], 0.0),
+        )
         ph = phi * mask * steady[:, None]
-        self.th = np.clip(self.th + 0.03 * e[:, None] * ph / ((ph ** 2).sum(1, keepdims=True) + 1e-3),
-                          -self.LIM, self.LIM)
+        self.th = np.clip(
+            self.th + 0.03 * e[:, None] * ph / ((ph**2).sum(1, keepdims=True) + 1e-3),
+            -self.LIM,
+            self.LIM,
+        )
 
     def turn(self, w_des, ux, uy, lim=0.6):
         r = w_des - self.th[:, 2] * ux - self.th[:, 3] * uy
@@ -481,11 +530,19 @@ class AdaptiveYaw:
 
 class StagedBaseline:
     """Phases: 0 search, 1 approach, 2 enter, 3 hold (braked), 4 back out."""
+
     SEARCH, APPROACH, ENTER, HOLD, BACK = range(5)
     ALIGN, FINAL = APPROACH, ENTER  # phase aliases
 
-    def __init__(self, n=1, latency=0.08, dt=0.02, model: MeanModel | None = None, v_max=0.32,
-                 geometry: Geometry = Geometry()):
+    def __init__(
+        self,
+        n=1,
+        latency=0.08,
+        dt=0.02,
+        model: MeanModel | None = None,
+        v_max=0.32,
+        geometry: Geometry = Geometry(),
+    ):
         self.n, self.dt, self.v_max = n, dt, v_max
         self.m = model or MeanModel()
         self.g = geometry
@@ -531,8 +588,9 @@ class StagedBaseline:
         self.ekf.predict(prev, gyro, self.dt, A_hat=self.sysid.A_hat, A_lin=self.sysid.A_lin)
         clean_tag = np.where(valid[:, None], tag, 0.0)
         self.ekf.update(clean_tag, valid, std)
-        self.sysid.observe(clean_tag, valid, gyro, self.dt, self.ekf.lag,
-                           self.ekf.last_ok, self.ekf.last_reinit)
+        self.sysid.observe(
+            clean_tag, valid, gyro, self.dt, self.ekf.lag, self.ekf.last_ok, self.ekf.last_reinit
+        )
         self.yaw.observe(prev, gyro, self.dt)
         self._seen_tag |= valid
         self._last_gyro = gyro
@@ -573,8 +631,15 @@ class StagedBaseline:
         xy_cmd = xy_cmd / max_xy
         return np.concatenate([xy_cmd, w_cmd[:, None]], axis=1)
 
-    def _swept_clear(self, x: np.ndarray, y: np.ndarray, yaw: np.ndarray,
-                     v_w: np.ndarray, gyro: np.ndarray, pad: np.ndarray | float = 0.004) -> np.ndarray:
+    def _swept_clear(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        yaw: np.ndarray,
+        v_w: np.ndarray,
+        gyro: np.ndarray,
+        pad: np.ndarray | float = 0.004,
+    ) -> np.ndarray:
         """Stopping-horizon (~0.25 s) swept-footprint collision check against skids."""
         g = self.g
         hw, hl = g.car_w / 2.0, g.car_l / 2.0
@@ -582,8 +647,9 @@ class StagedBaseline:
         # Blend current estimated world velocity and proposed reference over horizon
         c0, s0 = np.cos(yaw), np.sin(yaw)
         vb_est = self.ekf.v[:, :2]
-        vw_est = np.stack([c0 * vb_est[:, 0] - s0 * vb_est[:, 1],
-                           s0 * vb_est[:, 0] + c0 * vb_est[:, 1]], axis=1)
+        vw_est = np.stack(
+            [c0 * vb_est[:, 0] - s0 * vb_est[:, 1], s0 * vb_est[:, 0] + c0 * vb_est[:, 1]], axis=1
+        )
         v_pred = 0.5 * vw_est + 0.5 * v_w
         ts = np.linspace(0.05, SWEPT_HORIZON, 5)[None, :]  # [1, 5]
         xk = x[:, None] + v_pred[:, 0:1] * ts
@@ -613,11 +679,13 @@ class StagedBaseline:
         ph = np.where(prolonged_loss & (ph != self.HOLD), self.SEARCH, ph)
 
         # Retreat staging height: 0.75 m after lateral drift retreat, else normal STAGE_Y
-        self._retreat = np.where((ph == self.SEARCH) | (ph == self.ENTER) | (ph == self.HOLD),
-                                 False, self._retreat)
+        self._retreat = np.where(
+            (ph == self.SEARCH) | (ph == self.ENTER) | (ph == self.HOLD), False, self._retreat
+        )
         stage_y = np.where(self._retreat, max(STAGE_Y, RETREAT_Y), STAGE_Y)
-        self._retreat = np.where((ph == self.APPROACH) & (y >= max(STAGE_Y, RETREAT_Y) - 0.04),
-                                 False, self._retreat)
+        self._retreat = np.where(
+            (ph == self.APPROACH) & (y >= max(STAGE_Y, RETREAT_Y) - 0.04), False, self._retreat
+        )
 
         # Gear-aware corridor funneling waypoints
         side = np.where(x >= 0, 1.0, -1.0)
@@ -628,10 +696,19 @@ class StagedBaseline:
         out_side = np.stack([side * KEEP_X, y], 1)
         to_centre = np.stack([zero, y], 1)
         band = np.abs(y) < g.band_y
-        tgt = np.where((in_front | (y > g.band_y + 0.02))[:, None], stage,
-              np.where((np.abs(x) >= KEEP_X - 0.05)[:, None], lane_up,
-              np.where((band & (np.abs(x) < 0.75 * M))[:, None], stage,
-              np.where((band & (np.abs(x) < g.skid_x))[:, None], to_centre, out_side))))
+        tgt = np.where(
+            (in_front | (y > g.band_y + 0.02))[:, None],
+            stage,
+            np.where(
+                (np.abs(x) >= KEEP_X - 0.05)[:, None],
+                lane_up,
+                np.where(
+                    (band & (np.abs(x) < 0.75 * M))[:, None],
+                    stage,
+                    np.where((band & (np.abs(x) < g.skid_x))[:, None], to_centre, out_side),
+                ),
+            ),
+        )
         err = tgt - p[:, :2]
         dist = np.linalg.norm(err, axis=1)
         face = -np.arctan2(x, np.where(np.abs(y) < 1e-3, 1e-3, y))
@@ -643,20 +720,32 @@ class StagedBaseline:
         # and settle now decays instead of hard-resetting to zero, so noisy
         # L1-L3 EKF estimates cannot livelock the APPROACH->ENTER transition.
         lat_tol = min(0.025, 0.55 * M)
-        at_stage = ((ph == self.APPROACH) & in_front
-                    & (np.abs(x) < lat_tol)
-                    & (np.abs(y - stage_y) < 0.06)
-                    & (np.abs(yaw) < math.radians(7.0))
-                    & (est.pos_std < 0.06)
-                    & (est.age < 0.5)
-                    & (self.yaw.t >= self.yaw.PROBE))
-        near_stage = ((ph == self.APPROACH) & in_front
-                      & (np.abs(x) < 0.8 * M)
-                      & (np.abs(y - stage_y) < 0.10)
-                      & (np.abs(yaw) < math.radians(10.0)))
-        self.settle = np.where(at_stage, self.settle + dt,
-                      np.where(near_stage, np.maximum(0.0, self.settle - 0.25 * dt),
-                               np.maximum(0.0, self.settle - dt)))
+        at_stage = (
+            (ph == self.APPROACH)
+            & in_front
+            & (np.abs(x) < lat_tol)
+            & (np.abs(y - stage_y) < 0.06)
+            & (np.abs(yaw) < math.radians(7.0))
+            & (est.pos_std < 0.06)
+            & (est.age < 0.5)
+            & (self.yaw.t >= self.yaw.PROBE)
+        )
+        near_stage = (
+            (ph == self.APPROACH)
+            & in_front
+            & (np.abs(x) < 0.8 * M)
+            & (np.abs(y - stage_y) < 0.10)
+            & (np.abs(yaw) < math.radians(10.0))
+        )
+        self.settle = np.where(
+            at_stage,
+            self.settle + dt,
+            np.where(
+                near_stage,
+                np.maximum(0.0, self.settle - 0.25 * dt),
+                np.maximum(0.0, self.settle - dt),
+            ),
+        )
         ph = np.where(self.settle >= 0.20, self.ENTER, ph)
 
         # Retreat FINAL -> APPROACH (y = 0.75 m) if |x| drifts dangerously while tags visible,
@@ -705,8 +794,13 @@ class StagedBaseline:
         back = ph == self.BACK
         entered_back = back & ~self._was_back
         self._back_y = np.where(entered_back, y, self._back_y)
-        short_reenter = (back & (y > self._back_y + 0.06) & (np.abs(x) < 0.025)
-                         & (np.abs(yaw) < math.radians(10.0)) & (self._short_n < 3))
+        short_reenter = (
+            back
+            & (y > self._back_y + 0.06)
+            & (np.abs(x) < 0.025)
+            & (np.abs(yaw) < math.radians(10.0))
+            & (self._short_n < 3)
+        )
         self._short_n = np.where(short_reenter, self._short_n + 1, self._short_n)
         self._short_n = np.where((ph == self.APPROACH) | (ph == self.HOLD), 0, self._short_n)
         ph = np.where(short_reenter, self.ENTER, ph)
@@ -730,12 +824,16 @@ class StagedBaseline:
         near_c = np.abs(x) < 0.025
         near_y = np.abs(wrap(yaw)) < math.radians(8.0)
         fresh_tag = est.age < 0.25
-        self.ix = np.where(enter & near_c & fresh_tag,
-                           np.clip(self.ix + 2.0 * x * dt, -0.25, 0.25),
-                           np.where(enter, self.ix, 0.0))
-        self.iyaw = np.where(enter & near_y & fresh_tag,
-                           np.clip(self.iyaw + wrap(-yaw) * dt, -0.08, 0.08),
-                           np.where(enter, self.iyaw, 0.0))
+        self.ix = np.where(
+            enter & near_c & fresh_tag,
+            np.clip(self.ix + 2.0 * x * dt, -0.25, 0.25),
+            np.where(enter, self.ix, 0.0),
+        )
+        self.iyaw = np.where(
+            enter & near_y & fresh_tag,
+            np.clip(self.iyaw + wrap(-yaw) * dt, -0.08, 0.08),
+            np.where(enter, self.iyaw, 0.0),
+        )
         ph = np.where(enter & (y < STOP_Y), self.HOLD, ph)
         # HOLD is a precision lock, not a latch: if the lateral estimate leaves
         # the near-box (|x| > 30 mm), recover with full authority instead of
@@ -753,23 +851,31 @@ class StagedBaseline:
         # BACK lateral integral: backing (+y) drags laterally (~20 % rate
         # on p0) with the opposite bias of entry; the P loop alone leaves
         # a steady-state residual that scrapes the flank on exit.
-        self.ibx = np.where(back, np.where(est.age < 0.25, np.clip(self.ibx + 2.0 * x * dt, -0.25, 0.25), self.ibx), 0.0)
+        self.ibx = np.where(
+            back,
+            np.where(est.age < 0.25, np.clip(self.ibx + 2.0 * x * dt, -0.25, 0.25), self.ibx),
+            0.0,
+        )
 
         # World velocity reference (approach transit at up to 0.32 m/s; the
         # plant does ~0.6, and open space + swept shield make 0.32 safe)
         vmax = np.where(dist > 0.15, self.v_max, 0.12)
         v_w = err * (np.minimum(dist * 1.5, vmax) / np.maximum(dist, 1e-6))[:, None]
         # Corridor funneling: prioritize lateral centering when approaching the staging axis
-        funnel_x = np.where((ph == self.APPROACH) & in_front & (np.abs(x) > 0.35 * M),
-                            np.clip(-2.2 * x, -0.15, 0.15), v_w[:, 0])
+        funnel_x = np.where(
+            (ph == self.APPROACH) & in_front & (np.abs(x) > 0.35 * M),
+            np.clip(-2.2 * x, -0.15, 0.15),
+            v_w[:, 0],
+        )
         v_w[:, 0] = funnel_x
 
         # Entry velocity with lateral PD+I centering, world-x velocity damping
         # (-kd_x * vx nulls the particle-0 cross-coupling drift), and funnel
         # speed scaling. Lateral authority widened to +/-0.12 m/s.
         lat_scale = np.clip(1.0 - (np.abs(x) / max(0.65 * M, 1e-3)) ** 2, 0.25, 1.0)
-        ent_v = np.stack([np.clip(-8.0 * x - 4.0 * self.ix - 1.2 * vwx, -0.15, 0.15),
-                          -ENTER_V * lat_scale], 1)
+        ent_v = np.stack(
+            [np.clip(-8.0 * x - 4.0 * self.ix - 1.2 * vwx, -0.15, 0.15), -ENTER_V * lat_scale], 1
+        )
         ent_v[:, 1] = np.where((y > g.zone_y) & (np.abs(x) > 0.35 * M), 0.0, ent_v[:, 1])
         # Crooked entry guard: rotate in place until closely aligned before
         # driving deeper into the slot (prevents flank clips from yaw error;
@@ -786,8 +892,7 @@ class StagedBaseline:
         # car never blasts +y while off-center.
         back_centered = np.abs(x) < 0.015
         back_vy = np.where(back_centered, 0.05 + 0.07 * (1.0 - np.abs(x) / 0.015), 0.05)
-        back_v = np.stack([np.clip(-6.0 * x - 2.5 * self.ibx - 1.0 * vwx, -0.15, 0.15),
-                           back_vy], 1)
+        back_v = np.stack([np.clip(-6.0 * x - 2.5 * self.ibx - 1.0 * vwx, -0.15, 0.15), back_vy], 1)
         v_w = np.where(back[:, None], back_v, v_w)
 
         # Swept-clear shield in APPROACH / FINAL (ENTER) / BACK, debounced:
@@ -802,9 +907,11 @@ class StagedBaseline:
         shield = blocked & (self._shield_n >= 4)
         if shield.any():
             # Brake forward motion into skids and steer laterally toward safe center
-            safe_vx = np.where((y < g.zone_y) & (np.abs(x) > 0.6 * M),
-                               np.clip(-4.0 * x, -0.12, 0.12),
-                               np.where(np.abs(x) < g.skid_x, np.clip(-4.0 * x, -0.12, 0.12), side * 0.10))
+            safe_vx = np.where(
+                (y < g.zone_y) & (np.abs(x) > 0.6 * M),
+                np.clip(-4.0 * x, -0.12, 0.12),
+                np.where(np.abs(x) < g.skid_x, np.clip(-4.0 * x, -0.12, 0.12), side * 0.10),
+            )
             safe_vy = np.where(y < g.zone_y + 0.08, 0.04, 0.0)
             v_w = np.where(shield[:, None], np.stack([safe_vx, safe_vy], 1), v_w)
 
@@ -831,9 +938,15 @@ class StagedBaseline:
         # itself; the integral trims residual slowly and safely.
         gyro = self._last_gyro
         w_enter = np.clip(1.2 * ye + 2.0 * self.iyaw - 0.4 * gyro, -0.8, 0.8)
-        w = np.where(enter, w_enter,
-                     np.where(back, np.clip(3.5 * ye - 0.4 * gyro, -1.2, 1.2),
-                              np.clip(2.5 * ye - 0.4 * gyro, -0.4, 0.4)))
+        w = np.where(
+            enter,
+            w_enter,
+            np.where(
+                back,
+                np.clip(3.5 * ye - 0.4 * gyro, -1.2, 1.2),
+                np.clip(2.5 * ye - 0.4 * gyro, -0.4, 0.4),
+            ),
+        )
         # Near the slot, cap turn authority: roller-coupled draws translate
         # ~0.3 m/s per unit turn, so a 1.0 yaw servo scrapes the flanks.
         # 0.35 still converges 15 deg in ~1.2 s while entering (~3 s).
@@ -867,7 +980,7 @@ class StagedBaseline:
         # L0-L2 guarantees acquisition at the near deck (dist < 0.30 m reads
         # valid regardless of bearing). Drive is time-capped (4 s ~= 0.25 m)
         # to bound blind-collision risk; afterwards station-keep + waggle.
-        search = (ph == self.SEARCH)
+        search = ph == self.SEARCH
         self._search_ydr = np.where(search, self._search_ydr + self._last_gyro * dt, 0.0)
         new_search = search & (self._search_t == 0.0)
         self._search_leg = np.where(new_search, 0, self._search_leg)
@@ -892,8 +1005,9 @@ class StagedBaseline:
         # visible seconds ago from near the anchor, so a small sweep
         # reacquires; a full sweep drags the car away (roam/out/clip).
         # Unanchored (never seen) phase 2 keeps full legs for coverage.
-        leg_scale = np.where(self._has_anchor, 0.3,
-                           np.where(~self._has_anchor & (self._search_t < 2.5), 0.3, 1.0))
+        leg_scale = np.where(
+            self._has_anchor, 0.3, np.where(~self._has_anchor & (self._search_t < 2.5), 0.3, 1.0)
+        )
         leg_tgt = self._search_base + leg_scale * np.array(LEGS)[leg]
         leg_err = wrap(leg_tgt - self._search_ydr)
         adv = np.abs(leg_err) < 0.10
@@ -901,18 +1015,19 @@ class StagedBaseline:
         # spin: on high-authority draws the legs exhaust in ~2 s and the
         # open-loop fallback spins 90 deg+ into the skids. Uncovered far
         # aspects time out (cheap) instead of clipping (expensive).
-        self._search_leg = np.where(search & adv,
-                                    np.where(leg >= 3, 0, leg + 1), self._search_leg)
+        self._search_leg = np.where(search & adv, np.where(leg >= 3, 0, leg + 1), self._search_leg)
         self._search_base = np.where(search & adv, self._search_ydr, self._search_base)
         waggle = np.clip(2.0 * leg_err, -1.0, 1.0)
         # No open-loop fallback spin (see above); hold the capped target.
         waggle = np.where(self._search_leg >= 4, 0.0, waggle)
         spin_w = self.yaw.turn(waggle, zero, zero)
         raw_spin = np.clip(waggle / 0.5, -0.5, 0.5)
-        raw_spin = np.where(~self._has_anchor & (self._search_t < 2.5),
-                              np.clip(raw_spin, -0.25, 0.25), raw_spin)
-        raw_spin = np.where(self._has_anchor & (dist_drone < 0.6),
-                              np.clip(raw_spin, -0.25, 0.25), raw_spin)
+        raw_spin = np.where(
+            ~self._has_anchor & (self._search_t < 2.5), np.clip(raw_spin, -0.25, 0.25), raw_spin
+        )
+        raw_spin = np.where(
+            self._has_anchor & (dist_drone < 0.6), np.clip(raw_spin, -0.25, 0.25), raw_spin
+        )
         spin_w = np.where(self.yaw.identified(), spin_w, raw_spin)
         spin = np.zeros_like(cmd)
         spin[:, 2] = spin_w
@@ -936,16 +1051,18 @@ class StagedBaseline:
             g = self._last_gyro * dt
             cg, sg = np.cos(g), np.sin(g)
             lx, ly = self._leash[:, 0], self._leash[:, 1]
-            nd = np.stack([cg * lx + sg * ly + pv[:, 0] * dt,
-                           -sg * lx + cg * ly + pv[:, 1] * dt], 1)
+            nd = np.stack(
+                [cg * lx + sg * ly + pv[:, 0] * dt, -sg * lx + cg * ly + pv[:, 1] * dt], 1
+            )
             self._leash = np.where((search & ~self._has_anchor)[:, None], nd, 0.0)
         if phase1.any():
             sgn = np.where((self._search_t // 1.5).astype(int) % 2 == 0, 1.0, -1.0)
             dither_b = np.stack([0.07 * sgn, zero * 0.0], 1)
             dither_b[:, 1] = np.where(self._leash[:, 1] < -0.10, 0.0, dither_b[:, 1])
             dither_b[:, 1] = np.where(self._leash[:, 1] > 0.08, -0.10, dither_b[:, 1])
-            dither_b[:, 0] = np.where(np.abs(self._leash[:, 0]) > 0.25,
-                                      -np.sign(self._leash[:, 0]) * 0.05, dither_b[:, 0])
+            dither_b[:, 0] = np.where(
+                np.abs(self._leash[:, 0]) > 0.25, -np.sign(self._leash[:, 0]) * 0.05, dither_b[:, 0]
+            )
             spin[:, :2] = np.where(phase1[:, None], self.m.inv(dither_b)[:, :2], spin[:, :2])
             spin[:, 2] = np.where(phase1, 0.0, spin[:, 2])
         blind = search & ~self._has_anchor & (self._search_t < 2.5) & ~phase1
@@ -956,8 +1073,9 @@ class StagedBaseline:
         anchored = search & self._has_anchor
         keep = np.clip(-1.5 * (p[:, :2] - self._anchor), -0.15, 0.15)
         c_a, s_a = np.cos(yaw), np.sin(yaw)
-        keep_b = np.stack([c_a * keep[:, 0] + s_a * keep[:, 1],
-                           -s_a * keep[:, 0] + c_a * keep[:, 1]], 1)
+        keep_b = np.stack(
+            [c_a * keep[:, 0] + s_a * keep[:, 1], -s_a * keep[:, 0] + c_a * keep[:, 1]], 1
+        )
         keep_w = np.where(anchored[:, None], keep, 0.0)
         if anchored.any():
             spin[:, :2] = np.where(anchored[:, None], self.m.inv(keep_b)[:, :2], 0.0)
@@ -965,8 +1083,11 @@ class StagedBaseline:
         if blind.any():
             db = np.zeros_like(p[:, :2])
             db[:, 1] = -0.06
-            blind_w = np.where(blind[:, None], np.stack(
-                [c * db[:, 0] - s * db[:, 1], s * db[:, 0] + c * db[:, 1]], 1), 0.0)
+            blind_w = np.where(
+                blind[:, None],
+                np.stack([c * db[:, 0] - s * db[:, 1], s * db[:, 0] + c * db[:, 1]], 1),
+                0.0,
+            )
         # Never station-keep or blind-drive into the skids: gate search
         # translation through the swept-clear check (rotation continues).
         search_vw = np.where(blind[:, None], blind_w, keep_w)
@@ -990,12 +1111,9 @@ class StagedBaseline:
         # immediately so yaw is identified while still far/safe; the
         # translation-only approach (w is 0 pre-ID) recovers toward staging
         # meanwhile, or after 2.5 s regardless (never deadlock).
-        apron = (est.init & (((y < 0.7) & (np.abs(x) > 0.6 * M))
-                             | (dist_drone > 1.25)))
-        self._probe_wait = np.where(est.init & ~self.yaw.identified(),
-                                    self._probe_wait + dt, 0.0)
-        self.yaw.start(est.init & ~self.yaw.identified()
-                       & (~apron | (self._probe_wait > 2.5)))
+        apron = est.init & (((y < 0.7) & (np.abs(x) > 0.6 * M)) | (dist_drone > 1.25))
+        self._probe_wait = np.where(est.init & ~self.yaw.identified(), self._probe_wait + dt, 0.0)
+        self.yaw.start(est.init & ~self.yaw.identified() & (~apron | (self._probe_wait > 2.5)))
         cmd[:, 2] = np.where(self.yaw.identified() | search, cmd[:, 2], 0.0)
         # Probe is turn-only in yaw but keeps the current translation command
         # (translation-rich probe: keeps boundary-safe APPROACH progress and
@@ -1008,8 +1126,9 @@ class StagedBaseline:
         # near the slot (dist < 0.6 m: monster posterior draws slide ~0.5 m/s
         # under turn-only commands). Mid-field the approach drive continues
         # through the probe uninterrupted.
-        probe_keep = (self.yaw.probing() & self._has_anchor
-                      & ((dist_drone > 1.2) | (dist_drone < 0.6)))
+        probe_keep = (
+            self.yaw.probing() & self._has_anchor & ((dist_drone > 1.2) | (dist_drone < 0.6))
+        )
         if probe_keep.any():
             cmd[:, :2] = np.where(probe_keep[:, None], self.m.inv(keep_b)[:, :2], cmd[:, :2])
         # HOLD applied last so the brake/yaw-servo stands over probe/search defaults

@@ -23,7 +23,9 @@ KDUTY = PWM_LIMIT / 4095.0
 HALF_BASE = (0.21 + 0.149) / 2.0
 CROP_Y1 = 440
 
-DEFAULT_TAGMAP_PATH = Path(__file__).resolve().parents[2] / "calibration" / "runs" / "l7" / "tagmap.json"
+DEFAULT_TAGMAP_PATH = (
+    Path(__file__).resolve().parents[2] / "calibration" / "runs" / "l7" / "tagmap.json"
+)
 
 _H = TAG_SIZE_M / 2.0
 _OBJ = np.array([[-_H, _H, 0.0], [_H, _H, 0.0], [_H, -_H, 0.0], [-_H, -_H, 0.0]], dtype=np.float64)
@@ -70,11 +72,17 @@ def tag_solutions(corners: np.ndarray, K: np.ndarray = K_DEFAULT) -> list[list[f
         err = float(np.ravel(errs)[i])
         if not math.isfinite(err):
             continue
-        out.append([
-            float(t[0]), float(t[1]), float(t[2]),
-            float(R[0, 2]), float(R[1, 2]), float(R[2, 2]),
-            err,
-        ])
+        out.append(
+            [
+                float(t[0]),
+                float(t[1]),
+                float(t[2]),
+                float(R[0, 2]),
+                float(R[1, 2]),
+                float(R[2, 2]),
+                err,
+            ]
+        )
     return out
 
 
@@ -103,7 +111,9 @@ class TagBits:
         if tag_id not in self.tpl:
             self.tpl[tag_id] = cv2.aruco.generateImageMarker(self.d, tag_id, 6, borderBits=1) > 127
         H = cv2.getPerspectiveTransform(pts.astype(np.float32), self.dst)
-        cells = cv2.resize(cv2.warpPerspective(gray, H, (48, 48)), (6, 6), interpolation=cv2.INTER_AREA)
+        cells = cv2.resize(
+            cv2.warpPerspective(gray, H, (48, 48)), (6, 6), interpolation=cv2.INTER_AREA
+        )
         lo, hi = float(cells.min()), float(cells.max())
         if hi - lo < 25.0:
             return 36
@@ -128,7 +138,11 @@ class TagDetector:
         h, w = gray.shape[:2]
         crop_h = min(CROP_Y1, h)
         crop = gray[:crop_h, :]
-        small = cv2.resize(crop, (max(1, crop.shape[1] // 2), max(1, crop.shape[0] // 2)), interpolation=cv2.INTER_AREA)
+        small = cv2.resize(
+            crop,
+            (max(1, crop.shape[1] // 2), max(1, crop.shape[0] // 2)),
+            interpolation=cv2.INTER_AREA,
+        )
         corners_list, ids, _ = self.detector.detectMarkers(small)
         detect_ms = (time.perf_counter() - t_det0) * 1000.0
         subpix_ms = 0.0
@@ -198,7 +212,9 @@ class Localizer:
                     entry[1] += tag_y
                 full_map[int(k)] = entry
         self.cal_map: dict[int, list[float]] = {k: v for k, v in full_map.items() if int(v[3]) != 0}
-        self.uncal_map: dict[int, list[float]] = {k: v for k, v in full_map.items() if int(v[3]) == 0}
+        self.uncal_map: dict[int, list[float]] = {
+            k: v for k, v in full_map.items() if int(v[3]) == 0
+        }
         self.map = self.cal_map
         self.cal_ids: set[int] = set(self.cal_map)
         self.tag_y = tag_y
@@ -229,7 +245,9 @@ class Localizer:
         nx, nz = sol[3], sol[5]
         return wrap(phi - math.atan2(-nx, nz) + math.pi / 2.0)
 
-    def _pick_cands(self, tags: Sequence[dict], tag_map: dict[int, list[float]], pred: float | None) -> list[tuple[dict, list[float], list[float]]]:
+    def _pick_cands(
+        self, tags: Sequence[dict], tag_map: dict[int, list[float]], pred: float | None
+    ) -> list[tuple[dict, list[float], list[float]]]:
         cands = []
         for t in tags:
             m = tag_map.get(int(t["id"]))
@@ -270,8 +288,14 @@ class Localizer:
 
         trusted = [c for c in cands if c[1][3] == -1 or c[1][3] >= 10] or cands
         wsum = sum(max(1.0, float(c[0].get("px", 1.0))) for c in trusted)
-        ys = sum(max(1.0, float(c[0].get("px", 1.0))) * math.sin(self._tag_yaw(c[1][2], c[2])) for c in trusted)
-        yc = sum(max(1.0, float(c[0].get("px", 1.0))) * math.cos(self._tag_yaw(c[1][2], c[2])) for c in trusted)
+        ys = sum(
+            max(1.0, float(c[0].get("px", 1.0))) * math.sin(self._tag_yaw(c[1][2], c[2]))
+            for c in trusted
+        )
+        yc = sum(
+            max(1.0, float(c[0].get("px", 1.0))) * math.cos(self._tag_yaw(c[1][2], c[2]))
+            for c in trusted
+        )
         tag_yaw = math.atan2(ys / wsum, yc / wsum)
 
         if self.off is None or (used_calibrated and not self._has_calibrated_fix):
@@ -300,7 +324,11 @@ class Localizer:
         self.pose = (float(car[0]), float(car[1]), yaw)
         self.pose_t = cap
 
-        if self.dr_pose is None or (used_calibrated and not self._has_calibrated_fix) or math.hypot(car[0] - self.dr_pose[0], car[1] - self.dr_pose[1]) > 0.25:
+        if (
+            self.dr_pose is None
+            or (used_calibrated and not self._has_calibrated_fix)
+            or math.hypot(car[0] - self.dr_pose[0], car[1] - self.dr_pose[1]) > 0.25
+        ):
             self.dr_pose = [float(car[0]), float(car[1]), yaw]
             self.dr_t = cap
         else:
@@ -329,7 +357,15 @@ class Localizer:
         }
         return True
 
-    def propagate(self, now: float, gyro_or_fused_yaw: float, duty_fwd: float, duty_left: float, *, is_gyro: bool = False):
+    def propagate(
+        self,
+        now: float,
+        gyro_or_fused_yaw: float,
+        duty_fwd: float,
+        duty_left: float,
+        *,
+        is_gyro: bool = False,
+    ):
         if self.dr_pose is None:
             return
         dt = min(0.1, max(0.0, now - self.dr_t))
@@ -337,7 +373,11 @@ class Localizer:
         u = np.array([duty_fwd, duty_left], dtype=np.float64)
         target = self.gain * np.sign(u) * np.maximum(np.abs(u) - self.dz, 0.0)
         self.v += (1.0 - math.exp(-dt / self.tau)) * (target - self.v)
-        yaw = wrap(gyro_or_fused_yaw + self.off) if (is_gyro and self.off is not None) else wrap(gyro_or_fused_yaw)
+        yaw = (
+            wrap(gyro_or_fused_yaw + self.off)
+            if (is_gyro and self.off is not None)
+            else wrap(gyro_or_fused_yaw)
+        )
         th = yaw - math.pi / 2.0
         f = np.array([math.cos(th), math.sin(th)], dtype=np.float64)
         left = np.array([-math.sin(th), math.cos(th)], dtype=np.float64)
@@ -348,7 +388,9 @@ class Localizer:
         self.dr_path += float(np.linalg.norm(d))
 
 
-def duty_to_dashboard(duty_fwd: float, duty_left: float, duty_ccw: float) -> tuple[float, float, float, float]:
+def duty_to_dashboard(
+    duty_fwd: float, duty_left: float, duty_ccw: float
+) -> tuple[float, float, float, float]:
     F, S, T = duty_fwd / KDUTY, -duty_left / KDUTY, duty_ccw / KDUTY
     wheels = (-F - S + T, -F + S + T, -F + S - T, -F - S - T)
     s = max(1.0, abs(F), abs(S), abs(T), *(abs(w) for w in wheels))
@@ -398,7 +440,9 @@ class GoTo:
         self.min_fwd_speed = min_fwd_speed
         self.ok_since: float | None = None
 
-    def command_for(self, pose: Sequence[float], target: Sequence[float]) -> tuple[float, float, float]:
+    def command_for(
+        self, pose: Sequence[float], target: Sequence[float]
+    ) -> tuple[float, float, float]:
         x, y, yaw = float(pose[0]), float(pose[1]), float(pose[2])
         ex, ey = float(target[0]) - x, float(target[1]) - y
         dist = math.hypot(ex, ey)
@@ -408,15 +452,27 @@ class GoTo:
         e_f = ex * math.cos(th) + ey * math.sin(th)
         e_l = -ex * math.sin(th) + ey * math.cos(th)
 
-        def duty(e: float, kp: float, vcap: float, gain: float, dz: float, tol: float, vmin: float = 0.0) -> float:
+        def duty(
+            e: float, kp: float, vcap: float, gain: float, dz: float, tol: float, vmin: float = 0.0
+        ) -> float:
             if abs(e) < tol:
                 return 0.0
             v = min(vcap, max(vmin if abs(e) > tol * 2.0 else 0.0, kp * abs(e)))
             return math.copysign(dz + v / gain, e)
 
         return (
-            duty(e_f, self.kp_pos, self.vcap_fwd, self.gain_fwd, self.dz_fwd, self.tol_pos * 0.5, self.min_fwd_speed),
-            duty(e_l, self.kp_pos, self.vcap_left, self.gain_left, self.dz_left, self.tol_pos * 0.5),
+            duty(
+                e_f,
+                self.kp_pos,
+                self.vcap_fwd,
+                self.gain_fwd,
+                self.dz_fwd,
+                self.tol_pos * 0.5,
+                self.min_fwd_speed,
+            ),
+            duty(
+                e_l, self.kp_pos, self.vcap_left, self.gain_left, self.dz_left, self.tol_pos * 0.5
+            ),
             duty(eyaw, self.kp_yaw, self.vcap_yaw, self.gain_yaw, self.dz_yaw, self.tol_yaw * 0.5),
         )
 
@@ -501,7 +557,11 @@ class AutoParkRunner:
     def _boost_turn_duty(self, dc: float, dt: float, imu_w_dps: float, *, acquiring: bool) -> float:
         if acquiring:
             w_rad = math.radians(self.acquire_dps)
-            dc_base = math.copysign(self.stage_goto.dz_yaw + abs(w_rad) / self.stage_goto.gain_yaw, w_rad) if w_rad else 0.0
+            dc_base = (
+                math.copysign(self.stage_goto.dz_yaw + abs(w_rad) / self.stage_goto.gain_yaw, w_rad)
+                if w_rad
+                else 0.0
+            )
             if not dc_base:
                 self.stall_s = 0.0
                 return 0.0
@@ -510,7 +570,9 @@ class AutoParkRunner:
             if w_abs >= 6.0 or (self._acquire_moving and w_abs >= 4.0):
                 self._acquire_moving = True
                 self.stall_s = 0.0
-                dc_mag = max(0.05, min(0.26, abs(dc_base) + 0.002 * (abs(self.acquire_dps) - w_abs)))
+                dc_mag = max(
+                    0.05, min(0.26, abs(dc_base) + 0.002 * (abs(self.acquire_dps) - w_abs))
+                )
             else:
                 self._acquire_moving = False
                 self.stall_s += dt
@@ -541,9 +603,22 @@ class AutoParkRunner:
         if not self.obstacles:
             return True
         x, y, yaw = float(pose[0]), float(pose[1]), float(pose[2])
-        vf = self.stage_goto.gain_fwd * math.copysign(max(0.0, abs(df) - self.stage_goto.dz_fwd), df) if df else 0.0
-        vl = self.stage_goto.gain_left * math.copysign(max(0.0, abs(dl) - self.stage_goto.dz_left), dl) if dl else 0.0
-        w = self.stage_goto.gain_yaw * math.copysign(max(0.0, abs(dc) - self.stage_goto.dz_yaw), dc) if dc else 0.0
+        vf = (
+            self.stage_goto.gain_fwd * math.copysign(max(0.0, abs(df) - self.stage_goto.dz_fwd), df)
+            if df
+            else 0.0
+        )
+        vl = (
+            self.stage_goto.gain_left
+            * math.copysign(max(0.0, abs(dl) - self.stage_goto.dz_left), dl)
+            if dl
+            else 0.0
+        )
+        w = (
+            self.stage_goto.gain_yaw * math.copysign(max(0.0, abs(dc) - self.stage_goto.dz_yaw), dc)
+            if dc
+            else 0.0
+        )
         th = yaw - math.pi / 2.0
         vx = vf * math.cos(th) - vl * math.sin(th)
         vy = vf * math.sin(th) + vl * math.cos(th)
@@ -582,17 +657,36 @@ class AutoParkRunner:
                 ang = theta + arc_dir * min(0.6 * frac, abs(dtheta))
                 candidates.append((r_out * math.cos(ang), r_out * math.sin(ang)))
         for ang_off in (arc_dir * 0.35, arc_dir * 0.9, -arc_dir * 0.6, -arc_dir * 0.35):
-            candidates.append((r_orbit * math.cos(theta + ang_off), r_orbit * math.sin(theta + ang_off)))
+            candidates.append(
+                (r_orbit * math.cos(theta + ang_off), r_orbit * math.sin(theta + ang_off))
+            )
         if r >= 0.72:
             r_out = min(1.15, r + 0.30)
             candidates.append((r_out * math.cos(theta), r_out * math.sin(theta)))
 
         return [(wx, wy, wrap(-math.atan2(wx, wy))) for wx, wy in candidates]
 
-    def _to_cmd(self, stage: str, status: str, df: float, dl: float, dc: float, pose: tuple[float, float, float] | None) -> AutoParkCommand:
+    def _to_cmd(
+        self,
+        stage: str,
+        status: str,
+        df: float,
+        dl: float,
+        dc: float,
+        pose: tuple[float, float, float] | None,
+    ) -> AutoParkCommand:
         F, S, T, scale = duty_to_dashboard(df, dl, dc)
         self.last_duty = (F * KDUTY, -S * KDUTY)
-        return AutoParkCommand(stage=stage, status=status, forward=F, strafe=S, turn=T, stop=False, done=False, pose=pose)
+        return AutoParkCommand(
+            stage=stage,
+            status=status,
+            forward=F,
+            strafe=S,
+            turn=T,
+            stop=False,
+            done=False,
+            pose=pose,
+        )
 
     def step(
         self,
@@ -612,11 +706,23 @@ class AutoParkRunner:
         if imu_age_s is None or imu_age_s > self.imu_stale_s:
             self.stage = "error"
             self.last_duty = (0.0, 0.0)
-            return AutoParkCommand(stage="error", status="autopark-imu-stale", stop=True, reason="autopark-imu-stale", pose=cur_pose)
+            return AutoParkCommand(
+                stage="error",
+                status="autopark-imu-stale",
+                stop=True,
+                reason="autopark-imu-stale",
+                pose=cur_pose,
+            )
         if frame_age_s is None or frame_age_s > self.frame_stale_s:
             self.stage = "error"
             self.last_duty = (0.0, 0.0)
-            return AutoParkCommand(stage="error", status="autopark-frame-stale", stop=True, reason="autopark-frame-stale", pose=cur_pose)
+            return AutoParkCommand(
+                stage="error",
+                status="autopark-frame-stale",
+                stop=True,
+                reason="autopark-frame-stale",
+                pose=cur_pose,
+            )
 
         if rec is not None and rec.get("tags"):
             cap = float(rec["cap"])
@@ -631,7 +737,9 @@ class AutoParkRunner:
                 allow_uncalibrated=(self.stage in ("acquiring", "staging")),
             )
         elif self.localizer.dr_pose is not None:
-            self.localizer.propagate(now, gyro_yaw_rad, self.last_duty[0], self.last_duty[1], is_gyro=True)
+            self.localizer.propagate(
+                now, gyro_yaw_rad, self.last_duty[0], self.last_duty[1], is_gyro=True
+            )
 
         cur_pose = tuple(self.localizer.dr_pose) if self.localizer.dr_pose is not None else None
 
@@ -660,7 +768,12 @@ class AutoParkRunner:
         if self.stage == "staging":
             assert cur_pose is not None
             x, y, yaw = cur_pose
-            if abs(x) < 0.06 and abs(y - 0.55) < 0.06 and abs(wrap(yaw)) < math.radians(4.0) and self.loc.last_used_calibrated:
+            if (
+                abs(x) < 0.06
+                and abs(y - 0.55) < 0.06
+                and abs(wrap(yaw)) < math.radians(4.0)
+                and self.loc.last_used_calibrated
+            ):
                 self.stage = "entering"
                 self.stall_s = 0.0
             else:
@@ -692,11 +805,21 @@ class AutoParkRunner:
                     self.stage = "blocked"
                     self.last_duty = (0.0, 0.0)
                     self.stall_s = 0.0
-                    return AutoParkCommand(stage="blocked", status="swept-clear-blocked", stop=True, reason="swept-clear-blocked", pose=cur_pose)
+                    return AutoParkCommand(
+                        stage="blocked",
+                        status="swept-clear-blocked",
+                        stop=True,
+                        reason="swept-clear-blocked",
+                        pose=cur_pose,
+                    )
 
                 self.stall_s = chosen_stall
                 df, dl, dc = chosen
-                status = "staging to (0.00, 0.55)" if self.loc.last_used_calibrated else "staging (awaiting calibrated tag)"
+                status = (
+                    "staging to (0.00, 0.55)"
+                    if self.loc.last_used_calibrated
+                    else "staging (awaiting calibrated tag)"
+                )
                 return self._to_cmd("staging", status, df, dl, dc, cur_pose)
 
         if self.stage == "entering":
@@ -706,19 +829,37 @@ class AutoParkRunner:
                 self.stage = "aborted"
                 self.last_duty = (0.0, 0.0)
                 self.stall_s = 0.0
-                return AutoParkCommand(stage="aborted", status="corridor-x-limit", stop=True, reason="corridor-x-limit", pose=cur_pose)
+                return AutoParkCommand(
+                    stage="aborted",
+                    status="corridor-x-limit",
+                    stop=True,
+                    reason="corridor-x-limit",
+                    pose=cur_pose,
+                )
             blind_dt = max(0.0, now - self.localizer.pose_t)
             if y < 0.40 and blind_dt > self.max_blind_dr_s:
                 self.stage = "aborted"
                 self.last_duty = (0.0, 0.0)
                 self.stall_s = 0.0
-                return AutoParkCommand(stage="aborted", status="blind-dr-timeout", stop=True, reason="blind-dr-timeout", pose=cur_pose)
+                return AutoParkCommand(
+                    stage="aborted",
+                    status="blind-dr-timeout",
+                    stop=True,
+                    reason="blind-dr-timeout",
+                    pose=cur_pose,
+                )
             if abs(x) < 0.06 and abs(y - 0.02) < 0.05 and abs(wrap(yaw)) < math.radians(5.0):
                 self.stage = "braking"
                 self.brake_at = now
                 self.last_duty = (0.0, 0.0)
                 self.stall_s = 0.0
-                return AutoParkCommand(stage="braking", status="braking at dock", stop=True, reason="entering-arrived", pose=cur_pose)
+                return AutoParkCommand(
+                    stage="braking",
+                    status="braking at dock",
+                    stop=True,
+                    reason="entering-arrived",
+                    pose=cur_pose,
+                )
             (df, dl, dc), _ = self.enter_goto.step(cur_pose, now)
             dc = self._boost_turn_duty(dc, dt, imu_w_dps, acquiring=False)
             return self._to_cmd("entering", "entering dock corridor", df, dl, dc, cur_pose)
@@ -727,10 +868,36 @@ class AutoParkRunner:
             self.last_duty = (0.0, 0.0)
             if abs(imu_w_dps) < self.stationary_dps:
                 self.stage = "parked"
-                return AutoParkCommand(stage="parked", status="parked", stop=True, done=True, reason="parked", pose=cur_pose)
+                return AutoParkCommand(
+                    stage="parked",
+                    status="parked",
+                    stop=True,
+                    done=True,
+                    reason="parked",
+                    pose=cur_pose,
+                )
             if self.brake_at is not None and (now - self.brake_at) > 2.0:
                 self.stage = "aborted"
-                return AutoParkCommand(stage="aborted", status="brake-stationary-timeout", stop=True, reason="brake-stationary-timeout", pose=cur_pose)
-            return AutoParkCommand(stage="braking", status="verifying stationary", stop=True, reason="verifying-stationary", pose=cur_pose)
+                return AutoParkCommand(
+                    stage="aborted",
+                    status="brake-stationary-timeout",
+                    stop=True,
+                    reason="brake-stationary-timeout",
+                    pose=cur_pose,
+                )
+            return AutoParkCommand(
+                stage="braking",
+                status="verifying stationary",
+                stop=True,
+                reason="verifying-stationary",
+                pose=cur_pose,
+            )
 
-        return AutoParkCommand(stage=self.stage, status=self.stage, stop=True, done=(self.stage == "parked"), reason=self.stage, pose=cur_pose)
+        return AutoParkCommand(
+            stage=self.stage,
+            status=self.stage,
+            stop=True,
+            done=(self.stage == "parked"),
+            reason=self.stage,
+            pose=cur_pose,
+        )

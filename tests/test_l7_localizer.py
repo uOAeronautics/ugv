@@ -1,4 +1,5 @@
 """Unit tests for tools/l7/l7_run.py Localizer, TagBits, GoTo safety, and arrival validation."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -57,7 +58,9 @@ def _make_args(**kw):
     return types.SimpleNamespace(**defaults)
 
 
-def _tag14_sol(tz: float = 0.8, tx: float = 0.0, yaw: float = 0.0, err: float = 0.15, nz: float = -1.0):
+def _tag14_sol(
+    tz: float = 0.8, tx: float = 0.0, yaw: float = 0.0, err: float = 0.15, nz: float = -1.0
+):
     # At yaw=0 (car facing -y), tag 14 normal (+y) in camera frame is (-sin(yaw), 0, -cos(yaw))?
     # Check Localizer._tag_yaw: phi - atan2(-nx, nz) + pi/2 = yaw -> with phi=pi/2, atan2(-nx, nz) = pi - yaw.
     # For yaw=0: atan2(-nx, nz) = pi -> nx=0, nz=-1. For small yaw: nx = -sin(yaw), nz = -cos(yaw).
@@ -72,11 +75,13 @@ def test_ippe_ambiguity_and_outlier_rejection():
     # 1. Ambiguous IPPE pair on first frame (self.off is None) -> must wait (return False).
     ambig = {
         "cap": 100.0,
-        "tags": [{
-            "id": 14,
-            "px": 40.0,
-            "sol": [_tag14_sol(yaw=0.0, err=0.30), _tag14_sol(yaw=0.7, err=0.35)],
-        }],
+        "tags": [
+            {
+                "id": 14,
+                "px": 40.0,
+                "sol": [_tag14_sol(yaw=0.0, err=0.30), _tag14_sol(yaw=0.7, err=0.35)],
+            }
+        ],
     }
     assert loc.update(ambig) is False
     assert loc.off is None
@@ -101,8 +106,16 @@ def test_ippe_ambiguity_and_outlier_rejection():
     # 4. Clear IPPE frame initializes self.off, pose, dr_pose.
     clear = {
         "cap": 100.0,
-        "tags": [{"id": 14, "px": 40.0, "sol": [_tag14_sol(tz=0.8, yaw=0.0, err=0.15),
-                                                _tag14_sol(tz=0.8, yaw=0.7, err=0.60)]}],
+        "tags": [
+            {
+                "id": 14,
+                "px": 40.0,
+                "sol": [
+                    _tag14_sol(tz=0.8, yaw=0.0, err=0.15),
+                    _tag14_sol(tz=0.8, yaw=0.7, err=0.60),
+                ],
+            }
+        ],
     }
     assert loc.update(clear) is True
     assert loc.off is not None
@@ -186,10 +199,14 @@ def test_validate_stage_arrival_false_arrive():
     target = (0.0, 0.9, 0.0)
     assert l7.validate_stage_arrival("arrived", target, None) == "false_arrive"
     assert l7.validate_stage_arrival("arrived", target, (0.20, 0.9, 0.0)) == "false_arrive"
-    assert l7.validate_stage_arrival("arrived", target, (0.0, 0.9, math.radians(15))) == "false_arrive"
+    assert (
+        l7.validate_stage_arrival("arrived", target, (0.0, 0.9, math.radians(15))) == "false_arrive"
+    )
     assert l7.validate_stage_arrival("arrived", target, (0.03, 0.88, math.radians(4))) == "arrived"
     # Close-in target (y < 0.42) where tag 14 is out of FOV is not invalidated by missing rest_pose.
     assert l7.validate_stage_arrival("arrived", (0.0, 0.1, 0.0), None) == "arrived"
+
+
 def test_should_abort_corridor_fresh_tag_vs_stale_dr():
     est_corridor_edge = (0.18, 0.40, 0.0)
     now = 100.10

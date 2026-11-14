@@ -1,4 +1,5 @@
 """PPO teacher with asymmetric critic (privileged pose+dynamics in value only)."""
+
 from __future__ import annotations
 import argparse
 import time
@@ -30,42 +31,84 @@ def main():
     ap.add_argument("--clip", type=float, default=0.2)
     ap.add_argument("--hidden", type=int, default=256)
     ap.add_argument("--act-dim", type=int, default=3)
-    ap.add_argument("--ent", type=float, default=1e-3,
-                    help="constant entropy weight (status quo: runs/teacher_L0.pt used this)")
-    ap.add_argument("--ent-anneal", action="store_true",
-                    help="anneal entropy 0.01 -> 10%% over training instead of --ent")
-    ap.add_argument("--curric", type=int, default=0,
-                    help="first N iters spawn at 0.1-0.4m so the hold is discovered, "
-                         "then spec spawns (final gate always uses spec spawns)")
-    ap.add_argument("--spawn-dist", default=None,
-                    help="override spawn distance, e.g. '0.5,1.5' or '0.75'")
+    ap.add_argument(
+        "--ent",
+        type=float,
+        default=1e-3,
+        help="constant entropy weight (status quo: runs/teacher_L0.pt used this)",
+    )
+    ap.add_argument(
+        "--ent-anneal",
+        action="store_true",
+        help="anneal entropy 0.01 -> 10%% over training instead of --ent",
+    )
+    ap.add_argument(
+        "--curric",
+        type=int,
+        default=0,
+        help="first N iters spawn at 0.1-0.4m so the hold is discovered, "
+        "then spec spawns (final gate always uses spec spawns)",
+    )
+    ap.add_argument(
+        "--spawn-dist", default=None, help="override spawn distance, e.g. '0.5,1.5' or '0.75'"
+    )
     ap.add_argument("--declare-parked", action="store_true")
     ap.add_argument("--no-mean-dynamics", action="store_true")
     g = ap.add_mutually_exclusive_group()
-    g.add_argument("--init", default=None,
-                   help="warm-start actor+critic weights (fresh opt & LR schedule)")
-    g.add_argument("--resume", default=None,
-                   help="resume interrupted run (loads weights + opt + sched)")
+    g.add_argument(
+        "--init", default=None, help="warm-start actor+critic weights (fresh opt & LR schedule)"
+    )
+    g.add_argument(
+        "--resume", default=None, help="resume interrupted run (loads weights + opt + sched)"
+    )
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--lat-weight", type=float, default=2.0,
-                    help="extra lateral-error weight in progress potential")
-    ap.add_argument("--rate-weight", type=float, default=0.0,
-                    help="action-rate penalty weight (L0-gate run used 0.0)")
-    ap.add_argument("--yaw-weight", type=float, default=1.0,
-                    help="yaw weight in progress potential (gate retrain uses 0.3)")
-    ap.add_argument("--ckpt-every", type=int, default=25,
-                    help="overwrite --out every N iters so kills don't lose runs")
-    ap.add_argument("--reset-every-iter", action="store_true",
-                    help="full env.reset() at the top of each iter (OLD behavior); "
-                         "default persistent rollouts across iters")
+    ap.add_argument(
+        "--lat-weight",
+        type=float,
+        default=2.0,
+        help="extra lateral-error weight in progress potential",
+    )
+    ap.add_argument(
+        "--rate-weight",
+        type=float,
+        default=0.0,
+        help="action-rate penalty weight (L0-gate run used 0.0)",
+    )
+    ap.add_argument(
+        "--yaw-weight",
+        type=float,
+        default=1.0,
+        help="yaw weight in progress potential (gate retrain uses 0.3)",
+    )
+    ap.add_argument(
+        "--ckpt-every",
+        type=int,
+        default=25,
+        help="overwrite --out every N iters so kills don't lose runs",
+    )
+    ap.add_argument(
+        "--reset-every-iter",
+        action="store_true",
+        help="full env.reset() at the top of each iter (OLD behavior); "
+        "default persistent rollouts across iters",
+    )
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     base_spawn = _parse_spawn(args.spawn_dist)
-    env = MecanumVecEnv(args.envs, EnvConfig(
-        level=args.level, device=dev, seed=args.seed,
-        spawn_dist=base_spawn, rate_w=args.rate_weight, lat_w=args.lat_weight,
-        use_mean_dynamics=not args.no_mean_dynamics, declare_parked=args.declare_parked))
+    env = MecanumVecEnv(
+        args.envs,
+        EnvConfig(
+            level=args.level,
+            device=dev,
+            seed=args.seed,
+            spawn_dist=base_spawn,
+            rate_w=args.rate_weight,
+            lat_w=args.lat_weight,
+            use_mean_dynamics=not args.no_mean_dynamics,
+            declare_parked=args.declare_parked,
+        ),
+    )
     # Stored on cfg for the reward path (sim.py forwards cfg.yaw_w to step_reward;
     # set post-construction so EnvConfig owns the field in the sim scope).
     env.cfg.yaw_w = args.yaw_weight
@@ -95,10 +138,20 @@ def main():
     out = args.out or str(RUNS / f"teacher_{args.level}.pt")
 
     def save_ckpt():
-        torch.save({"actor": actor.state_dict(), "critic": critic.state_dict(),
-                    "opt": opt.state_dict(), "sched": sched.state_dict(),
-                    "level": args.level, "obs_dim": TEACHER_OBS,
-                    "hidden": args.hidden, "act_dim": args.act_dim}, out)
+        torch.save(
+            {
+                "actor": actor.state_dict(),
+                "critic": critic.state_dict(),
+                "opt": opt.state_dict(),
+                "sched": sched.state_dict(),
+                "level": args.level,
+                "obs_dim": TEACHER_OBS,
+                "hidden": args.hidden,
+                "act_dim": args.act_dim,
+            },
+            out,
+        )
+
     n = args.envs
     ent = args.ent
 
@@ -124,16 +177,27 @@ def main():
                 lp = dist.log_prob(a).sum(-1)
                 v = critic(c)
             obs2, r, done, info = env.step(a)
-            O.append(o); C.append(c); A.append(a); LP.append(lp)
-            R.append(r); D.append(done.float()); V.append(v)
-            ep_succ += int(info["success"].sum()); ep_coll += int(info["collision"].sum())
+            O.append(o)
+            C.append(c)
+            A.append(a)
+            LP.append(lp)
+            R.append(r)
+            D.append(done.float())
+            V.append(v)
+            ep_succ += int(info["success"].sum())
+            ep_coll += int(info["collision"].sum())
             idx = torch.where(done)[0]
             if len(idx):
                 env.reset(idx.cpu())
                 obs2 = env._privileged()
             o, c = priv_input(obs2, env)
-        O = torch.stack(O); C = torch.stack(C); A = torch.stack(A)
-        LP = torch.stack(LP); R = torch.stack(R); D = torch.stack(D); V = torch.stack(V)
+        O = torch.stack(O)
+        C = torch.stack(C)
+        A = torch.stack(A)
+        LP = torch.stack(LP)
+        R = torch.stack(R)
+        D = torch.stack(D)
+        V = torch.stack(V)
         with torch.no_grad():
             _, c_last = priv_input(env._privileged(), env)
             last_v = critic(c_last)
@@ -147,22 +211,27 @@ def main():
         pl = vl = el = 0.0
         for e in range(args.epochs):
             for b in range(args.minibatches):
-                sl = idx_all[b * mb:(b + 1) * mb]
+                sl = idx_all[b * mb : (b + 1) * mb]
                 mean = actor(O[sl])
                 dist = torch.distributions.Normal(mean, actor.logstd.exp())
                 nlp = dist.log_prob(A[sl]).sum(-1)
                 ratio = torch.exp(nlp - LP[sl])
-                pg1 = ratio * ADV[sl]; pg2 = ratio.clamp(1 - args.clip, 1 + args.clip) * ADV[sl]
+                pg1 = ratio * ADV[sl]
+                pg2 = ratio.clamp(1 - args.clip, 1 + args.clip) * ADV[sl]
                 loss_p = -torch.min(pg1, pg2).mean()
                 loss_v = 0.5 * (critic(C[sl]) - RET[sl]).pow(2).mean()
                 loss_e = -dist.entropy().sum(-1).mean()
                 (loss_p + loss_v + ent * loss_e).backward()
                 nn.utils.clip_grad_norm_(list(actor.parameters()) + list(critic.parameters()), 0.5)
-                opt.step(); opt.zero_grad()
+                opt.step()
+                opt.zero_grad()
                 pl, vl, el = float(loss_p.detach()), float(loss_v.detach()), float(-loss_e.detach())
         sched.step()
-        print(f"iter {it} pol {pl:.4f} val {vl:.4f} ent {el:.3f} "
-              f"succ {ep_succ} coll {ep_coll} {time.time()-t0:.1f}s", flush=True)
+        print(
+            f"iter {it} pol {pl:.4f} val {vl:.4f} ent {el:.3f} "
+            f"succ {ep_succ} coll {ep_coll} {time.time() - t0:.1f}s",
+            flush=True,
+        )
         if args.ckpt_every > 0 and (it + 1) % args.ckpt_every == 0:
             save_ckpt()
     save_ckpt()

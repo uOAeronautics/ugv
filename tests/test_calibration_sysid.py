@@ -13,9 +13,14 @@ from pathlib import Path
 
 import numpy as np
 
-from ugv.calibration import (CalibratedModel, ExcitationSchedule,
-                             JoystickMapper, ProfileRefitter,
-                             simulate_particle, smooth_dz_comp)
+from ugv.calibration import (
+    CalibratedModel,
+    ExcitationSchedule,
+    JoystickMapper,
+    ProfileRefitter,
+    simulate_particle,
+    smooth_dz_comp,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = ROOT / "simulation" / "gazebo" / "mecanum_bayesian_profile.json"
@@ -41,9 +46,17 @@ def _run_sysid():
     C_true[:, 2] *= TRUE_YAW_SCALE
     sched = ExcitationSchedule()
     cmds, _ = sched.to_array(DT)
-    v, yaw = simulate_particle(cmds, DT, C_true, TRUE_DZ, TRUE_DRIVE,
-                               TRUE_BRAKE, cross_couple=COUPLE,
-                               noise_std=0.004, seed=0)
+    v, yaw = simulate_particle(
+        cmds,
+        DT,
+        C_true,
+        TRUE_DZ,
+        TRUE_DRIVE,
+        TRUE_BRAKE,
+        cross_couple=COUPLE,
+        noise_std=0.004,
+        seed=0,
+    )
     ref = ProfileRefitter(C0)
     res = ref.fit(cmds, DT, v, yaw)
     return sched, cmds, C0, C_true, res
@@ -76,30 +89,35 @@ def test_refit_recovers_true_parameters():
 def test_turn_column_prediction_within_8pct():
     _, cmds, _, C_true, res = _run_sysid()
     from ugv.calibration import mix as _mix, wheel_features as _wf
+
     model = CalibratedModel(res.coef, res.deadzone)
-    yaw_only = (np.abs(cmds[:, 2]) > 0.2) & \
-        (np.abs(cmds[:, :2]).max(axis=1) < 1e-9)
+    yaw_only = (np.abs(cmds[:, 2]) > 0.2) & (np.abs(cmds[:, :2]).max(axis=1) < 1e-9)
     pred = model.f(cmds[yaw_only])
     # true steady state (noise-free, coupling included)
     v_ss = _wf(_mix(cmds[yaw_only]), TRUE_DZ) @ C_true
     v_ss[:, 2] += COUPLE * v_ss[:, 1]
-    err = np.abs(pred[:, 2] - v_ss[:, 2]) \
-        / np.maximum(np.abs(v_ss[:, 2]), 0.05)
+    err = np.abs(pred[:, 2] - v_ss[:, 2]) / np.maximum(np.abs(v_ss[:, 2]), 0.05)
     assert float(np.median(err)) < 0.08
 
 
 def _settle(cmd, C_true):
     n = int(2.0 / DT)
-    v, _ = simulate_particle(np.tile(cmd, (n, 1)), DT, C_true, TRUE_DZ,
-                             TRUE_DRIVE, TRUE_BRAKE, cross_couple=COUPLE,
-                             noise_std=0.0)
+    v, _ = simulate_particle(
+        np.tile(cmd, (n, 1)),
+        DT,
+        C_true,
+        TRUE_DZ,
+        TRUE_DRIVE,
+        TRUE_BRAKE,
+        cross_couple=COUPLE,
+        noise_std=0.0,
+    )
     return v[-1]
 
 
 def test_joystick_mapper_kills_strafe_yaw_drift():
     _, _, C0, C_true, res = _run_sysid()
-    model = CalibratedModel(res.coef, res.deadzone, res.drive_tau,
-                            res.brake_tau)
+    model = CalibratedModel(res.coef, res.deadzone, res.drive_tau, res.brake_tau)
     mapper = JoystickMapper(model)
     naive = np.array([0.0, 0.5, 0.0])
     v_naive = _settle(naive, C_true)

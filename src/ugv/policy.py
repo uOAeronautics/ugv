@@ -1,4 +1,5 @@
 """Deploy-time parking student: NumPy forward pass + shield. No torch."""
+
 from __future__ import annotations
 import math
 import numpy as np
@@ -31,21 +32,36 @@ def _sigmoid(x):
 class StudentPolicy:
     """Tiny GRU-64 + 2x64 MLP. Drop-in alternative to ContinuousDocking.step."""
 
-    def __init__(self, arrays: dict, sha: str = "?", vehicle=None, gear=None,
-                 inflation=0.015, stateful: bool = False):
+    def __init__(
+        self,
+        arrays: dict,
+        sha: str = "?",
+        vehicle=None,
+        gear=None,
+        inflation=0.015,
+        stateful: bool = False,
+    ):
         self.a = {k: np.asarray(v, dtype=np.float64) for k, v in arrays.items()}
         self.sha = sha
         self.stateful = stateful
         self.vehicle = vehicle or {"width_m": 0.16, "length_m": 0.22}
-        self.gear = gear or {"clear_width_m": 0.254, "bar_length_m": 0.3048,
-                             "bar_radius_m": 0.03, "inward_slope": 0.0}
+        self.gear = gear or {
+            "clear_width_m": 0.254,
+            "bar_length_m": 0.3048,
+            "bar_radius_m": 0.03,
+            "inward_slope": 0.0,
+        }
         self.inflation = inflation
         self.obstacles = gear_obstacles(self.gear)
         self._h_dim = 64
         self._act_dim = 3
         if "gru.weight_ih_l0" in self.a:
-            self._Wir, self._Wiz, self._Win = (np.ascontiguousarray(w.T) for w in np.split(self.a["gru.weight_ih_l0"], 3))
-            self._Whr, self._Whz, self._Whn = (np.ascontiguousarray(w.T) for w in np.split(self.a["gru.weight_hh_l0"], 3))
+            self._Wir, self._Wiz, self._Win = (
+                np.ascontiguousarray(w.T) for w in np.split(self.a["gru.weight_ih_l0"], 3)
+            )
+            self._Whr, self._Whz, self._Whn = (
+                np.ascontiguousarray(w.T) for w in np.split(self.a["gru.weight_hh_l0"], 3)
+            )
             bir, biz, self._bin = np.split(self.a["gru.bias_ih_l0"], 3)
             bhr, bhz, self._bhn = np.split(self.a["gru.bias_hh_l0"], 3)
             self._br = bir + bhr
@@ -101,9 +117,18 @@ class StudentPolicy:
             h = (1.0 - zz) * nn + zz * h
         return self._head(h)
 
-    def step(self, tag_xyyaw: tuple | None, tag_age: float, tag_valid: bool,
-             imu_w: float, imu_yaw: float, prev_act: np.ndarray,
-             estimate: Pose2, dt: float = 0.02, dt_stale: float = 0.0) -> tuple[np.ndarray, str]:
+    def step(
+        self,
+        tag_xyyaw: tuple | None,
+        tag_age: float,
+        tag_valid: bool,
+        imu_w: float,
+        imu_yaw: float,
+        prev_act: np.ndarray,
+        estimate: Pose2,
+        dt: float = 0.02,
+        dt_stale: float = 0.0,
+    ) -> tuple[np.ndarray, str]:
         """Returns (action[3|4] in [-1,1], reason). Brakes on bad input or blocked sweep."""
         # One frame spec with sim.py: an invalid tag is zeroed fields + valid=0,
         # never the last-seen values.
@@ -130,10 +155,20 @@ class StudentPolicy:
                 self._dt_since_valid = 0.0
             else:
                 self._ema = self._ema * math.exp(-dt / EMA_TAU)
-            frame = np.array([tx, ty, tyaw, min(tag_age, 5.0), 1.0 if tag_valid else 0.0,
-                              float(imu_w), float(imu_yaw),
-                              * (float(v) for v in prev_act[:3]),
-                              * (float(v) for v in self._ema)], dtype=float)
+            frame = np.array(
+                [
+                    tx,
+                    ty,
+                    tyaw,
+                    min(tag_age, 5.0),
+                    1.0 if tag_valid else 0.0,
+                    float(imu_w),
+                    float(imu_yaw),
+                    *(float(v) for v in prev_act[:3]),
+                    *(float(v) for v in self._ema),
+                ],
+                dtype=float,
+            )
             if not np.isfinite(frame).all():
                 raise ValueError("non-finite frame")
         except (TypeError, ValueError):
@@ -147,8 +182,7 @@ class StudentPolicy:
         search = (not tag_valid) and self._dt_since_valid >= SEARCH_AGE
         if search:
             yaw_w = (float(imu_yaw) + math.pi) % (2 * math.pi) - math.pi
-            u_turn = max(-SEARCH_MAX, min(SEARCH_MAX,
-                                          -SEARCH_P * yaw_w - SEARCH_D * float(imu_w)))
+            u_turn = max(-SEARCH_MAX, min(SEARCH_MAX, -SEARCH_P * yaw_w - SEARCH_D * float(imu_w)))
             act = np.zeros(self._act_dim)
             act[2] = u_turn
             search_reason = "search: blind, rotating to acquire tag"
@@ -167,17 +201,29 @@ class StudentPolicy:
         vx_w = c * vx_b - s * vy_b
         vz_w = s * vx_b + c * vy_b
         w = float(act[2]) * W_MAX
-        nxt = Pose2(estimate.x + vx_w * (dt_stale + STOP_HORIZON),
-                    estimate.z + vz_w * (dt_stale + STOP_HORIZON),
-                    estimate.yaw + w * (dt_stale + STOP_HORIZON))
-        start = estimate if not dt_stale else Pose2(estimate.x + vx_w * dt_stale,
-                                                   estimate.z + vz_w * dt_stale,
-                                                   estimate.yaw + w * dt_stale)
+        nxt = Pose2(
+            estimate.x + vx_w * (dt_stale + STOP_HORIZON),
+            estimate.z + vz_w * (dt_stale + STOP_HORIZON),
+            estimate.yaw + w * (dt_stale + STOP_HORIZON),
+        )
+        start = (
+            estimate
+            if not dt_stale
+            else Pose2(
+                estimate.x + vx_w * dt_stale,
+                estimate.z + vz_w * dt_stale,
+                estimate.yaw + w * dt_stale,
+            )
+        )
         # parking.py uses CW+ yaw from +z toward +x; policy.py uses CCW+ yaw.
-        if not swept_clear(Pose2(start.x, start.z, -start.yaw),
-                           Pose2(nxt.x, nxt.z, -nxt.yaw),
-                           self.vehicle["width_m"], self.vehicle["length_m"],
-                           self.obstacles, self.inflation):
+        if not swept_clear(
+            Pose2(start.x, start.z, -start.yaw),
+            Pose2(nxt.x, nxt.z, -nxt.yaw),
+            self.vehicle["width_m"],
+            self.vehicle["length_m"],
+            self.obstacles,
+            self.inflation,
+        ):
             return np.zeros_like(act), "brake: swept footprint blocked"
         if search_reason:
             return act, search_reason
@@ -189,6 +235,7 @@ class StudentPolicy:
 
     def benchmark(self, iters=1000):
         import time
+
         t0 = time.perf_counter()
         for _ in range(iters):
             self.forward(self.hist)
@@ -198,6 +245,7 @@ class StudentPolicy:
 
 if __name__ == "__main__":
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--weights", required=True)
     ap.add_argument("--benchmark", action="store_true")

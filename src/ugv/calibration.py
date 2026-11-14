@@ -44,8 +44,7 @@ from dataclasses import dataclass
 import numpy as np
 
 HALF_BASE = (0.21 + 0.149) / 2  # mixer arm, mirrors rl/sim.py + staged_baseline
-LEVELS = (0, .01, .02, .035, .05, .07, .09, .12, .15,
-          .19, .24, .3, .38, .48, .6)
+LEVELS = (0, 0.01, 0.02, 0.035, 0.05, 0.07, 0.09, 0.12, 0.15, 0.19, 0.24, 0.3, 0.38, 0.48, 0.6)
 SCHEDULE_TOTAL_S = 30.0
 PULSE_DT = 0.02  # 50 Hz execution
 
@@ -55,13 +54,15 @@ PULSE_DT = 0.02  # 50 Hz execution
 # module stays dependency-free).
 # --------------------------------------------------------------------------
 
+
 def wheel_features(wheels, deadzone):
     """(..., 4) wheel PWM -> (..., 16) nonlinear features."""
     dz = np.clip(np.asarray(deadzone, float), 0, 0.3)[..., None]
     q = np.sign(wheels) * np.clip(np.abs(wheels) - dz, 0, None) / (1 - dz + 1e-6)
     mean_abs = np.abs(q).mean(axis=-1, keepdims=True)
-    return np.concatenate([np.clip(q, 0, None), np.clip(q, None, 0),
-                           q * np.abs(q), q * mean_abs], axis=-1)
+    return np.concatenate(
+        [np.clip(q, 0, None), np.clip(q, None, 0), q * np.abs(q), q * mean_abs], axis=-1
+    )
 
 
 def mix(cmd):
@@ -76,6 +77,7 @@ def mix(cmd):
 # --------------------------------------------------------------------------
 # Excitation schedule
 # --------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ExcitationSegment:
@@ -98,51 +100,44 @@ class ExcitationSchedule:
     RAMP_STEP_S = 0.25
 
     def __init__(self, segments: list | None = None):
-        self.segments = list(segments) if segments is not None \
-            else self.build_default()
+        self.segments = list(segments) if segments is not None else self.build_default()
 
     @classmethod
     def _steps(cls) -> list:
         segs: list = []
         # (a) breakaway deadzone ramps, one axis at a time.
-        axes = [((1.0, 0.0, 0.0), "fwd"), ((0.0, 1.0, 0.0), "strafe"),
-                ((0.0, 0.0, 1.0), "turn")]
+        axes = [((1.0, 0.0, 0.0), "fwd"), ((0.0, 1.0, 0.0), "strafe"), ((0.0, 0.0, 1.0), "turn")]
         for unit, name in axes:
             for lv in cls.RAMP_LEVELS:
-                segs.append(ExcitationSegment(
-                    (unit[0] * lv, unit[1] * lv, unit[2] * lv),
-                    cls.RAMP_STEP_S, f"dz-ramp-{name}-{lv:.2f}"))
-            segs.append(ExcitationSegment((0.0, 0.0, 0.0), 0.50,
-                                         f"dz-settle-after-{name}"))
+                segs.append(
+                    ExcitationSegment(
+                        (unit[0] * lv, unit[1] * lv, unit[2] * lv),
+                        cls.RAMP_STEP_S,
+                        f"dz-ramp-{name}-{lv:.2f}",
+                    )
+                )
+            segs.append(ExcitationSegment((0.0, 0.0, 0.0), 0.50, f"dz-settle-after-{name}"))
         # (b) forward + strafe step pulses at 3 magnitudes (tau + columns 0..1).
         for mag in cls.FWD_MAGS:
-            segs.append(ExcitationSegment((mag, 0.0, 0.0), cls.STEP_ON_S,
-                                         f"step-fwd-{mag:.2f}"))
-            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S,
-                                         "brake-settle"))
+            segs.append(ExcitationSegment((mag, 0.0, 0.0), cls.STEP_ON_S, f"step-fwd-{mag:.2f}"))
+            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S, "brake-settle"))
         for mag in cls.STRAFE_MAGS:
-            segs.append(ExcitationSegment((0.0, mag, 0.0), cls.STEP_ON_S,
-                                         f"step-strafe-{mag:.2f}"))
-            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S,
-                                         "brake-settle"))
+            segs.append(ExcitationSegment((0.0, mag, 0.0), cls.STEP_ON_S, f"step-strafe-{mag:.2f}"))
+            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S, "brake-settle"))
         # (c) CW/CCW yaw probes (turn column + yaw_scale).
         for mag in cls.YAW_MAGS:
-            segs.append(ExcitationSegment((0.0, 0.0, mag), cls.YAW_ON_S,
-                                         f"yaw-probe-{mag:+.2f}"))
-            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.YAW_OFF_S,
-                                         "brake-settle"))
+            segs.append(ExcitationSegment((0.0, 0.0, mag), cls.YAW_ON_S, f"yaw-probe-{mag:+.2f}"))
+            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.YAW_OFF_S, "brake-settle"))
         # (d) repeat of (b) for cross-coupling excitation (pure strafe/fwd
         # long holds let yaw-translation coupling accumulate measurably).
         for mag in cls.FWD_MAGS:
-            segs.append(ExcitationSegment((mag, 0.0, 0.0), cls.STEP_ON_S,
-                                         f"step-fwd2-{mag:.2f}"))
-            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S,
-                                         "brake-settle"))
+            segs.append(ExcitationSegment((mag, 0.0, 0.0), cls.STEP_ON_S, f"step-fwd2-{mag:.2f}"))
+            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S, "brake-settle"))
         for mag in cls.STRAFE_MAGS:
-            segs.append(ExcitationSegment((0.0, mag, 0.0), cls.STEP_ON_S,
-                                         f"step-strafe2-{mag:.2f}"))
-            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S,
-                                         "brake-settle"))
+            segs.append(
+                ExcitationSegment((0.0, mag, 0.0), cls.STEP_ON_S, f"step-strafe2-{mag:.2f}")
+            )
+            segs.append(ExcitationSegment((0.0, 0.0, 0.0), cls.STEP_OFF_S, "brake-settle"))
         return segs
 
     @classmethod
@@ -153,8 +148,7 @@ class ExcitationSchedule:
         if pad < -1e-9:
             raise ValueError(f"schedule overshoots 30 s: {total:.3f} s")
         if pad > 1e-9:
-            segs.append(ExcitationSegment((0.0, 0.0, 0.0), pad,
-                                         "final-settle-pad"))
+            segs.append(ExcitationSegment((0.0, 0.0, 0.0), pad, "final-settle-pad"))
         return segs
 
     @property
@@ -182,13 +176,12 @@ class ExcitationSchedule:
         bounds[-1] = n_total
         cmds = np.zeros((n_total, 3))
         labels: list = []
-        for s, (a, b) in zip(self.segments,
-                             zip(bounds[:-1], bounds[1:])):
+        for s, (a, b) in zip(self.segments, zip(bounds[:-1], bounds[1:])):
             n = max(b - a, 1 if s.duration > 0 else 0)
             b = a + n
             cmds[a:b] = np.array(s.cmd, float)
             labels += [s.label] * n
-        return cmds[:bounds[-1]], labels
+        return cmds[: bounds[-1]], labels
 
     def save_csv(self, path: str, dt: float = PULSE_DT) -> int:
         cmds, labels = self.to_array(dt)
@@ -197,9 +190,15 @@ class ExcitationSchedule:
             w = csv.writer(f)
             w.writerow(["t_s", "cmd_vx", "cmd_vy", "cmd_w", "label"])
             for i in range(len(cmds)):
-                w.writerow([f"{t[i]:.3f}", f"{cmds[i, 0]:.4f}",
-                            f"{cmds[i, 1]:.4f}", f"{cmds[i, 2]:.4f}",
-                            labels[i]])
+                w.writerow(
+                    [
+                        f"{t[i]:.3f}",
+                        f"{cmds[i, 0]:.4f}",
+                        f"{cmds[i, 1]:.4f}",
+                        f"{cmds[i, 2]:.4f}",
+                        labels[i],
+                    ]
+                )
         return len(cmds)
 
     @staticmethod
@@ -207,8 +206,7 @@ class ExcitationSchedule:
         cmds = []
         with open(path) as f:
             for row in csv.DictReader(f):
-                cmds.append([float(row["cmd_vx"]), float(row["cmd_vy"]),
-                             float(row["cmd_w"])])
+                cmds.append([float(row["cmd_vx"]), float(row["cmd_vy"]), float(row["cmd_w"])])
         return np.array(cmds, float)
 
 
@@ -216,11 +214,13 @@ class ExcitationSchedule:
 # Calibrated forward model (posterior-mean steady state + first-order lag)
 # --------------------------------------------------------------------------
 
+
 class CalibratedModel:
     """Steady-state body velocity + grid inverse, like MeanModel."""
 
-    def __init__(self, coef, deadzone: float = 0.0,
-                 drive_tau: float = 0.25, brake_tau: float = 0.12):
+    def __init__(
+        self, coef, deadzone: float = 0.0, drive_tau: float = 0.25, brake_tau: float = 0.12
+    ):
         self.coef = np.asarray(coef, float).reshape(16, 3)
         self.dz = float(deadzone)
         self.drive_tau = float(drive_tau)
@@ -228,8 +228,7 @@ class CalibratedModel:
         lv = np.array(LEVELS)
         lv = np.concatenate([-lv[::-1][:-1], lv])
         gx, gy = np.meshgrid(lv, lv, indexing="ij")
-        self.grid = np.stack([gx.ravel(), gy.ravel(),
-                              np.zeros(gx.size)], 1)
+        self.grid = np.stack([gx.ravel(), gy.ravel(), np.zeros(gx.size)], 1)
         self.grid_v = self.f(self.grid)[:, :2]
 
     def f(self, cmd):
@@ -252,10 +251,18 @@ class CalibratedModel:
         return A
 
 
-def simulate_particle(cmds, dt: float, coef, deadzone: float,
-                      drive_tau: float, brake_tau: float,
-                      cross_couple: float = 0.0, noise_std: float = 0.0,
-                      yaw_bias_dps: float = 0.0, seed: int = 0):
+def simulate_particle(
+    cmds,
+    dt: float,
+    coef,
+    deadzone: float,
+    drive_tau: float,
+    brake_tau: float,
+    cross_couple: float = 0.0,
+    noise_std: float = 0.0,
+    yaw_bias_dps: float = 0.0,
+    seed: int = 0,
+):
     """First-order-lag synthetic car. Returns (v_body[N,3], yaw_dps[N]).
 
     ``cross_couple`` adds ``w += cross_couple * vy_ss`` (yaw-translation
@@ -283,6 +290,7 @@ def simulate_particle(cmds, dt: float, coef, deadzone: float,
 # --------------------------------------------------------------------------
 # Profile refit
 # --------------------------------------------------------------------------
+
 
 @dataclass
 class FitResult:
@@ -348,9 +356,14 @@ class ProfileRefitter:
     averaged with ``v_meas[:, 2]`` when both present).
     """
 
-    def __init__(self, prior_coef, prior_dz: float = 0.0,
-                 prior_drive_tau: float = 0.25,
-                 prior_brake_tau: float = 0.12, ridge_lam: float = 20.0):
+    def __init__(
+        self,
+        prior_coef,
+        prior_dz: float = 0.0,
+        prior_drive_tau: float = 0.25,
+        prior_brake_tau: float = 0.12,
+        ridge_lam: float = 20.0,
+    ):
         self.C0 = np.asarray(prior_coef, float).reshape(16, 3)
         self.prior_dz = float(prior_dz)
         self.prior_drive_tau = float(prior_drive_tau)
@@ -381,10 +394,11 @@ class ProfileRefitter:
             yaw = np.asarray(yaw_dps, float).ravel() * math.pi / 180.0
             has_gyro = np.isfinite(yaw)
             v[has_gyro, 2] = np.where(
-                np.abs(v[has_gyro, 2]) > 1e-9,
-                0.5 * (v[has_gyro, 2] + yaw[has_gyro]), yaw[has_gyro])
-        dt_arr = np.full(len(cmds), float(dt)) if np.ndim(dt) == 0 \
-            else np.asarray(dt, float).ravel()
+                np.abs(v[has_gyro, 2]) > 1e-9, 0.5 * (v[has_gyro, 2] + yaw[has_gyro]), yaw[has_gyro]
+            )
+        dt_arr = (
+            np.full(len(cmds), float(dt)) if np.ndim(dt) == 0 else np.asarray(dt, float).ravel()
+        )
         dt_med = float(np.median(dt_arr))
         runs = _find_runs(cmds)
 
@@ -395,23 +409,19 @@ class ProfileRefitter:
             prev = runs[idx - 1][2] if idx > 0 else np.zeros(3)
             v0 = v[a - 1] if a > 0 else np.zeros(3)
             n = b - a
-            if np.abs(u).max() > 0.20 and np.abs(prev).max() < 0.05 \
-                    and n * dt_med >= 0.5:
+            if np.abs(u).max() > 0.20 and np.abs(prev).max() < 0.05 and n * dt_med >= 0.5:
                 ax = int(np.argmax(np.abs(u)))
                 seg = v[a:b, ax]
                 t = (np.arange(n) + 1) * dt_med
-                ref = np.mean(seg[-max(3, int(0.15 / dt_med)):])
+                ref = np.mean(seg[-max(3, int(0.15 / dt_med)) :])
                 if abs(ref - v0[ax]) > 0.03:
-                    rises.append(_fit_tau_from_steps(
-                        t, (seg - v0[ax]) / (ref - v0[ax]), "rise"))
-            if np.abs(u).max() < 0.05 and np.abs(prev).max() > 0.20 \
-                    and n * dt_med >= 0.3:
+                    rises.append(_fit_tau_from_steps(t, (seg - v0[ax]) / (ref - v0[ax]), "rise"))
+            if np.abs(u).max() < 0.05 and np.abs(prev).max() > 0.20 and n * dt_med >= 0.3:
                 ax = int(np.argmax(np.abs(prev)))
                 seg = v[a:b, ax]
                 t = (np.arange(n) + 1) * dt_med
                 if abs(v0[ax]) > 0.03:
-                    brakes.append(_fit_tau_from_steps(
-                        t, seg / v0[ax], "fall"))
+                    brakes.append(_fit_tau_from_steps(t, seg / v0[ax], "fall"))
         drive_tau = float(np.median(rises)) if rises else self.prior_drive_tau
         brake_tau = float(np.median(brakes)) if brakes else self.prior_brake_tau
 
@@ -428,7 +438,7 @@ class ProfileRefitter:
                 alpha = 1.0 - e
                 Pest.append(u)
                 Vest.append((v[a + k] - v0 * e) / alpha)
-                W.append(alpha ** 2)
+                W.append(alpha**2)
         Pest = np.array(Pest)
         Vest = np.array(Vest)
         W = np.array(W)
@@ -450,8 +460,7 @@ class ProfileRefitter:
         P_eye = np.eye(16)
         for dz in np.arange(0.0, 0.251, 0.005):
             Phi = wheel_features(mix(Pest), dz)
-            C01 = _weighted_ridge(Phi, Vest[:, :2], W, self.C0[:, :2],
-                                    self.lam)
+            C01 = _weighted_ridge(Phi, Vest[:, :2], W, self.C0[:, :2], self.lam)
             P = Phi @ self.C0[:, 2]
             Y = Phi @ C01[:, 1]
             WP = Phi * W[:, None]
@@ -477,21 +486,24 @@ class ProfileRefitter:
             except np.linalg.LinAlgError:
                 continue
             s, c, D = float(x18[0]), float(x18[1]), x18[2:]
-            C = np.column_stack([C01, s * self.C0[:, 2] + c * C01[:, 1]
-                                 + D])
+            C = np.column_stack([C01, s * self.C0[:, 2] + c * C01[:, 1] + D])
             r = Phi @ C - Vest
-            rmse = float(np.sqrt((W[:, None] * r ** 2).sum()
-                                 / (3 * W.sum())))
+            rmse = float(np.sqrt((W[:, None] * r**2).sum() / (3 * W.sum())))
             if rmse < best_rmse:
                 best_dz, best_rmse, best_C = float(dz), rmse, C
                 best_s, best_c = s, c
         yaw_scale = float(np.clip(best_s, 0.2, 3.0))
 
-        return FitResult(deadzone=best_dz, drive_tau=drive_tau,
-                         brake_tau=brake_tau, coef=best_C,
-                         yaw_scale=yaw_scale, cross_couple=best_c,
-                         steady_rmse=best_rmse,
-                         n_steady=int(len(W)))
+        return FitResult(
+            deadzone=best_dz,
+            drive_tau=drive_tau,
+            brake_tau=brake_tau,
+            coef=best_C,
+            yaw_scale=yaw_scale,
+            cross_couple=best_c,
+            steady_rmse=best_rmse,
+            n_steady=int(len(W)),
+        )
 
     def apply_to_profile(self, profile: dict, res: FitResult) -> dict:
         """Return an updated profile dict (mean + particles nudged)."""
@@ -501,10 +513,13 @@ class ProfileRefitter:
         out["drive_tau_s"] = [res.drive_tau] * 3
         out["brake_tau_s"] = [res.brake_tau] * 3
         out.setdefault("calibration", {})["sysid_30s"] = {
-            "deadzone": res.deadzone, "drive_tau_s": res.drive_tau,
-            "brake_tau_s": res.brake_tau, "yaw_scale": res.yaw_scale,
+            "deadzone": res.deadzone,
+            "drive_tau_s": res.drive_tau,
+            "brake_tau_s": res.brake_tau,
+            "yaw_scale": res.yaw_scale,
             "cross_couple": res.cross_couple,
-            "steady_rmse": res.steady_rmse, "n_steady": res.n_steady,
+            "steady_rmse": res.steady_rmse,
+            "n_steady": res.n_steady,
         }
         return out
 
@@ -512,6 +527,7 @@ class ProfileRefitter:
 # --------------------------------------------------------------------------
 # Joystick mapping: smooth dz pre-comp + 3x3 decoupling + gyro yaw-hold
 # --------------------------------------------------------------------------
+
 
 def smooth_dz_comp(u: float, dz: float, eps: float = 0.04) -> float:
     """Deadzone pre-compensation with a smoothstep blend over [dz, dz+eps]."""
@@ -544,8 +560,7 @@ class JoystickMapper:
 
     def __init__(self, model: CalibratedModel):
         self.m = model
-        wmax = max(abs(model.f([[0, 0, 1]])[0, 2]),
-                   abs(model.f([[0, 0, -1]])[0, 2]))
+        wmax = max(abs(model.f([[0, 0, 1]])[0, 2]), abs(model.f([[0, 0, -1]])[0, 2]))
         self.WMAX = float(max(wmax, 0.05))
         self.YAW_HOLD_MAX = 0.5 * self.WMAX
 
@@ -585,15 +600,15 @@ class JoystickMapper:
                 lo, flo = mid, fm
         return 0.5 * (lo + hi)
 
-    def map_stick(self, fwd: float, strafe: float, turn: float,
-                  heading_rate_dps: float = 0.0) -> np.ndarray:
+    def map_stick(
+        self, fwd: float, strafe: float, turn: float, heading_rate_dps: float = 0.0
+    ) -> np.ndarray:
         f = smooth_dz_comp(fwd, self.m.dz)
         s = smooth_dz_comp(strafe, self.m.dz)
         cmd_xy = self.m.inv([[f * self.VMAX, s * self.VMAX]])[0]
         if abs(turn) < self.TURN_EPS:
             w_des = -self.YAW_HOLD_KP * math.radians(heading_rate_dps)
-            w_des = float(np.clip(w_des, -self.YAW_HOLD_MAX,
-                                  self.YAW_HOLD_MAX))
+            w_des = float(np.clip(w_des, -self.YAW_HOLD_MAX, self.YAW_HOLD_MAX))
         else:
             w_des = smooth_dz_comp(turn, self.m.dz) * self.WMAX
         w_cmd = self.turn_cmd_for(cmd_xy, w_des)
@@ -604,17 +619,20 @@ class JoystickMapper:
 # CLI
 # --------------------------------------------------------------------------
 
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="30 s SysID excitation + refit")
-    ap.add_argument("--emit-csv", default=None,
-                    help="write excitation commands to CSV")
-    ap.add_argument("--fit-csv", default=None,
-                    help="log CSV with cmd_vx,vy,w + v_vx,vy,w "
-                         "(+ yaw_dps, dt_s optional)")
+    ap.add_argument("--emit-csv", default=None, help="write excitation commands to CSV")
+    ap.add_argument(
+        "--fit-csv",
+        default=None,
+        help="log CSV with cmd_vx,vy,w + v_vx,vy,w (+ yaw_dps, dt_s optional)",
+    )
     ap.add_argument("--prior", default=None, help="prior profile JSON")
     ap.add_argument("--out", default=None, help="updated profile JSON")
-    ap.add_argument("--demo-sim", action="store_true",
-                    help="run synthetic-plant demo (dz=0.14, yaw_scale=0.7)")
+    ap.add_argument(
+        "--demo-sim", action="store_true", help="run synthetic-plant demo (dz=0.14, yaw_scale=0.7)"
+    )
     ap.add_argument("--dt", type=float, default=PULSE_DT)
     a = ap.parse_args(argv)
 
@@ -623,41 +641,53 @@ def main(argv=None) -> int:
         n = sched.save_csv(a.emit_csv, a.dt)
         print(f"wrote {n} steps ({sched.total_s:.2f} s) to {a.emit_csv}")
     if a.demo_sim:
-        prior = json.load(open(a.prior)) if a.prior \
-            else {"coefficients": np.zeros((16, 3)).tolist(),
-                  "deadzone": 0.0}
-        C0 = np.asarray(prior["coefficients"]
-                        if "coefficients" in prior else prior, float)
+        prior = (
+            json.load(open(a.prior))
+            if a.prior
+            else {"coefficients": np.zeros((16, 3)).tolist(), "deadzone": 0.0}
+        )
+        C0 = np.asarray(prior["coefficients"] if "coefficients" in prior else prior, float)
         cmds, _ = sched.to_array(a.dt)
-        v, yaw = simulate_particle(cmds, a.dt, C0 * np.array([1, 1, 0.7]),
-                                   0.14, 0.22, 0.10, cross_couple=0.6,
-                                   noise_std=0.004, seed=0)
+        v, yaw = simulate_particle(
+            cmds,
+            a.dt,
+            C0 * np.array([1, 1, 0.7]),
+            0.14,
+            0.22,
+            0.10,
+            cross_couple=0.6,
+            noise_std=0.004,
+            seed=0,
+        )
         res = ProfileRefitter(C0).fit(cmds, a.dt, v, yaw)
-        print(f"dz={res.deadzone:.3f} drive={res.drive_tau:.3f} "
-              f"brake={res.brake_tau:.3f} yaw_scale={res.yaw_scale:.3f} "
-              f"rmse={res.steady_rmse:.4f} n={res.n_steady}")
+        print(
+            f"dz={res.deadzone:.3f} drive={res.drive_tau:.3f} "
+            f"brake={res.brake_tau:.3f} yaw_scale={res.yaw_scale:.3f} "
+            f"rmse={res.steady_rmse:.4f} n={res.n_steady}"
+        )
     if a.fit_csv:
         if not a.prior or not a.out:
             raise SystemExit("--fit-csv needs --prior and --out")
         rows = list(csv.DictReader(open(a.fit_csv)))
-        cmds = np.array([[float(r["cmd_vx"]), float(r["cmd_vy"]),
-                          float(r["cmd_w"])] for r in rows])
-        v = np.array([[float(r["v_vx"]), float(r["v_vy"]),
-                       float(r["v_w"])] for r in rows])
+        cmds = np.array([[float(r["cmd_vx"]), float(r["cmd_vy"]), float(r["cmd_w"])] for r in rows])
+        v = np.array([[float(r["v_vx"]), float(r["v_vy"]), float(r["v_w"])] for r in rows])
         yaw = np.array([float(r.get("yaw_dps", "nan")) for r in rows])
         dt = np.array([float(r.get("dt_s", a.dt)) for r in rows])
         prof = json.load(open(a.prior))
         ref = ProfileRefitter.from_profile(prof)
         res = ref.fit(cmds, dt, v, yaw)
-        json.dump(ref.apply_to_profile(prof, res), open(a.out, "w"),
-                  indent=1)
-        print(f"dz={res.deadzone:.3f} drive={res.drive_tau:.3f} "
-              f"brake={res.brake_tau:.3f} yaw_scale={res.yaw_scale:.3f} "
-              f"rmse={res.steady_rmse:.4f} n={res.n_steady} -> {a.out}")
+        json.dump(ref.apply_to_profile(prof, res), open(a.out, "w"), indent=1)
+        print(
+            f"dz={res.deadzone:.3f} drive={res.drive_tau:.3f} "
+            f"brake={res.brake_tau:.3f} yaw_scale={res.yaw_scale:.3f} "
+            f"rmse={res.steady_rmse:.4f} n={res.n_steady} -> {a.out}"
+        )
     if not a.emit_csv and not a.demo_sim and not a.fit_csv:
-        print(f"default schedule: {len(sched.segments)} segments, "
-              f"{sched.total_s:.2f} s, max|cmd|={sched.max_abs_cmd():.2f}, "
-              f"max pulse={sched.max_pulse_s():.2f} s")
+        print(
+            f"default schedule: {len(sched.segments)} segments, "
+            f"{sched.total_s:.2f} s, max|cmd|={sched.max_abs_cmd():.2f}, "
+            f"max pulse={sched.max_pulse_s():.2f} s"
+        )
     return 0
 
 

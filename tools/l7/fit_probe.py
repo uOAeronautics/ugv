@@ -5,6 +5,7 @@ Yaw rate comes from the 100 Hz gyro; translation from tag poses inside each puls
 Prints one row per pulse and a constrained least-squares v = G * (|duty| - dz) fit (G >= 0, dz >= 0).
 usage: fit_probe.py <run_dir> [--json out.json]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -90,8 +91,12 @@ def _extract_ws_lag(ws_path: Path, imu: list[dict], it: np.ndarray) -> float | N
         return None
     ack_diffs = []
     for r in rows:
-        t_send = next((r[k] for k in ("send_t", "sent_t", "t", "ts") if k in r and r[k] is not None), None)
-        t_ack = next((r[k] for k in ("pwm_t", "ack_t", "recv_t") if k in r and r[k] is not None), None)
+        t_send = next(
+            (r[k] for k in ("send_t", "sent_t", "t", "ts") if k in r and r[k] is not None), None
+        )
+        t_ack = next(
+            (r[k] for k in ("pwm_t", "ack_t", "recv_t") if k in r and r[k] is not None), None
+        )
         if t_send is not None and t_ack is not None:
             ack_diffs.append(float(t_ack) - float(t_send))
     if ack_diffs:
@@ -100,8 +105,17 @@ def _extract_ws_lag(ws_path: Path, imu: list[dict], it: np.ndarray) -> float | N
     # Fallback: cross-correlate WS command magnitude with IMU wheel/PWM vector magnitude.
     ws_t, ws_u = [], []
     for r in rows:
-        t_send = next((r[k] for k in ("send_t", "sent_t", "t", "ts") if k in r and r[k] is not None), None)
-        cmd = next((r[k] for k in ("pwm", "wh", "wheels", "cmd", "duty", "u") if k in r and r[k] is not None), None)
+        t_send = next(
+            (r[k] for k in ("send_t", "sent_t", "t", "ts") if k in r and r[k] is not None), None
+        )
+        cmd = next(
+            (
+                r[k]
+                for k in ("pwm", "wh", "wheels", "cmd", "duty", "u")
+                if k in r and r[k] is not None
+            ),
+            None,
+        )
         if t_send is not None and cmd is not None:
             arr = np.asarray(cmd, dtype=float).ravel()
             ws_t.append(float(t_send))
@@ -158,7 +172,9 @@ def analyze_run(run: Path) -> dict:
                 coast_rows.append(r)
 
     all_pt = np.array(sorted(all_poses), dtype=float)
-    all_P = np.array([all_poses[t] for t in all_pt], dtype=float) if len(all_pt) else np.zeros((0, 3))
+    all_P = (
+        np.array([all_poses[t] for t in all_pt], dtype=float) if len(all_pt) else np.zeros((0, 3))
+    )
 
     out = []
     drive_taus_gz, brake_taus_gz = [], []
@@ -232,9 +248,11 @@ def analyze_run(run: Path) -> dict:
                         pt_tail = all_pt[pm]
                         P_tail = all_P[pm]
                         s_tail = (
-                            (P_tail[:, 0] - P[0, 0]) * math.cos(th) + (P_tail[:, 1] - P[0, 1]) * math.sin(th)
+                            (P_tail[:, 0] - P[0, 0]) * math.cos(th)
+                            + (P_tail[:, 1] - P[0, 1]) * math.sin(th)
                             if axis == "fwd"
-                            else -(P_tail[:, 0] - P[0, 0]) * math.sin(th) + (P_tail[:, 1] - P[0, 1]) * math.cos(th)
+                            else -(P_tail[:, 0] - P[0, 0]) * math.sin(th)
+                            + (P_tail[:, 1] - P[0, 1]) * math.cos(th)
                         )
                         dt_t = np.diff(pt_tail)
                         ok_t = dt_t > 0.015
@@ -255,7 +273,11 @@ def analyze_run(run: Path) -> dict:
         ("left", "v_ss", 0.02, "m/s per duty"),
         ("ccw", "yaw_rate_dps_ss", 3.0, "deg/s per duty"),
     ):
-        pts = [(abs(r["duty"]), abs(r[key])) for r in out if r["axis"] == axis and r.get(key) is not None]
+        pts = [
+            (abs(r["duty"]), abs(r[key]))
+            for r in out
+            if r["axis"] == axis and r.get(key) is not None
+        ]
         res = _fit_nonneg_deadzone(pts, thresh)
         if res is not None:
             res["unit"] = unit
@@ -267,17 +289,39 @@ def analyze_run(run: Path) -> dict:
         "yaw_dps_per_left_mps": None,
         "trans_per_ccw": None,
     }
-    fwd_c = [(r["v_fwd_ss"], r["v_left_ss"]) for r in out if r["axis"] == "fwd" and r.get("v_fwd_ss") is not None and r.get("v_left_ss") is not None and abs(r["v_fwd_ss"]) >= 0.02]
+    fwd_c = [
+        (r["v_fwd_ss"], r["v_left_ss"])
+        for r in out
+        if r["axis"] == "fwd"
+        and r.get("v_fwd_ss") is not None
+        and r.get("v_left_ss") is not None
+        and abs(r["v_fwd_ss"]) >= 0.02
+    ]
     if fwd_c:
         x = np.array([a for a, _ in fwd_c])
         y = np.array([b for _, b in fwd_c])
         cross_coupling["left_per_fwd"] = float(np.dot(x, y) / np.dot(x, x))
-    left_c = [(r["v_left_ss"], r["yaw_rate_dps_ss"]) for r in out if r["axis"] == "left" and r.get("v_left_ss") is not None and r.get("yaw_rate_dps_ss") is not None and abs(r["v_left_ss"]) >= 0.02]
+    left_c = [
+        (r["v_left_ss"], r["yaw_rate_dps_ss"])
+        for r in out
+        if r["axis"] == "left"
+        and r.get("v_left_ss") is not None
+        and r.get("yaw_rate_dps_ss") is not None
+        and abs(r["v_left_ss"]) >= 0.02
+    ]
     if left_c:
         x = np.array([a for a, _ in left_c])
         y = np.array([b for _, b in left_c])
         cross_coupling["yaw_dps_per_left_mps"] = float(np.dot(x, y) / np.dot(x, x))
-    ccw_c = [(abs(r["yaw_rate_dps_ss"]), math.hypot(r["v_fwd_ss"], r["v_left_ss"])) for r in out if r["axis"] == "ccw" and r.get("yaw_rate_dps_ss") is not None and r.get("v_fwd_ss") is not None and r.get("v_left_ss") is not None and abs(r["yaw_rate_dps_ss"]) >= 3.0]
+    ccw_c = [
+        (abs(r["yaw_rate_dps_ss"]), math.hypot(r["v_fwd_ss"], r["v_left_ss"]))
+        for r in out
+        if r["axis"] == "ccw"
+        and r.get("yaw_rate_dps_ss") is not None
+        and r.get("v_fwd_ss") is not None
+        and r.get("v_left_ss") is not None
+        and abs(r["yaw_rate_dps_ss"]) >= 3.0
+    ]
     if ccw_c:
         x = np.array([a for a, _ in ccw_c])
         y = np.array([b for _, b in ccw_c])
@@ -320,7 +364,11 @@ def analyze_run(run: Path) -> dict:
         if ok_p.sum() >= 5:
             t_opt = (0.5 * (all_pt[:-1] + all_pt[1:]))[ok_p]
             omega_opt = np.degrees(np.diff(yaws)[ok_p] / dt_p[ok_p])
-            ccw_wins = [(float(p["rows"][0]["t"]), float(p["rows"][-1]["t"])) for p in pulses if p["key"][0] == "ccw"]
+            ccw_wins = [
+                (float(p["rows"][0]["t"]), float(p["rows"][-1]["t"]))
+                for p in pulses
+                if p["key"][0] == "ccw"
+            ]
             if ccw_wins:
                 in_ccw = np.zeros(len(t_opt), dtype=bool)
                 for a, b in ccw_wins:

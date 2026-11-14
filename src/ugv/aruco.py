@@ -61,8 +61,9 @@ class FollowCommand:
 
 class FollowSteering:
     """Visual centering with full-strength, bounded Q/E-style pivots."""
-    CENTER_START = .07
-    CENTER_STOP = .04
+
+    CENTER_START = 0.07
+    CENTER_STOP = 0.04
 
     def __init__(self):
         self.turn_gain = 1.0
@@ -76,7 +77,7 @@ class FollowSteering:
 
     def step(self, error, distance, now, captured_at=None):
         captured_at = now if captured_at is None else captured_at
-        close = distance <= TARGET_DISTANCE_M + .035
+        close = distance <= TARGET_DISTANCE_M + 0.035
         if abs(error) <= self.CENTER_STOP:
             was_pivoting = self.previous_error is not None
             self.reset()
@@ -87,38 +88,43 @@ class FollowSteering:
             if now < self.pulse_end:
                 if error * self.previous_error <= 0:
                     self.pulse_end = now
-                    self.settle_until = now + .12
+                    self.settle_until = now + 0.12
                     return FollowCommand()
                 return None
             if now < self.settle_until or captured_at < self.pulse_end:
                 return FollowCommand()
             change = abs(self.previous_error - error)
-            if change > .015:
+            if change > 0.015:
                 observed_gain = change / self.previous_duration
-                self.turn_gain = max(.15, min(5., .5 * self.turn_gain + .5 * observed_gain))
+                self.turn_gain = max(0.15, min(5.0, 0.5 * self.turn_gain + 0.5 * observed_gain))
             else:
                 # Increase the next impulse if the wheels did not break away.
-                self.turn_gain = max(.15, self.turn_gain * .65)
+                self.turn_gain = max(0.15, self.turn_gain * 0.65)
             self.previous_error = None
         self.centering = self.centering or abs(error) > self.CENTER_START
         if self.centering:
-            duration = max(.04, min(.18, (abs(error) - self.CENTER_STOP) * .85 / self.turn_gain))
+            duration = max(0.04, min(0.18, (abs(error) - self.CENTER_STOP) * 0.85 / self.turn_gain))
             self.previous_error = error
             self.previous_duration = duration
             self.pulse_end = now + duration
-            self.settle_until = self.pulse_end + .12
-            return FollowCommand(turn=-math.copysign(1., error), duration=duration,
-                                 reason="aruco-centering")
+            self.settle_until = self.pulse_end + 0.12
+            return FollowCommand(
+                turn=-math.copysign(1.0, error), duration=duration, reason="aruco-centering"
+            )
         if close:
             return FollowCommand(reason="aruco-target-reached")
-        return FollowCommand(forward=max(0., min(.48, (distance - TARGET_DISTANCE_M) * .9)),
-                             reason="aruco-approaching")
+        return FollowCommand(
+            forward=max(0.0, min(0.48, (distance - TARGET_DISTANCE_M) * 0.9)),
+            reason="aruco-approaching",
+        )
 
 
 class ArucoFollower:
-    def __init__(self, camera: "CameraStream", controller: "RobotController",
-                 follow_mode: str = "legacy") -> None:
+    def __init__(
+        self, camera: "CameraStream", controller: "RobotController", follow_mode: str = "legacy"
+    ) -> None:
         import os as _os
+
         self.camera = camera
         self.controller = controller
         self.enabled = False
@@ -133,11 +139,17 @@ class ArucoFollower:
         if _os.environ.get("FOLLOW_SMOOTH") == "1":
             self.follow_mode = "holonomic"
         from .follow import HolonomicFollowPolicy
+
         self.smooth_policy = HolonomicFollowPolicy()
         self.follow_debug: dict = {
-            "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0,
-            "vx": 0.0, "vz": 0.0, "sigma_m": 0.05,
-            "coast_age_ms": 0, "cmd_vec": [0.0, 0.0, 0.0],
+            "mode": "IDLE",
+            "err_lead": 0.0,
+            "z_lead": 0.0,
+            "vx": 0.0,
+            "vz": 0.0,
+            "sigma_m": 0.05,
+            "coast_age_ms": 0,
+            "cmd_vec": [0.0, 0.0, 0.0],
         }
         self.task: asyncio.Task[None] | None = None
         self.last_sequence = -1
@@ -168,13 +180,22 @@ class ArucoFollower:
     def metrics(self) -> dict:
         now = time.monotonic()
         recent = [t for t in self.completed_at if now - t < 3]
-        fps = (len(recent) - 1) / (recent[-1] - recent[0]) if len(recent) > 1 and now - recent[-1] < 0.5 else 0.0
-        return {"aruco_fps": round(fps, 1), "aruco_processing_ms": round(self.processing_ms, 1),
-                "aruco_decode_ms": round(self.decode_ms, 1), "aruco_skipped_frames": self.skipped_frames,
-                "aruco_result_age_ms": round((now - self.source_at) * 1000) if self.source_at else None}
+        fps = (
+            (len(recent) - 1) / (recent[-1] - recent[0])
+            if len(recent) > 1 and now - recent[-1] < 0.5
+            else 0.0
+        )
+        return {
+            "aruco_fps": round(fps, 1),
+            "aruco_processing_ms": round(self.processing_ms, 1),
+            "aruco_decode_ms": round(self.decode_ms, 1),
+            "aruco_skipped_frames": self.skipped_frames,
+            "aruco_result_age_ms": round((now - self.source_at) * 1000) if self.source_at else None,
+        }
 
     def start(self) -> None:
         import cv2
+
         # Pi4 live-frame benchmark: two workers reduced median and p95 time
         # versus four while leaving CPU available for capture and controls.
         cv2.setNumThreads(2)
@@ -190,18 +211,26 @@ class ArucoFollower:
             except asyncio.CancelledError:
                 pass
 
-    async def configure(self, client_id: str, enabled: bool, follow: bool | None = None,
-                        speed_limit: int | None = None, follow_mode: str | None = None) -> None:
+    async def configure(
+        self,
+        client_id: str,
+        enabled: bool,
+        follow: bool | None = None,
+        speed_limit: int | None = None,
+        follow_mode: str | None = None,
+    ) -> None:
         if speed_limit is not None:
             if self.follow and self.owner != client_id:
                 raise PermissionError("only the follow controller can change speed")
-            if follow and (self.controller.state.owner != client_id or not self.controller.state.armed):
+            if follow and (
+                self.controller.state.owner != client_id or not self.controller.state.armed
+            ):
                 raise PermissionError("arm controls before enabling ArUco follow")
             self.follow_speed_limit = max(500, min(1800, int(speed_limit)))
         if follow_mode is not None:
             self.set_follow_mode(follow_mode)
         if follow:
-            if getattr(self.controller,"parking_active",False):
+            if getattr(self.controller, "parking_active", False):
                 raise PermissionError("stop parking before enabling follow")
             if self.controller.state.owner != client_id or not self.controller.state.armed:
                 raise PermissionError("arm controls before enabling ArUco follow")
@@ -225,9 +254,14 @@ class ArucoFollower:
         self.steering.reset()
         self.smooth_policy.reset()
         self.follow_debug = {
-            "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0,
-            "vx": 0.0, "vz": 0.0, "sigma_m": 0.05,
-            "coast_age_ms": 0, "cmd_vec": [0.0, 0.0, 0.0],
+            "mode": "IDLE",
+            "err_lead": 0.0,
+            "z_lead": 0.0,
+            "vx": 0.0,
+            "vz": 0.0,
+            "sigma_m": 0.05,
+            "coast_age_ms": 0,
+            "cmd_vec": [0.0, 0.0, 0.0],
         }
         self.sync_state()
         if was_following:
@@ -242,9 +276,14 @@ class ArucoFollower:
         self.steering.reset()
         self.smooth_policy.reset()
         self.follow_debug = {
-            "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0,
-            "vx": 0.0, "vz": 0.0, "sigma_m": 0.05,
-            "coast_age_ms": 0, "cmd_vec": [0.0, 0.0, 0.0],
+            "mode": "IDLE",
+            "err_lead": 0.0,
+            "z_lead": 0.0,
+            "vx": 0.0,
+            "vz": 0.0,
+            "sigma_m": 0.05,
+            "coast_age_ms": 0,
+            "cmd_vec": [0.0, 0.0, 0.0],
         }
         state = self.controller.state
         state.aruco_visible = False
@@ -285,7 +324,12 @@ class ArucoFollower:
 
     @staticmethod
     def from_points(
-        tag_id: int, points: Any, tracked: bool = False, source: str = "decode", age_s: float = 0.0, confidence: float = 1.0
+        tag_id: int,
+        points: Any,
+        tracked: bool = False,
+        source: str = "decode",
+        age_s: float = 0.0,
+        confidence: float = 1.0,
     ) -> Detection | None:
         import cv2
         import numpy as np
@@ -296,17 +340,35 @@ class ArucoFollower:
         if size_px < 7 or area < 35 or not cv2.isContourConvex(points.astype(np.float32)):
             return None
         center = points.mean(axis=0)
-        camera_matrix = np.array([[FOCAL_PX, 0, FRAME_WIDTH / 2], [0, FOCAL_PX, FRAME_HEIGHT / 2], [0, 0, 1]], dtype=np.float64)
-        half = TAG_SIZE_M / 2
-        object_points = np.array([[-half, half, 0], [half, half, 0], [half, -half, 0], [-half, -half, 0]], dtype=np.float32)
-        solved, rotation, translation = cv2.solvePnP(
-            object_points, points.astype(np.float32), camera_matrix, np.zeros(5), flags=cv2.SOLVEPNP_IPPE_SQUARE
+        camera_matrix = np.array(
+            [[FOCAL_PX, 0, FRAME_WIDTH / 2], [0, FOCAL_PX, FRAME_HEIGHT / 2], [0, 0, 1]],
+            dtype=np.float64,
         )
-        distance_m = float(np.linalg.norm(translation)) if solved and translation[2, 0] > 0 else TAG_SIZE_M * FOCAL_PX / size_px
+        half = TAG_SIZE_M / 2
+        object_points = np.array(
+            [[-half, half, 0], [half, half, 0], [half, -half, 0], [-half, -half, 0]],
+            dtype=np.float32,
+        )
+        solved, rotation, translation = cv2.solvePnP(
+            object_points,
+            points.astype(np.float32),
+            camera_matrix,
+            np.zeros(5),
+            flags=cv2.SOLVEPNP_IPPE_SQUARE,
+        )
+        distance_m = (
+            float(np.linalg.norm(translation))
+            if solved and translation[2, 0] > 0
+            else TAG_SIZE_M * FOCAL_PX / size_px
+        )
         reprojection = None
         if solved and translation[2, 0] > 0:
-            projected, _ = cv2.projectPoints(object_points, rotation, translation, camera_matrix, np.zeros(5))
-            reprojection = float(np.sqrt(np.mean(np.sum((projected.reshape(4, 2)-points)**2, axis=1))))
+            projected, _ = cv2.projectPoints(
+                object_points, rotation, translation, camera_matrix, np.zeros(5)
+            )
+            reprojection = float(
+                np.sqrt(np.mean(np.sum((projected.reshape(4, 2) - points) ** 2, axis=1)))
+            )
         return Detection(
             tag_id=tag_id,
             corners=[[float(x), float(y)] for x, y in points],
@@ -327,6 +389,7 @@ class ArucoFollower:
     @lru_cache(maxsize=1)
     def detector():
         import cv2
+
         dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         parameters = cv2.aruco.DetectorParameters()
         parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
@@ -347,6 +410,7 @@ class ArucoFollower:
     def detect_all(jpeg: bytes) -> list[Detection]:
         import cv2
         import numpy as np
+
         image = cv2.imdecode(np.frombuffer(jpeg, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
         return [] if image is None else ArucoFollower.detect_gray(image)
 
@@ -359,6 +423,7 @@ class ArucoFollower:
         error correction to compensate for missing image detail.
         """
         import cv2
+
         dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         detectors = []
         for window, constant in ((3, 2), (11, 0), (5, -2)):
@@ -376,6 +441,7 @@ class ArucoFollower:
     def detect_gray(image: Any, live_pass: int | None = None) -> list[Detection]:
         import cv2
         import numpy as np
+
         dictionary, parameters, detector = ArucoFollower.detector()
         if live_pass is not None:
             # Spread acquisition alternatives across fresh frames instead of
@@ -385,36 +451,54 @@ class ArucoFollower:
             pixels = image
             if which:
                 local, small, fine = ArucoFollower.low_light_detectors()
-                detector = (local, small, fine, small)[which-1]
+                detector = (local, small, fine, small)[which - 1]
                 if which == 1:
-                    pixels = cv2.createCLAHE(3., (8, 8)).apply(image)
+                    pixels = cv2.createCLAHE(3.0, (8, 8)).apply(image)
                 elif which == 4:
                     scale = 2
-                    pixels = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+                    pixels = cv2.resize(
+                        image, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC
+                    )
             quads, ids, rejected_live = detector.detectMarkers(pixels)
             result = []
             if ids is not None:
                 for quad, raw_id in zip(quads, ids.flatten()):
                     tag = int(raw_id)
                     if tag in ALLOWED_IDS:
-                        item = ArucoFollower.from_points(tag, quad.reshape(4, 2)/scale,
-                            source="decode" if which == 0 else "decode-low-light")
+                        item = ArucoFollower.from_points(
+                            tag,
+                            quad.reshape(4, 2) / scale,
+                            source="decode" if which == 0 else "decode-low-light",
+                        )
                         if item:
                             result.append(item)
             if which in (0, 1):
                 # Bent paper can supply a good outer contour but fail the
                 # planar bit grid. Boost contrast before border-based
                 # unbending; only a few large candidates are attempted.
-                boosted = pixels if which == 1 else cv2.convertScaleAbs(pixels, alpha=2.)
-                large = [q for q in rejected_live if abs(cv2.contourArea(q)) > 800
-                         and min(math.dist(q.reshape(4, 2)[i], q.reshape(4, 2)[(i+1)%4]) for i in range(4)) >= 24]
+                boosted = pixels if which == 1 else cv2.convertScaleAbs(pixels, alpha=2.0)
+                large = [
+                    q
+                    for q in rejected_live
+                    if abs(cv2.contourArea(q)) > 800
+                    and min(
+                        math.dist(q.reshape(4, 2)[i], q.reshape(4, 2)[(i + 1) % 4])
+                        for i in range(4)
+                    )
+                    >= 24
+                ]
                 large.sort(key=lambda q: abs(cv2.contourArea(q)), reverse=True)
                 seen = {item.tag_id for item in result}
-                for tag, points, errors in ArucoFollower.decode_rejected(boosted, large[:4], dictionary, 0):
+                for tag, points, errors in ArucoFollower.decode_rejected(
+                    boosted, large[:4], dictionary, 0
+                ):
                     if tag not in seen:
-                        item = ArucoFollower.from_points(tag, points, source="decode-curved", confidence=.9)
+                        item = ArucoFollower.from_points(
+                            tag, points, source="decode-curved", confidence=0.9
+                        )
                         if item:
-                            result.append(item); seen.add(tag)
+                            result.append(item)
+                            seen.add(tag)
             return sorted(result, key=lambda item: item.size_px, reverse=True)
         corners, ids, rejected = detector.detectMarkers(image)
         candidates: list[Detection] = []
@@ -427,8 +511,12 @@ class ArucoFollower:
                 points = raw_corners.reshape(4, 2)
                 height, width = image.shape[:2]
                 margin = parameters.minDistanceToBorder
-                if (points[:, 0].min() < margin or points[:, 1].min() < margin
-                        or points[:, 0].max() >= width - margin or points[:, 1].max() >= height - margin):
+                if (
+                    points[:, 0].min() < margin
+                    or points[:, 1].min() < margin
+                    or points[:, 0].max() >= width - margin
+                    or points[:, 1].max() >= height - margin
+                ):
                     continue
                 detection = ArucoFollower.from_points(tag_id, points)
                 if detection:
@@ -441,18 +529,24 @@ class ArucoFollower:
         # keep this cheap fallback from turning arbitrary rectangles into IDs.
         height, width = image.shape[:2]
         # Do not let fallback decoding bypass the detector's quiet-zone gate.
-        rejected = [quad for quad in rejected
-                    if np.all(quad[..., 0] >= parameters.minDistanceToBorder)
-                    and np.all(quad[..., 1] >= parameters.minDistanceToBorder)
-                    and np.all(quad[..., 0] < width - parameters.minDistanceToBorder)
-                    and np.all(quad[..., 1] < height - parameters.minDistanceToBorder)]
+        rejected = [
+            quad
+            for quad in rejected
+            if np.all(quad[..., 0] >= parameters.minDistanceToBorder)
+            and np.all(quad[..., 1] >= parameters.minDistanceToBorder)
+            and np.all(quad[..., 0] < width - parameters.minDistanceToBorder)
+            and np.all(quad[..., 1] < height - parameters.minDistanceToBorder)
+        ]
         for tag_id, points, distance in ArucoFollower.decode_rejected(
             image, rejected, dictionary, parameters.errorCorrectionRate
         ):
             if tag_id in found_ids:
                 continue
             detection = ArucoFollower.from_points(
-                tag_id, points, source="decode-fallback", confidence=max(0.75, 1.0 - 0.15 * distance)
+                tag_id,
+                points,
+                source="decode-fallback",
+                confidence=max(0.75, 1.0 - 0.15 * distance),
             )
             if detection:
                 candidates.append(detection)
@@ -460,7 +554,7 @@ class ArucoFollower:
         # Bounded extra passes retain small markers even when another, larger
         # marker is already visible. Their identities require exact bit reads.
         local, small, fine = ArucoFollower.low_light_detectors()
-        enhanced = cv2.createCLAHE(3., (8, 8)).apply(image)
+        enhanced = cv2.createCLAHE(3.0, (8, 8)).apply(image)
         passes = [(local, enhanced, 1, (0, 0)), (small, image, 1, (0, 0)), (fine, image, 1, (0, 0))]
         # Upsample only small rejected candidates, keeping Pi latency bounded.
         small_quads = [q for q in rejected if all(10 <= v <= 90 for v in cv2.boundingRect(q)[2:])]
@@ -468,9 +562,16 @@ class ArucoFollower:
             x, y, w, h = cv2.boundingRect(quad)
             if not (10 <= w <= 90 and 10 <= h <= 90):
                 continue
-            x0, y0 = max(0, x-8), max(0, y-8)
-            crop = image[y0:min(height, y+h+8), x0:min(width, x+w+8)]
-            passes.append((small, cv2.resize(crop, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC), 2, (x0, y0)))
+            x0, y0 = max(0, x - 8), max(0, y - 8)
+            crop = image[y0 : min(height, y + h + 8), x0 : min(width, x + w + 8)]
+            passes.append(
+                (
+                    small,
+                    cv2.resize(crop, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC),
+                    2,
+                    (x0, y0),
+                )
+            )
         for decoder, pixels, scale, offset in passes:
             extra_corners, extra_ids, _ = decoder.detectMarkers(pixels)
             if extra_ids is None:
@@ -479,7 +580,11 @@ class ArucoFollower:
                 tag_id = int(raw_id)
                 if tag_id not in ALLOWED_IDS or tag_id in found_ids:
                     continue
-                detection = ArucoFollower.from_points(tag_id, quad.reshape(4, 2) / scale + np.asarray(offset, dtype=np.float32), source="decode-low-light")
+                detection = ArucoFollower.from_points(
+                    tag_id,
+                    quad.reshape(4, 2) / scale + np.asarray(offset, dtype=np.float32),
+                    source="decode-low-light",
+                )
                 if detection:
                     candidates.append(detection)
                     found_ids.add(tag_id)
@@ -492,7 +597,9 @@ class ArucoFollower:
                     tag_id = int(raw_id)
                     if tag_id not in ALLOWED_IDS or tag_id in found_ids:
                         continue
-                    detection = ArucoFollower.from_points(tag_id, quad.reshape(4, 2)/2, source="decode-low-light")
+                    detection = ArucoFollower.from_points(
+                        tag_id, quad.reshape(4, 2) / 2, source="decode-low-light"
+                    )
                     if detection:
                         candidates.append(detection)
                         found_ids.add(tag_id)
@@ -516,8 +623,8 @@ class ArucoFollower:
                 for row in range(4):
                     for col in range(4):
                         patch = marker[
-                            (row + 1) * cell_size + 4:(row + 1) * cell_size + 12,
-                            (col + 1) * cell_size + 4:(col + 1) * cell_size + 12,
+                            (row + 1) * cell_size + 4 : (row + 1) * cell_size + 12,
+                            (col + 1) * cell_size + 4 : (col + 1) * cell_size + 12,
                         ]
                         code[row, col] = int(float(patch.mean()) >= 127.5)
                 codebook.append((tag_id, code))
@@ -529,10 +636,18 @@ class ArucoFollower:
         decoded = []
         cell_size = 16
         destination = np.array(
-            [[0, 0], [cell_size * 6 - 1, 0], [cell_size * 6 - 1, cell_size * 6 - 1], [0, cell_size * 6 - 1]],
+            [
+                [0, 0],
+                [cell_size * 6 - 1, 0],
+                [cell_size * 6 - 1, cell_size * 6 - 1],
+                [0, cell_size * 6 - 1],
+            ],
             dtype=np.float32,
         )
-        max_errors = min(dictionary.maxCorrectionBits, round(dictionary.maxCorrectionBits * error_correction_rate))
+        max_errors = min(
+            dictionary.maxCorrectionBits,
+            round(dictionary.maxCorrectionBits * error_correction_rate),
+        )
         for raw in rejected:
             points = raw.reshape(4, 2).astype(np.float32)
             if not cv2.isContourConvex(points) or abs(float(cv2.contourArea(points))) < 100:
@@ -540,7 +655,9 @@ class ArucoFollower:
             if min(math.dist(points[i], points[(i + 1) % 4]) for i in range(4)) < 12:
                 continue
             warped = cv2.warpPerspective(
-                image, cv2.getPerspectiveTransform(points, destination), (cell_size * 6, cell_size * 6)
+                image,
+                cv2.getPerspectiveTransform(points, destination),
+                (cell_size * 6, cell_size * 6),
             )
             threshold, _ = cv2.threshold(warped, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
             if not 15 < threshold < 240:
@@ -548,19 +665,31 @@ class ArucoFollower:
             means = warped.reshape(6, cell_size, 6, cell_size)[:, 4:12, :, 4:12].mean(axis=(1, 3))
             tag_ids, references = _ARUCO_CODEBOOK
             match = ArucoFollower.decode_cells(means, threshold, references, max_errors)
-            if match is None and float(np.ptp(means)) >= 60 and min(
-                math.dist(points[i], points[(i + 1) % 4]) for i in range(4)
-            ) >= 24:
+            if (
+                match is None
+                and float(np.ptp(means)) >= 60
+                and min(math.dist(points[i], points[(i + 1) % 4]) for i in range(4)) >= 24
+            ):
                 # OpenCV normally refines corners after identifying the ID.
                 # For shallow views the raw contour corners can shift the
                 # projected cell centers enough to prevent that first decode.
                 refined = points.copy()
-                cv2.cornerSubPix(image, refined, (5, 5), (-1, -1),
-                                 (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 20, .03))
-                if (np.max(np.linalg.norm(refined - points, axis=1)) <= 8
-                        and cv2.isContourConvex(refined)):
-                    retry = cv2.warpPerspective(image, cv2.getPerspectiveTransform(refined, destination), (96, 96))
-                    retry_threshold, _ = cv2.threshold(retry, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+                cv2.cornerSubPix(
+                    image,
+                    refined,
+                    (5, 5),
+                    (-1, -1),
+                    (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 20, 0.03),
+                )
+                if np.max(np.linalg.norm(refined - points, axis=1)) <= 8 and cv2.isContourConvex(
+                    refined
+                ):
+                    retry = cv2.warpPerspective(
+                        image, cv2.getPerspectiveTransform(refined, destination), (96, 96)
+                    )
+                    retry_threshold, _ = cv2.threshold(
+                        retry, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU
+                    )
                     # Smaller cell-center windows avoid blurred cell edges.
                     retry_means = retry.reshape(6, 16, 6, 16)[:, 6:10, :, 6:10].mean(axis=(1, 3))
                     match = ArucoFollower.decode_cells(retry_means, retry_threshold, references, 0)
@@ -597,15 +726,24 @@ class ArucoFollower:
         if edges[1] + edges[3] > edges[0] + edges[2]:
             points = np.roll(points, 1, axis=0)
         destination = np.float32([[96, 96], [288, 96], [288, 288], [96, 288]])
-        warp = cv2.warpPerspective(image, cv2.getPerspectiveTransform(points, destination), (384, 384))
-        threshold, _ = cv2.threshold(warp[96:289, 96:289], 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        warp = cv2.warpPerspective(
+            image, cv2.getPerspectiveTransform(points, destination), (384, 384)
+        )
+        threshold, _ = cv2.threshold(
+            warp[96:289, 96:289], 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU
+        )
         if not 30 < threshold < 225:
             return None
-        count, labels, stats, _ = cv2.connectedComponentsWithStats((warp < threshold).astype(np.uint8))
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(
+            (warp < threshold).astype(np.uint8)
+        )
         # The black border is a connected component surrounded by a quiet zone.
-        candidates = [i for i in range(1, count)
-                      if 7000 < stats[i, cv2.CC_STAT_AREA] < 75000
-                      and np.count_nonzero(labels[96:289, 96:289] == i) > 6000]
+        candidates = [
+            i
+            for i in range(1, count)
+            if 7000 < stats[i, cv2.CC_STAT_AREA] < 75000
+            and np.count_nonzero(labels[96:289, 96:289] == i) > 6000
+        ]
         if len(candidates) != 1:
             return None
         component = labels == candidates[0]
@@ -618,7 +756,8 @@ class ArucoFollower:
             rows = np.flatnonzero(component[:, x])
             if not len(rows):
                 return None
-            tops.append(rows[0]); bottoms.append(rows[-1])
+            tops.append(rows[0])
+            bottoms.append(rows[-1])
         tops = cv2.GaussianBlur(np.float32(tops)[None], (9, 1), 2)[0]
         bottoms = cv2.GaussianBlur(np.float32(bottoms)[None], (9, 1), 2)[0]
         if np.min(bottoms - tops) < 100 or np.max(bottoms - tops) > 320:
@@ -632,40 +771,53 @@ class ArucoFollower:
         if not len(white) or np.percentile(white, 80) - np.median(black) < 60:
             return None
         if _ARUCO_CODEBOOK is None:
-            ArucoFollower.decode_rejected(image, [], dictionary, .8)
+            ArucoFollower.decode_rejected(image, [], dictionary, 0.8)
         tag_ids, references = _ARUCO_CODEBOOK
         codes = references.astype(bool)
         # Four samples per cell side, strictly within the central quarter.
         coords = (np.arange(6)[:, None] * 16 + np.arange(6, 10)[None]).reshape(-1) / 95
         u, v = np.meshgrid(coords, coords)
-        offsets_x, offsets_y = np.meshgrid(np.arange(-.08, .081, .02), np.arange(-.08, .081, .02))
-        ox = offsets_x.reshape(-1, 1, 1); oy = offsets_y.reshape(-1, 1, 1)
+        offsets_x, offsets_y = np.meshgrid(
+            np.arange(-0.08, 0.081, 0.02), np.arange(-0.08, 0.081, 0.02)
+        )
+        ox = offsets_x.reshape(-1, 1, 1)
+        oy = offsets_y.reshape(-1, 1, 1)
         sx = 97 + 190 * (u[None] + ox * 4 * u[None] * (1 - u[None]))
-        top = np.interp(sx, columns, tops); bottom = np.interp(sx, columns, bottoms)
+        top = np.interp(sx, columns, tops)
+        bottom = np.interp(sx, columns, bottoms)
         sy = top + (bottom - top) * (v[None] + oy * 4 * v[None] * (1 - v[None]))
         count = len(ox)
-        sampled = cv2.remap(warp, sx.astype(np.float32).reshape(-1, 24),
-                            sy.astype(np.float32).reshape(-1, 24), cv2.INTER_LINEAR)
+        sampled = cv2.remap(
+            warp,
+            sx.astype(np.float32).reshape(-1, 24),
+            sy.astype(np.float32).reshape(-1, 24),
+            cv2.INTER_LINEAR,
+        )
         cells = sampled.reshape(count, 6, 4, 6, 4).transpose(0, 1, 3, 2, 4).reshape(count, 6, 6, 16)
         means = cells.mean(axis=3)
         # Require separation in the actual cell pixels, not just cell averages.
         lows = np.percentile(cells[:, 1:5, 1:5], 20, axis=3)
         highs = np.percentile(cells[:, 1:5, 1:5], 80, axis=3)
-        border = np.concatenate((means[:, 0], means[:, -1], means[:, 1:-1, 0], means[:, 1:-1, -1]), axis=1)
+        border = np.concatenate(
+            (means[:, 0], means[:, -1], means[:, 1:-1, 0], means[:, 1:-1, -1]), axis=1
+        )
         lo = np.max(np.where(codes[None], -np.inf, highs[:, None, None]), axis=(3, 4))
         hi = np.min(np.where(codes[None], lows[:, None, None], np.inf), axis=(3, 4))
-        readable = hi - lo >= np.maximum(15., .12 * np.ptp(means, axis=(1, 2)))[:, None, None]
-        border_ok = np.count_nonzero(border[:, None, None] < ((lo + hi) / 2)[..., None], axis=3) >= 19
+        readable = hi - lo >= np.maximum(15.0, 0.12 * np.ptp(means, axis=(1, 2)))[:, None, None]
+        border_ok = (
+            np.count_nonzero(border[:, None, None] < ((lo + hi) / 2)[..., None], axis=3) >= 19
+        )
         support_counts = np.count_nonzero(readable & border_ok, axis=0)
-        matches = {(int(index), int(rotation)): int(support_counts[index, rotation])
-                   for index, rotation in np.argwhere(support_counts)}
+        matches = {
+            (int(index), int(rotation)): int(support_counts[index, rotation])
+            for index, rotation in np.argwhere(support_counts)
+        }
         if len(matches) != 1:
             return None
         (index, rotation), support = next(iter(matches.items()))
         if support < 3:
             return None
         return int(tag_ids[index]), np.roll(points, rotation, axis=0), 0
-
 
     @staticmethod
     def decode_cells(means, threshold, references, max_errors):
@@ -677,6 +829,7 @@ class ArucoFollower:
         alternate readings must have a measurable black/white intensity gap.
         """
         import numpy as np
+
         border = np.concatenate((means[0], means[-1], means[1:-1, 0], means[1:-1, -1]))
         inner = means[1:5, 1:5]
         bits = inner >= threshold
@@ -685,17 +838,22 @@ class ArucoFollower:
         order = np.argsort(best_per_id)
         best = int(order[0])
         distance = int(best_per_id[best])
-        if ((border < threshold).sum() >= 18 and distance <= max_errors
-                and (len(order) < 2 or best_per_id[order[1]] > distance + 1)):
+        if (
+            (border < threshold).sum() >= 18
+            and distance <= max_errors
+            and (len(order) < 2 or best_per_id[order[1]] > distance + 1)
+        ):
             return best, int(distances[best].argmin()), distance
 
         low, high = np.percentile(means, (10, 90))
         span = high - low
         if span < 40:
             return None
-        alternatives = threshold + span * np.array([-.24, -.16, -.08, .08, .16, .24])
+        alternatives = threshold + span * np.array([-0.24, -0.16, -0.08, 0.08, 0.16, 0.24])
         readings = inner[None, :, :] >= alternatives[:, None, None]
-        errors = np.count_nonzero(readings[:, None, None, :, :] != references[None, :, :, :, :], axis=(3, 4))
+        errors = np.count_nonzero(
+            readings[:, None, None, :, :] != references[None, :, :, :, :], axis=(3, 4)
+        )
         matches = set()
         for index, candidate_threshold in enumerate(alternatives):
             exact = np.argwhere(errors[index] == 0)
@@ -704,7 +862,7 @@ class ArucoFollower:
             white = readings[index]
             if not white.any() or white.all():
                 continue
-            if inner[white].min() - inner[~white].max() < max(6.0, .08 * span):
+            if inner[white].min() - inner[~white].max() < max(6.0, 0.08 * span):
                 continue
             matches.add(tuple(int(v) for v in exact[0]))
         if len(matches) == 1:
@@ -718,7 +876,9 @@ class ArucoFollower:
         return detections[0] if detections else None
 
     @staticmethod
-    def expanded_bbox(detection: Detection, width: int, height: int) -> tuple[float, float, float, float]:
+    def expanded_bbox(
+        detection: Detection, width: int, height: int
+    ) -> tuple[float, float, float, float]:
         xs = [point[0] for point in detection.corners]
         ys = [point[1] for point in detection.corners]
         box_width = max(24.0, (max(xs) - min(xs)) * 1.8)
@@ -746,9 +906,15 @@ class ArucoFollower:
             observed_y = (detection.center_y - memory.detection.center_y) / dt
             observed_size = (detection.size_px - memory.detection.size_px) / dt
             blend = 0.45
-            memory.velocity_x = max(-1800.0, min(1800.0, (1 - blend) * memory.velocity_x + blend * observed_x))
-            memory.velocity_y = max(-1800.0, min(1800.0, (1 - blend) * memory.velocity_y + blend * observed_y))
-            memory.velocity_size = max(-900.0, min(900.0, (1 - blend) * memory.velocity_size + blend * observed_size))
+            memory.velocity_x = max(
+                -1800.0, min(1800.0, (1 - blend) * memory.velocity_x + blend * observed_x)
+            )
+            memory.velocity_y = max(
+                -1800.0, min(1800.0, (1 - blend) * memory.velocity_y + blend * observed_y)
+            )
+            memory.velocity_size = max(
+                -900.0, min(900.0, (1 - blend) * memory.velocity_size + blend * observed_size)
+            )
         memory.detection = detection
         memory.updated_at = now
         if detection.source != "predict":
@@ -763,12 +929,18 @@ class ArucoFollower:
             return None
         old_x, old_y, old_w, old_h = memory.bbox
         new_x, new_y, new_w, new_h = bbox
-        if min(new_w, new_h) < 12 or not 0.45 <= new_w / old_w <= 2.2 or not 0.45 <= new_h / old_h <= 2.2:
+        if (
+            min(new_w, new_h) < 12
+            or not 0.45 <= new_w / old_w <= 2.2
+            or not 0.45 <= new_h / old_h <= 2.2
+        ):
             return None
         old_center = np.array([old_x + old_w / 2, old_y + old_h / 2], dtype=np.float32)
         new_center = np.array([new_x + new_w / 2, new_y + new_h / 2], dtype=np.float32)
         points = np.array(memory.detection.corners, dtype=np.float32)
-        points = (points - old_center) * np.array([new_w / old_w, new_h / old_h], dtype=np.float32) + new_center
+        points = (points - old_center) * np.array(
+            [new_w / old_w, new_h / old_h], dtype=np.float32
+        ) + new_center
         age = now - memory.decoded_at
         confidence = 0.72 * math.exp(-age / 0.75)
         return self.from_points(memory.detection.tag_id, points, True, source, age, confidence)
@@ -787,7 +959,7 @@ class ArucoFollower:
         # density. Re-running all full-frame fallbacks on every frame starves
         # tracking on a Pi and can make otherwise valid results stale.
         seeds = [m.detection for m in self.tracks.values()]
-        seeds += [d for d, stamp in self.pending_low_light.values() if now-stamp < 1.2]
+        seeds += [d for d, stamp in self.pending_low_light.values() if now - stamp < 1.2]
         seeds = [d for d in seeds if d.size_px < 60]
         measured = []
         if seeds:
@@ -803,12 +975,16 @@ class ArucoFollower:
             for seed in seeds[:8]:
                 pad = max(24, seed.size_px)
                 points = np.asarray(seed.corners)
-                x0 = max(0, int(points[:, 0].min()-pad)); y0 = max(0, int(points[:, 1].min()-pad))
-                x1 = min(gray.shape[1], int(points[:, 0].max()+pad)); y1 = min(gray.shape[0], int(points[:, 1].max()+pad))
+                x0 = max(0, int(points[:, 0].min() - pad))
+                y0 = max(0, int(points[:, 1].min() - pad))
+                x1 = min(gray.shape[1], int(points[:, 0].max() + pad))
+                y1 = min(gray.shape[0], int(points[:, 1].max() + pad))
                 if x1 <= x0 or y1 <= y0:
                     continue
                 scale = 3 if seed.size_px < 60 else 1
-                roi = cv2.resize(gray[y0:y1, x0:x1], None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+                roi = cv2.resize(
+                    gray[y0:y1, x0:x1], None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC
+                )
                 for constant in (-2, 0, 2, 4, 7):
                     p.adaptiveThreshConstant = constant
                     quads, ids, _ = cv2.aruco.ArucoDetector(dictionary, p).detectMarkers(roi)
@@ -819,9 +995,14 @@ class ArucoFollower:
                         # This local pass verifies the acquired identity.
                         if tag != seed.tag_id or tag in roi_ids:
                             continue
-                        item = self.from_points(tag, quad.reshape(4, 2)/scale + np.array([x0, y0], np.float32), source="decode-roi")
+                        item = self.from_points(
+                            tag,
+                            quad.reshape(4, 2) / scale + np.array([x0, y0], np.float32),
+                            source="decode-roi",
+                        )
                         if item:
-                            measured.append(item); roi_ids.add(tag)
+                            measured.append(item)
+                            roi_ids.add(tag)
         if not measured:
             full = self.detect_gray(gray, live_pass=self.live_decode_index)
             self.live_decode_index += 1
@@ -837,35 +1018,55 @@ class ArucoFollower:
             self.pending_low_light[item.tag_id] = (item, now)
             if previous is not None:
                 old, stamp = previous
-                if (now-stamp < 1.2 and math.hypot(item.center_x-old.center_x, item.center_y-old.center_y) < max(20., item.size_px)
-                        and .6 < item.size_px/old.size_px < 1.7):
+                if (
+                    now - stamp < 1.2
+                    and math.hypot(item.center_x - old.center_x, item.center_y - old.center_y)
+                    < max(20.0, item.size_px)
+                    and 0.6 < item.size_px / old.size_px < 1.7
+                ):
                     confirmed.append(item)
-        self.pending_low_light = {tag: value for tag, value in self.pending_low_light.items() if now-value[1] < 1.2}
+        self.pending_low_light = {
+            tag: value for tag, value in self.pending_low_light.items() if now - value[1] < 1.2
+        }
         measured = confirmed
         by_id = {item.tag_id: item for item in measured}
 
         flow_candidates: dict[int, Detection] = {}
 
-        old_ids = [tag_id for tag_id, memory in self.tracks.items()
-                   if tag_id not in by_id and now - memory.decoded_at <= 0.65]
+        old_ids = [
+            tag_id
+            for tag_id, memory in self.tracks.items()
+            if tag_id not in by_id and now - memory.decoded_at <= 0.65
+        ]
         if self.previous_gray is not None and old_ids:
             old_points = np.array(
-                [[point for point in self.tracks[tag_id].detection.corners] for tag_id in old_ids], dtype=np.float32
+                [[point for point in self.tracks[tag_id].detection.corners] for tag_id in old_ids],
+                dtype=np.float32,
             ).reshape(-1, 1, 2)
             initial_points = old_points.copy()
             for index, tag_id in enumerate(old_ids):
                 memory = self.tracks[tag_id]
                 dt = now - memory.updated_at
-                initial_points[index * 4:(index + 1) * 4, 0, 0] += memory.velocity_x * dt
-                initial_points[index * 4:(index + 1) * 4, 0, 1] += memory.velocity_y * dt
+                initial_points[index * 4 : (index + 1) * 4, 0, 0] += memory.velocity_x * dt
+                initial_points[index * 4 : (index + 1) * 4, 0, 1] += memory.velocity_y * dt
             new_points, forward_ok, _ = cv2.calcOpticalFlowPyrLK(
-                self.previous_gray, gray, old_points, initial_points, winSize=(35, 35), maxLevel=4,
+                self.previous_gray,
+                gray,
+                old_points,
+                initial_points,
+                winSize=(35, 35),
+                maxLevel=4,
                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 20, 0.03),
                 flags=cv2.OPTFLOW_USE_INITIAL_FLOW,
             )
             if new_points is not None:
                 back_points, backward_ok, _ = cv2.calcOpticalFlowPyrLK(
-                    gray, self.previous_gray, new_points, None, winSize=(35, 35), maxLevel=4,
+                    gray,
+                    self.previous_gray,
+                    new_points,
+                    None,
+                    winSize=(35, 35),
+                    maxLevel=4,
                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 20, 0.03),
                 )
                 for index, tag_id in enumerate(old_ids):
@@ -873,12 +1074,22 @@ class ArucoFollower:
                     if tag_id in by_id or now - memory.decoded_at > 0.65:
                         continue
                     sl = slice(index * 4, index * 4 + 4)
-                    valid = forward_ok[sl].all() and backward_ok is not None and backward_ok[sl].all()
-                    fb_error = float(np.max(np.linalg.norm(old_points[sl] - back_points[sl], axis=2))) if back_points is not None else 999
+                    valid = (
+                        forward_ok[sl].all() and backward_ok is not None and backward_ok[sl].all()
+                    )
+                    fb_error = (
+                        float(np.max(np.linalg.norm(old_points[sl] - back_points[sl], axis=2)))
+                        if back_points is not None
+                        else 999
+                    )
                     if valid and fb_error <= 4.0:
                         age = now - memory.decoded_at
                         tracked = self.from_points(
-                            tag_id, new_points[sl].reshape(4, 2), True, "flow", age,
+                            tag_id,
+                            new_points[sl].reshape(4, 2),
+                            True,
+                            "flow",
+                            age,
                             0.88 * math.exp(-age / 0.65),
                         )
                         if tracked:
@@ -904,7 +1115,11 @@ class ArucoFollower:
                 continue
             correlation: Detection | None = None
             correlation_bbox: tuple[float, float, float, float] | None = None
-            if tag_id not in flow_candidates and self.previous_gray is not None and now - memory.decoded_at <= 0.85:
+            if (
+                tag_id not in flow_candidates
+                and self.previous_gray is not None
+                and now - memory.decoded_at <= 0.85
+            ):
                 # Bound MOSSE's FFT cost even for large/nearby marker boxes.
                 scale = 0.25
                 if memory.tracker is None and memory.bbox is not None:
@@ -912,15 +1127,23 @@ class ArucoFollower:
                         cv2.resize(self.previous_gray, None, fx=scale, fy=scale),
                         tuple(v * scale for v in memory.bbox),
                     )
-                ok, raw_bbox = memory.tracker.update(cv2.resize(gray, None, fx=scale, fy=scale)) if memory.tracker is not None else (False, None)
+                ok, raw_bbox = (
+                    memory.tracker.update(cv2.resize(gray, None, fx=scale, fy=scale))
+                    if memory.tracker is not None
+                    else (False, None)
+                )
                 if ok:
                     correlation_bbox = tuple(float(value) / scale for value in raw_bbox)
-                    correlation = self.transform_from_bbox(memory, correlation_bbox, "correlation", now)
+                    correlation = self.transform_from_bbox(
+                        memory, correlation_bbox, "correlation", now
+                    )
             selected = flow_candidates.get(tag_id) or correlation
             if selected is None and now - memory.decoded_at <= 1.0:
                 dt = now - memory.updated_at
                 old_points = np.array(memory.detection.corners, dtype=np.float32)
-                center = np.array([memory.detection.center_x, memory.detection.center_y], dtype=np.float32)
+                center = np.array(
+                    [memory.detection.center_x, memory.detection.center_y], dtype=np.float32
+                )
                 predicted_size = max(7.0, memory.detection.size_px + memory.velocity_size * dt)
                 scale = predicted_size / memory.detection.size_px
                 shift = np.array([memory.velocity_x * dt, memory.velocity_y * dt], dtype=np.float32)
@@ -988,7 +1211,14 @@ class ArucoFollower:
                 continue
             parking = getattr(self.controller, "parking", None)
             if parking is not None:
-                await asyncio.to_thread(parking.update, detections, self.controller.state, captured_at, completed, self.previous_gray)
+                await asyncio.to_thread(
+                    parking.update,
+                    detections,
+                    self.controller.state,
+                    captured_at,
+                    completed,
+                    self.previous_gray,
+                )
                 if not self.enabled:
                     continue
             if not detections:
@@ -1022,17 +1252,30 @@ class ArucoFollower:
             state.aruco_error_x = round(error_x, 3)
             state.aruco_corners = detection.corners
             state.aruco_markers = [
-                {"id": item.tag_id, "distance_m": round(item.distance_m, 3), "corners": item.corners,
-                 "target": item.tag_id == detection.tag_id, "tracked": item.tracked,
-                 "source": item.source, "age_ms": round(item.age_s * 1000), "confidence": round(item.confidence, 2)}
+                {
+                    "id": item.tag_id,
+                    "distance_m": round(item.distance_m, 3),
+                    "corners": item.corners,
+                    "target": item.tag_id == detection.tag_id,
+                    "tracked": item.tracked,
+                    "source": item.source,
+                    "age_ms": round(item.age_s * 1000),
+                    "confidence": round(item.confidence, 2),
+                }
                 for item in detections
             ]
             for marker, item in zip(state.aruco_markers, detections):
-                marker.update(rotation_vector=item.rotation_vector, translation_vector=item.translation_vector,
-                              reprojection_error_px=item.reprojection_error_px)
+                marker.update(
+                    rotation_vector=item.rotation_vector,
+                    translation_vector=item.translation_vector,
+                    reprojection_error_px=item.reprojection_error_px,
+                )
             state.aruco_status = (
-                "target-reached" if filtered_distance <= TARGET_DISTANCE_M else
-                "tracking" if detection.source == "decode" else f"tracking-{detection.source}"
+                "target-reached"
+                if filtered_distance <= TARGET_DISTANCE_M
+                else "tracking"
+                if detection.source == "decode"
+                else f"tracking-{detection.source}"
             )
             self.sync_state()
             if not self.follow:
@@ -1052,32 +1295,48 @@ class ArucoFollower:
                 yaw_rate = 0.0
             if self.smooth_enabled():
                 command = self.smooth_policy.step(
-                    error_x, filtered_distance, completed, yaw_rate_dps=yaw_rate)
+                    error_x, filtered_distance, completed, yaw_rate_dps=yaw_rate
+                )
                 self.follow_debug = dict(self.smooth_policy.debug)
                 self.follow_debug["cmd_vec"] = [
-                    round(command.forward, 4), round(command.strafe, 4),
-                    round(command.turn, 4)]
+                    round(command.forward, 4),
+                    round(command.strafe, 4),
+                    round(command.turn, 4),
+                ]
                 state.aruco_status = (
                     f"follow-{self.smooth_policy.mode.lower()}"
-                    if command.reason.startswith("smooth-") else state.aruco_status)
+                    if command.reason.startswith("smooth-")
+                    else state.aruco_status
+                )
                 if command.reason == "smooth-target-reached":
                     state.aruco_status = "target-reached"
                 if not command.forward and not command.strafe and not command.turn:
                     await self.controller.stop(command.reason, release=False)
                 else:
                     await self.controller.drive(
-                        self.owner, command.forward, command.strafe, command.turn,
-                        self.follow_speed_limit, autonomous=True, duration=None)
+                        self.owner,
+                        command.forward,
+                        command.strafe,
+                        command.turn,
+                        self.follow_speed_limit,
+                        autonomous=True,
+                        duration=None,
+                    )
                 continue
             command = self.steering.step(error_x, filtered_distance, completed, captured_at)
             self.follow_debug = {
                 "mode": "TRACK" if self.follow else "IDLE",
                 "err_lead": round(error_x, 4),
                 "z_lead": round(filtered_distance, 4),
-                "vx": 0.0, "vz": 0.0,
-                "sigma_m": 0.05, "coast_age_ms": 0,
-                "cmd_vec": [round(command.forward, 4) if command else 0.0, 0.0,
-                            round(command.turn, 4) if command else 0.0],
+                "vx": 0.0,
+                "vz": 0.0,
+                "sigma_m": 0.05,
+                "coast_age_ms": 0,
+                "cmd_vec": [
+                    round(command.forward, 4) if command else 0.0,
+                    0.0,
+                    round(command.turn, 4) if command else 0.0,
+                ],
             }
             if self.steering.centering:
                 state.aruco_status = "centering"
@@ -1086,9 +1345,15 @@ class ArucoFollower:
             elif not command.forward and not command.turn:
                 await self.controller.stop(command.reason, release=False)
             else:
-                await self.controller.drive(self.owner, command.forward, 0.0, command.turn,
-                                            self.follow_speed_limit, autonomous=True,
-                                            duration=command.duration)
+                await self.controller.drive(
+                    self.owner,
+                    command.forward,
+                    0.0,
+                    command.turn,
+                    self.follow_speed_limit,
+                    autonomous=True,
+                    duration=command.duration,
+                )
 
 
 def state_defaults() -> dict[str, Any]:

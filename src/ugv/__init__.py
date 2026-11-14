@@ -195,7 +195,9 @@ def led_test_gpio18(brightness: int, dwell: float) -> int:
     import os
 
     if os.geteuid() != 0:
-        raise SystemExit("refused: GPIO18 WS2812 driver requires root; use sudo .venv/bin/ugv led-test-gpio18")
+        raise SystemExit(
+            "refused: GPIO18 WS2812 driver requires root; use sudo .venv/bin/ugv led-test-gpio18"
+        )
 
     from rpi_ws281x import Color, PixelStrip
 

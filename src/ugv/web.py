@@ -21,7 +21,8 @@ from .parking import ParkingEstimator, Pose2, DockingFeedback, gear_obstacles
 from .perf import PerfMonitor
 
 STATIC = Path(__file__).parent / "static"
-WATCHDOG_SECONDS = .60
+WATCHDOG_SECONDS = 0.60
+
 
 @dataclass
 class RobotState:
@@ -68,10 +69,18 @@ class RobotState:
     tick_ms: float | None = None
     aruco_age_ms: int | None = None
     imu_bias_dps: dict[str, float] = field(default_factory=lambda: {axis: 0.0 for axis in "xyz"})
-    follow_debug: dict = field(default_factory=lambda: {
-        "mode": "IDLE", "err_lead": 0.0, "z_lead": 0.0, "vx": 0.0,
-        "vz": 0.0, "sigma_m": 0.05, "coast_age_ms": 0,
-        "cmd_vec": [0.0, 0.0, 0.0]})
+    follow_debug: dict = field(
+        default_factory=lambda: {
+            "mode": "IDLE",
+            "err_lead": 0.0,
+            "z_lead": 0.0,
+            "vx": 0.0,
+            "vz": 0.0,
+            "sigma_m": 0.05,
+            "coast_age_ms": 0,
+            "cmd_vec": [0.0, 0.0, 0.0],
+        }
+    )
     rls_scale: float = 1.0
     joystick_deadzone: float = 0.08
     sysid_ready: bool = False
@@ -81,12 +90,17 @@ class RobotState:
     auto_park_pose: list[float] | None = None
     perf: dict[str, Any] = field(default_factory=dict)
 
+
 class CameraStream:
     def __init__(self):
-        self.frame: bytes | None = None; self.seq = 0
-        self.received_at = 0.0; self.frame_times = deque(maxlen=90)
-        self.cv = threading.Condition(); self.stop = threading.Event()
-        self.process = None; self.thread = None
+        self.frame: bytes | None = None
+        self.seq = 0
+        self.received_at = 0.0
+        self.frame_times = deque(maxlen=90)
+        self.cv = threading.Condition()
+        self.stop = threading.Event()
+        self.process = None
+        self.thread = None
         self.enabled = True
 
     def start(self):
@@ -94,17 +108,39 @@ class CameraStream:
         self.thread.start()
 
     def _run(self):
-        cmd = ["rpicam-vid", "--timeout", "0", "--nopreview", "--codec", "mjpeg",
-               "--width", "1280", "--height", "720", "--framerate", "30",
-               "--quality", os.environ.get("UGV_CAMERA_JPEG_QUALITY", "95"), "--shutter", os.environ.get("UGV_CAMERA_SHUTTER_US", "8000"),
-               "--gain", os.environ.get("UGV_CAMERA_GAIN", "1.5"), "--denoise", "cdn_off",
-               "--flush", "--output", "-"]
+        cmd = [
+            "rpicam-vid",
+            "--timeout",
+            "0",
+            "--nopreview",
+            "--codec",
+            "mjpeg",
+            "--width",
+            "1280",
+            "--height",
+            "720",
+            "--framerate",
+            "30",
+            "--quality",
+            os.environ.get("UGV_CAMERA_JPEG_QUALITY", "95"),
+            "--shutter",
+            os.environ.get("UGV_CAMERA_SHUTTER_US", "8000"),
+            "--gain",
+            os.environ.get("UGV_CAMERA_GAIN", "1.5"),
+            "--denoise",
+            "cdn_off",
+            "--flush",
+            "--output",
+            "-",
+        ]
         while not self.stop.is_set():
             if not self.enabled:
-                self.stop.wait(.25)
+                self.stop.wait(0.25)
                 continue
             try:
-                self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                self.process = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+                )
                 buf = bytearray()
                 last_frame_at = time.monotonic()
                 received_frame = False
@@ -115,7 +151,7 @@ class CameraStream:
                     frame_timeout = 2.0 if received_frame else 5.0
                     if time.monotonic() - last_frame_at > frame_timeout:
                         break
-                    ready, _, _ = select.select([self.process.stdout], [], [], .25)
+                    ready, _, _ = select.select([self.process.stdout], [], [], 0.25)
                     if not ready:
                         continue
                     chunk = os.read(self.process.stdout.fileno(), 65536)
@@ -123,25 +159,34 @@ class CameraStream:
                         break
                     buf.extend(chunk)
                     while True:
-                        a = buf.find(b"\xff\xd8"); b = buf.find(b"\xff\xd9", a + 2) if a >= 0 else -1
+                        a = buf.find(b"\xff\xd8")
+                        b = buf.find(b"\xff\xd9", a + 2) if a >= 0 else -1
                         if a < 0 or b < 0:
-                            if len(buf) > 2_000_000: del buf[:-2]
+                            if len(buf) > 2_000_000:
+                                del buf[:-2]
                             break
-                        frame = bytes(buf[a:b + 2]); del buf[:b + 2]
+                        frame = bytes(buf[a : b + 2])
+                        del buf[: b + 2]
                         last_frame_at = time.monotonic()
                         received_frame = True
                         with self.cv:
-                            if not self.enabled: break
-                            self.received_at = time.monotonic(); self.frame_times.append(self.received_at)
-                            self.frame = frame; self.seq += 1; self.cv.notify_all()
-            except Exception: pass
+                            if not self.enabled:
+                                break
+                            self.received_at = time.monotonic()
+                            self.frame_times.append(self.received_at)
+                            self.frame = frame
+                            self.seq += 1
+                            self.cv.notify_all()
+            except Exception:
+                pass
             finally:
                 if self.process:
                     self.process.terminate()
                     try:
                         self.process.wait(timeout=2)
                     except subprocess.TimeoutExpired:
-                        self.process.kill(); self.process.wait()
+                        self.process.kill()
+                        self.process.wait()
                     self.process = None
             self.stop.wait(1)
 
@@ -158,11 +203,17 @@ class CameraStream:
         while not self.stop.is_set():
             with self.cv:
                 self.cv.wait_for(lambda: self.seq != seen or self.stop.is_set(), timeout=2)
-                if self.stop.is_set(): return
-                if self.seq == seen: continue
+                if self.stop.is_set():
+                    return
+                if self.seq == seen:
+                    continue
                 frame, seen = self.frame, self.seq
             if frame:
-                yield b"--frame\r\nContent-Type: image/jpeg\r\nCache-Control: no-store\r\n\r\n" + frame + b"\r\n"
+                yield (
+                    b"--frame\r\nContent-Type: image/jpeg\r\nCache-Control: no-store\r\n\r\n"
+                    + frame
+                    + b"\r\n"
+                )
 
     def latest(self) -> tuple[bytes | None, int]:
         with self.cv:
@@ -177,28 +228,44 @@ class CameraStream:
             now = time.monotonic()
             recent = [t for t in self.frame_times if now - t < 3]
             age = now - self.received_at if self.received_at else None
-            fps = (len(recent) - 1) / (recent[-1] - recent[0]) if len(recent) > 1 and age < 0.5 else 0.0
-            return {"camera_enabled": self.enabled, "camera_fps": round(fps, 1), "camera_frame_age_ms": round(age * 1000) if age is not None else None,
-                    "camera_sequence": self.seq}
+            fps = (
+                (len(recent) - 1) / (recent[-1] - recent[0])
+                if len(recent) > 1 and age < 0.5
+                else 0.0
+            )
+            return {
+                "camera_enabled": self.enabled,
+                "camera_fps": round(fps, 1),
+                "camera_frame_age_ms": round(age * 1000) if age is not None else None,
+                "camera_sequence": self.seq,
+            }
 
     def close(self):
         self.stop.set()
-        with self.cv: self.cv.notify_all()
-        if self.process: self.process.terminate()
-        if self.thread: self.thread.join(timeout=3)
+        with self.cv:
+            self.cv.notify_all()
+        if self.process:
+            self.process.terminate()
+        if self.thread:
+            self.thread.join(timeout=3)
+
 
 class RobotController:
     def __init__(self):
-        self.state = RobotState(); self.bus = None
-        self.lock = asyncio.Lock(); self.hw_lock = threading.RLock()
-        self.clients = {}; self.last_drive = 0.0
-        self.guard_stop = threading.Event(); self.guard_thread = None
+        self.state = RobotState()
+        self.bus = None
+        self.lock = asyncio.Lock()
+        self.hw_lock = threading.RLock()
+        self.clients = {}
+        self.last_drive = 0.0
+        self.guard_stop = threading.Event()
+        self.guard_thread = None
         self.motion = GyroMotion()
         self.motion_task: asyncio.Task | None = None
         self.last_operator_command = 0.0
         self.last_pwm_at = time.monotonic()
         self.drive_deadline: float | None = None
-        self.calibration_up = (0.,0.,1.)
+        self.calibration_up = (0.0, 0.0, 1.0)
         self.imu_sample_at: float | None = None
         self.heading = RelativeHeading()
         self.dynamics = DynamicsTelemetry()
@@ -229,7 +296,9 @@ class RobotController:
         self.state.imu_status = "streaming"
         self.imu_sample_at = time.monotonic()
         self.dynamics.append(self.imu_sample_at, acceleration, gyroscope, self.state)
-        estimate = self.heading.update(acceleration, gyroscope, self.imu_sample_at, moving=not self.state.stopped)
+        estimate = self.heading.update(
+            acceleration, gyroscope, self.imu_sample_at, moving=not self.state.stopped
+        )
         for key, value in estimate.items():
             setattr(self.state, key, value)
 
@@ -243,26 +312,37 @@ class RobotController:
             self.state.heading_rate_dps = 0.0
 
     async def start(self):
-        self.bus = SMBus(1); self.bus.read_byte_data(0x40, 0); _configure_pca9685(self.bus); _stop_wheels(self.bus)
+        self.bus = SMBus(1)
+        self.bus.read_byte_data(0x40, 0)
+        _configure_pca9685(self.bus)
+        _stop_wheels(self.bus)
         self.state.connected = True
         self.guard_thread = threading.Thread(target=self._guard, daemon=True, name="motor-deadman")
         self.guard_thread.start()
         self.motion_task = asyncio.create_task(self._motion_loop(), name="gyro-drive")
 
     def _imu_ready(self, now):
-        return (self.state.imu_connected and self.state.heading_calibrated
-                and self.imu_sample_at is not None and now - self.imu_sample_at <= .15)
+        return (
+            self.state.imu_connected
+            and self.state.heading_calibrated
+            and self.imu_sample_at is not None
+            and now - self.imu_sample_at <= 0.15
+        )
 
     def _brake_locked(self, reason, release=False):
         self.drive_deadline = None
         self.motion.cancel()
-        if self.bus: _stop_wheels(self.bus)
+        if self.bus:
+            _stop_wheels(self.bus)
         self.state.forward = self.state.strafe = self.state.turn = self.state.turn_target_dps = 0
         self.state.wheels = {n: 0 for n in WHEEL_CHANNELS}
-        self.state.stopped = True; self.state.motion_mode = "idle"
-        self.state.reason = reason; self.state.revision += 1
+        self.state.stopped = True
+        self.state.motion_mode = "idle"
+        self.state.reason = reason
+        self.state.revision += 1
         if release:
-            self.state.armed = False; self.state.owner = None
+            self.state.armed = False
+            self.state.owner = None
 
     def _guard_check(self, now):
         with self.hw_lock:
@@ -291,9 +371,15 @@ class RobotController:
                 return
             reason = None
             if self.state.auto_park:
-                imu_age = (now - self.imu_sample_at) if (
-                    self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None
-                ) else None
+                imu_age = (
+                    (now - self.imu_sample_at)
+                    if (
+                        self.state.imu_connected
+                        and self.state.heading_calibrated
+                        and self.imu_sample_at is not None
+                    )
+                    else None
+                )
                 try:
                     cam_age_ms = camera.metrics().get("camera_frame_age_ms")
                 except Exception:
@@ -311,55 +397,76 @@ class RobotController:
             if reason:
                 self._brake_locked(reason, release=False)
                 return
-            if self.parking_active and (not self._imu_ready(now) or now-self.parking.last_localized>.30):
+            if self.parking_active and (
+                not self._imu_ready(now) or now - self.parking.last_localized > 0.30
+            ):
                 self.parking_active = False
                 reason = "parking-sensors-stale"
             elif self.drive_deadline is not None and now >= self.drive_deadline:
-                reason = "calibration-pulse-complete" if self.state.motion_mode == "calibration" else "aruco-pivot-complete"
+                reason = (
+                    "calibration-pulse-complete"
+                    if self.state.motion_mode == "calibration"
+                    else "aruco-pivot-complete"
+                )
             elif self.state.motion_mode == "calibration" and not self._imu_ready(now):
                 reason = "calibration-imu-stale"
             elif self.state.motion_mode == "calibration":
-                gyro=tuple(self.state.imu_gyro_dps[a] for a in 'xyz')
-                yaw=sum(a*b for a,b in zip(gyro,self.calibration_up))
-                tilt=math.sqrt(max(0,sum(v*v for v in gyro)-yaw*yaw))
-                if not all(math.isfinite(v) for v in gyro) or abs(yaw)>850 or tilt>180:
-                    reason="calibration-sensor-motion-limit"
+                gyro = tuple(self.state.imu_gyro_dps[a] for a in "xyz")
+                yaw = sum(a * b for a, b in zip(gyro, self.calibration_up))
+                tilt = math.sqrt(max(0, sum(v * v for v in gyro) - yaw * yaw))
+                if not all(math.isfinite(v) for v in gyro) or abs(yaw) > 850 or tilt > 180:
+                    reason = "calibration-sensor-motion-limit"
             elif self.motion.mode and now - self.last_operator_command > WATCHDOG_SECONDS:
                 reason = "input-watchdog"
             elif self.motion.requires_gyro and not self._imu_ready(now):
                 reason = "gyro-unavailable"
             elif not self.state.stopped and now - self.last_drive > WATCHDOG_SECONDS:
                 reason = "watchdog"
-            if reason: self._brake_locked(reason, release=reason in ("calibration-imu-stale","calibration-sensor-motion-limit"))
+            if reason:
+                self._brake_locked(
+                    reason,
+                    release=reason in ("calibration-imu-stale", "calibration-sensor-motion-limit"),
+                )
 
     def _guard(self):
-        while not self.guard_stop.wait(.01):
+        while not self.guard_stop.wait(0.01):
             self._guard_check(time.monotonic())
 
     async def _motion_loop(self):
         broadcast_at = 0.0
         while True:
-            await asyncio.sleep(.02)
+            await asyncio.sleep(0.02)
             async with self.lock:
                 with self.hw_lock:
-                    if not self.motion.mode or not self.state.armed: continue
+                    if not self.motion.mode or not self.state.armed:
+                        continue
                     now = time.monotonic()
                     try:
                         tick0 = time.perf_counter()
-                        output = self.motion.step(now, self.state.heading_deg,
-                                                  self.state.heading_rate_dps, self._imu_ready(now))
+                        output = self.motion.step(
+                            now,
+                            self.state.heading_deg,
+                            self.state.heading_rate_dps,
+                            self._imu_ready(now),
+                        )
                         self.tick_ms = round((time.perf_counter() - tick0) * 1000, 3)
                         self.state.tick_ms = self.tick_ms
-                        if output is None: continue
+                        if output is None:
+                            continue
                         self.state.motion_mode = self.motion.mode
                         self.state.turn_target_dps = output.target_rate
-                        self._apply_vector(output.forward, output.turn, output.limit, output.reason,
-                                           smooth=bool(output.forward or output.turn))
+                        self._apply_vector(
+                            output.forward,
+                            output.turn,
+                            output.limit,
+                            output.reason,
+                            smooth=bool(output.forward or output.turn),
+                        )
                     except MotionFault as error:
                         self._brake_locked(str(error), True)
                     except Exception:
                         self._brake_locked("motor-control-error", True)
-            if now - broadcast_at >= .10:
+            if now - broadcast_at >= 0.10:
                 broadcast_at = now
                 await self.broadcast()
 
@@ -368,19 +475,26 @@ class RobotController:
         await self.cancel_parking("shutdown")
         if self.motion_task:
             self.motion_task.cancel()
-            try: await self.motion_task
-            except asyncio.CancelledError: pass
+            try:
+                await self.motion_task
+            except asyncio.CancelledError:
+                pass
         self.guard_stop.set()
-        if self.guard_thread: self.guard_thread.join(timeout=1)
+        if self.guard_thread:
+            self.guard_thread.join(timeout=1)
         await self.stop("shutdown", True)
-        if self.bus: self.bus.close(); self.bus = None
+        if self.bus:
+            self.bus.close()
+            self.bus = None
 
     def _policy_artifact_path(self) -> Path:
         import os
+
         return Path(os.environ.get("UGV_STUDENT_POLICY", "runs/student.npz"))
 
     def _numpy_only_ok(self) -> bool:
         import sys
+
         if "torch" in sys.modules:
             return False
         try:
@@ -393,6 +507,7 @@ class RobotController:
         try:
             from .policy import StudentPolicy
             import time
+
             p = StudentPolicy.load(path)
             t0 = time.perf_counter()
             for _ in range(5):
@@ -464,34 +579,59 @@ class RobotController:
 
     async def arm(self, cid):
         async with self.lock:
-            if self.state.owner not in (None, cid): raise PermissionError("controller busy")
-            self.state.owner = cid; self.state.armed = True; self.state.reason = "armed"; self.state.revision += 1
+            if self.state.owner not in (None, cid):
+                raise PermissionError("controller busy")
+            self.state.owner = cid
+            self.state.armed = True
+            self.state.reason = "armed"
+            self.state.revision += 1
         await self.broadcast()
 
     async def camera_move(self, cid, axis, delta):
         async with self.lock:
-            if self.parking_active: raise PermissionError("stop parking before moving camera")
-            if self.state.owner != cid or not self.state.armed: raise PermissionError("arm controls first")
-            if axis not in SERVO_CHANNELS: raise ValueError
+            if self.parking_active:
+                raise PermissionError("stop parking before moving camera")
+            if self.state.owner != cid or not self.state.armed:
+                raise PermissionError("arm controls first")
+            if axis not in SERVO_CHANNELS:
+                raise ValueError
             delta = max(-50, min(50, int(delta)))
             attr = "pan_us" if axis == "pan" else "tilt_us"
             pulse = max(1000, min(2000, getattr(self.state, attr) + delta))
             with self.hw_lock:
-                if not self.bus: raise RuntimeError("I2C unavailable")
+                if not self.bus:
+                    raise RuntimeError("I2C unavailable")
                 _set_pulse(self.bus, SERVO_CHANNELS[axis], pulse)
-            setattr(self.state, attr, pulse); self.state.reason = f"camera-{axis}"; self.state.revision += 1
+            setattr(self.state, attr, pulse)
+            self.state.reason = f"camera-{axis}"
+            self.state.revision += 1
         await self.broadcast()
 
     def _write(self, wheels):
-        if not self.bus: raise RuntimeError("I2C unavailable")
+        if not self.bus:
+            raise RuntimeError("I2C unavailable")
         with self.hw_lock:
             for name, duty in wheels.items():
                 rev, fwd = WHEEL_CHANNELS[name]
-                if duty > 0: _set_pwm(self.bus, rev, 0); _set_pwm(self.bus, fwd, duty)
-                elif duty < 0: _set_pwm(self.bus, fwd, 0); _set_pwm(self.bus, rev, abs(duty))
-                else: _set_pwm(self.bus, rev, 4095); _set_pwm(self.bus, fwd, 4095)
+                if duty > 0:
+                    _set_pwm(self.bus, rev, 0)
+                    _set_pwm(self.bus, fwd, duty)
+                elif duty < 0:
+                    _set_pwm(self.bus, fwd, 0)
+                    _set_pwm(self.bus, rev, abs(duty))
+                else:
+                    _set_pwm(self.bus, rev, 4095)
+                    _set_pwm(self.bus, fwd, 4095)
 
-    def _apply_vector(self, forward: float, turn: float, limit: int, reason: str = "drive", smooth=False, strafe: float = 0.0) -> None:
+    def _apply_vector(
+        self,
+        forward: float,
+        turn: float,
+        limit: int,
+        reason: str = "drive",
+        smooth=False,
+        strafe: float = 0.0,
+    ) -> None:
         motor_forward = -forward
         # Mecanum inverse kinematics: forward, rightward strafe, and yaw.
         # Q/positive yaw retains the established left-turn convention.
@@ -502,16 +642,23 @@ class RobotController:
             "rear-right": motor_forward - strafe - turn,
         }
         scale = max(1.0, *(abs(value) for value in values.values()))
-        wheels = {
-            name: round(value / scale * limit) for name, value in values.items()
-        }
+        wheels = {name: round(value / scale * limit) for name, value in values.items()}
         with self.hw_lock:
-            if not self.state.armed: return
+            if not self.state.armed:
+                return
             now = time.monotonic()
-            if smooth: wheels = ramp_wheels(self.state.wheels, wheels, now - self.last_pwm_at)
-            self._write(wheels); self.last_drive = self.last_pwm_at = now
-            self.state.forward = forward; self.state.strafe = strafe; self.state.turn = turn; self.state.speed_limit = limit; self.state.wheels = wheels
-            self.state.stopped = not any(wheels.values()); self.state.reason = "command-zero" if self.state.stopped else reason; self.state.revision += 1
+            if smooth:
+                wheels = ramp_wheels(self.state.wheels, wheels, now - self.last_pwm_at)
+            self._write(wheels)
+            self.last_drive = self.last_pwm_at = now
+            self.state.forward = forward
+            self.state.strafe = strafe
+            self.state.turn = turn
+            self.state.speed_limit = limit
+            self.state.wheels = wheels
+            self.state.stopped = not any(wheels.values())
+            self.state.reason = "command-zero" if self.state.stopped else reason
+            self.state.revision += 1
 
     async def calibration_step(self, cid, forward, strafe, turn, limit, duration):
         """Explicit identification pulse: full PCA range, at most 250ms lease."""
@@ -522,7 +669,7 @@ class RobotController:
                 raise PermissionError("disable autonomous motion before calibration")
             if not all(math.isfinite(v) for v in (forward, strafe, turn, limit, duration)):
                 raise ValueError("nonfinite calibration input")
-            if not 0 <= limit <= 4095 or not .01 <= duration <= .25:
+            if not 0 <= limit <= 4095 or not 0.01 <= duration <= 0.25:
                 raise ValueError("calibration PWM/duration out of range")
             if any(abs(v) > 1 for v in (forward, strafe, turn)):
                 raise ValueError("calibration vector out of range")
@@ -531,9 +678,10 @@ class RobotController:
                 if not self._imu_ready(now):
                     raise PermissionError("fresh calibrated IMU required")
                 if self.state.motion_mode != "calibration":
-                    gravity=tuple(self.state.imu_accel_g[a] for a in 'xyz')
-                    norm=math.sqrt(sum(v*v for v in gravity))
-                    if norm>.5:self.calibration_up=tuple(v/norm for v in gravity)
+                    gravity = tuple(self.state.imu_accel_g[a] for a in "xyz")
+                    norm = math.sqrt(sum(v * v for v in gravity))
+                    if norm > 0.5:
+                        self.calibration_up = tuple(v / norm for v in gravity)
                 self.motion.cancel()
                 self.state.motion_mode = "calibration"
                 self.last_operator_command = now
@@ -556,10 +704,11 @@ class RobotController:
             raise PermissionError("fresh camera required for survey")
         if not all(math.isfinite(v) for v in (forward, turn, duration)):
             raise ValueError("invalid survey step")
-        if abs(forward) + abs(turn) > 1 or not .01 <= duration <= .20:
+        if abs(forward) + abs(turn) > 1 or not 0.01 <= duration <= 0.20:
             raise ValueError("survey steps must be a single axis and <=200ms")
-        await self.drive(cid, forward, 0, turn, max(500, min(1800, limit)),
-                         autonomous=True, duration=duration)
+        await self.drive(
+            cid, forward, 0, turn, max(500, min(1800, limit)), autonomous=True, duration=duration
+        )
         self.state.motion_mode = "survey"
         self.state.reason = "survey-step"
         await self.broadcast()
@@ -570,24 +719,29 @@ class RobotController:
         task = self.parking_task
         if task and task is not asyncio.current_task():
             task.cancel()
-            try: await task
-            except asyncio.CancelledError: pass
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
         self.parking_task = None
         self.parking_owner = None
         self.parking_status = reason
         await self.stop(reason, release=False)
 
     async def start_parking(self, cid):
-        if not self._imu_ready(time.monotonic()): raise PermissionError("fresh calibrated IMU required")
+        if not self._imu_ready(time.monotonic()):
+            raise PermissionError("fresh calibrated IMU required")
         if self.state.owner != cid or not self.state.armed:
             raise PermissionError("arm controls before parking")
         blockers = self.parking.snapshot()["blockers"]
-        if blockers: raise PermissionError("parking unavailable: " + "; ".join(blockers))
+        if blockers:
+            raise PermissionError("parking unavailable: " + "; ".join(blockers))
         await self.cancel_parking("parking-planning")
         epoch = self.parking_epoch
         await aruco.disable_follow("parking-start")
         plan = await asyncio.to_thread(self.parking.plan_snapshot)
-        if not plan["ok"]: raise PermissionError("; ".join(plan["blockers"]))
+        if not plan["ok"]:
+            raise PermissionError("; ".join(plan["blockers"]))
         if self.state.owner != cid or not self.state.armed or epoch != self.parking_epoch:
             raise PermissionError("parking request cancelled or ownership changed")
         if not self._imu_ready(time.monotonic()) or self.parking.snapshot()["blockers"]:
@@ -597,46 +751,69 @@ class RobotController:
         self.parking_status = "following verified route"
         route = [Pose2(**pose) for pose in plan["path"]]
         config = self.parking.config
-        feedback = DockingFeedback(route, config["motion_model"], config["vehicle"],
-                                   gear_obstacles(config["gear"], config["vehicle"]["height_m"]),
-                                   config["clearance_margin_m"] + self.parking.sigma)
-        self.parking_task = asyncio.create_task(self._parking_loop(cid, feedback), name="drone-parking")
+        feedback = DockingFeedback(
+            route,
+            config["motion_model"],
+            config["vehicle"],
+            gear_obstacles(config["gear"], config["vehicle"]["height_m"]),
+            config["clearance_margin_m"] + self.parking.sigma,
+        )
+        self.parking_task = asyncio.create_task(
+            self._parking_loop(cid, feedback), name="drone-parking"
+        )
 
     async def _parking_loop(self, cid, feedback):
         measured_at = -1
         try:
             while self.parking_active:
                 if not self._imu_ready(time.monotonic()):
-                    self.parking_status = "parking-imu-stale"; break
+                    self.parking_status = "parking-imu-stale"
+                    break
                 if self.state.owner != cid or not self.state.armed:
-                    self.parking_status = "parking ownership lost"; break
+                    self.parking_status = "parking ownership lost"
+                    break
                 snapshot = self.parking.snapshot()
                 if snapshot["blockers"]:
-                    self.parking_status = "; ".join(snapshot["blockers"]); break
+                    self.parking_status = "; ".join(snapshot["blockers"])
+                    break
                 if self.parking.last_localized == measured_at:
-                    await asyncio.sleep(.02); continue
+                    await asyncio.sleep(0.02)
+                    continue
                 measured_at = self.parking.last_localized
                 pose = snapshot["car_pose"]
-                command = feedback.step(Pose2(pose["x_m"], pose["z_m"], math.radians(pose["yaw_deg"])))
+                command = feedback.step(
+                    Pose2(pose["x_m"], pose["z_m"], math.radians(pose["yaw_deg"]))
+                )
                 self.parking_status = command.get("reason", command["action"])
                 if command["action"] == "stop":
                     await self.stop(self.parking_status, release=False)
-                    if self.parking_status != "settling": break
-                    await asyncio.sleep(.06); continue
+                    if self.parking_status != "settling":
+                        break
+                    await asyncio.sleep(0.06)
+                    continue
                 duration = command["duration"]
-                await self.drive(cid, command["forward"], 0, command["turn"], 1800,
-                                 autonomous=True, duration=duration)
+                await self.drive(
+                    cid,
+                    command["forward"],
+                    0,
+                    command["turn"],
+                    1800,
+                    autonomous=True,
+                    duration=duration,
+                )
                 self.state.motion_mode = "parking"
                 pulse_end = time.monotonic() + duration
-                await asyncio.sleep(duration + .02)
+                await asyncio.sleep(duration + 0.02)
                 await self.stop("parking-observe", release=False)
-                await asyncio.sleep(.12)
-                deadline = time.monotonic() + .5
+                await asyncio.sleep(0.12)
+                deadline = time.monotonic() + 0.5
                 while self.parking_active and self.parking.last_localized < pulse_end:
                     if time.monotonic() > deadline:
-                        self.parking_status = "post-motion localization unavailable"; break
-                    await asyncio.sleep(.02)
-                if self.parking.last_localized < pulse_end: break
+                        self.parking_status = "post-motion localization unavailable"
+                        break
+                    await asyncio.sleep(0.02)
+                if self.parking.last_localized < pulse_end:
+                    break
         finally:
             self.parking_active = False
             self.parking_owner = None
@@ -644,7 +821,11 @@ class RobotController:
             await self.broadcast()
 
     async def cancel_auto_park(self, reason="auto-park-stopped", cid=None):
-        if cid is not None and self.state.owner not in (None, cid) and self.auto_park_owner not in (None, cid):
+        if (
+            cid is not None
+            and self.state.owner not in (None, cid)
+            and self.auto_park_owner not in (None, cid)
+        ):
             raise PermissionError("only the controller can stop auto-park")
         self.auto_park_epoch += 1
         was_active = self.state.auto_park or self.auto_park_task is not None
@@ -670,7 +851,12 @@ class RobotController:
         if not camera.enabled:
             raise PermissionError("enable camera capture before auto-park")
         now = time.monotonic()
-        if not (self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None and (now - self.imu_sample_at) <= 0.25):
+        if not (
+            self.state.imu_connected
+            and self.state.heading_calibrated
+            and self.imu_sample_at is not None
+            and (now - self.imu_sample_at) <= 0.25
+        ):
             raise PermissionError("fresh calibrated IMU required for auto-park")
         await self.cancel_parking("auto-park-started")
         self.motion.cancel()
@@ -687,7 +873,9 @@ class RobotController:
         self.state.auto_park_stage = "acquiring"
         self.state.auto_park_status = "starting"
         self.state.auto_park_pose = None
-        self.auto_park_task = asyncio.create_task(self._auto_park_loop(cid, epoch), name="auto-park")
+        self.auto_park_task = asyncio.create_task(
+            self._auto_park_loop(cid, epoch), name="auto-park"
+        )
         await self.broadcast()
 
     async def _auto_park_loop(self, cid, epoch):
@@ -716,13 +904,24 @@ class RobotController:
                     self.state.auto_park_status = "auto-park ownership lost"
                     break
                 now = time.monotonic()
-                imu_age = (now - self.imu_sample_at) if (
-                    self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None
-                ) else None
+                imu_age = (
+                    (now - self.imu_sample_at)
+                    if (
+                        self.state.imu_connected
+                        and self.state.heading_calibrated
+                        and self.imu_sample_at is not None
+                    )
+                    else None
+                )
                 frame, seq, cap = camera.latest_sample()
                 frame_age = (now - cap) if (frame is not None and cap) else None
                 rec = None
-                if frame is not None and seq != last_seq and frame_age is not None and frame_age <= 0.45:
+                if (
+                    frame is not None
+                    and seq != last_seq
+                    and frame_age is not None
+                    and frame_age <= 0.45
+                ):
                     last_seq = seq
                     rec = await asyncio.to_thread(detector.detect_jpeg, frame, cap)
                     for k, v in detector.last_timings.items():
@@ -730,9 +929,15 @@ class RobotController:
                     if not self.state.auto_park or self.auto_park_epoch != epoch:
                         break
                 now = time.monotonic()
-                imu_age = (now - self.imu_sample_at) if (
-                    self.state.imu_connected and self.state.heading_calibrated and self.imu_sample_at is not None
-                ) else None
+                imu_age = (
+                    (now - self.imu_sample_at)
+                    if (
+                        self.state.imu_connected
+                        and self.state.heading_calibrated
+                        and self.imu_sample_at is not None
+                    )
+                    else None
+                )
                 frame_age = (now - cap) if (frame is not None and cap) else None
                 plan_t0 = time.perf_counter()
                 cmd = runner.step(
@@ -746,7 +951,9 @@ class RobotController:
                 self.perf.record("plan_ms", (time.perf_counter() - plan_t0) * 1000.0)
                 self.state.auto_park_stage = cmd.stage
                 self.state.auto_park_status = cmd.status
-                self.state.auto_park_pose = [round(float(v), 4) for v in cmd.pose] if cmd.pose is not None else None
+                self.state.auto_park_pose = (
+                    [round(float(v), 4) for v in cmd.pose] if cmd.pose is not None else None
+                )
                 drive_t0 = time.perf_counter()
                 if cmd.stop:
                     await self.stop(cmd.reason or "auto-park-stop", release=False)
@@ -755,7 +962,15 @@ class RobotController:
                     if cmd.done or cmd.stage in ("parked", "blocked", "aborted", "error"):
                         break
                 else:
-                    await self.drive(cid, cmd.forward, cmd.strafe, cmd.turn, 1800, autonomous=True, mode="auto-park")
+                    await self.drive(
+                        cid,
+                        cmd.forward,
+                        cmd.strafe,
+                        cmd.turn,
+                        1800,
+                        autonomous=True,
+                        mode="auto-park",
+                    )
                     self.perf.record("drive_ms", (time.perf_counter() - drive_t0) * 1000.0)
                     self.perf.record("autopark_loop_ms", (time.perf_counter() - loop_t0) * 1000.0)
                 await asyncio.sleep(0.03)
@@ -786,18 +1001,36 @@ class RobotController:
         camera.set_enabled(enabled)
         await self.broadcast()
 
-    async def drive(self, cid, forward, strafe, turn, limit, autonomous=False, duration=None, mode: str = "aruco-follow"):
+    async def drive(
+        self,
+        cid,
+        forward,
+        strafe,
+        turn,
+        limit,
+        autonomous=False,
+        duration=None,
+        mode: str = "aruco-follow",
+    ):
         if not autonomous and self.state.auto_park and self.state.owner == cid:
             await self.cancel_auto_park("manual-drive-override", cid=cid)
         async with self.lock:
-            if self.state.owner != cid or not self.state.armed: raise PermissionError("arm controls first")
-            if self.parking_active and not autonomous: raise PermissionError("stop parking before manual driving")
-            if aruco.follow and not autonomous: raise PermissionError("disable ArUco follow before manual drive")
-            if not all(math.isfinite(value) for value in (forward, strafe, turn)): raise ValueError
-            forward = max(-1., min(1., forward)); strafe = max(-1., min(1., strafe)); turn = max(-1., min(1., turn)); limit = max(500, min(1800, limit))
+            if self.state.owner != cid or not self.state.armed:
+                raise PermissionError("arm controls first")
+            if self.parking_active and not autonomous:
+                raise PermissionError("stop parking before manual driving")
+            if aruco.follow and not autonomous:
+                raise PermissionError("disable ArUco follow before manual drive")
+            if not all(math.isfinite(value) for value in (forward, strafe, turn)):
+                raise ValueError
+            forward = max(-1.0, min(1.0, forward))
+            strafe = max(-1.0, min(1.0, strafe))
+            turn = max(-1.0, min(1.0, turn))
+            limit = max(500, min(1800, limit))
             if duration is not None:
-                if not autonomous or not math.isfinite(duration): raise ValueError("invalid pulse duration")
-                duration = max(.01, min(.25, float(duration)))
+                if not autonomous or not math.isfinite(duration):
+                    raise ValueError("invalid pulse duration")
+                duration = max(0.01, min(0.25, float(duration)))
             with self.hw_lock:
                 now = time.monotonic()
                 self.drive_deadline = None
@@ -830,10 +1063,13 @@ class RobotController:
     async def disconnect(self, cid):
         if self.auto_park_owner == cid or (self.state.owner == cid and self.state.auto_park):
             await self.cancel_auto_park("auto-park-owner-disconnected")
-        if self.parking_owner == cid: await self.cancel_parking("parking-owner-disconnected")
+        if self.parking_owner == cid:
+            await self.cancel_parking("parking-owner-disconnected")
         self.clients.pop(cid, None)
-        if self.state.owner == cid: await self.stop("controller-disconnected", True)
-        else: await self.broadcast()
+        if self.state.owner == cid:
+            await self.stop("controller-disconnected", True)
+        else:
+            await self.broadcast()
 
     def _aruco_age_ms(self) -> int | None:
         try:
@@ -871,7 +1107,9 @@ class RobotController:
         return bool(self._imu_ready(now) and cam_age is not None and cam_age <= 250)
 
     def payload(self, cid=None):
-        self.state.imu_age_ms = round((time.monotonic() - self.imu_sample_at) * 1000) if self.imu_sample_at else None
+        self.state.imu_age_ms = (
+            round((time.monotonic() - self.imu_sample_at) * 1000) if self.imu_sample_at else None
+        )
         self.state.swept_clear_margin_m = self._swept_margin()
         self.state.tick_ms = self.tick_ms
         self.state.aruco_age_ms = self._aruco_age_ms()
@@ -886,100 +1124,207 @@ class RobotController:
         if not self.state.perf or (now_perf - self._perf_snapshot_at) >= 0.2:
             self.state.perf = self.perf.snapshot()
             self._perf_snapshot_at = now_perf
-        p = asdict(self.state); p.update(clients=len(self.clients), you_are_owner=bool(cid and self.state.owner == cid), watchdog_ms=600)
-        p.update(camera.metrics()); p.update(aruco.metrics())
+        p = asdict(self.state)
+        p.update(
+            clients=len(self.clients),
+            you_are_owner=bool(cid and self.state.owner == cid),
+            watchdog_ms=600,
+        )
+        p.update(camera.metrics())
+        p.update(aruco.metrics())
         p["parking"] = self.parking.snapshot()
         p["parking"].update(active=self.parking_active, execution_status=self.parking_status)
-        p["motion_input_age_ms"] = round((time.monotonic() - self.last_operator_command) * 1000) if self.motion.mode else None
+        p["motion_input_age_ms"] = (
+            round((time.monotonic() - self.last_operator_command) * 1000)
+            if self.motion.mode
+            else None
+        )
         return {"type": "state", "state": p}
 
     async def broadcast(self):
         t0 = time.perf_counter()
         dead = []
         for cid, ws in list(self.clients.items()):
-            try: await ws.send_json(self.payload(cid))
-            except Exception: dead.append(cid)
-        for cid in dead: self.clients.pop(cid, None)
+            try:
+                await ws.send_json(self.payload(cid))
+            except Exception:
+                dead.append(cid)
+        for cid in dead:
+            self.clients.pop(cid, None)
         self.perf.record("broadcast_ms", (time.perf_counter() - t0) * 1000.0)
 
-controller = RobotController(); camera = CameraStream(); aruco = ArucoFollower(camera, controller)
+
+controller = RobotController()
+camera = CameraStream()
+aruco = ArucoFollower(camera, controller)
 imu = ImuStream(controller.imu_sample, controller.imu_status)
 app = FastAPI(title="UGV Control", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
+
 @app.on_event("startup")
-async def startup(): await controller.start(); camera.start(); aruco.start(); imu.start()
+async def startup():
+    await controller.start()
+    camera.start()
+    aruco.start()
+    imu.start()
+
+
 @app.on_event("shutdown")
-async def shutdown(): await aruco.close(); imu.close(); camera.close(); await controller.close()
+async def shutdown():
+    await aruco.close()
+    imu.close()
+    camera.close()
+    await controller.close()
+
+
 @app.get("/")
-async def index(): return FileResponse(STATIC / "index.html")
+async def index():
+    return FileResponse(STATIC / "index.html")
+
+
 @app.get("/stream.mjpg")
 def stream():
-    return StreamingResponse(camera.frames(), media_type="multipart/x-mixed-replace; boundary=frame", headers={"Cache-Control":"no-store", "X-Accel-Buffering":"no"})
+    return StreamingResponse(
+        camera.frames(),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
+
+
 @app.get("/api/state")
-async def state(): return controller.payload()
+async def state():
+    return controller.payload()
+
 
 @app.get("/api/calibration/frame")
 async def calibration_frame():
     frame, sequence, captured_at = camera.latest_sample()
     if frame is None:
         return Response(status_code=503)
-    return Response(frame, media_type="image/jpeg", headers={
-        "X-Pi-Monotonic": str(captured_at), "X-Frame-Sequence": str(sequence),
-        "Cache-Control": "no-store"})
+    return Response(
+        frame,
+        media_type="image/jpeg",
+        headers={
+            "X-Pi-Monotonic": str(captured_at),
+            "X-Frame-Sequence": str(sequence),
+            "Cache-Control": "no-store",
+        },
+    )
+
 
 @app.get("/api/dynamics")
-async def dynamics(after: int = 0): return controller.dynamics.snapshot(max(0, after))
+async def dynamics(after: int = 0):
+    return controller.dynamics.snapshot(max(0, after))
+
 
 @app.get("/api/parking")
-async def parking_state(): return controller.parking.snapshot()
+async def parking_state():
+    return controller.parking.snapshot()
+
 
 @app.get("/api/parking/plan")
-async def parking_plan(): return await asyncio.to_thread(controller.parking.plan_snapshot)
+async def parking_plan():
+    return await asyncio.to_thread(controller.parking.plan_snapshot)
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
-    await ws.accept(); cid = uuid.uuid4().hex[:8]; controller.clients[cid] = ws
+    await ws.accept()
+    cid = uuid.uuid4().hex[:8]
+    controller.clients[cid] = ws
     try:
-        await ws.send_json(controller.payload(cid)); await controller.broadcast()
+        await ws.send_json(controller.payload(cid))
+        await controller.broadcast()
         while True:
             try:
-                m = json.loads(await ws.receive_text()); kind = m.get("type")
-                if kind == "drive": await controller.drive(cid, float(m.get("forward",0)), float(m.get("strafe",0)), float(m.get("turn",0)), int(m.get("speed_limit",1800)))
-                elif kind == "calibration-step": await controller.calibration_step(cid, float(m.get("forward",0)), float(m.get("strafe",0)), float(m.get("turn",0)), float(m.get("speed_limit",0)), float(m.get("duration",0)))
-                elif kind == "sidestep": await controller.sidestep(cid, int(m.get("direction",0)), int(m.get("speed_limit",1200)))
-                elif kind == "survey-step": await controller.survey_step(cid, float(m.get("forward",0)), float(m.get("turn",0)), int(m.get("speed_limit",1800)), float(m.get("duration",.1)))
-                elif kind == "arm": await controller.arm(cid)
-                elif kind == "camera": await controller.camera_move(cid, str(m.get("axis")), int(m.get("delta", 0)))
-                elif kind == "camera-capture": await controller.camera_capture(cid, m.get("enabled"))
+                m = json.loads(await ws.receive_text())
+                kind = m.get("type")
+                if kind == "drive":
+                    await controller.drive(
+                        cid,
+                        float(m.get("forward", 0)),
+                        float(m.get("strafe", 0)),
+                        float(m.get("turn", 0)),
+                        int(m.get("speed_limit", 1800)),
+                    )
+                elif kind == "calibration-step":
+                    await controller.calibration_step(
+                        cid,
+                        float(m.get("forward", 0)),
+                        float(m.get("strafe", 0)),
+                        float(m.get("turn", 0)),
+                        float(m.get("speed_limit", 0)),
+                        float(m.get("duration", 0)),
+                    )
+                elif kind == "sidestep":
+                    await controller.sidestep(
+                        cid, int(m.get("direction", 0)), int(m.get("speed_limit", 1200))
+                    )
+                elif kind == "survey-step":
+                    await controller.survey_step(
+                        cid,
+                        float(m.get("forward", 0)),
+                        float(m.get("turn", 0)),
+                        int(m.get("speed_limit", 1800)),
+                        float(m.get("duration", 0.1)),
+                    )
+                elif kind == "arm":
+                    await controller.arm(cid)
+                elif kind == "camera":
+                    await controller.camera_move(cid, str(m.get("axis")), int(m.get("delta", 0)))
+                elif kind == "camera-capture":
+                    await controller.camera_capture(cid, m.get("enabled"))
                 elif kind == "aruco":
                     if m.get("enabled") and controller.state.auto_park:
                         continue
                     if m.get("enabled") and not camera.enabled:
                         raise PermissionError("enable camera capture before ArUco")
-                    await aruco.configure(cid, bool(m.get("enabled")), m.get("follow"), m.get("speed_limit"), m.get("follow_mode"))
-                elif kind == "controller": await controller.select_controller(cid, str(m.get("controller", "manual")))
+                    await aruco.configure(
+                        cid,
+                        bool(m.get("enabled")),
+                        m.get("follow"),
+                        m.get("speed_limit"),
+                        m.get("follow_mode"),
+                    )
+                elif kind == "controller":
+                    await controller.select_controller(cid, str(m.get("controller", "manual")))
                 elif kind == "auto-park":
-                    if not isinstance(m.get("enabled"), bool): raise ValueError("auto-park enabled must be a boolean")
-                    if m["enabled"]: await controller.start_auto_park(cid)
-                    else: await controller.cancel_auto_park("client-auto-park-stop", cid=cid)
+                    if not isinstance(m.get("enabled"), bool):
+                        raise ValueError("auto-park enabled must be a boolean")
+                    if m["enabled"]:
+                        await controller.start_auto_park(cid)
+                    else:
+                        await controller.cancel_auto_park("client-auto-park-stop", cid=cid)
                 elif kind == "parking":
-                    if m.get("action") == "start": await controller.start_parking(cid)
-                    elif m.get("action") == "stop" and controller.state.owner == cid: await controller.cancel_parking()
-                    else: raise ValueError("invalid parking request")
-                elif kind == "heading-calibrate": controller.heading.request_calibration()
-                elif kind == "heartbeat": await ws.send_json(controller.payload(cid))
-                elif kind == "stop" and controller.state.owner in (None,cid):
+                    if m.get("action") == "start":
+                        await controller.start_parking(cid)
+                    elif m.get("action") == "stop" and controller.state.owner == cid:
+                        await controller.cancel_parking()
+                    else:
+                        raise ValueError("invalid parking request")
+                elif kind == "heading-calibrate":
+                    controller.heading.request_calibration()
+                elif kind == "heartbeat":
+                    await ws.send_json(controller.payload(cid))
+                elif kind == "stop" and controller.state.owner in (None, cid):
                     await controller.cancel_auto_park("client-stop")
                     await controller.cancel_parking("client-stop")
                     await aruco.disable_follow("client-stop")
                     await controller.stop("client-stop", m.get("reason") == "disarm")
-                else: await ws.send_json({"type":"error","error":"unknown message"})
-            except PermissionError as e: await ws.send_json({"type":"error","error":str(e)})
-            except (TypeError, ValueError, json.JSONDecodeError): await ws.send_json({"type":"error","error":"invalid message"})
-    except (WebSocketDisconnect, RuntimeError): pass
+                else:
+                    await ws.send_json({"type": "error", "error": "unknown message"})
+            except PermissionError as e:
+                await ws.send_json({"type": "error", "error": str(e)})
+            except (TypeError, ValueError, json.JSONDecodeError):
+                await ws.send_json({"type": "error", "error": "invalid message"})
+    except (WebSocketDisconnect, RuntimeError):
+        pass
     finally:
-        if aruco.owner == cid: await aruco.disable_follow("aruco-owner-disconnected")
+        if aruco.owner == cid:
+            await aruco.disable_follow("aruco-owner-disconnected")
         await controller.disconnect(cid)
 
-def main(): uvicorn.run("ugv.web:app", host="0.0.0.0", port=8765, reload=False)
+
+def main():
+    uvicorn.run("ugv.web:app", host="0.0.0.0", port=8765, reload=False)
