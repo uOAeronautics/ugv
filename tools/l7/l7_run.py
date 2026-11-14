@@ -54,6 +54,19 @@ def wrap(a: float) -> float:
     return (a + math.pi) % (2 * math.pi) - math.pi
 
 
+def should_abort_corridor(
+    mode: str,
+    est: tuple[float, float, float] | None,
+    pose_t: float | None,
+    now: float,
+    max_tag_age: float = 0.15,
+) -> bool:
+    if mode != "stage" or est is None:
+        return False
+    pose_stale = pose_t is None or (now - pose_t) >= max_tag_age
+    return pose_stale and est[1] < 0.55 and abs(est[0]) > 0.14
+
+
 class JsonlWriter:
     def __init__(self, path: Path):
         self.f = open(path, "w", buffering=1 << 16)
@@ -201,7 +214,8 @@ class TagBits:
         lo, hi = float(cells.min()), float(cells.max())
         if hi - lo < 25:
             return 36
-        return int(np.count_nonzero((cells > (lo + hi) / 2) != self.tpl[tag_id]))
+        thr, _ = cv2.threshold(cells, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        return int(np.count_nonzero((cells > thr) != self.tpl[tag_id]))
 
 
 def vision_worker(q, stop_evt, out_dir: str, ids: set, save_every: int):
@@ -273,7 +287,7 @@ def _process_frame(body, seq, cap, t0, n, det, bits, state, ids, save_every, out
                 if pts.min() < 7 or pts[:, 0].max() > gray.shape[1] - 8 or pts[:, 1].max() > gray.shape[0] - 8:
                     continue   # cornerSubPix needs its window inside the image
                 pts = cv2.cornerSubPix(gray, pts.reshape(-1, 1, 2).copy(), (4, 4), (-1, -1), sub).reshape(4, 2)
-                if bits.errors(gray, i, pts) <= 3:
+                if bits.errors(gray, i, pts) <= 1:
                     found[i] = (pts, "det")
         lost = [i for i in held if i not in found]
         if prev is not None and lost:
@@ -284,7 +298,7 @@ def _process_frame(body, seq, cap, t0, n, det, bits, state, ids, save_every, out
             for j, i in enumerate(lost):
                 sl = slice(4 * j, 4 * j + 4)
                 pts = p1[sl].reshape(4, 2)
-                if st[sl].all() and st2[sl].all() and fb[sl].max() < 1.5 and bits.errors(gray, i, pts) <= 3:
+                if st[sl].all() and st2[sl].all() and fb[sl].max() < 1.5 and bits.errors(gray, i, pts) <= 1:
                     found[i] = (pts, "trk")
         tags = []
         held = {}
@@ -381,6 +395,8 @@ class Localizer:
         self.dz = np.array([args.dz_fwd, args.dz_left])
         self.tau = 0.2
         self.blend = args.blend
+        self.calibrate_tagmap = bool(getattr(args, "calibrate_tagmap", False))
+        self.allow_uncalibrated_tags = bool(getattr(args, "allow_uncalibrated_tags", False))
         self.last: dict = {}
 
     def fused_yaw(self, t: float | None = None) -> float | None:
@@ -399,28 +415,39 @@ class Localizer:
         gyro = self.imu.yaw_at(cap)
         pred = None if self.off is None else wrap(gyro + self.off)
         cands = []
+        map_cands = []
         for t in rec["tags"]:
             m = self.map.get(t["id"])
-            if m is None or not t["sol"]:
+            if m is None or not t.get("sol"):
                 continue
-            sols = t["sol"]
+            sols = sorted((s for s in t["sol"] if len(s) >= 7 and s[2] > 0 and s[5] < -0.2), key=lambda s: s[6])
+            if not sols:
+                continue
+            is_clear = len(sols) == 1 or sols[1][6] >= 1.2 * sols[0][6] + 0.15
             best = sols[0]
-            if len(sols) > 1 and pred is not None:
+            if pred is None:
+                if not is_clear:
+                    continue
+            elif len(sols) > 1 and not is_clear:
                 d0 = abs(wrap(self._tag_yaw(m[2], sols[0]) - pred))
                 d1 = abs(wrap(self._tag_yaw(m[2], sols[1]) - pred))
-                if d1 < d0 and sols[1][6] < 2.0 * sols[0][6] + 0.6:
+                if d1 < d0:
                     best = sols[1]
-            cands.append((t, m, best))
+            map_cands.append((t, m, best, is_clear))
+            if m[3] != 0 or self.allow_uncalibrated_tags:
+                cands.append((t, m, best, is_clear))
         if not cands:
             return False
         # Yaw: weighted tag yaw -> slow correction of the gyro offset.
-        trusted = [c for c in cands if c[1][3] == -1 or c[1][3] >= 10] or cands
+        trusted = [c for c in cands if c[1][3] < 0 or c[1][3] >= 10] or cands
         wsum = sum(c[0]["px"] for c in trusted)
         ys = sum(c[0]["px"] * math.sin(self._tag_yaw(c[1][2], c[2])) for c in trusted)
         yc = sum(c[0]["px"] * math.cos(self._tag_yaw(c[1][2], c[2])) for c in trusted)
         tag_yaw = math.atan2(ys / wsum, yc / wsum)
         if self.off is None:
             self.off = wrap(tag_yaw - gyro)
+            self.outliers = 0
+            e = 0.0
         else:
             e = wrap(tag_yaw - gyro - self.off)
             if abs(e) < math.radians(20):
@@ -428,9 +455,7 @@ class Localizer:
                 self.outliers = 0
             else:
                 self.outliers += 1
-                if self.outliers >= 8:
-                    self.off = wrap(tag_yaw - gyro)
-                    self.outliers = 0
+                return False
         yaw = wrap(gyro + self.off)
         th = yaw - math.pi / 2
         f = np.array([math.cos(th), math.sin(th)])
@@ -439,13 +464,13 @@ class Localizer:
         pick = next((c for c in cands if c[0]["id"] == self.primary), None)
         if pick is None:
             pick = max(trusted, key=lambda c: c[0]["px"])
-        t, m, s = pick
+        t, m, s, pick_clear = pick
         cam = np.array(m[:2]) - (s[2] * f + s[0] * r)
         car = cam - CAM_FWD_M * f
-        # Online map: place non-fixed tags using the primary-anchored pose.
-        if pick[0]["id"] == self.primary:
-            for t2, m2, s2 in cands:
-                if m2[3] < 0:
+        # Online map: only calibrate non-fixed tags when explicitly enabled, primary is clear, and |e| < 8 deg.
+        if self.calibrate_tagmap and pick[0]["id"] == self.primary and pick_clear and abs(e) < math.radians(8):
+            for t2, m2, s2, clear2 in map_cands:
+                if m2[3] < 0 or not clear2:
                     continue
                 p = cam + s2[2] * f + s2[0] * r
                 phi = wrap(th + math.atan2(-s2[3], s2[5]))
@@ -459,15 +484,27 @@ class Localizer:
                     m2[3] += 1
         self.pose = (float(car[0]), float(car[1]), yaw)
         self.pose_t = cap
-        if self.dr_pose is None or math.hypot(car[0] - self.dr_pose[0], car[1] - self.dr_pose[1]) > 0.25:
-            self.dr_pose, self.dr_t = [float(car[0]), float(car[1]), yaw], time.monotonic()
+        now = time.monotonic()
+        dt_lat = min(0.5, max(0.0, now - cap))
+        yaw_now = self.fused_yaw()
+        if yaw_now is None:
+            yaw_now = yaw
+        yaw_mid = wrap(yaw + 0.5 * wrap(yaw_now - yaw))
+        th_mid = yaw_mid - math.pi / 2
+        f_mid = np.array([math.cos(th_mid), math.sin(th_mid)])
+        left_mid = np.array([-math.sin(th_mid), math.cos(th_mid)])
+        d_lat = (self.v[0] * f_mid + self.v[1] * left_mid) * dt_lat
+        car_now = car + d_lat
+        if self.dr_pose is None or math.hypot(car_now[0] - self.dr_pose[0], car_now[1] - self.dr_pose[1]) > 0.25:
+            self.dr_pose, self.dr_t = [float(car_now[0]), float(car_now[1]), yaw_now], now
         else:
             # Blend: the estimate is model-propagated every tick and pulled toward each tag fix,
             # so the policy sees a continuous pose instead of 10-20 Hz jumps.
-            self.dr_pose[0] += self.blend * (float(car[0]) - self.dr_pose[0])
-            self.dr_pose[1] += self.blend * (float(car[1]) - self.dr_pose[1])
-            self.dr_pose[2] = yaw
-        self.dr_path = 0.0
+            self.dr_pose[0] += self.blend * (float(car_now[0]) - self.dr_pose[0])
+            self.dr_pose[1] += self.blend * (float(car_now[1]) - self.dr_pose[1])
+            self.dr_pose[2] = yaw_now
+            self.dr_t = now
+        self.dr_path = float(np.linalg.norm(d_lat))
         self.last = {"id": t["id"], "tag_yaw": tag_yaw, "range": float(math.hypot(s[0], s[2])),
                      "h": float(-s[1]), "n": len(cands)}
         return True
@@ -497,8 +534,9 @@ class Localizer:
 
 # ----------------------------------------------------------------------------- drive
 class Drive:
-    def __init__(self):
+    def __init__(self, ws_log: JsonlWriter | None = None):
         from websockets.sync.client import connect
+        self.ws_log = ws_log
         self.ws = connect(f"ws://{HOST}:{PORT}/ws", open_timeout=5)
         self.state: dict = {}
         self.errors: deque[str] = deque(maxlen=20)
@@ -508,17 +546,26 @@ class Drive:
     def _reader(self):
         try:
             for raw in self.ws:
+                t_rx = time.monotonic()
                 m = json.loads(raw)
                 if m.get("type") == "state":
                     self.state = m["state"]
+                    if self.ws_log is not None:
+                        self.ws_log.write({"t": t_rx, "dir": "rx", "type": "state", "state": m["state"]})
                 elif m.get("type") == "error":
-                    self.errors.append(m.get("error", "?"))
+                    err = m.get("error", "?")
+                    self.errors.append(err)
+                    if self.ws_log is not None:
+                        self.ws_log.write({"t": t_rx, "dir": "rx", "type": "error", "error": err})
         except Exception:
             pass
         self.alive = False
 
     def send(self, **m):
+        t_tx = time.monotonic()
         self.ws.send(json.dumps(m))
+        if self.ws_log is not None:
+            self.ws_log.write({"t": t_tx, "dir": "tx", **m})
 
     def arm(self):
         self.send(type="aruco", enabled=False, follow=False)   # free the dashboard's detector CPU
@@ -566,6 +613,32 @@ def action_to_duty(act, gain: float):
 
 
 # ----------------------------------------------------------------------------- controllers
+_STAGE_GEAR = {"clear_width_m": 0.31, "bar_length_m": 0.48, "bar_radius_m": 0.015, "inward_slope": 0.0}
+_STAGE_VEHICLE = {"width_m": 0.172, "length_m": 0.203}
+
+
+def _import_parking():
+    try:
+        from ugv.parking import Pose2, gear_obstacles, swept_clear
+        return Pose2, gear_obstacles, swept_clear
+    except ImportError:
+        for p in (Path(__file__).resolve().parent, Path(__file__).resolve().parents[2] / "src"):
+            if str(p) not in sys.path:
+                sys.path.insert(0, str(p))
+        from ugv.parking import Pose2, gear_obstacles, swept_clear
+        return Pose2, gear_obstacles, swept_clear
+
+
+def validate_stage_arrival(outcome: str, target: tuple[float, float, float],
+                           end: tuple[float, float, float] | None) -> str:
+    if outcome == "arrived" and target[1] >= 0.42:
+        if (end is None
+                or math.hypot(end[0] - target[0], end[1] - target[1]) > 0.15
+                or abs(wrap(end[2] - target[2])) > math.radians(12)):
+            return "false_arrive"
+    return outcome
+
+
 class GoTo:
     """Holonomic P controller to a pose; faces the drone while travelling."""
 
@@ -573,12 +646,36 @@ class GoTo:
         self.t = target
         self.a = args
         self.ok_since = None
+        self.last_reason = "goto"
+        Pose2, gear_obstacles, swept_clear = _import_parking()
+        self._Pose2 = Pose2
+        self._swept_clear = swept_clear
+        self._obstacles = gear_obstacles(_STAGE_GEAR)
+
+    def _duty_to_vel(self, d_f: float, d_l: float, d_w: float) -> tuple[float, float, float]:
+        a = self.a
+        vf = 0.0 if d_f == 0.0 else math.copysign(max(0.0, abs(d_f) - a.dz_fwd) * a.gain_fwd, d_f)
+        vl = 0.0 if d_l == 0.0 else math.copysign(max(0.0, abs(d_l) - a.dz_left) * a.gain_left, d_l)
+        wz = 0.0 if d_w == 0.0 else math.copysign(max(0.0, abs(d_w) - a.dz_yaw) * a.gain_yaw, d_w)
+        return vf, vl, wz
+
+    def _is_clear(self, x: float, y: float, yaw: float, d_f: float, d_l: float, d_w: float,
+                  horizon: float = 0.25) -> bool:
+        vf, vl, wz = self._duty_to_vel(d_f, d_l, d_w)
+        th = yaw - math.pi / 2
+        dx = (vf * math.cos(th) - vl * math.sin(th)) * horizon
+        dy = (vf * math.sin(th) + vl * math.cos(th)) * horizon
+        dyaw = wz * horizon
+        start = self._Pose2(x, y, -yaw)
+        end = self._Pose2(x + dx, y + dy, -(yaw + dyaw))
+        return self._swept_clear(start, end, _STAGE_VEHICLE["width_m"], _STAGE_VEHICLE["length_m"],
+                                 self._obstacles, inflation=0.005)
 
     def step(self, pose, now):
         x, y, yaw = pose
         ex, ey = self.t[0] - x, self.t[1] - y
         dist = math.hypot(ex, ey)
-        yaw_goal = self.t[2] if dist < 0.25 else wrap(-math.atan2(x, y))
+        yaw_goal = self.t[2] if (dist < 0.25 or y < 0.25) else wrap(-math.atan2(x, y))
         eyaw = wrap(yaw_goal - yaw)
         th = yaw - math.pi / 2
         e_f = ex * math.cos(th) + ey * math.sin(th)
@@ -586,6 +683,7 @@ class GoTo:
         a = self.a
         if dist < a.tol_pos and abs(wrap(self.t[2] - yaw)) < math.radians(a.tol_yaw):
             self.ok_since = self.ok_since or now
+            self.last_reason = "goto"
             return (0.0, 0.0, 0.0), now - self.ok_since > 0.6
         self.ok_since = None
 
@@ -594,9 +692,30 @@ class GoTo:
             if abs(e) < tol:
                 return 0.0
             return math.copysign(dz + min(vcap, kp * abs(e)) / gain, e)
-        return (duty(e_f, a.kp_pos, a.vcap_fwd, a.gain_fwd, a.dz_fwd, a.tol_pos * 0.5),
-                duty(e_l, a.kp_pos, a.vcap_left, a.gain_left, a.dz_left, a.tol_pos * 0.5),
-                duty(eyaw, a.kp_yaw, a.vcap_yaw, a.gain_yaw, a.dz_yaw, math.radians(a.tol_yaw) * 0.5)), False
+
+        cmd = (duty(e_f, a.kp_pos, a.vcap_fwd, a.gain_fwd, a.dz_fwd, a.tol_pos * 0.5),
+               duty(e_l, a.kp_pos, a.vcap_left, a.gain_left, a.dz_left, a.tol_pos * 0.5),
+               duty(eyaw, a.kp_yaw, a.vcap_yaw, a.gain_yaw, a.dz_yaw, math.radians(a.tol_yaw) * 0.5))
+        if self._is_clear(x, y, yaw, *cmd):
+            self.last_reason = "goto"
+            return cmd, False
+        # Blocked by landing gear: try pure lateral centering, pure yaw alignment, or backing out.
+        c_f = -x * math.cos(th)
+        c_l = x * math.sin(th)
+        b_f = 0.2 * math.sin(th)
+        b_l = 0.2 * math.cos(th)
+        for cand in (
+            (duty(c_f, a.kp_pos, a.vcap_fwd, a.gain_fwd, a.dz_fwd, 0.005),
+             duty(c_l, a.kp_pos, a.vcap_left, a.gain_left, a.dz_left, 0.005), 0.0),
+            (0.0, 0.0, duty(wrap(self.t[2] - yaw), a.kp_yaw, a.vcap_yaw, a.gain_yaw, a.dz_yaw, 0.02)),
+            (duty(b_f, a.kp_pos, a.vcap_fwd, a.gain_fwd, a.dz_fwd, 0.005),
+             duty(b_l, a.kp_pos, a.vcap_left, a.gain_left, a.dz_left, 0.005), 0.0),
+        ):
+            if any(cand) and self._is_clear(x, y, yaw, *cand):
+                self.last_reason = "goto:steer_clear"
+                return cand, False
+        self.last_reason = "brake: blocked"
+        return (0.0, 0.0, 0.0), False
 
 
 # ----------------------------------------------------------------------------- run
@@ -621,8 +740,12 @@ def main():
     ap.add_argument("--shield", choices=["real", "sim", "off"], default="real")
     ap.add_argument("--dr-max", type=float, default=1.0, help="s of dead reckoning allowed outside the corridor")
     ap.add_argument("--dr-max-corridor", type=float, default=8.0)
+    ap.add_argument("--stage-dr-max", type=float, default=1.5, help="stage: max blind DR time (s) without a tag fix")
     ap.add_argument("--dr-path", type=float, default=0.9)
     ap.add_argument("--blend", type=float, default=0.35, help="per-fix position correction of the estimate")
+    ap.add_argument("--calibrate-tagmap", action="store_true", help="update non-fixed tagmap entries online")
+    ap.add_argument("--allow-uncalibrated-tags", action="store_true",
+                    help="allow obs==0 prior tags (e.g. tag 6) in localization")
     # body-velocity model for dead reckoning (m/s per unit duty beyond dz); set from probe data
     # real plant, fitted by fit_probe.py on 20261113-181040-probe-axes: v = gain * (|duty| - dz)
     ap.add_argument("--gain-fwd", type=float, default=2.3)
@@ -651,6 +774,10 @@ def main():
     ap.add_argument("--probe-duty", default="0.2,0.3")
     ap.add_argument("--probe-s", type=float, default=0.4)
     ap.add_argument("--probe-axes", default="fwd,left,ccw")
+    ap.add_argument("--baseline-s", type=float, default=0.0,
+                    help="stationary pre-arm baseline logging duration (s)")
+    ap.add_argument("--coast-s", type=float, default=0.8,
+                    help="probe: post-brake coast logging duration (s)")
     args = ap.parse_args()
 
     run_id = time.strftime("%Y%m%d-%H%M%S") + f"-{args.mode}" + (f"-{args.name}" if args.name else "")
@@ -666,7 +793,7 @@ def main():
             "started_monotonic": time.monotonic(),
             "frame": "drone/policy frame: skids along y, yaw 0 faces -y, CCW+; anchored on primary tag"}
 
-    ticks, imulog = (JsonlWriter(out / n) for n in ("ticks.jsonl", "imu.jsonl"))
+    ticks, imulog, wslog = (JsonlWriter(out / n) for n in ("ticks.jsonl", "imu.jsonl", "ws_state.jsonl"))
     imu = Imu(imulog, args.gyro_sign)
     vis = Vision(out, ids, args.save_every)
     loc = Localizer(imu, tagmap, args.tag_y, args.primary, args)
@@ -727,6 +854,11 @@ def main():
 
     def on_sig(signum, _):
         stop["flag"], stop["why"] = True, f"signal-{signum}"
+        if drv:
+            try:
+                drv.brake()
+            except Exception:
+                pass
     signal.signal(signal.SIGINT, on_sig)
     signal.signal(signal.SIGTERM, on_sig)
 
@@ -767,6 +899,14 @@ def main():
         print(f"[{run_id}] start pose={None if p0 is None else [round(p0[0],3), round(p0[1],3), round(math.degrees(p0[2]),1)]} "
               f"last={loc.last} vision_ms={np.median(vis.proc_ms) if vis.proc_ms else None} gyro_bias={imu.bias:.3f}", flush=True)
         summary["start_pose"] = p0
+        if args.baseline_s > 0:
+            t_base = time.monotonic()
+            while time.monotonic() - t_base < args.baseline_s and not stop["flag"]:
+                got = pump()
+                yaw, rate, _, wh = imu.snapshot()
+                ticks.write({"t": time.monotonic(), "phase": "baseline", "tag": got, "pose": loc.pose,
+                             "pose_t": loc.pose_t, "last": loc.last, "imu": [yaw, rate], "wh": wh})
+                time.sleep(DT)
         if args.mode == "watch":
             t_end = time.monotonic() + args.time
             while time.monotonic() < t_end and not stop["flag"]:
@@ -776,7 +916,7 @@ def main():
                              "imu": [yaw, rate]})
                 time.sleep(DT)
         else:
-            drv = Drive()
+            drv = Drive(ws_log=wslog)
             drv.arm()
         if drv and p0 is None and args.mode != "probe":
             # Acquire: gyro-rate-controlled spin (slow enough not to blur the tags) until a fix.
@@ -784,10 +924,18 @@ def main():
             rate = math.radians(args.acquire_dps)
             t_a = time.monotonic()
             while not stop["flag"] and time.monotonic() - t_a < 30 and abs(imu.snapshot()[0] - g0) < 2 * math.pi:
+                if not drv.alive or not vis.proc.is_alive():
+                    break
                 hits = hits + 1 if pump() else hits
                 if hits >= 3:
                     break
-                e_w = rate - imu.snapshot()[1]
+                now_a = time.monotonic()
+                _, imu_w_a, imu_at_a, _ = imu.snapshot()
+                if now_a - vis.frame_at > 0.45 or now_a - imu_at_a > 0.25:
+                    drv.brake()
+                    time.sleep(DT)
+                    continue
+                e_w = rate - imu_w_a
                 integ = max(-0.22, min(0.22, integ + 0.8 * e_w * DT))
                 drv.drive(*duty_to_dashboard(0.0, 0.0, integ + 0.03 * e_w)[:3])
                 time.sleep(DT)
@@ -806,7 +954,13 @@ def main():
                     for sgn in (1, -1):
                         if stop["flag"]:
                             break
-                        d = {"fwd": (duty * sgn, 0, 0), "left": (0, duty * sgn, 0), "ccw": (0, 0, duty * sgn)}[axis]
+                        d = {
+                            "fwd": (duty * sgn, 0.0, 0.0),
+                            "left": (0.0, duty * sgn, 0.0),
+                            "ccw": (0.0, 0.0, duty * sgn),
+                            "fwd+left": (duty * sgn, duty * sgn, 0.0),
+                            "fwd+ccw": (duty * sgn, 0.0, duty * sgn),
+                        }[axis]
                         F, S, T, sc = duty_to_dashboard(*d)
                         before = rest_pose(0.5)
                         g0 = imu.snapshot()[0]
@@ -815,10 +969,20 @@ def main():
                             drv.drive(F, S, T)
                             pump()
                             yaw, rate, _, wh = imu.snapshot()
-                            ticks.write({"t": time.monotonic(), "probe": [axis, duty * sgn], "fst": [F, S, T],
-                                         "pose": loc.pose, "pose_t": loc.pose_t, "imu": [yaw, rate], "wh": wh})
+                            ticks.write({"t": time.monotonic(), "phase": "drive", "probe": [axis, duty * sgn],
+                                         "fst": [F, S, T], "pose": loc.pose, "pose_t": loc.pose_t,
+                                         "imu": [yaw, rate], "wh": wh})
                             time.sleep(DT)
                         drv.brake()
+                        if args.coast_s > 0:
+                            t_c = time.monotonic()
+                            while time.monotonic() - t_c < args.coast_s and not stop["flag"]:
+                                pump()
+                                yaw, rate, _, wh = imu.snapshot()
+                                ticks.write({"t": time.monotonic(), "phase": "coast", "probe": [axis, duty * sgn],
+                                             "fst": [0.0, 0.0, 0.0], "pose": loc.pose, "pose_t": loc.pose_t,
+                                             "imu": [yaw, rate], "wh": wh})
+                                time.sleep(DT)
                         after = rest_pose(0.5)
                         g1 = imu.snapshot()[0]
                         row = {"axis": axis, "duty": duty * sgn, "s": args.probe_s, "fst": [F, S, T],
@@ -844,7 +1008,8 @@ def main():
             prev_act = np.zeros(3)
             duty = (0.0, 0.0, 0.0)
             applied = (0.0, 0.0)
-            still_s, k, last_valid_t = 0.0, 0, time.monotonic()
+            still_s, k = 0.0, 0
+            last_valid_t = loc.pose_t if loc.pose_t > 0 else time.monotonic()
             reasons: dict[str, int] = {}
             loop_ms, infer_ms = [], []
             t_start = time.monotonic()
@@ -863,6 +1028,8 @@ def main():
                 yaw_g, imu_w, imu_at, wheels = imu.snapshot()
                 fy = loc.fused_yaw()
                 src, pose = "none", None
+                if got:
+                    last_valid_t = loc.pose_t
                 if loc.dr_pose is not None:
                     # Observation = estimator pose at the sim camera cadence (30 Hz: 3 of 5 ticks),
                     # while a tag fix is recent enough (longer inside the corridor, where the tag
@@ -870,23 +1037,33 @@ def main():
                     age = now - loc.pose_t
                     in_corridor = abs(loc.dr_pose[0]) < 0.16 and loc.dr_pose[1] < 0.75
                     limit = args.dr_max_corridor if in_corridor else args.dr_max
+                    if args.mode == "stage":
+                        limit = min(limit, min(1.5, args.stage_dr_max))
                     if age < limit and loc.dr_path < args.dr_path and k % 5 in (0, 2, 3):
                         src = "tag" if age < 0.15 else "dr"
-                        pose, last_valid_t = tuple(loc.dr_pose), now
+                        pose = tuple(loc.dr_pose)
+                        if src == "tag":
+                            last_valid_t = loc.pose_t
                 est = tuple(loc.dr_pose) if loc.dr_pose is not None else None
+                stale = max(0.0, now - loc.pose_t) if loc.pose_t > 0 else max(0.0, now - last_valid_t)
                 rec = {"k": k, "t": now, "src": src, "pose": pose, "est": est, "cap": loc.pose_t if got else None,
                        "last": loc.last if got else None, "imu": [fy, imu_w], "gyro_yaw": yaw_g,
-                       "frame_age": round(frame_age, 3), "wh": wheels}
+                       "frame_age": round(frame_age, 3), "stale": round(stale, 3), "wh": wheels}
                 reason = ""
                 if frame_age > 0.45 or now - imu_at > 0.2 or not drv.alive:
                     duty, reason = (0.0, 0.0, 0.0), "brake: sensors stale"
                     act = np.zeros(3)
                 elif args.mode == "stage":
-                    if est is None or now - last_valid_t > 1.2:
+                    stage_dr_cap = min(1.5, args.stage_dr_max)
+                    if should_abort_corridor(args.mode, est, loc.pose_t, now):
+                        duty, reason, act = (0.0, 0.0, 0.0), "abort: blind_corridor_x", np.zeros(3)
+                        outcome = "abort_corridor"
+                        stop["flag"], stop["why"] = True, outcome
+                    elif est is None or now - last_valid_t > stage_dr_cap:
                         duty, reason, act = (0.0, 0.0, 0.0), "brake: no pose", np.zeros(3)
                     else:
                         duty, done = ctrl.step(est, now)
-                        act, reason = np.zeros(3), "goto"
+                        act, reason = np.zeros(3), ctrl.last_reason
                         if done:
                             outcome = "arrived"
                             stop["flag"], stop["why"] = True, "arrived"
@@ -894,11 +1071,10 @@ def main():
                     valid = src != "none"
                     tag = pose if valid else None
                     t_inf = time.perf_counter()
-                    stale = 0.0
                     e = est if est is not None else (0.0, 2.0, 0.0)
                     imu_w_lp = imu_w if imu_w_lp is None else 0.1 * imu_w + 0.9 * imu_w_lp
                     imu_w_fed = 0.0 if args.imu_w_mode == "zero" else (imu_w_lp if args.imu_w_mode == "lp" else imu_w)
-                    act, reason = policy.step(tag, now - last_valid_t, valid, imu_w_fed,
+                    act, reason = policy.step(tag, stale, valid, imu_w_fed,
                                               fy if fy is not None else 0.0, prev_act,
                                               Pose2(e[0], e[1], e[2]), dt=DT, dt_stale=min(stale, 0.3))
                     infer_ms.append((time.perf_counter() - t_inf) * 1e3)
@@ -953,6 +1129,8 @@ def main():
                     t_next = time.monotonic()
             drv.brake()
             end = rest_pose(0.6)
+            if args.mode == "stage" and ctrl is not None:
+                outcome = validate_stage_arrival(outcome, ctrl.t, end)
             summary.update(outcome=outcome if not stop["why"].startswith("signal") else stop["why"],
                            ticks=k, seconds=round(time.monotonic() - t_start, 2), reasons=reasons,
                            end_pose_tag=end, end_est=loc.dr_pose, dr_path=loc.dr_path,
@@ -982,7 +1160,7 @@ def main():
             args.tagmap.parent.mkdir(parents=True, exist_ok=True)
             args.tagmap.write_text(json.dumps(summary["tagmap_out"], indent=1))
         (out / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
-        for w in (ticks, imulog):
+        for w in (ticks, imulog, wslog):
             w.close()
         print("SUMMARY", json.dumps({k: v for k, v in summary.items() if k not in ("probe",)}, default=float), flush=True)
         print("OUT", out, flush=True)

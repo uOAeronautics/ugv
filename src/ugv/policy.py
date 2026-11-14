@@ -173,7 +173,10 @@ class StudentPolicy:
         start = estimate if not dt_stale else Pose2(estimate.x + vx_w * dt_stale,
                                                    estimate.z + vz_w * dt_stale,
                                                    estimate.yaw + w * dt_stale)
-        if not swept_clear(start, nxt, self.vehicle["width_m"], self.vehicle["length_m"],
+        # parking.py uses CW+ yaw from +z toward +x; policy.py uses CCW+ yaw.
+        if not swept_clear(Pose2(start.x, start.z, -start.yaw),
+                           Pose2(nxt.x, nxt.z, -nxt.yaw),
+                           self.vehicle["width_m"], self.vehicle["length_m"],
                            self.obstacles, self.inflation):
             return np.zeros_like(act), "brake: swept footprint blocked"
         if search_reason:

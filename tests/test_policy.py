@@ -79,3 +79,18 @@ def test_shield_rotates_by_yaw_and_sweeps_horizon():
     p.forward = lambda h: np.array([-0.15, 0.0, 0.0])
     act, reason = p.step((0.0, 0.0, 0.0), 0.0, True, 0.0, 0.0, np.zeros(3), est_left)
     assert (act == 0).all() and "blocked" in reason
+def test_shield_ccw_yaw_negated_for_swept_clear():
+    import math
+    p = _policy()
+    p.forward = lambda h: np.array([1.0, 0.0, 0.0])
+
+    yaw_clear = math.radians(35)
+    est_clear = Pose2(0.06, 0.30, yaw_clear)
+    act, reason = p.step((0.06, 0.30, yaw_clear), 0.0, True, 0.0, 0.0, np.zeros(3), est_clear)
+    assert reason == "policy" and np.allclose(act, [1.0, 0.0, 0.0])
+
+    p.reset()
+    yaw_blocked = math.radians(-35)
+    est_blocked = Pose2(0.06, 0.30, yaw_blocked)
+    act, reason = p.step((0.06, 0.30, yaw_blocked), 0.0, True, 0.0, 0.0, np.zeros(3), est_blocked)
+    assert (act == 0).all() and "blocked" in reason

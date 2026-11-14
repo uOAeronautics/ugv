@@ -80,6 +80,7 @@ def dump_reference(
     episodes: int = 200,
     seed: int = 11,
     use_mean_dynamics: bool = False,
+    level: str = "L1",
 ) -> dict:
     EnvConfig, MecanumVecEnv, Student = _import_rl()
     model, sha, stateful, h_dim, act_dim = _load_student_from_npz(weights_path, Student)
@@ -87,7 +88,7 @@ def dump_reference(
     env = MecanumVecEnv(
         episodes,
         EnvConfig(
-            level="L1",
+            level=level,
             device="cpu",
             seed=seed,
             use_mean_dynamics=use_mean_dynamics,
@@ -144,7 +145,7 @@ def dump_reference(
         "weights": str(weights_path),
         "sha": sha,
         "stateful": stateful,
-        "level": "L1",
+        "level": str(level),
         "episodes": int(episodes),
         "seed": int(seed),
         "use_mean_dynamics": bool(use_mean_dynamics),
@@ -176,6 +177,7 @@ def main():
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--episodes", type=int, default=200)
     ap.add_argument("--seed", type=int, default=11)
+    ap.add_argument("--level", type=str, default="L1")
     ap.add_argument("--use-mean-dynamics", action="store_true")
     args = ap.parse_args()
 
@@ -185,9 +187,10 @@ def main():
         episodes=args.episodes,
         seed=args.seed,
         use_mean_dynamics=args.use_mean_dynamics,
+        level=args.level,
     )
     print(
-        f"wrote {args.out}: {meta['total_ticks']} ticks over {meta['episodes']} L1 episodes "
+        f"wrote {args.out}: {meta['total_ticks']} ticks over {meta['episodes']} {meta['level']} episodes "
         f"(success {meta['success']}/{meta['episodes']}, sha={meta['sha']})"
     )
 
