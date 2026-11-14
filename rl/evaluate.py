@@ -15,6 +15,15 @@ from models import load_student, load_teacher, teacher_obs
 from sim import EnvConfig, MecanumVecEnv
 
 from ugv.parking import pose2_from_ccw, pose2_to_ccw  # noqa: E402  (frame boundary)
+from ugv.policy import (  # noqa: E402  (numpy-only deploy module)
+    SEARCH_AGE,
+    SEARCH_D,
+    SEARCH_DWELL,
+    SEARCH_MAX,
+    SEARCH_P,
+    SEARCH_SWEEP_AMP,
+    SEARCH_SWEEP_RATE,
+)
 
 BASELINES = ("random", "brake", "oracle_pd")
 
@@ -80,6 +89,17 @@ def policy_act(kind, model, obs, n, device, h_state=None):
     return model(obs["student"]).clamp(-1, 1), h_state  # student
 
 
+def search_yaw_target_vec(blind_s: torch.Tensor) -> torch.Tensor:
+    """Vectorized mirror of ugv.policy.search_yaw_target (dwell then triangle sweep)."""
+    u = (blind_s - SEARCH_DWELL).clamp_min(0.0) * SEARCH_SWEEP_RATE
+    p = u % (4 * SEARCH_SWEEP_AMP)
+    return torch.where(
+        p < SEARCH_SWEEP_AMP,
+        p,
+        torch.where(p < 3 * SEARCH_SWEEP_AMP, 2 * SEARCH_SWEEP_AMP - p, p - 4 * SEARCH_SWEEP_AMP),
+    )
+
+
 def run(
     episodes,
     level,
@@ -123,6 +143,7 @@ def run(
         obs = env.reset(torch.arange(n))  # persistent stream: same seed, same JSON
         h_state = torch.zeros(1, n, meta.get("hidden", 64), device=env.device) if stateful else None
         prev_a = torch.zeros(n, 3, device=env.device)
+        blind_t = torch.zeros(n, device=env.device)
         done = torch.zeros(n, dtype=torch.bool, device=env.device)
         t = torch.zeros(n, device=env.device)
         j = torch.zeros(n, device=env.device)
@@ -140,16 +161,21 @@ def run(
                 h_state,
             )
             if fov_search and kind == "student":
-                # deploy blind-search reflex (mirrors StudentPolicy.step): after
-                # 1 s without a tag, spin toward imu_yaw = 0, zero translation.
+                # deploy blind-search reflex (mirrors StudentPolicy.step): dwell
+                # at yaw 0, then triangle-sweep the yaw setpoint, zero translation.
                 h = obs["student"][:n]
-                blind = h[:, -1, 3] >= 1.0
+                blind_t = torch.where(
+                    h[:, -1, 4] > 0.5, torch.zeros_like(blind_t), blind_t + env.cfg.dt
+                )
+                blind = blind_t >= SEARCH_AGE
                 if bool(blind.any()):
-                    u_turn = (-1.8 * h[:, -1, 6] - 0.3 * h[:, -1, 5]).clamp(-0.6, 0.6)
+                    target = search_yaw_target_vec(blind_t[blind] - SEARCH_AGE)
+                    yaw_err = (h[blind, -1, 6] - target + math.pi) % (2 * math.pi) - math.pi
+                    u_turn = (-SEARCH_P * yaw_err - SEARCH_D * h[blind, -1, 5]).clamp(
+                        -SEARCH_MAX, SEARCH_MAX
+                    )
                     z = torch.zeros_like(u_turn)
-                    a[blind] = torch.stack([z[blind], z[blind], u_turn[blind]], dim=1)[
-                        :, : a.shape[1]
-                    ]
+                    a[blind] = torch.stack([z, z, u_turn], dim=1)[:, : a.shape[1]]
             full = torch.zeros(env.n, act_dim, device=env.device)
             full[:n] = a
             obs_full, _, d, info = env.step(full)

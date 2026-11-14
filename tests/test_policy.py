@@ -107,3 +107,29 @@ def test_shield_ccw_yaw_negated_for_swept_clear():
     est_blocked = Pose2(0.06, 0.30, yaw_blocked)
     act, reason = p.step((0.06, 0.30, yaw_blocked), 0.0, True, 0.0, 0.0, np.zeros(3), est_blocked)
     assert (act == 0).all() and "blocked" in reason
+
+
+def test_shield_false_bypasses_swept_clear():
+    p = StudentPolicy({}, shield=False)
+    p.forward = lambda h: np.array([1.0, 0.0, 0.0])
+    est = Pose2(0.10, 0.0, 0.0)  # would be blocked with shield=True
+    act, reason = p.step((0.1, 0.0, 0.0), 0.05, True, 0.0, 0.0, np.zeros(3), est)
+    assert reason == "policy-raw"
+    assert np.allclose(act, [1.0, 0.0, 0.0])
+    assert act.dtype == np.float64
+
+
+def test_search_sweeps_after_dwell_instead_of_parking_at_yaw_zero():
+    from ugv.policy import SEARCH_AGE, SEARCH_DWELL, search_yaw_target
+
+    assert search_yaw_target(0.0) == 0.0 and search_yaw_target(SEARCH_DWELL) == 0.0
+    targets = [search_yaw_target(SEARCH_DWELL + t * 0.5) for t in range(40)]
+    assert max(targets) > 1.5 and min(targets) < -1.5
+    p = StudentPolicy({})
+    p.forward = lambda h: np.zeros(3)
+    est = Pose2(0.0, 1.0, 0.0)
+    turns = []
+    for _ in range(int((SEARCH_AGE + SEARCH_DWELL + 6.0) / 0.05)):
+        act, reason = p.step(None, 0.0, False, 0.0, 0.0, np.zeros(3), est, dt=0.05)
+        turns.append(act[2])
+    assert "search" in reason and max(turns) > 0.05

@@ -296,7 +296,41 @@ def baseline_controller(latency, axes="rl_sim", geometry=None):
     return step, reset
 
 
-def run_episodes(step_fn, reset_fn, bridge, episodes, dt=DT, max_time=45.0):
+def _make_trace_frame(step_k, dt, pose, tag, age, valid, imu_w, imu_yaw, act, reason, sensors_obj):
+    blk_win = getattr(sensors_obj, "blackout", None)
+    in_blk = bool(
+        blk_win is not None
+        and blk_win[0] < getattr(sensors_obj, "t", 0.0) < blk_win[0] + blk_win[1]
+    )
+    return {
+        "t": round(step_k * dt, 3),
+        "true_pose": [round(float(v), 4) for v in pose[:3]],
+        "true_pose_ccw": [round(float(v), 4) for v in pose[:3]],
+        "delayed_tag": [round(float(v), 4) for v in tag[:3]],
+        "aux_pose": [round(float(v), 4) for v in pose[:3]],
+        "valid": bool(valid),
+        "blackout": in_blk,
+        "steps_since_valid": int(round(float(age) / dt)) if dt > 0 else 0,
+        "tag_age": round(float(age), 4),
+        "imu_w": float(imu_w),
+        "imu_yaw": float(imu_yaw),
+        "action": [round(float(v), 4) for v in act[:3]],
+        "shield_clear": not str(reason).startswith("brake: swept"),
+        "reason": str(reason),
+    }
+
+
+def run_episodes(
+    step_fn,
+    reset_fn,
+    bridge,
+    episodes,
+    dt=DT,
+    max_time=45.0,
+    trace_episodes: list | None = None,
+    max_trace_episodes: int = 20,
+    seed: int = 11,
+):
     scorer = Scorer(max_time)
     results = []
     accepts_lat = len(inspect.signature(reset_fn).parameters) >= 1
@@ -304,11 +338,15 @@ def run_episodes(step_fn, reset_fn, bridge, episodes, dt=DT, max_time=45.0):
     for ep in range(episodes):
         bridge.reset(ep)
         scorer.reset()
-        if accepts_lat and getattr(bridge, "sensors", None) is not None:
-            reset_fn(bridge.sensors.latency)
+        sensors_obj = getattr(bridge, "sensors", None)
+        if accepts_lat and sensors_obj is not None:
+            reset_fn(sensors_obj.latency)
         else:
             reset_fn()
         prev = np.zeros(3)
+        recording = trace_episodes is not None and ep < max_trace_episodes
+        frames = []
+        step_k = 0
         while True:
             pose, vel, collision = bridge.observation()
             res = scorer.update(*pose, *vel, collision, dt)
@@ -323,14 +361,64 @@ def run_episodes(step_fn, reset_fn, bridge, episodes, dt=DT, max_time=45.0):
                 )
             if res is not None:
                 results.append(res)
+                if recording:
+                    outcome = (
+                        "success" if res.success else ("collision" if res.collision else "timeout")
+                    )
+                    if has_sensor_obs:
+                        tag, age, valid, imu_w, imu_yaw, _ = bridge.sensor_observation()
+                    else:
+                        tag, age, valid, imu_w, imu_yaw = (
+                            tuple(pose),
+                            dt,
+                            True,
+                            vel[2],
+                            pose[2],
+                        )
+                    frames.append(
+                        _make_trace_frame(
+                            step_k,
+                            dt,
+                            pose,
+                            tag,
+                            age,
+                            valid,
+                            imu_w,
+                            imu_yaw,
+                            [0.0, 0.0, 0.0],
+                            outcome,
+                            sensors_obj,
+                        )
+                    )
+                    trace_episodes.append(
+                        {
+                            "episode_id": ep,
+                            "seed": seed,
+                            "outcome": outcome,
+                            "steps": step_k,
+                            "duration": round(res.time_s, 3),
+                            "final_pos": round(res.final_pos, 4),
+                            "final_yaw_deg": round(res.final_yaw_deg, 2),
+                            "final_error": round(res.final_pos * 1000.0, 1),
+                            "frames": frames,
+                        }
+                    )
                 break
             if has_sensor_obs:
                 tag, age, valid, imu_w, imu_yaw, est = bridge.sensor_observation()
-                act, _ = step_fn(tag, age, valid, imu_w, imu_yaw, prev, est)
+                act, reason = step_fn(tag, age, valid, imu_w, imu_yaw, prev, est)
             else:
-                act, _ = step_fn(tuple(pose), dt, True, vel[2], pose[2], prev, Pose2(*pose))
+                tag, age, valid, imu_w, imu_yaw = tuple(pose), dt, True, vel[2], pose[2]
+                act, reason = step_fn(tag, age, valid, imu_w, imu_yaw, prev, Pose2(*pose))
+            if recording:
+                frames.append(
+                    _make_trace_frame(
+                        step_k, dt, pose, tag, age, valid, imu_w, imu_yaw, act, reason, sensors_obj
+                    )
+                )
             prev = np.asarray(act, dtype=float)
             bridge.step(act, dt)
+            step_k += 1
     return results
 
 
@@ -360,6 +448,13 @@ def main():
     ap.add_argument("--smoke", action="store_true", help="P-controller instead of the student")
     ap.add_argument(
         "--baseline", action="store_true", help="EKF + staged baseline instead of the student"
+    )
+    ap.add_argument(
+        "--student-shield",
+        choices=["none", "sim", "gazebo"],
+        default="none",
+        help="shield mode for exported student: none (raw GRU matching rl/evaluate.py), "
+        "sim (rl/sim.py default gear), or gazebo (GAZEBO_GEOMETRY 0.47m bars)",
     )
     ap.add_argument(
         "--latency",
@@ -399,6 +494,12 @@ def main():
     ap.add_argument("--world", type=Path, default=REPO / "rl/runs/gazebo_l6/world_generated.sdf")
     ap.add_argument("--out", type=Path, default=REPO / "rl/runs/gazebo_l6")
     ap.add_argument("--json", default=None)
+    ap.add_argument(
+        "--save-traces",
+        default="",
+        help="write ugv_replay_v1 trace bundle JSON for Observatory replay",
+    )
+    ap.add_argument("--max-trace-episodes", type=int, default=20)
     ap.add_argument("--max-time", type=float, default=45.0)
     args = ap.parse_args()
 
@@ -418,13 +519,16 @@ def main():
             axes = "rl_sim"
         meta = {"controller": "ekf_staged_baseline"}
     elif args.weights:
-        if is_gz:
-            policy = StudentPolicy.load(args.weights, vehicle=GAZEBO_VEHICLE, gear=GAZEBO_GEAR)
-        else:
+        if args.student_shield == "none":
+            policy = StudentPolicy.load(args.weights, shield=False)
+        elif args.student_shield == "sim":
             policy = StudentPolicy.load(args.weights)
+        else:  # "gazebo"
+            policy = StudentPolicy.load(args.weights, vehicle=GAZEBO_VEHICLE, gear=GAZEBO_GEAR)
         step_fn, reset_fn = policy.step, policy.reset
         axes = "rl_sim"
-        meta = {"controller": "student", "weights": args.weights, "sha": policy.sha}
+        ctrl = f"student-shield-{args.student_shield}" if is_gz else "student"
+        meta = {"controller": ctrl, "weights": args.weights, "sha": policy.sha}
     else:
         ap.error("--weights is required unless --smoke or --baseline")
 
@@ -452,9 +556,19 @@ def main():
     else:
         bridge = FakeBridge()
 
+    trace_episodes = [] if args.save_traces else None
     try:
         summary = summarize(
-            run_episodes(step_fn, reset_fn, bridge, args.episodes, max_time=args.max_time)
+            run_episodes(
+                step_fn,
+                reset_fn,
+                bridge,
+                args.episodes,
+                max_time=args.max_time,
+                trace_episodes=trace_episodes,
+                max_trace_episodes=args.max_trace_episodes,
+                seed=args.seed,
+            )
         )
     finally:
         if hasattr(bridge, "close"):
@@ -472,6 +586,39 @@ def main():
     if args.json:
         Path(args.json).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json).write_text(json.dumps(summary, indent=2))
+    if args.save_traces and trace_episodes is not None:
+        trace_path = Path(args.save_traces)
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        run_id = Path(args.weights).stem if args.weights else meta.get("controller", "run")
+        bundle = {
+            "schema": "ugv_replay_v1",
+            "format": "ugv_replay_v1",
+            "source": "gazebo_l6",
+            "run_id": run_id,
+            "controller": meta.get("controller"),
+            "bridge": args.bridge,
+            "level": args.level,
+            "seed": args.seed,
+            "sensing": args.sensing if is_gz else "fake",
+            "dt": DT,
+            "geometry": {
+                "car_w": GAZEBO_GEOMETRY.car_w,
+                "car_l": GAZEBO_GEOMETRY.car_l,
+                "skid_x": GAZEBO_GEOMETRY.skid_x,
+                "gear_len": 2.0 * GAZEBO_GEOMETRY.skid_half_len,
+                "skid_half_len": GAZEBO_GEOMETRY.skid_half_len,
+                "gear_r": GAZEBO_GEOMETRY.skid_r,
+                "inflation": 0.015,
+                "goal_x": LAT_TOL,
+                "goal_y": LONG_TOL,
+                "goal_yaw_deg": round(math.degrees(YAW_TOL), 2),
+                "fov_half_deg": 33.5,
+                "min_tag_range": 0.30,
+                "area": float(LEVELS[args.level].get("area", 1.5)),
+            },
+            "episodes": trace_episodes,
+        }
+        trace_path.write_text(json.dumps(bundle))
 
 
 if __name__ == "__main__":

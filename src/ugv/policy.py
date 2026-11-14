@@ -30,6 +30,23 @@ SEARCH_AGE = 1.0
 SEARCH_P = 1.8
 SEARCH_D = 0.3
 SEARCH_MAX = 0.6
+# After SEARCH_DWELL s parked at yaw 0 without a tag, sweep the yaw setpoint as a
+# triangle wave of +/-SEARCH_SWEEP_AMP rad at SEARCH_SWEEP_RATE rad/s. A spawn
+# off to the side (bearing > the FOV half-angle at yaw 0) is found on the sweep
+# instead of timing out parked at yaw 0.
+SEARCH_DWELL = 1.5
+SEARCH_SWEEP_AMP = 1.75
+SEARCH_SWEEP_RATE = 0.6
+
+
+def search_yaw_target(blind_s: float) -> float:
+    """Yaw setpoint (rad, CCW+) after blind_s seconds of search: dwell at 0, then sweep."""
+    u = max(0.0, blind_s - SEARCH_DWELL) * SEARCH_SWEEP_RATE
+    p = u % (4 * SEARCH_SWEEP_AMP)
+    a = SEARCH_SWEEP_AMP
+    if p < a:
+        return p
+    return 2 * a - p if p < 3 * a else p - 4 * a
 
 
 def _sigmoid(x):
@@ -47,10 +64,12 @@ class StudentPolicy:
         gear=None,
         inflation=0.015,
         stateful: bool = False,
+        shield: bool = True,
     ):
         self.a = {k: np.asarray(v, dtype=np.float64) for k, v in arrays.items()}
         self.sha = sha
         self.stateful = stateful
+        self.shield = bool(shield)
         self.vehicle = vehicle or {"width_m": 0.16, "length_m": 0.22}
         self.gear = gear or {
             "clear_width_m": 0.254,
@@ -84,12 +103,17 @@ class StudentPolicy:
         self.reset()
 
     @classmethod
-    def load(cls, weights: str | Path, **kw) -> StudentPolicy:
+    def load(cls, weights: str | Path, shield: bool = True, **kw) -> StudentPolicy:
         z = np.load(weights, allow_pickle=True)
         arrays = {k: z[k] for k in z.files if not k.startswith("meta")}
         if "stateful" not in kw and "meta_stateful" in z.files:
             kw["stateful"] = bool(z["meta_stateful"])
-        return cls(arrays, str(z["meta_sha"]) if "meta_sha" in z.files else "?", **kw)
+        return cls(
+            arrays,
+            str(z["meta_sha"]) if "meta_sha" in z.files else "?",
+            shield=shield,
+            **kw,
+        )
 
     def reset(self):
         """Clear per-episode state (history + tag-velocity estimator)."""
@@ -184,11 +208,12 @@ class StudentPolicy:
         self._push(frame)
         # Blind-search reflex: prolonged total tag loss (e.g. blind spawn with
         # the tag outside the camera FOV) -> in-place yaw servo toward
-        # imu_yaw = 0 with rate damping, zero translation. Applied through the
+        # imu_yaw = 0, then a +/-100 deg sweep, rate damped, zero translation. Applied through the
         # swept-clear shield below, so a blocked spin still brakes.
         search = (not tag_valid) and self._dt_since_valid >= SEARCH_AGE
         if search:
-            yaw_w = (float(imu_yaw) + math.pi) % (2 * math.pi) - math.pi
+            target = search_yaw_target(self._dt_since_valid - SEARCH_AGE)
+            yaw_w = (float(imu_yaw) - target + math.pi) % (2 * math.pi) - math.pi
             u_turn = max(-SEARCH_MAX, min(SEARCH_MAX, -SEARCH_P * yaw_w - SEARCH_D * float(imu_w)))
             act = np.zeros(self._act_dim)
             act[2] = u_turn
@@ -200,6 +225,8 @@ class StudentPolicy:
         else:
             act = self.forward(self.hist).clip(-1, 1)
             search_reason = ""
+        if not self.shield:
+            return act.astype(np.float64), "policy-raw"
         # shield: rotate body velocity by estimate.yaw, forward-predict past dt_stale,
         # then sweep the full stopping horizon (covers latency + brake_tau)
         c, s = math.cos(estimate.yaw), math.sin(estimate.yaw)
