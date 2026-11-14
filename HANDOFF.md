@@ -66,3 +66,16 @@
 - Tool: `python3 /home/fer/Documents/ugv/.agent_kb/kb.py` (`facts`, `query`, `slice`, `index`).
 - Index: `/home/fer/Documents/ugv/.agent_kb/index.json` (`870` symbols, `25` L7 runs).
 - Facts: `/home/fer/Documents/ugv/.agent_kb/FACTS.md`.
+## 8. Post-Pause Offline Verification, Orbit Routing & Vision/Sim Notes (`87af776`, `d1bf093`)
+- **Commits added on `main` (pushed to `origin`)**:
+  - `87af776` — `refactor(ui): remove unused browser vision.js and ONNX WASM assets` (removed unused `src/ugv/static/vision.js`, `ort.wasm.min.js`, `models/yolo11n-320.onnx`, and `vendor/` WASM/ORT runtime assets; updated `index.html`, `styles.css`, and `tests/test_hud_payload.py`).
+  - `d1bf093` — `fix(autopark): orbit perimeter around drone skids to prevent swept_clear blocks` (added perimeter orbit waypoint routing in `src/ugv/autopark.py` and skid-clearing coverage in `tests/test_autopark.py`).
+- **Verification**:
+  - `pytest tests/`: **156 passed, 0 failed** (full repo `pytest`: **190 passed, 4 subtests passed**).
+  - **Closed-loop kinematic orbit rollout** (`dt = 0.06s`, `gear_obstacles` `clear_width_m=0.314, bar_length_m=0.305, bar_radius_m=0.03, inward_slope=0.0`, `AutoParkRunner` + `Localizer` holonomic velocity & yaw integration toward `(0.0, 0.55, 0.0)`): **0 `"blocked"` ticks**, all 3 poses reached `abs(x) <= 0.20, y >= 0.42` facing toward the drone (`right` corridor@step 88, facing@step 138 (8.28s) -> `(+0.01, +0.54, -15.8 deg)`; `left` corridor@step 91, facing@step 142 (8.52s) -> `(-0.01, +0.54, +16.2 deg)`; `rear` corridor@step 158, facing@step 238 (14.28s) -> `(-0.02, +0.55, +15.6 deg)`). Note: during combined fwd+strafe+turn (`duty_to_dashboard` wheel saturation scaling), yaw duty is scaled down while orbiting and finishes aligning once near `(0.0, 0.55)`.
+- **`swept_clear` blocking & yaw/turn sign findings**:
+  - Direct straight-chord staging from side/rear poses passed through `(0, 0)` (the drone skids), causing `swept_clear` to reject commands and block. `_staging_orbit_waypoints` now routes around a `0.72–1.15 m` perimeter arc toward `(0.0, 0.55, 0.0)` while facing the drone.
+  - Yaw/turn signs: `probe-axes` `+ccw -> +w` verified; `GoTo` reduces `|yaw_err|` in CCW+ policy/world frame (`autopark.py`, `tools/l7/l7_run.py`, `rl/policy.py`). Legacy `src/ugv/parking.py` (`Pose2`) uses CW+ `+z` yaw convention separate from `autopark.py`, so `autopark.py` negates yaw when calling `swept_clear(Pose2(x, y, -yaw), ...)`.
+- **Gazebo vs real screenshot gap & on-Pi skid-on-floor CV notes**:
+  - `freenove_world.sdf` / `simulation/gazebo/environment.py` camera matches `1280x720` `L8` `fx = fy = 968` with directional `key_light` and `fill_light`, whereas `VisionSensors` renders tags-only frames without speckled/specular concrete floor texture, foam skids + grey end-caps, or lab clutter.
+  - Pulled Pi frames (`calibration/runs/l7/20261113-193354-watch-diag/frames/`, 14 frames) highlight real-world floor specular glare, foam skids with grey end-caps, and background lab clutter as primary visual gaps for on-Pi skid-on-floor CV.
