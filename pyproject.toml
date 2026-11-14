@@ -28,3 +28,20 @@ dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "simulation/gazebo"]  # rl/ has its own CUDA env + tests; root stays torch-free
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+    "arduino",
+    "**/static/vendor",
+    "simulation/gazebo/lockstep/build",
+    "runs",
+    "rl/runs",
+    ".venv",
+    "rl/.venv",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
