@@ -11,7 +11,6 @@
   <div id="media-layer">
     <img id="camera-feed" src="/stream.mjpg" alt="UGV live camera feed">
     <canvas id="aruco-overlay"></canvas>
-    <canvas id="vision-overlay"></canvas>
   </div>
 
   <header class="glass pill feed-label">
@@ -89,8 +88,6 @@
       <button id="camera-toggle" type="button" class="btn" aria-pressed="true" title="Toggle camera stream">Cam</button>
       <button id="aruco-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco detection">Tags</button>
       <button id="follow-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco follow">Follow</button>
-      <button id="detect-toggle" type="button" class="btn" aria-pressed="false" title="Toggle vision detections">Detect</button>
-      <button id="stabilize-toggle" type="button" class="btn" aria-pressed="false" title="Toggle horizon stabilization">Stab</button>
       <button id="view-fit-toggle" type="button" class="btn active" aria-pressed="true" title="Fit: Cover (click for Contain)">Fit</button>
       <button id="map-toggle" type="button" class="btn" aria-pressed="false" title="Toggle parking map">Map</button>
     </div>
@@ -125,8 +122,6 @@
     <span data-wheel="front-left">0</span>
   </div>
 
-  <script src="/static/ort.wasm.min.js"></script>
-  <script src="/static/vision.js"></script>
   <script src="/static/parking.js"></script>
   <script src="/static/app.js"></script>
 </body>

@@ -13,13 +13,13 @@ REQUIRED_STATE_KEYS = (
 )
 
 LEGACY_IDS = (
-    "camera-feed", "vision-overlay", "aruco-overlay", "feed-stats",
+    "camera-feed", "aruco-overlay", "feed-stats",
     "connection", "parking-panel", "heading-needle", "heading-degrees",
     "heading-status", "heading-calibrate", "motion", "reason",
     "turn-feedback", "ownership", "clients", "forward", "strafe", "turn",
     "pan", "tilt", "aruco-readout", "vision-rate", "vision-time",
     "imu-status", "imu-accel", "imu-gyro", "joystick", "joystick-knob",
-    "arm", "detect-toggle", "stabilize-toggle", "camera-toggle",
+    "arm", "camera-toggle",
     "aruco-toggle", "follow-toggle", "map-toggle", "speed", "speed-value",
     "speed-meter", "stop", "watchdog",
 )
