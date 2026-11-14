@@ -1,4 +1,9 @@
-"""Deploy-time parking student: NumPy forward pass + shield. No torch."""
+"""Deploy-time parking student: NumPy forward pass + shield. No torch.
+
+Frame convention: ``(x, y, yaw)`` and ``imu_yaw`` use **counter-clockwise-positive**
+yaw matching ``rl/sim.py`` (opposite to ``ugv.parking.Pose2`` clockwise-positive
+yaw; ``swept_clear`` shield checks negate yaw when constructing ``Pose2``).
+"""
 
 from __future__ import annotations
 

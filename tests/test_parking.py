@@ -20,6 +20,8 @@ from ugv.parking import (
     gear_obstacles,
     inverse,
     plan_route,
+    pose2_from_ccw,
+    pose2_to_ccw,
     readiness,
     swept_clear,
     transform,
@@ -50,6 +52,15 @@ def test_route_and_every_sweep_fit_between_gear():
     assert not plan_route(
         Pose2(0, -0.5), Pose2(0, 0), {"width_m": 0.24, "length_m": 0.3}, obstacles, 0.015
     )
+
+
+def test_pose2_ccw_conversion_roundtrip_and_sign():
+    p = pose2_from_ccw(0.25, -0.6, math.radians(30.0))
+    assert p == Pose2(0.25, -0.6, -math.radians(30.0))
+    assert pose2_to_ccw(p) == pytest.approx((0.25, -0.6, math.radians(30.0)))
+    # Positive yaw=0 stays 0
+    assert pose2_from_ccw(0, 0, 0.0) == Pose2(0.0, 0.0, -0.0)
+    assert pose2_to_ccw(Pose2(0.1, 0.2, -0.5)) == pytest.approx((0.1, 0.2, 0.5))
 
 
 def verified_config():

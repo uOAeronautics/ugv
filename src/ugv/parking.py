@@ -1,5 +1,10 @@
 """Drone-relative observation, conservative footprint planning and docking feedback.
 
+Frame convention: ``Pose2(x, z, yaw)`` uses ``x`` right, ``z`` forward, and
+**clockwise-positive** yaw measured from ``+z`` toward ``+x`` (radians). Callers
+in the CCW-positive policy/L7 frame (``autopark.py``, ``policy.py``,
+``tools/l7/l7_run.py``, ``rl/sim.py``) must convert via ``pose2_from_ccw``.
+
 The observer never commands motors. Unverified scale, mounting, envelope or gear
 geometry prevents execution even when an illustrative route can be computed.
 """
@@ -67,9 +72,21 @@ def valid_transform(value):
 
 @dataclass(frozen=True)
 class Pose2:
+    """SE(2) pose in the parking frame: (x right, z forward, CW-positive yaw from +z toward +x)."""
+
     x: float
     z: float
-    yaw: float = 0.0  # radians; heading measured from +z toward +x
+    yaw: float = 0.0  # radians; clockwise-positive from +z toward +x
+
+
+def pose2_from_ccw(x: float, y: float, yaw_ccw: float) -> Pose2:
+    """Convert CCW-positive ``(x, y, yaw_ccw)`` (autopark/policy/sim) to CW-positive ``Pose2``."""
+    return Pose2(float(x), float(y), -float(yaw_ccw))
+
+
+def pose2_to_ccw(pose: Pose2) -> tuple[float, float, float]:
+    """Convert CW-positive ``Pose2(x, z, yaw)`` to CCW-positive ``(x, y, yaw_ccw)``."""
+    return (float(pose.x), float(pose.z), -float(pose.yaw))
 
 
 @dataclass(frozen=True)

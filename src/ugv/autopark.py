@@ -1,3 +1,10 @@
+"""Web Auto Park localizer, staging orbit router, and closed-loop controller.
+
+Frame convention: ``(x, y, yaw)`` with drone at origin, skids along ``y``,
+``yaw = 0`` facing ``-y`` toward the drone, **counter-clockwise-positive** yaw
+(opposite to ``ugv.parking.Pose2`` clockwise-positive yaw).
+"""
+
 from __future__ import annotations
 
 import json

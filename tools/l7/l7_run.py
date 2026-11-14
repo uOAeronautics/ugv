@@ -6,9 +6,10 @@ motor authority, its 600 ms watchdog and the 1800/4095 PWM cap; this process onl
 `drive` messages, so killing it brakes the car.
 
 Frames (same as rl/sim.py): drone at the origin, skids along y, car pose (x, y, yaw) with
-yaw 0 = camera facing the drone along -y, yaw CCW positive. The frame is anchored on the
-primary ArUco tag (default 14, assumed centred in the corridor, facing +y); other tags are
-mapped online by co-observation and saved to the tag map for the next run.
+yaw 0 = camera facing the drone along -y, yaw **CCW-positive** (opposite to
+``ugv.parking.Pose2`` CW-positive yaw, so ``swept_clear`` checks negate yaw). The frame is
+anchored on the primary ArUco tag (default 14, assumed centred in the corridor, facing +y);
+other tags are mapped online by co-observation and saved to the tag map for the next run.
 
 Modes
   probe    open-loop axis pulses; prints measured body displacement per pulse (signs, gains)

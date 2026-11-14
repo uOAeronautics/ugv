@@ -1,5 +1,9 @@
 """Batched mecanum SE(2) parking env with grounded DR + sensor emulator.
 
+Frame convention: drone at origin, skids along ``y``, car pose ``(x, y, yaw)``
+with ``yaw = 0`` facing ``-y`` toward the drone and **CCW-positive** yaw
+(opposite to ``ugv.parking.Pose2`` CW-positive yaw).
+
 Dynamics: torch port of src/ugv/mecanum_dynamics features/step. Each episode
 samples one joint posterior draw (60 particles) plus extra DR (wheel gain, yaw
 coupling, battery sag). Sensor emulator: tag FOV/range noise, latency,
