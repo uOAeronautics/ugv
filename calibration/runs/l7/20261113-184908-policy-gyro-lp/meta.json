@@ -1,0 +1,105 @@
+{
+ "run_id": "20261113-184908-policy-gyro-lp",
+ "argv": [
+  "l7_run.py",
+  "policy",
+  "--time",
+  "30",
+  "--imu-w-mode",
+  "lp",
+  "--name",
+  "gyro-lp"
+ ],
+ "args": {
+  "mode": "policy",
+  "out": "/home/advanced/l7_runs",
+  "name": "gyro-lp",
+  "weights": "/home/advanced/ugv/runs/student.npz",
+  "ids": "3,6,14",
+  "primary": "14",
+  "tagmap": "/home/advanced/l7_runs/tagmap.json",
+  "tag_y": "-0.08",
+  "gyro_sign": "1.0",
+  "time": "30.0",
+  "save_every": "4",
+  "target": "0,0.9,0",
+  "act_gain": "1.0",
+  "imu_w_mode": "lp",
+  "shield": "real",
+  "dr_max": "1.0",
+  "dr_max_corridor": "8.0",
+  "dr_path": "0.9",
+  "blend": "0.35",
+  "gain_fwd": "2.3",
+  "gain_left": "1.6",
+  "gain_yaw": "15.7",
+  "dz_fwd": "0.05",
+  "dz_left": "0.13",
+  "dz_yaw": "0.1",
+  "adapter": "vel",
+  "acquire_dps": "25.0",
+  "sim_plant": "p0",
+  "yaw_ki": "0.8",
+  "yaw_kp": "0.03",
+  "profile": "/home/advanced/l7/mecanum_bayesian_profile.json",
+  "kp_pos": "1.2",
+  "kp_yaw": "1.5",
+  "vcap_fwd": "0.3",
+  "vcap_left": "0.25",
+  "vcap_yaw": "0.5",
+  "tol_pos": "0.04",
+  "tol_yaw": "5.0",
+  "probe_duty": "0.2,0.3",
+  "probe_s": "0.4",
+  "probe_axes": "fwd,left,ccw"
+ },
+ "K": [
+  [
+   968.0,
+   0.0,
+   640.0
+  ],
+  [
+   0.0,
+   968.0,
+   360.0
+  ],
+  [
+   0.0,
+   0.0,
+   1.0
+  ]
+ ],
+ "tag_size_m": 0.05,
+ "cam_fwd_m": 0.071,
+ "pwm_limit": 1800,
+ "tagmap_in": {
+  "14": [
+   -0.028,
+   0.0,
+   1.5707963267948966,
+   -1
+  ],
+  "6": [
+   0.06,
+   -0.05,
+   0.0,
+   0
+  ],
+  "3": [
+   -0.10475819818162055,
+   -0.04879517773051044,
+   2.5586060228012215,
+   129
+  ]
+ },
+ "host": "adv034",
+ "started_unix": 1794613748.5380707,
+ "started_monotonic": 9641.259087746,
+ "frame": "drone/policy frame: skids along y, yaw 0 faces -y, CCW+; anchored on primary tag",
+ "policy": {
+  "sha": "10c8b41ab69dd7c5",
+  "stateful": false,
+  "weights": "/home/advanced/ugv/runs/student.npz"
+ }
+}

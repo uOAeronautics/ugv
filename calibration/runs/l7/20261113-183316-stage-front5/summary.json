@@ -1,0 +1,28 @@
+{
+ "run_id": "20261113-183316-stage-front5",
+ "mode": "stage",
+ "start_pose": null,
+ "acquired_pose": null,
+ "error": "RuntimeError: no tag found after acquisition spin; refusing to drive",
+ "tagmap_out": {
+  "14": [
+   -0.028,
+   0.0,
+   1.5707963267948966,
+   -1
+  ],
+  "6": [
+   0.06,
+   -0.05,
+   0.0,
+   0
+  ],
+  "3": [
+   -0.12136992781444866,
+   0.06875840582337199,
+   2.039951326358727,
+   22
+  ]
+ },
+ "vision_ms_p50": null
+}

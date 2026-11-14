@@ -1,0 +1,155 @@
+{
+ "pulses": [
+  {
+   "axis": "fwd",
+   "duty": 0.15,
+   "yaw_rate_dps_ss": -0.25466206896551713,
+   "yaw_onset_s": null,
+   "v_ss": 0.19890324408413268,
+   "onset_s": 0.28492931700020563
+  },
+  {
+   "axis": "fwd",
+   "duty": -0.15,
+   "yaw_rate_dps_ss": -1.6762857142857144,
+   "yaw_onset_s": null,
+   "v_ss": -0.23378946669156725,
+   "onset_s": 0.18798349100052292
+  },
+  {
+   "axis": "left",
+   "duty": 0.15,
+   "yaw_rate_dps_ss": 0.5167633333333334,
+   "yaw_onset_s": null,
+   "v_ss": 0.012106463408889873,
+   "onset_s": null
+  },
+  {
+   "axis": "left",
+   "duty": -0.15,
+   "yaw_rate_dps_ss": -7.330527586206896,
+   "yaw_onset_s": null,
+   "v_ss": -0.010635996840799612,
+   "onset_s": null
+  },
+  {
+   "axis": "ccw",
+   "duty": 0.15,
+   "yaw_rate_dps_ss": 37.02098275862069,
+   "yaw_onset_s": 0.08938464099992416,
+   "onset_s": null
+  },
+  {
+   "axis": "ccw",
+   "duty": -0.15,
+   "yaw_rate_dps_ss": -37.92598275862068,
+   "yaw_onset_s": 0.08084090199918137,
+   "onset_s": 0.17248823999943852
+  },
+  {
+   "axis": "fwd",
+   "duty": 0.25,
+   "yaw_rate_dps_ss": -1.894196551724138,
+   "yaw_onset_s": null,
+   "onset_s": 0.19962615500026004
+  },
+  {
+   "axis": "fwd",
+   "duty": -0.25,
+   "yaw_rate_dps_ss": 0.1936275862068966,
+   "yaw_onset_s": null,
+   "v_ss": -0.5096692768721187,
+   "onset_s": 0.18392525799936266
+  },
+  {
+   "axis": "left",
+   "duty": 0.25,
+   "yaw_rate_dps_ss": 10.772703333333336,
+   "yaw_onset_s": null,
+   "v_ss": 0.2124543294464299,
+   "onset_s": 0.37169212800017704
+  },
+  {
+   "axis": "left",
+   "duty": -0.25,
+   "yaw_rate_dps_ss": -6.89276551724138,
+   "yaw_onset_s": null,
+   "v_ss": -0.29747938609224933,
+   "onset_s": 0.35882504699929996
+  },
+  {
+   "axis": "ccw",
+   "duty": 0.25,
+   "yaw_rate_dps_ss": 144.9100896551724,
+   "yaw_onset_s": 0.06955877100062935
+  },
+  {
+   "axis": "ccw",
+   "duty": -0.25,
+   "yaw_rate_dps_ss": -146.97265714285714,
+   "yaw_onset_s": 0.045407132000036654
+  },
+  {
+   "axis": "fwd",
+   "duty": 0.35,
+   "yaw_rate_dps_ss": -4.701739999999999,
+   "yaw_onset_s": null,
+   "v_ss": 0.6677629875148445,
+   "onset_s": 0.17724742900009005
+  },
+  {
+   "axis": "fwd",
+   "duty": -0.35,
+   "yaw_rate_dps_ss": 0.475192857142857,
+   "yaw_onset_s": null,
+   "onset_s": 0.18017092799982493
+  },
+  {
+   "axis": "left",
+   "duty": 0.35,
+   "yaw_rate_dps_ss": 5.657331034482759,
+   "yaw_onset_s": null,
+   "onset_s": 0.22400973999992857
+  },
+  {
+   "axis": "left",
+   "duty": -0.35,
+   "yaw_rate_dps_ss": -2.9384035714285717,
+   "yaw_onset_s": null,
+   "v_ss": -0.2614449862728319,
+   "onset_s": 0.2572902759993667
+  },
+  {
+   "axis": "ccw",
+   "duty": 0.35,
+   "yaw_rate_dps_ss": 217.14883666666665,
+   "yaw_onset_s": 0.06489978900026472
+  },
+  {
+   "axis": "ccw",
+   "duty": -0.35,
+   "yaw_rate_dps_ss": -216.68320689655172,
+   "yaw_onset_s": 0.07326055300018197
+  }
+ ],
+ "fit": {
+  "fwd": {
+   "gain": 2.3185509837447658,
+   "deadzone": 0.05138671885466822,
+   "n": 4,
+   "unit": "m/s per duty"
+  },
+  "left": {
+   "gain": 0.06478128503492345,
+   "deadzone": -3.685810437102127,
+   "n": 3,
+   "unit": "m/s per duty"
+  },
+  "ccw": {
+   "gain": 897.2126951149426,
+   "deadzone": 0.10126868277019564,
+   "n": 6,
+   "unit": "deg/s per duty"
+  }
+ }
+}

@@ -1,0 +1,3 @@
+[Service]
+Environment=UGV_CAMERA_SHUTTER_US=16000
+Environment=UGV_CAMERA_GAIN=3
