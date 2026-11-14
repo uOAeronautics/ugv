@@ -1,16 +1,21 @@
-# Network
+# Network & SSH
 
-`FillMeUpLink` → DHCP; expected `wlan0=192.168.8.170/24`.
+Single source of truth for Pi network access and dashboard endpoint.
 
-NM profile hardening:
+- **Pi SSH**: `ssh pi` (`advanced@192.168.8.100` via the `glinet` jump host, configured in `~/.ssh/config`).
+- **Pi checkout**: `/home/advanced/ugv`; **service**: `ugv-dashboard.service` on port `8765`.
+- **Dashboard URL**: `http://192.168.8.100:8765` (port `8765`; forward or access via the `glinet` LAN).
+- **Stale addresses**: prior `192.168.8.169`, `192.168.8.170`, and `ssh advanced` aliases are retired.
 
-- `autoconnect=yes`; priority `100`; retries `0` = forever.
-- Wi-Fi power save `disabled` → fewer idle/link-drop failures.
-- route metric: Wi-Fi `600`; Ethernet `100` → Ethernet preferred, Wi-Fi remains fallback.
-- observed boot association+DHCP ≈8s.
+## NM profile hardening
 
-Dashboard safety is independent of network reconnect: browser sends fresh drive intent every `150ms`; hardware guard brakes after `600ms` without a fresh drive message. Generic WebSocket heartbeat never renews motion.
+- `FillMeUpLink` -> DHCP on `wlan0`.
+- `autoconnect=yes`; priority `100`; retries `0` (forever).
+- Wi-Fi power save `disabled` -> fewer idle/link-drop failures.
+- Route metric: Wi-Fi `600`, Ethernet `100` -> Ethernet preferred when cabled, Wi-Fi remains fallback.
+- Observed boot association + DHCP ≈ 8 s.
 
-SSH: `ssh advanced` uses the laptop’s dedicated public key via `~/.ssh/config`.
-Pi source: `/home/advanced/ugv`; repository: `uOAeronautics/ugv`.
-No password or private key is stored in this repository.
+## Reconnect & credential invariants
+
+- Dashboard safety is independent of network reconnect: browser sends fresh drive intent every `150 ms`; hardware guard brakes after `600 ms` without a fresh drive message. Generic WebSocket heartbeat never renews motion.
+- No password or private key is stored in this repository.

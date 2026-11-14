@@ -1,6 +1,6 @@
 # Drone parking
 
-Open http://192.168.8.170:8765 and press **MAP**. Opening the map enables observation; it does not move or arm the car. Existing manual controls and Follow remain available. **PARK** requires a calibrated car pose and verified physical clearance. STOP, disconnect and sensor expiry brake parking; the operator can retain the normal armed session after STOP.
+Open the dashboard URL (see [docs/NETWORK.md](NETWORK.md)) and press **MAP**. Opening the map enables observation; it does not move or arm the car. Existing manual controls and Follow remain available. **PARK** requires a calibrated car pose and verified physical clearance. STOP, disconnect and sensor expiry brake parking; the operator can retain the normal armed session after STOP.
 
 The observer accepts fresh, exact, untracked poses from drone tags 9, 12, 13 and 14. It maps another tag after three consistent co-visible observations. Other IDs, including incidental ID17, do not define the drone. IMU heading stabilizes rotation, with the calibrated camera/body mounting determining the heading axis. Monocular tag scale and camera intrinsics currently remain nominal: 50 mm black square and fx=fy=968 at1280×720. Displayed metre values are provisional.
 

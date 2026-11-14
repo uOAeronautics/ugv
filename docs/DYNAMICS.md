@@ -1,7 +1,7 @@
 # UGV real-car dynamics and Gazebo calibration
 
 Canonical repository: `uOAeronautics/ugv`. Laptop: `~/Projects/ugv`.
-Pi: `/home/advanced/ugv`, reached with `ssh advanced`.
+Pi: `/home/advanced/ugv`; see [docs/NETWORK.md](NETWORK.md) for SSH.
 Hardware service: `ugv-dashboard.service`; Python package and CLI: `ugv`.
 
 ## Measurements on 2026-10-17
@@ -108,7 +108,7 @@ and fitting code is under `tools/calibration/`. For a newly authorized,
 supervised session on a clear floor, with other controllers disarmed:
 
 ```sh
-ssh advanced
+ssh pi
 cd ~/ugv
 uv run python tools/calibration/run_trials.py --floor-clear --output calibration/runs/NEW-SESSION
 uv run python tools/calibration/run_trials.py --floor-clear --long --output calibration/runs/NEW-LONG-SESSION

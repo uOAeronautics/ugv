@@ -3,7 +3,8 @@
 `UGV := FNK0043/Freenove-4WD control+observe repo`
 
 Canonical repository: https://github.com/uOAeronautics/ugv. Local checkout:
-`~/Projects/ugv`; Pi checkout: `/home/advanced/ugv`. Connect with `ssh advanced`.
+`~/Projects/ugv`; Pi checkout: `/home/advanced/ugv`. For SSH and dashboard URL
+see [docs/NETWORK.md](docs/NETWORK.md).
 The Pi runs `ugv-dashboard.service`; commands are `uv run ugv` and
 `uv run ugv-dashboard`. See [dynamics calibration](docs/DYNAMICS.md) for measured
 keyboard responses, sensor drift treatment and the Gazebo fit.
@@ -14,7 +15,7 @@ The initial audit below is historical; current observations are in `docs/STATE.m
 
 ```text
 target := Pi4B@adv034; os:=Debian13/aarch64; user:=advanced
-net := router@192.168.8.1 -> pi@192.168.8.169/DHCP
+net := see docs/NETWORK.md (historical .169/.170 retired)
 pcb := Freenove connection PCB v3.0
 cam := OV5647✓; native=2592x1944; mount=rot180
 i2c.car := ×/disabled; spi := ×/disabled; motion := forbidden-until-preflight
@@ -38,7 +39,7 @@ docs/DASHBOARD.md -> WebSocket control/state/dead-man contract
 ```text
 env  := uv sync
 run  := uv run ugv --help
-dash := uv run ugv-dashboard # http://192.168.8.170:8765
+dash := uv run ugv-dashboard # port 8765; URL in docs/NETWORK.md
 
 deploy := Pi-local hardware service; source mirror=GitHub
 cloud-runtime := ∅ by design; GPIO/I2C/camera live on Pi

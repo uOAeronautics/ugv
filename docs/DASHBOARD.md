@@ -1,7 +1,7 @@
 # DASHBOARD
 
 ```text
-url := http://192.168.8.170:8765
+url := see docs/NETWORK.md (port 8765)
 transport := browser ↔ WebSocket(/ws) ↔ Pi-authoritative controller ↔ PCA9685
 keys := W/S forward/reverse; A/D strafe-left/right; Q/E rotate-left/right; joystick=continuous forward/back/strafe; arrows=pan/tilt; Space STOP
 input := keyboard-only movement; UI keycaps=status indicators, not controls
