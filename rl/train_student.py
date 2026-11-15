@@ -36,6 +36,37 @@ def _parse_spawn(s: str | None):
     return parts[0] if len(parts) == 1 else (parts[0], parts[1])
 
 
+def blind_mouth_replace(env, idx, frac, gen):
+    """Re-place a fraction of freshly reset envs into the blind-mouth regime:
+    y in [0.25, 0.60], x in [-0.12, 0.12], yaw in [-0.15, 0.15] rad, zero vel.
+
+    Only pose/vel-related snapshot keys change (pose, vel, imu_yaw and the
+    latency pose ring, which must read the new pose immediately); dynamics,
+    sensor parameters and both env RNG streams stay bit-identical. `gen` is a
+    dedicated CPU generator so the main RNG stream is untouched. Returns the
+    selected env indices (cpu tensor).
+    """
+    m = len(idx)
+    k = int(round(frac * m))
+    if frac > 0.0 and m >= 8:
+        k = max(k, 1)
+    if k <= 0:
+        return idx[:0]
+    sel = idx[torch.randperm(m, generator=gen)[:k]]
+    y = 0.25 + 0.35 * torch.rand(k, generator=gen)
+    x = -0.12 + 0.24 * torch.rand(k, generator=gen)
+    yaw = -0.15 + 0.30 * torch.rand(k, generator=gen)
+    pose = torch.stack([x, y, yaw], dim=1).to(env.device)
+    state = env.get_state()
+    di = sel.to(env.device)
+    state["pose"][di] = pose
+    state["vel"][di] = 0.0
+    state["imu_yaw"][di] = pose[:, 2]
+    state["pose_ring"][di] = pose.unsqueeze(1).expand(-1, state["pose_ring"].shape[1], -1)
+    env.set_state(state)
+    return sel
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--level", default="L0")
@@ -62,6 +93,14 @@ def main():
     )
     ap.add_argument(
         "--spawn-dist", default=None, help="override spawn distance, e.g. '0.5,1.5' or '0.75'"
+    )
+    ap.add_argument(
+        "--blind-mouth-frac",
+        type=float,
+        default=0.0,
+        help="fraction of each reset batch re-placed into the blind-mouth regime "
+        "(y 0.25-0.60 m, |x|<=0.12 m, |yaw|<=0.15 rad, zero velocity); "
+        "0 (default) leaves the reset path bit-identical",
     )
     ap.add_argument("--act-dim", type=int, default=3)
     ap.add_argument(
@@ -181,8 +220,13 @@ def main():
     )
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
+    if not 0.0 <= args.blind_mouth_frac <= 1.0:
+        ap.error("--blind-mouth-frac must be in [0, 1]")
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     base_spawn = _parse_spawn(args.spawn_dist)
+    bm_gen = None
+    if args.blind_mouth_frac > 0.0:
+        bm_gen = torch.Generator().manual_seed(args.seed + 777)
     env = MecanumVecEnv(
         args.envs,
         EnvConfig(
@@ -321,6 +365,9 @@ def main():
 
     apply_curric(0)
     obs = env.reset()
+    if bm_gen is not None:
+        blind_mouth_replace(env, torch.arange(n), args.blind_mouth_frac, bm_gen)
+        obs = env._privileged()
     h_state = torch.zeros(1, n, args.hidden, device=dev) if args.stateful else None
     # Rolling frontier-env outcomes for the ADR competence gate (frontier =
     # envs [0, env.n_frontier) under --adr; all envs otherwise). Cohort tracking
@@ -394,6 +441,8 @@ def main():
                         frontier_outcomes[name].extend(bool(v) for v in info[key][fr].tolist())
                     episodes_since_adr_step += int(fr.numel())
                 env.reset(idx.cpu())
+                if bm_gen is not None:
+                    blind_mouth_replace(env, idx.cpu(), args.blind_mouth_frac, bm_gen)
                 env_cohort[idx] = current_cohort
                 obs2 = env._privileged()
             obs = obs2

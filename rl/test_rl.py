@@ -675,3 +675,126 @@ def test_evaluate_save_traces(tmp_path):
                 "shield_clear",
             ):
                 assert key in frame, key
+
+
+def test_fov_search_sweep_mirrors_deploy_reflex():
+    import evaluate
+
+    from ugv.policy import search_yaw_target
+
+    blind_s = torch.linspace(0.0, 20.0, 401)
+    vec = evaluate.search_yaw_target_vec(blind_s)
+    ref = torch.tensor([search_yaw_target(float(b)) for b in blind_s])
+    assert torch.allclose(vec, ref, atol=1e-6)
+
+
+def test_blind_mouth_frac_zero_bit_identical(tmp_path):
+    # --blind-mouth-frac 0.0 must not draw RNG or touch tensors on the reset
+    # path: two same-seed 1-iteration CPU runs give identical first-iter losses.
+    # train_student does not seed the global torch RNG (model init, minibatch
+    # permutations), so the harness pins it externally; the trainer code path
+    # itself runs unmodified in both arms.
+    import os
+    import subprocess
+    import sys
+
+    wrapper = "import torch; torch.manual_seed(3); from train_student import main; main()"
+    base = [
+        sys.executable,
+        "-c",
+        wrapper,
+        "--level",
+        "L0",
+        "--envs",
+        "16",
+        "--iters",
+        "1",
+        "--steps",
+        "8",
+        "--epochs",
+        "1",
+        "--minibatches",
+        "2",
+        "--hidden",
+        "32",
+        "--seed",
+        "3",
+    ]
+    env = {**os.environ, "CUDA_VISIBLE_DEVICES": ""}
+    runs = []
+    for i, extra in enumerate(([], ["--blind-mouth-frac", "0.0"])):
+        out = tmp_path / f"bm{i}.pt"
+        subprocess.run(
+            base + extra + ["--out", str(out)],
+            capture_output=True,
+            text=True,
+            env=env,
+            check=True,
+        )
+        first = json.loads((tmp_path / f"bm{i}.metrics.jsonl").read_text().splitlines()[0])
+        runs.append({k: v for k, v in first.items() if k not in ("wall_s", "sps")})
+    assert runs[0]["pol"] == runs[1]["pol"]
+    assert runs[0] == runs[1]
+
+
+def test_blind_mouth_frac_placement():
+    from train_student import blind_mouth_replace
+
+    # spawn_dist far outside the regime box so natural spawns cannot contaminate
+    # the in-regime count.
+    env = MecanumVecEnv(64, EnvConfig(level="L0", device="cpu", seed=5, spawn_dist=(1.2, 1.4)))
+    env.reset()
+    before = env.get_state()
+    gen = torch.Generator().manual_seed(5 + 777)
+    sel = blind_mouth_replace(env, torch.arange(64), 0.5, gen)
+    assert len(sel) == 32
+    p = env.pose[sel]
+    assert (p[:, 1] >= 0.25).all() and (p[:, 1] <= 0.60).all()
+    assert (p[:, 0].abs() <= 0.12).all() and (p[:, 2].abs() <= 0.15).all()
+    assert (env.vel[sel] == 0).all()
+    assert torch.equal(env.imu_yaw[sel], p[:, 2])
+    assert torch.equal(env.pose_ring[sel], p.unsqueeze(1).expand_as(env.pose_ring[sel]))
+    in_regime = (
+        (env.pose[:, 1] >= 0.25)
+        & (env.pose[:, 1] <= 0.60)
+        & (env.pose[:, 0].abs() <= 0.12)
+        & (env.pose[:, 2].abs() <= 0.15)
+    )
+    assert abs(int(in_regime.sum()) - 32) <= 1
+    # untouched envs and both RNG streams stay bit-identical
+    after = env.get_state()
+    keep = torch.tensor([i for i in range(64) if i not in set(sel.tolist())])
+    for key in ("pose", "vel", "coef", "hist", "drop_p", "latency", "wheel_gain"):
+        assert torch.equal(before[key][keep], after[key][keep]), key
+    assert torch.equal(before["gen_state"], after["gen_state"])
+    assert torch.equal(before["gen_cpu_state"], after["gen_cpu_state"])
+    # at least 1 replaced when F>0 and batch>=8, even if round(F*m)==0
+    assert len(blind_mouth_replace(env, torch.arange(64), 0.001, gen)) == 1
+
+
+def test_action_sensitivity_smoke(tmp_path):
+    from action_sensitivity import audit
+    from models import Student
+
+    s = Student(act_dim=3, h=16, head_w=16)
+    ck = tmp_path / "tiny.pt"
+    torch.save(
+        {"student": s.state_dict(), "act_dim": 3, "hidden": 16, "head_w": 16, "run_id": "smoke"},
+        ck,
+    )
+    res = audit(str(ck), level="L0", episodes=4, seed=11, horizon=0.2, delta=0.3)
+    assert set(res["regimes"]) == {"mouth", "blind"}
+    for reg in res["regimes"].values():
+        m = torch.tensor(reg["matrix"])
+        assert m.shape == (3, 3) and torch.isfinite(m).all()
+        for b in reg["branches"].values():
+            assert all(torch.isfinite(torch.tensor(v)).all() for v in b.values())
+    assert all(b["valid_frac"] == 0.0 for b in res["regimes"]["blind"]["branches"].values())
+    mouth = res["regimes"]["mouth"]["branches"]
+    assert mouth["+dx"]["valid_frac"] > 0.0
+    assert mouth["-dy"]["progress"] > 0.0  # -dy approaches the drone: y decreases
+    out = tmp_path / "sens.json"
+    out.write_text(json.dumps(res))
+    back = json.loads(out.read_text())
+    assert set(back["regimes"]) == {"mouth", "blind"}
+    assert back["config"]["steps"] == 10
