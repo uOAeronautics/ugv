@@ -465,3 +465,373 @@ def test_contract_default_run_id_resolves():
     assert r.status_code == 200
     d = r.json()
     assert d.get("sim_source") in ("sim_reference_L1.npz", "nominal_contract")
+
+
+def test_contract_default_prefers_control_run_over_newer_watch(tmp_path):
+    import os
+
+    from tools.observatory import contract
+
+    ticks = "".join(
+        json.dumps({"t": 1.0 + 0.02 * i, "tag": True, "pose": [0, 0.5, 0], "imu": [0, 0]}) + "\n"
+        for i in range(3)
+    )
+    for name, mode, mtime in (
+        ("20260101-000000-stage", "stage", 1000),
+        ("20260102-000000-watch", "watch", 2000),
+    ):
+        d = tmp_path / name
+        d.mkdir()
+        (d / "meta.json").write_text(json.dumps({"args": {"mode": mode}}))
+        (d / "ticks.jsonl").write_text(ticks)
+        os.utime(d / "ticks.jsonl", (mtime, mtime))
+    assert contract.latest_run(tmp_path) == "20260101-000000-stage"
+    (tmp_path / "20260101-000000-stage" / "meta.json").write_text(
+        json.dumps({"args": {"mode": "watch"}})
+    )
+    assert contract.latest_run(tmp_path) == "20260102-000000-watch"
+
+
+def test_eval_bundle_merges_geometry_and_preserves_float_tag_age(tmp_path):
+    bundle = {
+        "format": "ugv_replay_v1",
+        "source": "gazebo_l6",
+        "geometry": {"car_w": 0.172, "skid_x": 0.17, "gear_len": 0.47, "gear_r": 0.015},
+        "episodes": [
+            {
+                "episode_id": 0,
+                "frames": [
+                    {
+                        "t": 0.02,
+                        "true_pose": [0.0, 1.0, 0.0],
+                        "tag_age": 0.08,
+                        "steps_since_valid": 4,
+                    }
+                ],
+            }
+        ],
+    }
+    p = tmp_path / "gz.traces.json"
+    p.write_text(json.dumps(bundle))
+    d = eval_bundle(p)
+    assert d["geometry"]["skid_x"] == 0.17
+    assert d["geometry"]["gear_len"] == 0.47
+    assert d["geometry"]["goal_x"] == 0.03  # default merged in
+    assert d["episodes"][0]["frames"][0]["tag_age"] == 0.08
+
+
+def test_l7_bundle_exposes_camera_frames_and_frame_route(tmp_path, monkeypatch):
+    run_dir = _synth_l7_run(
+        tmp_path,
+        "synth-cam",
+        [
+            {
+                "t": 100.0,
+                "src": "tag",
+                "pose": [0.0, 0.8, 0.0],
+                "est": [0.0, 0.8, 0.0],
+                "imu": [0.0, 0.0],
+            },
+            {"t": 100.2, "src": "none", "pose": None, "est": [0.0, 0.78, 0.0], "imu": [0.0, 0.0]},
+        ],
+    )
+    (run_dir / "frames").mkdir()
+    (run_dir / "frames" / "000001.jpg").write_bytes(b"\xff\xd8\xff\xd9")
+    (run_dir / "frames.jsonl").write_text(
+        json.dumps(
+            {
+                "seq": 1,
+                "cap": 100.05,
+                "jpg": "000001.jpg",
+                "tags": [{"id": 14, "how": "det", "c": [100, 100, 140, 100, 140, 140, 100, 140]}],
+            }
+        )
+        + "\n"
+    )
+    monkeypatch.setattr(replay_mod, "CALIB_RUNS", tmp_path)
+    monkeypatch.setattr(server_mod, "CALIB_RUNS", tmp_path)
+    d = l7_bundle("synth-cam")
+    assert len(d["camera_frames"]) == 1
+    assert d["camera_frames"][0]["frame_url"] == "/api/l7/synth-cam/frame/000001.jpg"
+    assert d["episodes"][0]["frames"][1]["frame_url"] == "/api/l7/synth-cam/frame/000001.jpg"
+    r = client.get("/api/l7/synth-cam/frame/000001.jpg")
+    assert r.status_code == 200
+    assert r.content == b"\xff\xd8\xff\xd9"
+    bad = client.get("/api/l7/synth-cam/frame/..%2Fticks.jsonl")
+    assert bad.status_code in (400, 404)
+
+
+def test_gazebo_l6_traces_discovery_and_bundle(tmp_path, monkeypatch):
+    gz = tmp_path / "gazebo_l6"
+    gz.mkdir()
+    (gz / "demo_run.traces.json").write_text(
+        json.dumps(
+            {
+                "format": "ugv_replay_v1",
+                "source": "gazebo_l6",
+                "geometry": {"car_w": 0.172, "gear_len": 0.47},
+                "episodes": [
+                    {
+                        "episode_id": 0,
+                        "outcome": "success",
+                        "frames": [{"t": 0.0, "true_pose": [0, 1, 0]}],
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setattr(server_mod, "RL_RUNS", tmp_path)
+    monkeypatch.setattr(server_mod, "CALIB_RUNS", tmp_path / "l7_none")
+    bundles = client.get("/api/replay/list").json()["bundles"]
+    item = next(b for b in bundles if b["bundle_id"] == "gazebo_l6:demo_run")
+    assert item["source"] == "gazebo_l6"
+    assert item["episodes_count"] == 1 and item["success_count"] == 1
+    assert item["label"] == "demo_run"
+    r = client.get("/api/replay/bundle/gazebo_l6:demo_run")
+    assert r.status_code == 200
+    assert r.json()["geometry"]["gear_len"] == 0.47
+
+
+# ---- Observatory v2: backend contract for the new dashboard ----
+
+import tools.observatory.bundles as bundles_mod  # noqa: E402
+import tools.observatory.contract as contract_mod  # noqa: E402
+import tools.observatory.data as data_mod  # noqa: E402
+import tools.observatory.leaderboard as leaderboard_mod  # noqa: E402
+import tools.observatory.rollout as rollout_mod  # noqa: E402
+
+
+def test_bundle_source_classification():
+    from tools.observatory.bundles import bundle_source
+
+    assert bundle_source("gazebo_L6_student_L2_cons_adr_s0_L1") == "gazebo_l6"
+    assert bundle_source("gazebo_l6:demo") == "gazebo_l6"
+    assert bundle_source("l7:20261113-184652-policy-gyro-zero") == "l7"
+    assert bundle_source("obs_1794669415") == "sim"
+    assert bundle_source("student_L2_cons_adr_s0_L1") == "sim"
+
+
+def test_bundle_counts_for_trace_and_l7(tmp_path, monkeypatch):
+    traces = tmp_path / "traces"
+    traces.mkdir()
+    (traces / "gazebo_L6_demo.json").write_text(
+        json.dumps(
+            {
+                "episodes": [
+                    {"outcome": "success", "frames": []},
+                    {"outcome": "collision", "frames": []},
+                    {"outcome": "success", "frames": []},
+                ]
+            }
+        )
+    )
+    (traces / "obs_1.json").write_text("{not json")
+    run = tmp_path / "l7" / "run_a"
+    run.mkdir(parents=True)
+    (run / "ticks.jsonl").write_text('{"t": 1.0}\n')
+    (run / "summary.json").write_text(json.dumps({"outcome": "parked"}))
+    monkeypatch.setattr(bundles_mod, "_STATS_CACHE", {})
+    items = {b["bundle_id"]: b for b in bundles_mod.list_bundles(tmp_path, tmp_path / "l7")}
+    g = items["gazebo_L6_demo"]
+    assert (g["source"], g["episodes_count"], g["success_count"]) == ("gazebo_l6", 3, 2)
+    bad = items["obs_1"]
+    assert bad["episodes_count"] is None and bad["source"] == "sim"
+    l7 = items["l7:run_a"]
+    assert (l7["source"], l7["episodes_count"], l7["success_count"]) == ("l7", 1, 1)
+
+
+def test_resolve_rejects_traversal_and_absolute_paths(tmp_path):
+    for bad in ("/etc/passwd", "..%2Fsecret", "a/../../b", "l7:../x", "gazebo_l6:a/b"):
+        try:
+            bundles_mod.resolve(bad, tmp_path, tmp_path)
+        except ValueError:
+            continue
+        except LookupError:
+            continue
+        raise AssertionError(f"{bad!r} was resolved")
+
+
+def test_replay_bundle_absolute_id_is_400_not_500():
+    r = client.get("/api/replay/bundle//etc/passwd")
+    assert r.status_code in (400, 404)
+
+
+def test_curve_runs_prefers_jsonl_and_dedupes(tmp_path):
+    (tmp_path / "run_a.metrics.jsonl").write_text('{"iter": 0, "pol": 1.0}\n{"iter": 1}\n')
+    (tmp_path / "run_a.log").write_text("iter 0 pol 1.0\n")
+    (tmp_path / "run_b.log").write_text("iter 0 pol 2.0 succ 3 coll 1\n")
+    runs = {r["run_id"]: r for r in data_mod.curve_runs(tmp_path)}
+    assert sorted(runs) == ["run_a", "run_b"]
+    assert runs["run_a"]["format"] == "jsonl" and runs["run_a"]["has_log"] is True
+    assert runs["run_a"]["n_iters"] == 2
+    assert runs["run_b"]["format"] == "log"
+
+
+def test_parse_metrics_jsonl_iter_falls_back_to_line_index(tmp_path):
+    p = _write_jsonl(tmp_path / "x.metrics.jsonl", [{"pol": 1.0}, {"pol": 0.5}])
+    pts = parse_metrics_jsonl(p)
+    assert [pt["iter"] for pt in pts] == [0, 1]
+
+
+def test_l7_runs_tolerates_corrupt_summary(tmp_path, monkeypatch):
+    run = tmp_path / "broken"
+    run.mkdir()
+    (run / "summary.json").write_text("{truncated")
+    (run / "ticks.jsonl").write_text('{"t": 1}\n')
+    monkeypatch.setattr(data_mod, "CALIB_RUNS", tmp_path)
+    rows = data_mod.l7_runs()
+    assert rows and rows[0]["run_id"] == "broken" and rows[0]["outcome"] is None
+
+
+def test_contract_missing_pass_flag_is_unknown_not_pass():
+    checks = contract_mod.norm_checks({"valid_pose": {"value": 0.4, "threshold": 0.5}}, {})
+    assert checks[0]["pass"] is None
+    checks = contract_mod.norm_checks([{"name": "hz", "status": "FAIL"}], {})
+    assert checks[0]["pass"] is False
+
+
+def test_overview_exposes_kpis():
+    d = client.get("/api/overview").json()
+    assert {"eval_runs", "gazebo_l6_runs", "l7_runs", "pi_step_ms_p50"} <= set(d["kpi"])
+
+
+def test_rollout_options_lists_engines():
+    d = client.get("/api/rollout/options").json()
+    assert set(d["engines"]) == {"sim", "gazebo"}
+    assert "baseline" in d["engines"]["gazebo"]["policies"]
+    assert "oracle_pd" in d["engines"]["sim"]["policies"]
+
+
+def test_rollout_sim_command_uses_runs_relative_policy(tmp_path):
+    (tmp_path / "student_x.pt").write_bytes(b"x")
+    argv, cwd, js, trace = rollout_mod._command("sim", "student_x.pt", "L2", 5, 11, 1234, tmp_path)
+    assert cwd == rollout_mod.REPO / "rl"
+    assert argv[argv.index("--policy") + 1] == "runs/student_x.pt"
+    assert argv[argv.index("--save-traces") + 1] == str(tmp_path / "traces" / "obs_1234.json")
+    assert argv[0].endswith("python")
+
+
+def test_rollout_gazebo_command_baseline_and_weights(tmp_path):
+    argv, cwd, _js, trace = rollout_mod._command("gazebo", "baseline", "L1", 5, 11, 99, tmp_path)
+    assert cwd == rollout_mod.REPO
+    assert "simulation/gazebo/run_policy_episodes.py" in argv
+    assert "--bridge" in argv and argv[argv.index("--bridge") + 1] == "gazebo"
+    assert "--baseline" in argv and "--weights" not in argv
+    assert trace.name == "gazebo_99.json" and trace.parent.name == "traces"
+    (tmp_path / "gazebo_l6").mkdir()
+    (tmp_path / "gazebo_l6" / "w.npz").write_bytes(b"x")
+    argv, *_ = rollout_mod._command("gazebo", "gazebo_l6/w.npz", "L1", 5, 11, 99, tmp_path)
+    assert "--weights" in argv and "--baseline" not in argv
+
+
+def test_rollout_rejects_bad_requests():
+    for body in (
+        {"engine": "warp", "policy": "brake", "level": "L0"},
+        {"engine": "sim", "policy": "../../etc/passwd", "level": "L0"},
+        {"engine": "sim", "policy": "brake", "level": "L9"},
+        {"engine": "sim", "policy": "brake", "level": "L0", "episodes": "many"},
+    ):
+        assert client.post("/api/rollout", json=body).status_code == 400, body
+
+
+def test_rollout_busy_returns_409():
+    rollout_mod.JOBS["job_busy_test"] = {"job_id": "job_busy_test", "status": "running"}
+    try:
+        r = client.post("/api/rollout", json={"policy": "brake", "level": "L0", "episodes": 1})
+        assert r.status_code == 409
+    finally:
+        rollout_mod.JOBS.pop("job_busy_test", None)
+
+
+def test_rollout_status_unknown_job_is_404():
+    assert client.get("/api/rollout/job_does_not_exist").status_code == 404
+
+
+# ---- Regression tests: probe runs and JSON-named directories must not be ranked ----
+
+
+def _gz_summary(path, episodes, success, level="L1", collisions=0):
+    path.write_text(
+        json.dumps(
+            {
+                "episodes": episodes,
+                "success": success,
+                "collisions": collisions,
+                "level": level,
+            }
+        )
+    )
+    return path
+
+
+def test_counts_skip_json_directories_and_probe_runs(tmp_path, monkeypatch):
+    gz = tmp_path / "gazebo_l6"
+    gz.mkdir()
+    run_dir = gz / "baseline_L1_20ep_s11.json"
+    run_dir.mkdir()  # a run directory, not a summary file
+    (run_dir / "result.json").write_text(json.dumps({"episodes": 20, "success": 0}))
+    _gz_summary(gz / "gate_L1_100ep.json", 100, 97)
+    _gz_summary(gz / "dbg_cam_L1.json", 1, 0)
+    _gz_summary(gz / "smoke_emu_L1.json", 1, 0)
+    _gz_summary(gz / "obs_1794_L1.json", 1, 0)
+    (gz / "parallel_backlog_plan.json").write_text('[{"name": "student_L2_a", "episodes": 10}]')
+    monkeypatch.setattr(server_mod, "RL_RUNS", tmp_path)
+    assert server_mod._counts()["gazebo_l6"] == 1
+
+
+def test_leaderboard_excludes_probe_and_tiny_runs(tmp_path, monkeypatch):
+    gz = tmp_path / "gazebo_l6"
+    gz.mkdir()
+    _gz_summary(gz / "gate_L1_100ep.json", 100, 97)
+    _gz_summary(gz / "dbg_perfect_L1.json", 20, 20)
+    _gz_summary(gz / "smoke_perfect_L1.json", 20, 20)
+    _gz_summary(gz / "obs_perfect_L1.json", 20, 20)
+    _gz_summary(gz / "live_perfect_L1.json", 20, 20)
+    _gz_summary(gz / "tiny_perfect_L1.json", 3, 3)
+    (gz / "dir_L1.json").mkdir()
+    monkeypatch.setattr(server_mod, "RL_RUNS", tmp_path)
+    entries = {e["run_id"]: e for e in server_mod._leaderboard()}
+    assert "gate_L1_100ep" in entries
+    for rid in (
+        "dbg_perfect_L1",
+        "smoke_perfect_L1",
+        "obs_perfect_L1",
+        "live_perfect_L1",
+        "tiny_perfect_L1",
+        "dir_L1",
+    ):
+        assert rid not in entries
+    # the probe run's perfect 20/20 must not dominate or win the L1 stage card
+    assert entries["gate_L1_100ep"]["pareto"] is True
+
+
+def test_zero_success_never_earns_pareto(tmp_path, monkeypatch):
+    gz = tmp_path / "gazebo_l6"
+    gz.mkdir()
+    _gz_summary(gz / "fail_only_L1_20ep.json", 20, 0)
+    _gz_summary(gz / "gate_L1_100ep.json", 100, 97)
+    monkeypatch.setattr(server_mod, "RL_RUNS", tmp_path)
+    entries = {e["run_id"]: e for e in server_mod._leaderboard()}
+    zero = entries["fail_only_L1_20ep"]
+    assert zero["success_rate"] == 0.0
+    assert zero["pareto"] is False
+    assert "Pareto" not in zero["badges"]
+    assert entries["gate_L1_100ep"]["pareto"] is True
+
+
+def test_mark_pareto_rejects_lone_zero_success_run():
+    rows = [
+        {
+            "run_id": "zero",
+            "level": "L1",
+            "success": 0,
+            "episodes": 20,
+            "collisions": 0,
+            "success_rate": 0.0,
+            "source": "gazebo_l6",
+        }
+    ]
+    leaderboard_mod._mark_pareto(rows)
+    assert rows[0]["pareto"] is False
+    assert rows[0]["pareto_score"] is None
+    assert rows[0]["badges"] == ["gazebo_l6"]

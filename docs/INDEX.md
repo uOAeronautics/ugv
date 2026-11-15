@@ -45,6 +45,7 @@ L3 PROTOCOL.md
 - [`docs/PROTOCOL.md`](PROTOCOL.md) — compact agent coordination grammar.
 - [`docs/archive/STATE_HISTORY.md`](archive/STATE_HISTORY.md) — archived dated state snapshots (`2026-08-29`..`2026-10-17`).
 - [`docs/archive/FAILURE_REPLAY.md`](archive/FAILURE_REPLAY.md) — archived Dream-RSI failure-replay curriculum proposal (`2026-11-13`).
+- [`docs/archive/council_2026-11-14/`](archive/council_2026-11-14/) — archived council_v2 analysis reports (`2026-11-14`; scratch scripts/outputs removed).
 - [`rl/README.md`](../rl/README.md) — RL subproject file map and L0 training/eval recipes (3090 CUDA env).
 - [`rl/PLAN.md`](../rl/PLAN.md) — RL phase work queue, measured gate state, and guardrails.
 - [`rl/AGENTS.md`](../rl/AGENTS.md) — RL agent rules, safety gates, and torch isolation constraints.

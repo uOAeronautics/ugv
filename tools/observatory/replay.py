@@ -2,9 +2,10 @@
 
 import json
 import math
+from bisect import bisect_right
 from pathlib import Path
 
-from .data import CALIB_RUNS, sanitize
+from .data import CALIB_RUNS, read_json, sanitize
 
 GEOMETRY = {
     "car_w": 0.16,
@@ -66,15 +67,72 @@ def _first_num(r, keys):
     return None
 
 
-def l7_bundle(run_id: str) -> dict:
-    d = CALIB_RUNS / run_id
+def _load_l7_camera_frames(d: Path, run_id: str, t0: float):
+    frames_dir = d / "frames"
+    frames_jsonl = d / "frames.jsonl"
+    if not (frames_dir.is_dir() and frames_jsonl.exists()):
+        return [], []
+    cam_rows = []
+    det_rows = []
+    for line in frames_jsonl.read_text(errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except Exception:
+            continue
+        cap = row.get("cap")
+        if cap is None:
+            continue
+        try:
+            cap_f = float(cap)
+        except (TypeError, ValueError):
+            continue
+        tags_raw = row.get("tags") or []
+        tags_px = []
+        for t in tags_raw:
+            if not isinstance(t, dict):
+                continue
+            c = t.get("c")
+            if c is None:
+                continue
+            tags_px.append(
+                {
+                    "id": t.get("id"),
+                    "how": t.get("how"),
+                    "px": t.get("px"),
+                    "c": c,
+                }
+            )
+        det_rows.append({"cap": cap_f, "t": round(cap_f - t0, 3), "tags_px": tags_px})
+        jpg = row.get("jpg")
+        if jpg and isinstance(jpg, str) and (frames_dir / jpg).is_file():
+            cam_rows.append(
+                {
+                    "t": round(cap_f - t0, 3),
+                    "cap": cap_f,
+                    "seq": row.get("seq"),
+                    "fname": jpg,
+                    "frame_url": f"/api/l7/{run_id}/frame/{jpg}",
+                    "tags_px": tags_px,
+                }
+            )
+    cam_rows.sort(key=lambda x: x["cap"])
+    det_rows.sort(key=lambda x: x["cap"])
+    return cam_rows, det_rows
+
+
+def l7_bundle(run_id: str | Path) -> dict:
+    d = run_id if isinstance(run_id, Path) else CALIB_RUNS / run_id
+    rid = d.name
     ticks_path = d / "ticks.jsonl"
-    summary = {}
-    if (d / "summary.json").exists():
-        summary = json.loads((d / "summary.json").read_text())
-    meta = {}
-    if (d / "meta.json").exists():
-        meta = json.loads((d / "meta.json").read_text())
+    summary = read_json(d / "summary.json", {}) or {}
+    meta = read_json(d / "meta.json", {}) or {}
+    if not isinstance(summary, dict):
+        summary = {}
+    if not isinstance(meta, dict):
+        meta = {}
     rows = []
     if ticks_path.exists():
         for line in ticks_path.read_text().splitlines():
@@ -85,6 +143,20 @@ def l7_bundle(run_id: str) -> dict:
                 except Exception:
                     pass
     t0 = rows[0].get("t", 0.0) if rows else 0.0
+    cam_frames, det_frames = _load_l7_camera_frames(d, rid, t0)
+    cam_caps = [c["cap"] for c in cam_frames]
+    det_caps = [c["cap"] for c in det_frames]
+
+    def _match(items, caps, t_abs, max_lag=1.5):
+        if not items:
+            return None
+        idx = bisect_right(caps, t_abs)
+        if idx > 0 and (t_abs - caps[idx - 1]) <= max_lag:
+            return items[idx - 1]
+        if idx < len(items) and (caps[idx] - t_abs) <= 0.5:
+            return items[idx]
+        return None
+
     poses = []
     for r in rows:
         valid = _tag_valid(r)
@@ -109,9 +181,14 @@ def l7_bundle(run_id: str) -> dict:
             except (TypeError, ValueError):
                 imu_yaw = None
         act_v = act if act is not None else [0, 0, 0]
+        t_abs = r.get("t", t0)
+        cam_m = _match(cam_frames, cam_caps, t_abs)
+        det_m = _match(det_frames, det_caps, t_abs, max_lag=0.5)
+        frame_url = cam_m["frame_url"] if cam_m else None
+        tags_px = det_m["tags_px"] if det_m else (cam_m["tags_px"] if cam_m else [])
         poses.append(
             {
-                "t": (r.get("t", 0.0) - t0),
+                "t": (t_abs - t0),
                 "pose": pose,
                 "vel": None,
                 "tag": tag,
@@ -129,15 +206,20 @@ def l7_bundle(run_id: str) -> dict:
                 "shield_blocked": reason not in ("policy", None, ""),
                 "reason": reason,
                 "src": src or "none",
+                "frame_url": frame_url,
+                "camera_frame_url": frame_url,
+                "tags_px": tags_px,
             }
         )
+    end_url = f"/api/l7/{rid}/end.jpg" if (d / "end.jpg").exists() else None
     bundle = {
         "format": "ugv_replay_v1",
-        "run_id": run_id,
+        "run_id": rid,
         "source": "l7",
         "summary": summary,
         "meta": meta,
         "poses": poses,
+        "camera_frames": cam_frames,
         "episodes": [
             {
                 "episode_id": 0,
@@ -145,15 +227,14 @@ def l7_bundle(run_id: str) -> dict:
                 "duration": round(poses[-1]["t"], 2) if poses else summary.get("seconds", 0.0),
                 "steps": len(poses),
                 "frames": poses,
-                "end_frame_url": (
-                    f"/api/l7/{run_id}/end.jpg" if (d / "end.jpg").exists() else None
-                ),
+                "camera_frames": cam_frames,
+                "end_frame_url": end_url,
             }
         ],
         "geometry": GEOMETRY,
     }
-    if (d / "end.jpg").exists():
-        bundle["end_frame_url"] = f"/api/l7/{run_id}/end.jpg"
+    if end_url:
+        bundle["end_frame_url"] = end_url
     return sanitize(bundle)
 
 
@@ -196,10 +277,16 @@ def _norm_frame(frame):
         imu_yaw = float(frame.get("imu_yaw", 0.0) or 0.0)
     except (TypeError, ValueError):
         imu_yaw = 0.0
-    try:
-        tag_age = int(frame.get("steps_since_valid", frame.get("tag_age", 0)) or 0)
-    except (TypeError, ValueError):
-        tag_age = 0
+    if frame.get("tag_age") is not None:
+        try:
+            tag_age: int | float = float(frame["tag_age"])
+        except (TypeError, ValueError):
+            tag_age = 0
+    else:
+        try:
+            tag_age = int(frame.get("steps_since_valid", 0) or 0)
+        except (TypeError, ValueError):
+            tag_age = 0
     return {
         **frame,
         "t": t,
@@ -219,7 +306,14 @@ def _norm_frame(frame):
 
 def _norm_episodes(data):
     data["format"] = "ugv_replay_v1"
-    data["geometry"] = GEOMETRY
+    raw_geo = data.get("geometry")
+    merged_geo = {**GEOMETRY, **(raw_geo if isinstance(raw_geo, dict) else {})}
+    if isinstance(raw_geo, dict) and "skid_half_len" in raw_geo and "gear_len" not in raw_geo:
+        try:
+            merged_geo["gear_len"] = 2.0 * float(raw_geo["skid_half_len"])
+        except (TypeError, ValueError):
+            pass
+    data["geometry"] = merged_geo
     for ep in data.get("episodes", []) or []:
         if not isinstance(ep, dict):
             continue
@@ -235,7 +329,11 @@ def _norm_episodes(data):
 
 
 def eval_bundle(path: Path) -> dict:
-    data = json.loads(path.read_text())
+    """Load a sim or Gazebo trace bundle. Raises ValueError when it is not JSON."""
+    try:
+        data = json.loads(path.read_text(errors="replace"))
+    except ValueError as e:
+        raise ValueError(f"unreadable trace bundle {path.name}: {e}") from e
     if isinstance(data, dict):
         _norm_episodes(data)
     return sanitize(data)

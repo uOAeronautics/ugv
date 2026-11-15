@@ -1,0 +1,15 @@
+{
+  "method": "ArUco-only @1280x960 (car-like fx)",
+  "recall_pct": 58.333333333333336,
+  "close_recall_pct": 46.666666666666664,
+  "steep_recall_pct": 64.65517241379311,
+  "pose_coverage_pct": 58.333333333333336,
+  "pos_mae_mm": 181.3857906905023,
+  "yaw_mae_deg": 1.9317795513437297,
+  "close_pos_mae_mm": 185.7910276712784,
+  "close_yaw_mae_deg": 3.685856059567242,
+  "fpr_pct": 0.0,
+  "cpu_ms_per_frame": 3.382666514288368,
+  "tag_in_view_pct": 82.0,
+  "aruco_recall_tag_in_view_pct": 71.13821138211382
+}

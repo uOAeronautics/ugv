@@ -3,6 +3,7 @@
 import json
 import math
 import re
+import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -10,6 +11,25 @@ RL_RUNS = REPO / "rl" / "runs"
 CALIB_RUNS = REPO / "calibration" / "runs" / "l7"
 
 LEVELS = ["L0", "L1", "L2", "L3", "L4", "L5", "L_real", "L_chaos"]
+
+# log-line key -> (short name, metric key, parse token)
+_LOG_PAIRS = [
+    ("dr_scale", "dr_scale", "dr"),
+    ("anchor_frac", "anchor_frac", "anchor_frac"),
+    ("std", "std", "std"),
+    ("entropy", "entropy", "ent"),
+    ("sps", "sps", "sps"),
+    ("wall_s", "wall_s", "wall_s"),
+    ("succ", "succ_rate", "succ"),
+    ("coll", "coll_rate", "coll"),
+    ("timeout", "timeout_rate", "timeout"),
+    ("false_park", "false_park", "false_park"),
+    ("pol", "pol_loss", "pol"),
+    ("val", "val_loss", "val"),
+    ("aux", "aux_loss", "aux"),
+    ("dyn", "dyn_loss", "dyn"),
+    ("return", "mean_return", "return"),
+]
 
 
 def safe_path(base: Path, rel: str) -> Path | None:
@@ -21,6 +41,14 @@ def safe_path(base: Path, rel: str) -> Path | None:
     except Exception:
         pass
     return None
+
+
+def read_json(path: Path, default=None):
+    """Read a JSON file; a missing or corrupt file yields ``default``."""
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return default
 
 
 def sanitize(obj):
@@ -36,37 +64,23 @@ def sanitize(obj):
 
 
 def parse_log(path: Path):
+    """Parse legacy ``iter N | key value`` training logs.
+
+    In these logs ``succ`` and ``coll`` are per-window episode *counts*, not
+    rates; the chart layer must not plot them on a 0-100% axis.
+    """
     points = []
     for line in path.read_text(errors="replace").splitlines():
         m = re.search(r"iter\s+(\d+)", line)
         if not m:
             continue
-        it = int(m.group(1))
+        point = {"iter": int(m.group(1))}
 
         def num(key, _line=line):
             mm = re.search(rf"\b{key}\b\s*[=:]?\s*([-+]?[\d.eE+]+)", _line)
             return float(mm.group(1)) if mm else None
 
-        point = {"iter": it}
-        # short key -> (metric value, long key)
-        pairs = [
-            ("dr_scale", "dr_scale", "dr"),
-            ("anchor_frac", "anchor_frac", "anchor_frac"),
-            ("std", "std", "std"),
-            ("entropy", "entropy", "ent"),
-            ("sps", "sps", "sps"),
-            ("wall_s", "wall_s", "wall_s"),
-            ("succ", "succ_rate", "succ"),
-            ("coll", "coll_rate", "coll"),
-            ("timeout", "timeout_rate", "timeout"),
-            ("false_park", "false_park", "false_park"),
-            ("pol", "pol_loss", "pol"),
-            ("val", "val_loss", "val"),
-            ("aux", "aux_loss", "aux"),
-            ("dyn", "dyn_loss", "dyn"),
-            ("return", "mean_return", "return"),
-        ]
-        for short, long, key in pairs:
+        for short, long, key in _LOG_PAIRS:
             v = num(key)
             if v is not None:
                 point[short] = v
@@ -77,13 +91,15 @@ def parse_log(path: Path):
 
 def parse_metrics_jsonl(path: Path):
     points = []
-    for line in path.read_text(errors="replace").splitlines():
+    for idx, line in enumerate(path.read_text(errors="replace").splitlines()):
         line = line.strip()
         if not line:
             continue
         try:
             d = json.loads(line)
-        except Exception:
+        except ValueError:
+            continue
+        if not isinstance(d, dict):
             continue
 
         def pick(*keys, _d=d):
@@ -104,7 +120,8 @@ def parse_metrics_jsonl(path: Path):
         ret = pick("mean_return", "return")
         points.append(
             {
-                "iter": d.get("iter"),
+                # rows without an iter index fall back to their line number
+                "iter": d.get("iter", idx),
                 "dr_scale": d.get("dr_scale"),
                 "anchor_frac": d.get("anchor_frac"),
                 "std": d.get("std"),
@@ -133,6 +150,47 @@ def parse_metrics_jsonl(path: Path):
     return points
 
 
+def curve_runs(rl_runs: Path):
+    """List training runs once each, preferring ``.metrics.jsonl`` over ``.log``.
+
+    Several runs have both files; the structured jsonl is authoritative and the
+    log is only listed when no jsonl exists for the same run id.
+    """
+    now = time.time()
+    jsonl_ids = set()
+    runs = []
+    for p in rl_runs.glob("*.metrics.jsonl"):
+        rid = p.name[: -len(".metrics.jsonl")]
+        jsonl_ids.add(rid)
+        runs.append(
+            {
+                "run_id": rid,
+                "format": "jsonl",
+                "n_iters": sum(1 for line in p.open() if line.strip()),
+                "mtime": p.stat().st_mtime,
+                "active": (now - p.stat().st_mtime) < 60,
+                "has_log": (rl_runs / f"{rid}.log").exists(),
+            }
+        )
+    for p in rl_runs.glob("*.log"):
+        rid = p.stem
+        if rid in jsonl_ids:
+            continue
+        pts = parse_log(p)
+        runs.append(
+            {
+                "run_id": rid,
+                "format": "log",
+                "n_iters": len(pts),
+                "mtime": p.stat().st_mtime,
+                "active": (now - p.stat().st_mtime) < 60,
+                "has_log": True,
+            }
+        )
+    runs.sort(key=lambda r: r["mtime"], reverse=True)
+    return runs
+
+
 def l7_runs():
     out = []
     if not CALIB_RUNS.exists():
@@ -140,12 +198,13 @@ def l7_runs():
     for d in sorted(CALIB_RUNS.iterdir()):
         if not d.is_dir():
             continue
-        s = d / "summary.json"
-        m = d / "meta.json"
+        summary = read_json(d / "summary.json", {}) or {}
+        meta = read_json(d / "meta.json", {}) or {}
+        if not isinstance(summary, dict):
+            summary = {}
+        if not isinstance(meta, dict):
+            meta = {}
         t = d / "ticks.jsonl"
-        summary = json.loads(s.read_text()) if s.exists() else {}
-        meta = json.loads(m.read_text()) if m.exists() else {}
-        has_end = (d / "end.jpg").exists()
         ticks = 0
         if t.exists():
             ticks = sum(1 for _ in t.open())
@@ -164,7 +223,7 @@ def l7_runs():
                 "vision_ms_p50": summary.get("vision_ms_p50"),
                 "loop_ms_p50": summary.get("loop_ms_p50"),
                 "loop_ms_p95": summary.get("loop_ms_p95"),
-                "has_end_jpg": has_end,
+                "has_end_jpg": (d / "end.jpg").exists(),
             }
         )
     return out

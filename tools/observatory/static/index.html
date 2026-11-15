@@ -1,122 +1,267 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UGV Research Observatory</title>
   <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="/static/style.css">
+  <script>
+    // apply the saved theme before first paint (per-viewer convenience only)
+    try { var t = localStorage.getItem('ugv-observatory-theme'); if (t === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (e) {}
+  </script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">UGV Research Observatory</div>
-    <div class="pills">
-      <span class="pill" id="pill-eval">Eval runs: —</span>
-      <span class="pill" id="pill-train">Training logs: —</span>
-      <span class="pill" id="pill-l7">L7 field runs: —</span>
-      <span class="pill" id="pill-pi">Pi4B: —</span>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-title">UGV Research Observatory</div>
+      <div class="brand-sub">Sim-to-Real Autonomous Under-Belly Docking · VecSim → Gazebo Harmonic L6 → Raspberry Pi 4B L7</div>
     </div>
-    <label class="autorefresh"><input type="checkbox" id="auto-refresh"> Auto-refresh 5s</label>
+    <div class="kpis" aria-label="Headline counts">
+      <div class="kpi"><span class="kpi-label">Eval Runs</span><span class="kpi-value" id="kpi-eval">—</span></div>
+      <div class="kpi"><span class="kpi-label">Gazebo L6 Runs</span><span class="kpi-value" id="kpi-gz">—</span></div>
+      <div class="kpi"><span class="kpi-label">L7 Hardware Runs</span><span class="kpi-value" id="kpi-l7">—</span></div>
+      <div class="kpi"><span class="kpi-label">Pi 4B Inference</span><span class="kpi-value" id="kpi-pi">—</span></div>
+    </div>
+    <div class="header-tools">
+      <label class="switch" title="Refresh overview, leaderboard and run lists every 5 s">
+        <input type="checkbox" id="auto-refresh">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>Auto-refresh</span>
+      </label>
+      <div class="seg theme-seg" role="group" aria-label="Theme">
+        <button type="button" data-theme-set="light" aria-pressed="true">Light</button>
+        <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
   </header>
 
-  <nav class="tabs">
-    <button class="tab active" data-tab="leaderboard">Leaderboard</button>
-    <button class="tab" data-tab="curves">Training & ADR Curves</button>
-    <button class="tab" data-tab="replay">2D Layout & Episode Replay</button>
-    <button class="tab" data-tab="contract">Sim-vs-Real Contract</button>
+  <nav class="tabs" role="tablist" aria-label="Observatory sections">
+    <button class="tab active" role="tab" aria-selected="true" data-tab="leaderboard">Leaderboard &amp; Frontier</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="curves">Training &amp; ADR Curves</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="arena">2D Arena, Gazebo L6 &amp; Replay</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="contract">Sim-vs-Real Contract</button>
   </nav>
 
   <main>
-    <section id="tab-leaderboard" class="tabpane active">
-      <div class="filters">
-        <div class="filter-group" id="level-filters"></div>
-        <div class="filter-group" id="track-filters"></div>
-        <label class="toggle"><input type="checkbox" id="pareto-only"> Pareto only</label>
-        <input type="search" id="search-box" placeholder="Search run id...">
+    <!-- Tab 1: Leaderboard & Frontier -->
+    <section id="tab-leaderboard" class="pane active" role="tabpanel">
+      <div class="filterbar card">
+        <div class="fgroup">
+          <span class="flabel">Stage / Level:</span>
+          <div class="seg seg-wrap" id="stage-seg" role="group" aria-label="Stage or level filter"></div>
+        </div>
+        <div class="fgroup">
+          <span class="flabel">Track / Source:</span>
+          <div class="seg seg-wrap" id="track-seg" role="group" aria-label="Track or source filter"></div>
+        </div>
+        <div class="fgroup fgroup-end">
+          <label class="check-row"><input type="checkbox" id="pareto-only"> <span>Pareto Frontier Only</span></label>
+          <input type="search" id="search-box" class="input search" placeholder="Search run id…" aria-label="Search run id">
+        </div>
       </div>
-      <div class="cards" id="level-cards"></div>
-      <div class="table-wrap">
-        <table id="leaderboard-table"><thead><tr>
-          <th data-col="run_id">Run ID</th><th data-col="track">Track</th><th data-col="level">Level</th>
-          <th data-col="success">Success/Eps</th><th>Wilson 95% CI</th><th data-col="collisions">Collisions</th><th data-col="timeouts">Timeouts</th>
-          <th data-col="time_median">Med Time (s)</th><th data-col="pos_p95">Pos p95 (mm)</th><th data-col="yaw_p95_deg">Yaw p95 (deg)</th><th>Badges</th><th>Parent ID</th><th>Diff</th>
-        </tr></thead><tbody></tbody></table>
+
+      <div class="pipeline" id="pipeline" aria-label="Pipeline stages"></div>
+
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table id="leaderboard-table">
+            <thead><tr>
+              <th data-col="run_id">Run ID</th>
+              <th data-col="stage">Stage</th>
+              <th data-col="source">Source</th>
+              <th data-col="success_rate">Success / Eps</th>
+              <th data-col="wilson_lo">Wilson 95% CI</th>
+              <th data-col="collisions">Coll.</th>
+              <th data-col="timeouts">Timeouts</th>
+              <th data-col="time_median">Med time (s)</th>
+              <th data-col="pos_p95">Pos p95 (mm)</th>
+              <th data-col="yaw_p95_deg">Yaw p95 (°)</th>
+              <th>Badges</th>
+              <th data-col="parent_id">Parent</th>
+              <th>Diff</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="empty" id="leaderboard-empty" hidden>No runs match these filters.</p>
       </div>
-      <div class="diff-panel" id="diff-panel" hidden></div>
-      <details class="l7-section">
-        <summary>Real Pi L7 Field Runs</summary>
-        <div class="table-wrap">
-          <table id="l7-table"><thead><tr>
-            <th>Run</th><th>Mode</th><th>Outcome</th><th>Duration</th><th>Hz</th><th>vision_ms_p50</th><th>loop_ms_p50</th><th>loop_ms_p95</th><th>Replay</th>
-          </tr></thead><tbody></tbody></table>
+
+      <div class="diff-panel card" id="diff-panel" hidden></div>
+
+      <details class="card l7-details" id="l7-details">
+        <summary>Real Pi L7 field runs <span class="muted" id="l7-count"></span></summary>
+        <div class="table-scroll">
+          <table id="l7-table">
+            <thead><tr>
+              <th>Run</th><th>Mode</th><th>Outcome</th><th>Duration (s)</th><th>Hz</th>
+              <th>vision p50 (ms)</th><th>loop p50 (ms)</th><th>loop p95 (ms)</th><th>Replay</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </details>
     </section>
 
-    <section id="tab-curves" class="tabpane">
+    <!-- Tab 2: Training & ADR curves -->
+    <section id="tab-curves" class="pane" role="tabpanel">
       <div class="curves-layout">
-        <aside class="run-selector" id="curve-runs"></aside>
-        <div class="charts">
-          <div class="chart-card"><canvas id="chart1"></canvas><div class="chart-title">dr_scale & succ/coll rate</div></div>
-          <div class="chart-card"><canvas id="chart2"></canvas><div class="chart-title">pol_loss & val_loss</div></div>
-          <div class="chart-card"><canvas id="chart3"></canvas><div class="chart-title">aux_loss & dyn_loss</div></div>
-          <div class="chart-card"><canvas id="chart4"></canvas><div class="chart-title">std & entropy / mean_return & sps</div></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="tab-replay" class="tabpane">
-      <div class="replay-layout">
-        <aside class="controls">
-          <h3>Bundle</h3>
-          <select id="bundle-select"></select>
-          <h3>Rollout Trigger</h3>
-          <form id="rollout-form">
-            <label>Policy <select name="policy"><option value="student">student</option></select></label>
-            <label>Level <select name="level"><option value="L1">L1</option></select></label>
-            <label>Episodes <input name="episodes" type="number" min="1" max="20" value="5"></label>
-            <label>Seed <input name="seed" type="number" value="11"></label>
-            <button type="submit">Run</button>
-          </form>
-          <div id="rollout-status"></div>
-          <h3>Episodes</h3>
-          <div class="ep-filters" id="ep-filters"></div>
-          <ul id="episode-list"></ul>
-          <h3>Transport</h3>
-          <div class="transport">
-            <button id="btn-play">Play</button>
-            <button id="btn-step-back">-1</button>
-            <button id="btn-step-fwd">+1</button>
-            <select id="speed-sel"><option>0.25x</option><option>0.5x</option><option selected>1x</option><option>2x</option><option>4x</option></select>
+        <aside class="card run-panel" aria-label="Training runs">
+          <div class="run-panel-head">
+            <input type="search" id="run-search" class="input" placeholder="Filter runs…" aria-label="Filter training runs">
+            <div class="btn-row">
+              <button type="button" class="btn" id="sel-top3" title="Select the 3 most recently updated runs">Select Top 3</button>
+              <button type="button" class="btn btn-ghost" id="sel-none">Clear All</button>
+            </div>
           </div>
-          <input type="range" id="scrubber" min="0" max="0" value="0">
-          <div id="time-readout" class="mono">t=0.00s step 0</div>
-          <h3>Layers</h3>
-          <div id="layers"></div>
+          <div class="run-list" id="run-list"></div>
         </aside>
-        <div class="canvas-area">
-          <canvas id="replay-canvas"></canvas>
-          <div id="endframe-card" class="endframe" hidden></div>
-          <div class="strips">
-            <canvas id="strip1"></canvas>
-            <canvas id="strip2"></canvas>
-            <canvas id="strip3"></canvas>
-          </div>
+        <div class="curves-main">
+          <div class="card legend-bar" id="run-legend" aria-label="Run colour legend"></div>
+          <div class="chart-grid" id="chart-grid"></div>
+          <div class="chart-tip" id="chart-tip" hidden></div>
         </div>
       </div>
     </section>
 
-    <section id="tab-contract" class="tabpane">
-      <div class="contract-layout">
-        <select id="contract-run"></select>
-        <div id="contract-banner" class="banner"></div>
-        <div id="contract-sim-source" class="sim-source" style="font-size:11px;color:var(--muted);margin:4px 0 8px"></div>
-        <div id="contract-checks" class="checks"></div>
-        <div id="contract-channels" class="channels"></div>
+    <!-- Tab 3: 2D arena, Gazebo L6 & replay -->
+    <section id="tab-arena" class="pane" role="tabpanel">
+      <div class="arena-layout">
+        <aside class="card control-panel" aria-label="Replay controls">
+          <div class="cp-section">
+            <h3 class="cp-title">Bundle</h3>
+            <div class="seg seg-wrap" id="source-seg" role="group" aria-label="Source filter"></div>
+            <select id="bundle-select" class="input select" aria-label="Replay bundle"></select>
+            <p class="cp-meta" id="bundle-meta"></p>
+          </div>
+          <div class="cp-section">
+            <h3 class="cp-title">Target airframe</h3>
+            <div class="seg" id="target-seg" role="group" aria-label="Target airframe">
+              <button type="button" data-target="strl001_belly" aria-pressed="true">STRL001 Plane Belly</button>
+              <button type="button" data-target="quadrotor_skids" aria-pressed="false">Quad Skids</button>
+            </div>
+          </div>
+          <div class="cp-section cp-grow">
+            <h3 class="cp-title">Episodes</h3>
+            <div class="seg seg-wrap" id="ep-filter-seg" role="group" aria-label="Episode outcome filter">
+              <button type="button" data-ep-filter="all" aria-pressed="true">All</button>
+              <button type="button" data-ep-filter="success" aria-pressed="false">Success</button>
+              <button type="button" data-ep-filter="collision" aria-pressed="false">Collision</button>
+              <button type="button" data-ep-filter="timeout" aria-pressed="false">Timeout</button>
+            </div>
+            <ul class="ep-list" id="episode-list" aria-label="Episodes"></ul>
+          </div>
+          <details class="cp-section cp-rollout" open>
+            <summary class="cp-title">Live rollout</summary>
+            <form id="rollout-form" class="rollout-form">
+              <div class="seg" id="engine-seg" role="group" aria-label="Rollout engine">
+                <button type="button" data-engine="sim" aria-pressed="true">Fast VecSim</button>
+                <button type="button" data-engine="gazebo" aria-pressed="false">Gazebo L6</button>
+              </div>
+              <label class="field"><span>Policy</span><select name="policy" class="input select" id="rollout-policy"></select></label>
+              <div class="field-row">
+                <label class="field"><span>Level</span><select name="level" class="input select" id="rollout-level"></select></label>
+                <label class="field"><span>Episodes</span><input name="episodes" type="number" min="1" max="20" value="5" class="input"></label>
+                <label class="field"><span>Seed</span><input name="seed" type="number" value="11" class="input"></label>
+              </div>
+              <button type="submit" class="btn btn-primary" id="rollout-run">Run rollout</button>
+              <p class="cp-meta" id="rollout-status" role="status"></p>
+            </form>
+          </details>
+        </aside>
+
+        <div class="card arena-card">
+          <div class="transport">
+            <div class="btn-row">
+              <button type="button" class="btn" id="btn-step-back" title="Previous frame (←)">−1</button>
+              <button type="button" class="btn btn-primary" id="btn-play" title="Play / pause (space)">Play</button>
+              <button type="button" class="btn" id="btn-step-fwd" title="Next frame (→)">+1</button>
+              <select id="speed-sel" class="input select select-sm" aria-label="Playback speed">
+                <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option>
+              </select>
+            </div>
+            <input type="range" id="scrubber" class="scrubber" min="0" max="0" value="0" aria-label="Timeline">
+            <span class="readout mono" id="time-readout">t 0.00 s · step 0/0</span>
+            <span class="badge" id="outcome-badge">—</span>
+          </div>
+          <div class="layers" id="layers" role="group" aria-label="Layer toggles"></div>
+          <div class="arena-stage"><canvas id="arena-canvas" aria-label="Top-down arena view"></canvas></div>
+          <p class="arena-foot">Top-down, policy frame: drone or plane at the origin, car enters from +y facing −y.</p>
+        </div>
+
+        <aside class="right-panel" aria-label="Camera and telemetry">
+          <div class="card pov-card">
+            <div class="pov-head">
+              <span class="badge" id="pov-mode">Camera POV</span>
+              <button type="button" class="btn btn-sm" id="btn-end-frame" hidden>End frame</button>
+            </div>
+            <div class="pov-stage">
+              <canvas id="pov3d-canvas" aria-label="Simulated camera view" hidden></canvas>
+              <img id="pov-img" alt="" hidden>
+              <canvas id="pov-canvas" aria-label="Camera point of view"></canvas>
+            </div>
+            <p class="pov-meta mono" id="pov-meta"></p>
+          </div>
+          <div class="card telemetry" id="telemetry" aria-label="Live step telemetry"></div>
+          <div class="card strip-card">
+            <div class="strip-head"><span class="strip-title">Vision valid · blackout · tag age (s)</span>
+              <span class="legend"><i class="sw sw-ok"></i>valid <i class="sw sw-blk"></i>blackout <i class="sw sw-out"></i>outlier <i class="sw sw-age"></i>age</span></div>
+            <canvas id="strip1" class="strip" aria-label="Vision validity strip"></canvas>
+          </div>
+          <div class="card strip-card">
+            <div class="strip-head"><span class="strip-title">Gyro rate imu_w (rad/s) · IMU yaw (rad)</span>
+              <span class="legend"><i class="sw sw-s1"></i>imu_w <i class="sw sw-s4"></i>imu_yaw</span></div>
+            <canvas id="strip2" class="strip" aria-label="Gyro strip"></canvas>
+          </div>
+          <div class="card strip-card">
+            <div class="strip-head"><span class="strip-title">Commanded actions vx · vy · w</span>
+              <span class="legend"><i class="sw sw-s1"></i>vx <i class="sw sw-s6"></i>vy <i class="sw sw-s3"></i>w</span></div>
+            <canvas id="strip3" class="strip" aria-label="Action strip"></canvas>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Tab 4: Sim-vs-Real contract -->
+    <section id="tab-contract" class="pane" role="tabpanel">
+      <div class="card contract-head">
+        <div class="verdict verdict-info" id="verdict" role="status">INFO</div>
+        <div class="contract-copy">
+          <h2 class="contract-title">Sim-vs-Real Observation Contract</h2>
+          <p class="contract-explain">Compares what the real Pi observed in an L7 field run (vision rate, tag frame age, dropouts, IMU noise, control-loop timing) against the simulator reference. PASS means every gate holds. It does not prove the car parked: confirm that from the run's end frame.</p>
+        </div>
+        <div class="contract-run">
+          <label class="field"><span>L7 run</span><select id="contract-run" class="input select"></select></label>
+          <p class="cp-meta" id="contract-src"></p>
+        </div>
+      </div>
+      <div class="check-groups" id="check-groups"></div>
+      <div class="card channels-card">
+        <div class="channels-head">
+          <h3>Channel comparison</h3>
+          <span class="legend"><i class="sw sw-real"></i>Real Pi L7 <i class="sw sw-sim"></i>Sim reference</span>
+        </div>
+        <div id="channel-list"></div>
       </div>
     </section>
   </main>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/util.js" defer></script>
+  <script src="/static/leaderboard.js" defer></script>
+  <script src="/static/curves.js" defer></script>
+  <script src="/static/curves_plot.js" defer></script>
+  <script src="/static/arena_airframe.js" defer></script>
+  <script src="/static/arena_draw.js" defer></script>
+  <script src="/static/arena_pov.js" defer></script>
+  <script type="module" src="/static/pov3d.js"></script>
+  <script src="/static/arena_strips.js" defer></script>
+  <script src="/static/arena_bundles.js" defer></script>
+  <script src="/static/arena_rollout.js" defer></script>
+  <script src="/static/arena.js" defer></script>
+  <script src="/static/contract.js" defer></script>
+  <script src="/static/app.js" defer></script>
 </body>
 </html>

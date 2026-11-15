@@ -10,10 +10,11 @@ Canonical commands verified against existing scripts and docs. For Pi SSH/URL de
 | Unit tests (RL) | `cd rl && uv run pytest -q test_rl.py` | Runs RL env/model/export parity tests in `rl/.venv`. |
 | Lint & format check | `uv run ruff check . && uv run ruff format --check .` | Configured in `pyproject.toml`. |
 | RL eval gate | `cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --policy runs/<ckpt>.pt --json runs/<ckpt>.json` | Sole success gate (`evaluate.py`). |
+| RL eval replay traces | `cd rl && uv run python evaluate.py --policy runs/<ckpt>.pt --save-traces runs/<name>.json` | `ugv_replay_v1` bundle for the Observatory arena; `--fov-search` mirrors the deploy blind-search reflex, `--dr-scale`/`--consistent-particles` override level DR. |
 | RL training (teacher) | `cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120 --seed 0 --out runs/teacher_L0_s0.pt` | Privileged PPO teacher on 3090. |
 | RL training (student) | `cd rl && uv run python train_student.py --level L0 --iters 300 --seed 0 --out runs/student_L0_s0.pt` | Deployable GRU student PPO. |
 | Gazebo run (GUI) | `./simulation/gazebo/launch_control.command` | Opens Gazebo + local console on `127.0.0.1:8767`. |
-| Gazebo run (policy) | `uv run python simulation/gazebo/run_policy_episodes.py --weights <policy.npz>` | Headless L6 policy episode runner. |
+| Gazebo run (policy) | `uv run python simulation/gazebo/run_policy_episodes.py --weights <policy.npz>` | Headless L6 policy episode runner; `--bridge fake\|gazebo`, `--save-traces <path>` writes an Observatory replay bundle. |
 | Field harness (L7) | `tools/l7/run.sh <mode> [l7_run.py args...]` | Deploys L7 harness to Pi, runs `probe\|stage\|policy\|watch`, pulls logs. |
 | Pi deploy / restart | `ssh pi 'cd ~/ugv && sudo systemctl restart ugv-dashboard.service'` | Preserve `~/ugv/runs/student.npz` and `vision-camera.conf`; see [`HANDOFF.md`](../HANDOFF.md). |
 
@@ -117,7 +118,6 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 | Read-only ArUco pipeline profiler on Pi | `tools/profile_aruco.py` |
 | Single bounded floor arc trial | `tools/tune_arc.py` |
 | Generate printable 50 mm ArUco PDF (`docs/aruco-tags-50mm.pdf`) | `tools/generate_aruco_tags.py` |
-| RL training observatory HTML/SVG dashboard | `tools/training_ui.py` |
 | Render uOttawa Aeronautics showcase MP4 reels | `tools/render_uottawa_reel.py` |
 | Browser keyboard/follow contract check | `tests/test_keyboard.cjs` |
 | Shared agent knowledge base indexer & query tool | `.agent_kb/kb.py` |
