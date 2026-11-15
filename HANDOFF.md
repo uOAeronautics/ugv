@@ -97,3 +97,26 @@
 - **Pi status**: `adv034` still paused charging on `2fefd95`; pending `git pull` + `sudo systemctl restart ugv-dashboard.service` after charging.
 - **Pi memory — measured live 2026-11-14 (`adv034`, up 39 min, streaming 30 fps + IMU, wheels idle)**: board `Pi4B` 2 GB — `MemTotal 1888972 kB` (`free -h`: total `1.8Gi`, used `540Mi`, `buff/cache 1.2Gi`, available `1.3Gi`, swap unused). `throttled=0x0`, `temp 60.3 C`, load `1.43–1.56`. Top procs: `uvicorn` dashboard `RSS 163768 kB` (`8.6%`, `VmHWM` = same = session peak incl. earlier auto-park per `auto_park_pose` in state); `rpicam-vid` `RSS 67016 kB` (`3.5%`, `VmHWM` same). Desktop stack (`labwc`/`wf-panel`/`pcmanfm`/`wayvnc`) adds ~`250 MB`. Headroom is comfortable; no swap pressure. True auto-park high-load trace still needs new `PerfMonitor` deployed + a run.
 - **Vision high-pressure test 2026-11-14, no actuation**: 30 s tight loop over `GET /api/calibration/frame` + `TagDetector.detect_jpeg` on-Pi: **473 frames, 468 tag detections, fetch+detect mean `45.5 ms` / p50 `44.3 ms` / p95 `52.4 ms`** (detect path alone exceeds the `33.3 ms` frame budget — consistent with `vision_ms_p50 = 50 ms` in watch-diag). Loader proc peak RSS `64.5 MB`; dashboard `uvicorn` RSS flat at `160.4 MB` before and peak (no growth over 473 requests); system used `532 -> 539 MB`, available `1312 -> 1304 MB`. No leak, no swap, no pressure.
+
+## 11. Orchestrator Takeover Session (2026-11-14, waves 0-4): Head, Gates, Deploy Warning
+- **`main` head `7757879` (pushed)**: `51f59c6` aruco MOSSE->CSRT->template tracker fallback
+  (OpenCV 5 desktop; Pi OpenCV 4.x path byte-identical); `e47ccc3` blind-search yaw sweep in
+  `src/ugv/policy.py` + `evaluate.py --fov-search` mirror + Gazebo replay traces; `afab309`
+  Observatory modular UI + joint whitened-KDE sim-vs-real contract; `7757879`
+  `train_student --blind-mouth-frac` + `rl/action_sensitivity.py`. Banner `c144abb`/`3a04fbb`.
+- **MOTION CHANGE PENDING DEPLOY**: `e47ccc3` changes deployed `StudentPolicy` behaviour
+  during tag loss (dwell 1.5 s at yaw 0, then +/-100 deg triangle yaw sweep, zero
+  translation). Sim-gated (1000 ep seed 11: L2 135->143 succ / coll 333->323; L_real coll
+  3->1; no regression) but NOT hardware-gated. On the next Pi sync treat it as a hardware
+  change: `docs/SAFETY.md` gate (wheels off ground or clear zone, human present, timeout)
+  before any policy-mode run; confirm with the end frame, not an estimate.
+- **Pi untouched**: `adv034` still paused charging at `2fefd95`; no SSH/deploy this session.
+  Preserve `~/ugv/runs/student.npz` + `vision-camera.conf` on sync (unchanged rule).
+- **Checks**: root `pytest` 264 passed + 4 subtests; `rl/test_rl.py` 32 passed; ruff clean
+  both envs; Observatory browser QA 0 console errors at 1440x900 and 960x720.
+- **Measured findings** (full numbers in `docs/AGENT_BOARD.md` session summary 2026-11-14
+  takeover): Gazebo-vs-VecSim gap is the action->motion plant, not sensing; joint contract
+  overlap 0.0 on the best real run (sim 20 ms loop budget vs ~0.9 ms recorded); policy acts
+  strongly at the mouth (mean |a| 0.55) but makes ~0 progress — misdirected action.
+- **Follow-ups**: seed `FakeBridge` from `--seed`; align fake plant with `real_plant`;
+  probes UI listing; `--blind-mouth-frac` GPU training run; belly vision behind L2>=80%.

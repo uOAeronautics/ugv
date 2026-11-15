@@ -26,15 +26,24 @@ editing.
 
 ## Routing
 
+### Standing override (user, 2026-11-14)
+
+All delegates in this project run on Qwen4-Max-Preview (`qmodel_latest`) via
+`acpRegistry_qoder_cli` with `reasoning_effort: "high"`. The tier table below is fallback
+guidance for when that provider is unavailable.
+
 | Tier | Use for | Models |
 |---|---|---|
-| Fast | Scouting, log and data queries, edits with a complete spec | Beam free, Inkling 2 Small free |
-| Skeptical | Review, diagnosis, any brief that may itself be wrong | Gemini 4 Hydrogen (low), Haiku 5.5, Iceman free |
+| Fast / Scoped | Scouting, log and data queries, edits with a complete spec | Inkling 2 Small (`opencode/inkling-2-small-free`), Claude Haiku 5.5 (`medium`) |
+| High-Intelligence / Skeptical | Review, diagnosis, experiments, architecture, any brief that may itself be wrong | Gemini 4 Hydrogen (`medium` preferred over `low`), Claude Haiku 5.5 (`medium`/`high`) |
 
-- Fast-tier models execute a brief as written, including its mistakes. Skeptical-tier models
+### Model Blacklist (Do NOT spawn for technical, coding, or research council tasks)
+- **NEVER use**: `gemini-3.8-flash`, `opencode/nemotron-3.5-lightning-free`, `opencode/beam-free`, `opencode/iceman-free`, `opencode/deepseek-v4.1-flash-free`, `opencode-go/muse-spark-1.3-contributor` (low), or other weak free-tier models when deep technical analysis, mathematical rigor, or reliable code execution is required.
+- Default to **Gemini 4 Hydrogen (`thinking_level: "medium"`)**, **Claude Haiku 5.5 (`effort: "medium"`)**, or **Inkling 2 Small (`opencode/inkling-2-small-free`)**.
+
+- Fast-tier models execute a brief as written, including its mistakes. Skeptical/High-intelligence models
   report a flawed brief instead of implementing it silently.
-- Raise the thinking level only after a failed check; higher levels cost time and tokens
-  without a default gain.
+- Prefer `thinking_level: "medium"` on Gemini 4 Hydrogen as the default baseline.
 - Above these tiers, do the work yourself or use a top-tier model. Do not assume the table
   holds for tasks longer than about 10 minutes, large repositories, hardware or vision.
 
@@ -47,6 +56,9 @@ editing.
   non-interactive mode when launching.
 - **Spawn cost.** A fresh child pays for its whole prompt once. Run a one-command question
   yourself.
+- **Children may commit or push against the brief.** Check `git log`, `origin/main` and the
+  reflog before committing; gate the deliverable on disk with your own commands and treat
+  the child's report as a claim, not evidence.
 - **Token counts differ per harness.** Compare wall time and outcomes across harnesses, not
   reported tokens.
 

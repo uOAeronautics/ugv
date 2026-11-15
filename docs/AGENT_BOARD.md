@@ -9,10 +9,11 @@ Format: `[TYPE] id | scope | status | evidence`.
 
 - StagedBaseline checkpoint `27c2b5c` (8 tests passed): RLS ID, Mahalanobis
   EKF, shield/retreat, L4 search. Baseline L0 975/1000 (5 coll).
-- RL pipeline fixes in-progress (uncommitted tree: sim/reward/models,
-  trainers, export, policy fixture; see `git status`).
-- Gazebo lockstep in-progress (`simulation/gazebo/drone_model.py`,
-  `run_policy_episodes.py` uncommitted; L6 = fake-bridge plumbing only).
+- RL pipeline (ADR, RMA extrinsics, `dr_scale`, snapshot API, `L_chaos`) committed through
+  `9838b8b`; blind-mouth resets + interventional sensitivity audit in `7757879`.
+- Gazebo L6 runner records `ugv_replay_v1` traces (`e47ccc3`); paired-seed diagnostic says
+  the harness gap is the action->motion plant, not sensing (session summary 2026-11-14
+  takeover).
 
 ## Pareto (eval JSONs, seed 11, n=1000 unless noted)
 
@@ -171,3 +172,48 @@ red (best 989/10); seed-1 bifurcation (freeze vs clips) unresolved.
 - `[EXP] student_L2_cons_adr_v2_s0`: `L2` (`--consistent-particles`, 1000 ep, seed 11) **528/1000 succ (`52.8%`, CI `[0.497, 0.559]`), 216 coll**, 256 timeout (`16.5x` over `student_L2_s0`); `L1`: **918/1000 succ, 0 coll** (`rl/runs/student_L2_cons_adr_v2_s0_L2_cons_1000ep_s11.json`).
 - `[EXP] student_Lreal_adr_v4_s0`: `L_real` (`dr_scale = 0.25`, 1000 ep, seed 11) **318/1000 succ (`31.8%`, CI `[0.290, 0.348]`)**, 494 coll, 188 timeout, pos_p95 277mm, yaw_p95 2.1deg (`rl/runs/student_Lreal_adr_v4_s0_Lreal_dr025_1000ep_s11.json`); full `dr_scale = 1.0` (`0.40 m` blind approach zone where `valid=0` zeros `tag`) remains open (`0/1000 succ, 45 coll, 955 timeout`).
 - `[EXP] student_L2_cons_adr_s0_gz_L1`: Gazebo L6 (`--bridge gazebo`, 3 ep, seed 11) `0/3 succ, 0 coll, 3 timeout`; `--bridge fake --sensing camera_dr --lighting-dr` (20 ep, seed 11) `0/20 succ, 2 coll, 18 timeout`.
+
+## SESSION SUMMARY (2026-11-14, orchestrator takeover: waves 0-4 gates, joint contract, blind-mouth resets)
+
+- Takeover after the previous provider died on quota mid-Wave-1 judge. All subagents
+  Qwen4-Max-Preview (`qmodel_latest`, high). Judge verdict CONDITIONAL PASS; the blocking
+  flag (deploy sweep riding in Wave 0/1 without gate evidence) resolved by splitting it
+  into its own gated commit `e47ccc3`.
+- Commits: `51f59c6` aruco MOSSE->CSRT->template fallback (OpenCV 5); `e47ccc3` blind-search
+  yaw sweep + `evaluate.py --fov-search` mirror + Gazebo `ugv_replay_v1` traces; `afab309`
+  Observatory modular UI + joint whitened-KDE contract; `7757879` `--blind-mouth-frac`
+  resets + `rl/action_sensitivity.py`. Banner `c144abb`/`3a04fbb` were committed AND pushed
+  by a subagent against its brief (out-of-scope edit); content reviewed, regeneration
+  byte-identical, adopted — process violation noted.
+- `[GATE] sweep-reflex`: 1000 ep seed 11, `student_L1_latw4_ft.pt` (source of deployed npz,
+  digest match): L2 135->143 succ, coll 333->323; L_real 0->0 succ, coll 3->1,
+  pos_p95 1689->1170 mm, yaw_p95 88.8->45.7 deg. No regression (L2 gain directional, CIs
+  overlap). Deploy gates: export parity 8.17e-08 (<1e-5), benchmark 0.79 ms/step (<5 ms).
+  JSONs `rl/runs/gate_sweep_{L2,L2fovsearch,L_real,L_realfovsearch}_s11.json`.
+- `[EXP] gazebo-paired-seed`: 10 ep seed 11, `student_L1_best.npz`: fake bridge 0/10
+  (10 coll, perfect tags, zero latency) vs Gazebo 3/10 (7 coll). The VecSim-vs-harness gap
+  is the action->motion plant (VecSim `real_plant` deadzones/onset lags vs instantaneous
+  fake gains 0.6/0.6/2.5+0.3vx), NOT sensing. Search reflex re-acquires tags 5/5 under
+  blindness but does not park. Correction: the old "0/20 Gazebo" was `latw5_s0.npz`, not
+  `best`. Caveat: `FakeBridge` ignores `--seed` (`random.Random(ep)`), arms not spawn-paired.
+  Traces `rl/runs/gazebo_l6/diag_paired_{fake,gazebo}_s11.json` + `diag_paired_analysis.json`.
+- `[EXP] joint-contract`: best real run `20261113-185204-stage-park-0.45` passes every
+  marginal but joint whitened-KDE overlap = 0.0 -> FAIL: sim's constant 20 ms loop budget
+  vs ~0.9 ms recorded on the Pi; vision channels match (inter_tag_dt 33.2 vs 33.4 ms,
+  tag_age 13.2 vs 13.4 ms). Honest FAIL, not a parked car.
+- `[EXP] action-sensitivity`: L_real, N=16, seed 11, delta 0.3, H=1 s: policy mean |action|
+  0.55 mouth / 0.53 blind yet progress ~0 (+8 mm/s mouth) -> misdirected action, NOT
+  freezing (an earlier stale-history metric said 0.049; fixed with a closed-loop policy
+  reference branch after HIST zero-action warmup). y axis potent: -dy gives +0.25 m
+  progress and -75% collision rate at the mouth. `rl/runs/sensitivity_L1ft_Lreal.json`.
+- Gating fixes made by the orchestrator: sensitivity policy metric stale spawn hist;
+  joint-overlap row alignment (complete-case rows, regression test); contract UI default
+  now honours the server's control-run preference (was newest = watch snippet).
+- Checks: root `pytest` 264 passed + 4 subtests, `rl/test_rl.py` 32 passed, ruff check +
+  format clean in both envs; Observatory browser QA 0 console errors / 0 failed requests
+  at 1440x900 and 960x720 (play/scrub/POV, 4 tabs, joint card).
+- Follow-ups: seed `FakeBridge` from `--seed` for true paired diagnostics; align the fake
+  bridge plant with `real_plant`; probes/archive UI listing (judge LOW, non-blocking);
+  GPU training run with `--blind-mouth-frac` (not started); belly vision behind L2>=80%.
+- Pi untouched: charging pause holds (`adv034` at `2fefd95`). The sweep is a deploy motion
+  change — see HANDOFF section 11 before the next sync.
