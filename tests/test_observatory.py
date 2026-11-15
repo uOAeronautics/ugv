@@ -3,17 +3,28 @@ import math
 import sys
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import tools.observatory.replay as replay_mod
 import tools.observatory.server as server_mod
-from tools.observatory.data import parse_log, parse_metrics_jsonl
+from tools.observatory.data import CALIB_RUNS, parse_log, parse_metrics_jsonl
 from tools.observatory.replay import eval_bundle, l7_bundle
 from tools.observatory.server import app
 
 client = TestClient(app)
+
+# These integration tests read the gitignored local L7 telemetry (*.jsonl);
+# CI only has the tracked meta/summary manifests, so skip there instead of
+# faking field data.
+_HAS_L7_DATA = CALIB_RUNS.is_dir() and any(
+    (d / "ticks.jsonl").exists() for d in CALIB_RUNS.iterdir() if d.is_dir()
+)
+requires_l7_data = pytest.mark.skipif(
+    not _HAS_L7_DATA, reason="local L7 telemetry (calibration/runs/l7/*/ticks.jsonl) not present"
+)
 
 
 def test_overview():
@@ -59,6 +70,7 @@ def test_curves():
     assert "series" in r.json()
 
 
+@requires_l7_data
 def test_replay_bundle_l7():
     bundles = client.get("/api/replay/list").json().get("bundles", [])
     l7 = [b for b in bundles if b["bundle_id"].startswith("l7:")]
@@ -74,6 +86,7 @@ def test_replay_bundle_l7():
     assert "geometry" in d
 
 
+@requires_l7_data
 def test_contract():
     runs = client.get("/api/contract/runs").json().get("runs", [])
     assert runs, "expected at least one contract run in calibration/runs/l7"
@@ -375,6 +388,10 @@ def test_l7_bundle_tag_xyz_keys(tmp_path, monkeypatch):
     assert f["imu_w"] == 0.05
 
 
+@pytest.mark.skipif(
+    not (CALIB_RUNS / "20261113-184652-policy-gyro-zero" / "ticks.jsonl").exists(),
+    reason="specific local L7 policy run telemetry not present",
+)
 def test_l7_bundle_real_policy_run_extracts_valid_tags():
     d = l7_bundle("20261113-184652-policy-gyro-zero")
     frames = d["episodes"][0]["frames"]
@@ -460,6 +477,7 @@ def test_contract_unknown_run_id_returns_404():
     assert r.status_code == 404
 
 
+@requires_l7_data
 def test_contract_default_run_id_resolves():
     r = client.get("/api/contract")
     assert r.status_code == 200
