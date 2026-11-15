@@ -9,7 +9,7 @@ Canonical commands verified against existing scripts and docs. For Pi SSH/URL de
 | Unit tests (root) | `uv run pytest -q` | Runs `tests/` and `simulation/gazebo/test_*.py` (torch-free). |
 | Unit tests (RL) | `cd rl && uv run pytest -q test_rl.py` | Runs RL env/model/export parity tests in `rl/.venv`. |
 | Lint & format check | `uv run ruff check . && uv run ruff format --check .` | Configured in `pyproject.toml`. |
-| RL eval gate | `cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --policy runs/<ckpt>.pt --json runs/<ckpt>.json` | Sole success gate (`evaluate.py`). |
+| RL eval gate | `cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics --policy runs/<ckpt>.pt --json runs/<ckpt>.json` | Sole success gate (`evaluate.py`); `--no-mean-dynamics` pins the p0 gate plant (the mean has zero differential yaw). |
 | RL eval replay traces | `cd rl && uv run python evaluate.py --policy runs/<ckpt>.pt --save-traces runs/<name>.json` | `ugv_replay_v1` bundle for the Observatory arena; `--fov-search` mirrors the deploy blind-search reflex, `--dr-scale`/`--consistent-particles` override level DR. |
 | RL training (teacher) | `cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120 --seed 0 --out runs/teacher_L0_s0.pt` | Privileged PPO teacher on 3090. |
 | RL training (student) | `cd rl && uv run python train_student.py --level L0 --iters 300 --seed 0 --out runs/student_L0_s0.pt` | Deployable GRU student PPO. |

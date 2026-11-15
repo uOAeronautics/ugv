@@ -8,8 +8,8 @@ description: Run the UGV RL-parking research pipeline as orchestrator or scout. 
 ## Pipeline (summary of `docs/PIPELINE.md`)
 
 Ladder L0->L5 (`rl/sim.py`), L6 Gazebo, L7 robot. Judge is
-`cd rl && uv run python evaluate.py --episodes 1000 --seed 11
---json runs/<name>.json`. One GPU job at a time. Monotonic gating per
+`cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics
+--json runs/<name>.json` (p0 gate plant). One GPU job at a time. Monotonic gating per
 `docs/RL_PARKING.md`. Scouts never commit; orchestrator commits per scope.
 Orchestrator is Gemini 4 Argon (Medium): zero direct file/log reading;
 delegates ALL file reads, log checks, diagnostics, implementations,
@@ -34,7 +34,7 @@ synthesized reports. All subagents (Scout / EXP / Adversary / Ops) run on
 ```text
 Scope: <scope>. Files: <files>. Do not touch anything else.
 Read rl/AGENTS.md, docs/PIPELINE.md, rl/PLAN.md State first.
-Eval: cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --json runs/<run_id>.json.
+Eval: cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics --json runs/<run_id>.json.
 Append one line to rl/runs/archive.jsonl. Post board row (format below).
 Return: changed files, eval numbers, next step. Do not commit.
 ```

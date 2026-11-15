@@ -4,7 +4,7 @@ Spec and gates: `docs/RL_PARKING.md`. This file is the work queue. Execute phase
 a phase is done only when its acceptance checks pass. Update the "State" section when a
 measured result changes.
 
-## State (2026-11-03, measured; eval = evaluate.py --episodes 1000 --seed 11)
+## State (2026-11-03, measured; eval = evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics)
 
 Current truth only. Replace a line when its result changes; do not append history.
 Superseded experiment notes live in `runs/*.log`.
@@ -54,6 +54,13 @@ phase 0  all items 0.1-0.8 done (GAE, idx-scoped reset, seeding, rate term, succ
   job that imports it is starting.
 - A change to `sim.py` or `reward.py` invalidates earlier results. Re-measure the
   teacher before comparing students.
+- Gate compaction (D1/D2, approved 2026-11-14; see `docs/RL_PARKING.md`): the gate plant is
+  p0 (`--no-mean-dynamics`); L0 is a 100-episode canary; L1 deploy floor is >=90% / <=0.5%
+  collisions with adoption guard candidate >=956 vs incumbent 966; L2 is scored on the
+  12-particle turn-consistent subset (`--consistent-particles`, `L2_cons`), adopt iff
+  success >=528 AND collisions <=216 AND L1-p0 >=956. Prior L2+ numbers are invalidated and
+  must be re-baselined; the subset-matched EKF + staged baseline must be re-measured before
+  any "beats EKF" claim.
 - No real-robot motion (L7) without explicit operator authorisation, measured gear
   clearance in `config/parking.json`, and the SAFETY.md flags.
 
@@ -103,8 +110,8 @@ retrain the L0 teacher once at the end of the phase and record the new numbers.
     sequence (tag, age, valid, imu, prev_act) replayed through `StudentPolicy.step`
     reproduces `env.hist` exactly (store the trace as an `.npz` fixture under `tests/fixtures`).
 
-Phase 0 exit: rl tests pass; teacher L0 retrained; L0 gate (>=99%, 0 collisions on 1000
-seeded episodes) reported pass or fail with numbers. If the teacher fails the gate, tune
+Phase 0 exit: rl tests pass; teacher L0 retrained; L0 canary (100 episodes, seed 11, p0,
+100/100, 0 collisions) reported pass or fail with numbers. If the teacher fails the gate, tune
 reward or collision margin until it passes. A student cannot exceed its teacher's gate.
 
 ## Phase 1: make L0 match its spec, then get a working student (1.1 ✓, 1.2 skipped, 1.3 in progress, 1.4 open, 1.5 ✓)

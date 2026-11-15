@@ -25,5 +25,5 @@ L0 recipes (one seed; the 1000-episode eval is the judge):
 uv run python train_teacher.py --level L0 --envs 512 --iters 120 --seed <s> --out runs/teacher_L0_s<s>.pt
 # student (best: 991/1000, GRU-64, from scratch)
 uv run python train_student.py --level L0 --iters 300 --seed <s> --out runs/student_L0_s<s>.pt
-uv run python evaluate.py --level L0 --episodes 1000 --seed 11 --policy runs/<ckpt>.pt --json runs/<ckpt>.json
+uv run python evaluate.py --level L0 --episodes 1000 --seed 11 --no-mean-dynamics --policy runs/<ckpt>.pt --json runs/<ckpt>.json
 ```

@@ -23,12 +23,16 @@ false-park:= declared parked while outside above = failure, counted separately
 ## Ladder (each gate must pass before next counts)
 
 ```text
-L0 aligned 0.75m ahead / posterior mean / perfect state
-   gate := >=99% success, 0 collisions
-L1 0.5-1.5m, +-30deg bearing, +-60deg yaw, tags visible / mean / nominal noise 80ms
-   gate := >=98%, collisions <=0.5%
+L0 aligned 0.75m ahead / posterior draw 0 (p0) / perfect state
+   gate := 100-episode canary (seed 11, p0): 100/100, 0 collisions. ADR anchor + test fixture.
+           The standalone L0 1000-episode gate is retired (3 policies already >=991).
+L1 0.5-1.5m, +-30deg bearing, +-60deg yaw, tags visible / p0 / nominal noise 80ms
+   gate := deploy floor >=90% success, collisions <=0.5% (research target >=98%, not the floor).
+           Adoption guard: no regression vs incumbent 966 (candidate >=956). p0 = --no-mean-dynamics.
 L2 as L1 / full 60-draw posterior + extra DR (yaw couple, deadzone, lag, gain, sag) / nominal
-   gate := >=95%, <=1%, beats EKF + staged baseline
+   INTERIM gate := 12-particle turn-consistent subset (--consistent-particles), 1000 ep seed 11:
+           adopt iff success >=528 AND collisions <=216 AND L1-p0 >=956. Re-baselines L2+ history.
+           Spec-L2 >=95%/<=1%/beats-EKF stays the research target; the real fix is turn-channel SysID.
 L3 as L1 / as L2 / drops 25-45%, outliers, 3s blackout, tag loss under drone, 80-200ms
    gate := >=95%, <=1%, false-parked <=0.5%, beats EKF + staged baseline
 L4 4x4m open, any heading, drone may start out of view, random drone yaw / as L2 / as L3
@@ -40,6 +44,26 @@ L6 Gazebo sim-to-sim: native rollers, rendered camera, real ParkingEstimator + R
 L7 real robot, operator-authorised, drone powered off
    gate := staged >=8/10 L1 starts, then >=18/20 L4 starts, 0 contacts
 ```
+
+### Gate compaction (D1/D2, approved 2026-11-14)
+
+- **p0 is the gate plant.** L0/L1 evaluate on posterior draw 0 (`--no-mean-dynamics`). The
+  posterior *mean* has zero differential yaw authority (the turn column is unidentified across
+  draws), so it is a broken plant and is never the gate. The mean is kept only as the L0 ADR
+  anchor reference, not for scoring.
+- **Deploy floor vs research target.** The written >=98% L1 target never passed; 966 deployed
+  under a de-facto >=90% floor. The floor is >=90% success / <=0.5% collisions; >=98% remains the
+  research target. The 34 L1 failures are timeouts with 0 collisions: safety lives in the
+  collision bar, speed is the 98% path. Adoption requires candidate >=956 (no regression vs 966).
+- **L0 canary.** 100 episodes, seed 11, p0, 100/100, 0 collisions replaces the standalone L0
+  1000-episode gate. L0 stays the ADR anchor (`sim.py` dr_scale=0) and a test fixture; its spawns
+  are not folded into L1.
+- **L2 interim subset.** Only 12/60 posterior draws are turn-consistent; the same checkpoint
+  scores 966 on L1 but 135 on spec-L2, so the plant distribution (not sensing) is the cause.
+  The interim L2 gate scores the 12-particle consistent subset (`--consistent-particles`, label
+  `L2_cons`). This invalidates prior L2+ numbers and requires a re-baseline; the subset-matched
+  EKF + staged baseline must be re-measured before any "beats EKF" claim. The permanent fix is
+  pure-rotation turn-channel SysID (hardware-gated), not a mean-plant simplification.
 
 ## Contracts
 
@@ -78,7 +102,8 @@ heldout   := no complete heldout full-power (4095) trajectory; MECANUM_REAL2SIM.
 rule      := sim success != real success; L7 needs measured clearance + SAFETY flags
 turn      := posterior turn column unidentified (yaw per +0.2 turn spans -1.1..+1.0 rad/s across draws;
              fit used translation trials only); ~17% of L2+ draws cannot yaw both ways. Needs pure-rotation trials
-L0/L1 dyn := rl/sim.py uses posterior draw 0, not the posterior mean stated above (unchanged to keep numbers)
+L0/L1 dyn := rl/sim.py gate plant is posterior draw 0 (p0, --no-mean-dynamics), pinned by the
+             D1 compaction. The posterior mean has zero differential yaw and is never the gate.
 ```
 
 ## Compute
@@ -96,7 +121,7 @@ Status and work queue: `rl/PLAN.md`. Agent rules: `rl/AGENTS.md`. Checkpoints an
 train teacher := cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120 --seed <s>   # gate-teacher recipe (defaults: rate 0, gamma 0.99, lam 0.95; it used reward yaw weight 0.3, now 1.0)
 student ppo   := cd rl && uv run python train_student.py --level L0 --iters 300 --seed <s>             # best-student recipe; --init <ckpt> to continue
 dagger        := cd rl && uv run python distill.py --teacher runs/teacher_L0_gate.pt --level L0      # optional; not needed for L0
-eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt --seed 11  # or oracle_pd|brake|random
+eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt --seed 11 --no-mean-dynamics  # p0 gate plant; or oracle_pd|brake|random
 baseline      := cd rl && uv run python baselines.py --level L0 --episodes 1000 --seed 11 --json runs/baseline_ekf_staged_L0.json
 L6 baseline   := uv run python simulation/gazebo/run_policy_episodes.py --baseline --latency <s>  # fake bridge until the Gazebo bridge exists
 export        := cd rl && uv run python export.py --ckpt runs/<student>.pt --out runs/policy_L0.npz

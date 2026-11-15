@@ -5,7 +5,8 @@ Applies to everything under `rl/`. The shared rules in `/home/fer/Documents/AGEN
 ## Read first
 
 ```text
-spec + gates   := ../docs/RL_PARKING.md   (do not change gates or parked thresholds)
+spec + gates   := ../docs/RL_PARKING.md   (do not change gates or parked thresholds without approval;
+                 D1/D2 compaction approved 2026-11-14: p0 plant, L0 canary, L1 >=90% floor, L2_cons subset)
 work queue     := PLAN.md                 (State = current truth; update it when a result changes)
 code map       := README.md
 ```
@@ -18,7 +19,8 @@ next gate over extra confirmation.
 
 ## Experiments
 
-- Judge = `evaluate.py --episodes 1000 --seed 11 --json runs/<name>.json`. Training logs
+- Judge = `evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics --json runs/<name>.json`
+  (p0 gate plant). Training logs
   (`succ` per iteration) are not a success measure: the stochastic policy rarely completes
   the 1 s hold even when the deterministic policy parks.
 - One seed per experiment. Pass the gate -> keep the checkpoint and move on. Fail -> one more

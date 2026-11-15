@@ -28,8 +28,8 @@ if a `[SCOUT]` row is `running`, wait. Never edit `sim.py`, `reward.py`,
 
 ## evaluate.py is the sole judge
 
-- Judge: `cd rl && uv run python evaluate.py --episodes 1000 --seed 11
-  --json runs/<name>.json`. Training `succ` logs are not success.
+- Judge: `cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics
+  --json runs/<name>.json` (p0 gate plant). Training `succ` logs are not success.
 - One seed per experiment. Pass -> keep checkpoint, move on. Fail -> one more
   seed before declaring the idea dead (seed variance spans 0-256/256).
 - Change one thing per experiment. Before changing reward, watch failures:
