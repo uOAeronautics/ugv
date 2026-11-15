@@ -1,13 +1,12 @@
-"""ugv README banner: the parking bay drawn as a topographic field-survey chart.
+"""ugv README banner: the parking bay as a quiet topographic chart.
 
 Run: uv run --with pillow --with numpy python docs/assets/make_banner.py
-Needs fontconfig plus Noto Sans Mono, DejaVu Serif and Fira Sans Condensed.
+Needs fontconfig plus Noto Sans Mono.
 
-Policy frame, metres: drone at the origin, skids along y, inside gap 0.31 m,
-ArUco tags 14/6/3 at the head. The bay is a contour saddle (0.32 -> 0.30), the
-tags are triangulation stations, and the approach is a dashed traverse chained
-ST 0+00 -> 0+00.5 -> GOAL 0+01. The chart is schematic (NTS); the rotated stamp
-carries the RL ladder L0-L7 with L7 filled.
+Policy frame, metres: drone at the origin, skids along y, inside gap 0.31 m.
+The bay is a contour saddle; the dashed approach curves in from the staging
+point and ends tangent to the parked heading (along the skid axis, yaw 0).
+The chip row is the repo's real sim-to-real ladder L0-L7, L7 = the real car.
 """
 
 from __future__ import annotations
@@ -21,6 +20,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1600, 480
 INK, RED, MUTE, PAPER = (35, 42, 51), (181, 68, 44), (138, 133, 119), (242, 237, 225)
+RULE_Y, RULE_GAP = 282, (150, 260)  # rule crosses the g descender, knocked out around it
 _FONTS: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 
 
@@ -48,8 +48,16 @@ def grain(im: Image.Image, amount: int = 4, seed: int = 7) -> Image.Image:
     return Image.fromarray(a.astype(np.uint8), "RGBA")
 
 
+def bezier(p0, p1, p2, p3, t):
+    u = 1 - t
+    return (
+        u**3 * p0[0] + 3 * u**2 * t * p1[0] + 3 * u * t**2 * p2[0] + t**3 * p3[0],
+        u**3 * p0[1] + 3 * u**2 * t * p1[1] + 3 * u * t**2 * p2[1] + t**3 * p3[1],
+    )
+
+
 def mecanum(d: ImageDraw.ImageDraw, cx: float, cy: float, L: float, Wd: float) -> None:
-    """Top-down car footprint, heading along +y; roller diagonals form an X."""
+    """Top-down car footprint, heading along the skid axis; roller diagonals form an X."""
     d.polygon(
         [
             (cx - Wd / 2 + 6, cy - L / 2),
@@ -77,7 +85,7 @@ def mecanum(d: ImageDraw.ImageDraw, cx: float, cy: float, L: float, Wd: float) -
 def main() -> None:
     im = grain(Image.new("RGBA", (W, H), PAPER + (255,)))
 
-    # contour saddle around the bay, knocked out under the stamp and GOAL label
+    # contour saddle around the bay
     g, d = layer()
     cx, cy = 1150, 250
     for k in range(9):
@@ -92,21 +100,10 @@ def main() -> None:
             )
             pts.append((cx + r0 * wob * 1.35 * math.cos(t), cy + r0 * wob * 0.82 * math.sin(t)))
         d.line(pts + [pts[0]], fill=INK + (70 if k % 3 else 120,), width=2 if k % 3 else 3)
-    for k, lab in ((2, "0.30"), (5, "0.31"), (8, "0.32")):
-        lx, ly = cx - (60 + k * 34) * 1.35 - 52, cy - 10
-        d.rectangle([lx - 4, ly - 2, lx + 44, ly + 22], fill=PAPER + (255,))
-        d.text((lx, ly), lab, font=font("DejaVu Serif:style=Bold", 18), fill=INK + (215,))
     clip = Image.new("L", (W, H), 0)
     ImageDraw.Draw(clip).rectangle([28, 28, W - 29, H - 29], fill=255)
-    ko = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(ko).rectangle([1216, 316, 1320, 348], fill=255)
-    sm = Image.new("L", (372, 128), 0)
-    ImageDraw.Draw(sm).rectangle([0, 0, 371, 127], fill=255)
-    ko.paste(sm.rotate(-6, expand=True, resample=Image.BICUBIC), (640, 36))
     ga = np.array(g)
-    ga[..., 3] = (
-        ga[..., 3].astype(float) * np.minimum(np.array(clip), 255 - np.array(ko)) / 255
-    ).astype(np.uint8)
+    ga[..., 3] = (ga[..., 3].astype(float) * np.array(clip) / 255).astype(np.uint8)
     im.alpha_composite(Image.fromarray(ga, "RGBA"))
 
     g, d = layer()
@@ -119,37 +116,20 @@ def main() -> None:
     d.rectangle([18, 18, W - 19, H - 19], outline=INK + (200,), width=3)
     d.rectangle([26, 26, W - 27, H - 27], outline=INK + (120,), width=1)
 
-    # dashed traverse with survey chainage
-    p0, p1, n = (620, 400), (1150, 250), 26
-    for i in range(n):
-        t0, t1 = i / n, (i + 0.55) / n
-        a = (
-            p0[0] + (p1[0] - p0[0]) * t0,
-            p0[1] + (p1[1] - p0[1]) * t0 + 26 * math.sin(math.pi * t0),
-        )
-        b = (
-            p0[0] + (p1[0] - p0[0]) * t1,
-            p0[1] + (p1[1] - p0[1]) * t1 + 26 * math.sin(math.pi * t1),
-        )
-        d.line([a, b], fill=RED + (220,), width=3)
-    for i, lab in ((0, "ST 0+00"), (13, "0+00.5")):
-        t = i / n
-        p = (p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t + 26 * math.sin(math.pi * t))
-        d.ellipse(
-            [p[0] - 5, p[1] - 5, p[0] + 5, p[1] + 5],
-            fill=PAPER + (255,),
-            outline=RED + (255,),
-            width=2,
-        )
-        d.text((p[0] - 24, p[1] - 30), lab, font=font("DejaVu Serif", 15), fill=INK + (220,))
+    # approach: curves in from staging, ends tangent to the parked heading
+    p0, p1, p2, p3 = (620, 400), (900, 380), (1150, 430), (1150, 322)
+    ts = np.linspace(0, 1, 120)
+    pts = [bezier(p0, p1, p2, p3, t) for t in ts]
+    for i in range(0, len(pts) - 1, 4):
+        d.line([pts[i], pts[min(i + 2, len(pts) - 1)]], fill=RED + (220,), width=3)
     d.ellipse(
-        [p1[0] - 5, p1[1] - 5, p1[0] + 5, p1[1] + 5],
+        [p0[0] - 5, p0[1] - 5, p0[0] + 5, p0[1] + 5],
         fill=PAPER + (255,),
         outline=RED + (255,),
         width=2,
     )
 
-    # skid parcel, gap dimension, car at the goal
+    # skid bay and the parked car, aligned to the skid axis
     for sx in (-52, 52):
         d.rounded_rectangle(
             [1150 + sx - 12, 168, 1150 + sx + 12, 332],
@@ -160,22 +140,9 @@ def main() -> None:
         )
         for yy in range(180, 330, 12):
             d.line([(1150 + sx - 10, yy + 8), (1150 + sx + 10, yy)], fill=INK + (90,), width=1)
-    d.line([(1098, 150), (1202, 150)], fill=INK + (230,), width=2)
-    for xx in (1098, 1202):
-        d.line([(xx, 144), (xx, 156)], fill=INK + (230,), width=2)
-    d.text((1112, 122), "0.31 m", font=font("DejaVu Serif:style=Bold", 20), fill=INK + (255,))
     mecanum(d, 1150, 250, 96, 74)
     d.line([(1141, 250), (1159, 250)], fill=RED + (255,), width=2)
     d.line([(1150, 241), (1150, 259)], fill=RED + (255,), width=2)
-
-    # triangulation stations for the three tags
-    for (tx, ty), tid in (((1330, 120), 14), ((1440, 250), 6), ((1330, 380), 3)):
-        d.polygon(
-            [(tx, ty - 12), (tx - 11, ty + 8), (tx + 11, ty + 8)], outline=RED + (230,), width=2
-        )
-        d.line([(tx, ty - 4), (tx, ty + 4)], fill=RED + (230,), width=2)
-        d.text((tx + 16, ty - 10), f"TAG {tid}", font=font("DejaVu Serif", 16), fill=INK + (220,))
-        d.line([(tx - 11, ty + 8), (1202, 250)], fill=MUTE + (110,), width=1)
 
     rx, ry = 1490, 90
     for k in range(8):
@@ -190,63 +157,29 @@ def main() -> None:
             ],
             fill=INK + (200 if k % 2 == 0 else 90,),
         )
-    d.text((rx - 6, ry - 52), "N", font=font("DejaVu Serif:style=Bold", 18), fill=INK + (230,))
-    d.text(
-        (74, 420),
-        "traverse & bay schematic · NTS",
-        font=font("DejaVu Serif", 17),
-        fill=MUTE + (230,),
-    )
 
+    # wordmark; rule passes under u and v, cut around the g descender
     d.text((70, 100), "ugv", font=font("Noto Sans Mono:style=Black", 150), fill=INK + (255,))
-    d.rectangle([74, 306, 402, 316], fill=RED + (255,))
-    d.text(
-        (74, 332), "a mecanum car parks itself", font=font("DejaVu Serif", 26), fill=INK + (230,)
-    )
-    d.text(
-        (74, 366),
-        "under a drone, from sim to floor",
-        font=font("DejaVu Serif", 26),
-        fill=INK + (230,),
-    )
-    d.text(
-        (74, 60),
-        "FIELD CHART · SHEET L7 · uOAeronautics",
-        font=font("Fira Sans Condensed:style=Bold", 20),
-        fill=MUTE + (255,),
-    )
-    # GOAL label last, haloed over the tag leader that crosses it
-    d.rectangle([1220, 320, 1316, 344], fill=PAPER + (255,))
-    d.text((1224, 322), "GOAL 0+01", font=font("DejaVu Serif", 15), fill=INK + (220,))
-    im.alpha_composite(g)
+    d.rectangle([74, RULE_Y, RULE_GAP[0], RULE_Y + 10], fill=RED + (255,))
+    d.rectangle([RULE_GAP[1], RULE_Y, 344, RULE_Y + 10], fill=RED + (255,))
 
-    # rotated survey stamp carrying the RL ladder
-    st = Image.new("RGBA", (372, 128), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(st)
-    sd.rectangle([4, 4, 367, 123], fill=PAPER + (255,), outline=RED + (210,), width=3)
-    sd.text(
-        (18, 12),
-        "L7 FIELD SURVEY",
-        font=font("Fira Sans Condensed:style=Bold", 30),
-        fill=RED + (225,),
-    )
-    sd.text((18, 50), "REV L7 · SIM TO FLOOR", font=font("DejaVu Serif", 19), fill=RED + (205,))
+    # the real sim-to-real ladder, L7 = the real car
     for i in range(8):
-        x = 18 + i * 42
+        x = 74 + i * 42
         lit = i == 7
-        sd.rectangle(
-            [x, 82, x + 34, 106],
+        d.rectangle(
+            [x, 340, x + 34, 364],
             outline=RED + (220 if lit else 120,),
             width=2,
             fill=RED + (210 if lit else 0,),
         )
-        sd.text(
-            (x + 8, 86),
+        d.text(
+            (x + 8, 344),
             f"L{i}",
             font=font("Noto Sans Mono", 15),
             fill=PAPER + (255,) if lit else RED + (170,),
         )
-    im.alpha_composite(st.rotate(-6, expand=True, resample=Image.BICUBIC), (640, 36))
+    im.alpha_composite(g)
 
     mask = Image.new("L", (W, H), 0)
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, W - 1, H - 1], 16, fill=255)
