@@ -25,7 +25,7 @@ requires = ["uv_build>=0.12.7,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "httpx2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "simulation/gazebo"]  # rl/ has its own CUDA env + tests; root stays torch-free
