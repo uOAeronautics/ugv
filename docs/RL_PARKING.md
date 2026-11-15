@@ -120,7 +120,6 @@ Status and work queue: `rl/PLAN.md`. Agent rules: `rl/AGENTS.md`. Checkpoints an
 ```text
 train teacher := cd rl && uv run python train_teacher.py --level L0 --envs 512 --iters 120 --seed <s>   # gate-teacher recipe (defaults: rate 0, gamma 0.99, lam 0.95; it used reward yaw weight 0.3, now 1.0)
 student ppo   := cd rl && uv run python train_student.py --level L0 --iters 300 --seed <s>             # best-student recipe; --init <ckpt> to continue
-dagger        := cd rl && uv run python distill.py --teacher runs/teacher_L0_gate.pt --level L0      # optional; not needed for L0
 eval          := cd rl && uv run python evaluate.py --level L0 --episodes 1000 --policy runs/<ckpt>.pt --seed 11 --no-mean-dynamics  # p0 gate plant; or oracle_pd|brake|random
 baseline      := cd rl && uv run python baselines.py --level L0 --episodes 1000 --seed 11 --json runs/baseline_ekf_staged_L0.json
 L6 baseline   := uv run python simulation/gazebo/run_policy_episodes.py --baseline --latency <s>  # fake bridge until the Gazebo bridge exists

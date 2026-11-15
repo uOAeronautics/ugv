@@ -39,11 +39,6 @@ def main():
         help="constant entropy weight (status quo: runs/teacher_L0.pt used this)",
     )
     ap.add_argument(
-        "--ent-anneal",
-        action="store_true",
-        help="anneal entropy 0.01 -> 10%% over training instead of --ent",
-    )
-    ap.add_argument(
         "--curric",
         type=int,
         default=0,
@@ -86,12 +81,6 @@ def main():
         type=int,
         default=25,
         help="overwrite --out every N iters so kills don't lose runs",
-    )
-    ap.add_argument(
-        "--reset-every-iter",
-        action="store_true",
-        help="full env.reset() at the top of each iter (OLD behavior); "
-        "default persistent rollouts across iters",
     )
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
@@ -162,12 +151,7 @@ def main():
 
     for it in range(args.iters):
         t0 = time.time()
-        if args.ent_anneal:
-            ent = 0.01 * (1 - 0.9 * it / max(args.iters - 1, 1))
         env.cfg.spawn_dist = (0.1, 0.4) if it < args.curric else base_spawn
-        if args.reset_every_iter:
-            obs = env.reset()
-            o, c = priv_input(obs, env)
         obs_buf, C, A, LP, R, D, V = [], [], [], [], [], [], []
         ep_succ = ep_coll = 0
         for _ in range(args.steps):

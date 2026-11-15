@@ -81,11 +81,6 @@ def main():
     ap.add_argument("--clip", type=float, default=0.2)
     ap.add_argument("--ent", type=float, default=1e-3, help="constant entropy weight")
     ap.add_argument(
-        "--ent-anneal",
-        action="store_true",
-        help="anneal entropy 0.01 -> 10%% over training instead of --ent",
-    )
-    ap.add_argument(
         "--curric",
         type=int,
         default=0,
@@ -487,10 +482,7 @@ def main():
                 episodes_since_adr_step = 0
                 iters_since_adr_step = 0
                 print(f"adr: eased frontier -> {env.frontier_scale:.2f}", flush=True)
-        if args.ent_anneal:
-            ent = 0.01 * (1 - 0.9 * it / max(args.iters - 1, 1))
-        else:
-            ent = args.ent
+        ent = args.ent
         mb = max(1, n // args.minibatches)
         pl = vl = al = dl = 0.0
         for _e in range(args.epochs):

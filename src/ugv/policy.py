@@ -25,7 +25,7 @@ EMA_TAU = 0.25
 # for this long (sim hist_age; the tag frame reports age clamped at 5.0), the
 # bearing error is dominated by yaw, so rotate in place toward imu_yaw = 0
 # (zero blind translation). Yaw 0 puts bearing = spawn bearing (<=30 deg on
-# L1) inside the FOV. Mirrors the rl/distill.py --fov-search collection reflex.
+# L1) inside the FOV. Mirrors the deploy blind-search collection reflex.
 SEARCH_AGE = 1.0
 SEARCH_P = 1.8
 SEARCH_D = 0.3
@@ -54,7 +54,7 @@ def _sigmoid(x):
 
 
 class StudentPolicy:
-    """Tiny GRU-64 + 2x64 MLP. Drop-in alternative to ContinuousDocking.step."""
+    """Tiny GRU-64 + 2x64 MLP student policy."""
 
     def __init__(
         self,

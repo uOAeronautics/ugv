@@ -9,7 +9,6 @@ reward.py         step reward (Phase-0 baseline + yaw weight 1.0)
 models.py         Actor/Critic (privileged teacher), Student (deploy GRU)
 train_teacher.py  PPO teacher, asymmetric critic
 train_student.py  PPO directly on the Student, privileged critic
-distill.py        DAgger teacher->student (optional; direct PPO works at L0)
 evaluate.py       seeded benchmark, Wilson bounds, JSON
 baselines.py      EKF + staged baseline benchmark (controller: ../src/ugv/staged_baseline.py)
 visualize.py      top-down episode PNG/mp4 (matches evaluate.py)

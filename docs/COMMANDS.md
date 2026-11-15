@@ -43,7 +43,6 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 | Dashboard web/WebSocket server | `uv run ugv-dashboard` (`src/ugv/web.py`) |
 | 30 s SysID CSV generator & Bayesian profile refitter | `src/ugv/calibration.py` |
 | Standalone NumPy `StudentPolicy` benchmark / parity CLI | `src/ugv/policy.py` |
-| Synthetic simulation / physics helper CLI | `src/ugv/simulation.py` |
 
 ### L7 field harness (`tools/l7/`)
 
@@ -63,7 +62,6 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 |---|---|
 | Train privileged PPO teacher | `rl/train_teacher.py` |
 | Train deployable GRU student via PPO | `rl/train_student.py` |
-| DAgger distillation from teacher to student (optional) | `rl/distill.py` |
 | Seeded 1000-episode evaluation gate (`evaluate.py`) | `rl/evaluate.py` |
 | Benchmark `StagedBaseline` EKF controller in `rl/sim.py` | `rl/baselines.py` |
 | Export student `.pt` to NumPy `.npz` and check parity | `rl/export.py` |

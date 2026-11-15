@@ -373,35 +373,6 @@ def test_trainers_and_archive_smoke(tmp_path):
         ],
         check=True,
     )
-    # Distill 1-iter smoke
-    d_ckpt = tmp_path / "d.pt"
-    subprocess.run(
-        [
-            sys.executable,
-            "distill.py",
-            "--teacher",
-            str(t_ckpt),
-            "--level",
-            "L0",
-            "--iters",
-            "1",
-            "--episodes",
-            "4",
-            "--envs",
-            "4",
-            "--epochs",
-            "1",
-            "--hidden",
-            "32",
-            "--head-w",
-            "32",
-            "--out",
-            str(d_ckpt),
-        ],
-        check=True,
-    )
-    ck = torch.load(d_ckpt, map_location="cpu")
-    assert ck["hidden"] == 32 and ck["head_w"] == 32
     # Experiment archive
     arch = tmp_path / "archive.jsonl"
     record_run(
@@ -476,17 +447,6 @@ def test_yaw_weight_plumbing_and_default():
         [sys.executable, "train_teacher.py", "--help"], capture_output=True, text=True
     )
     assert r.returncode == 0 and "--yaw-weight" in r.stdout
-
-
-def test_train_teacher_reset_every_iter_flag():
-    # OLD per-iter full reset restored only when set; default persistent.
-    import subprocess
-    import sys
-
-    r = subprocess.run(
-        [sys.executable, "train_teacher.py", "--help"], capture_output=True, text=True
-    )
-    assert r.returncode == 0 and "--reset-every-iter" in r.stdout
 
 
 def test_real_fit_plant():

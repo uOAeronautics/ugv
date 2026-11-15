@@ -25,7 +25,7 @@ baseline     ✓ EKF + staged (src/ugv/staged_baseline.py; rl/baselines.py), 100
              L2+ limits: turn channel unidentified in the posterior (see RL_PARKING.md gaps).
              L3+: blind last 0.30 m (under_drone_loss) -> 7-20 cm dead-reckoning stop error.
 oracle_pd    ~ diagnostic (true pose): L0 998, L1 391, L2 161, L3 160, L4 53. runs/oracle_pd_L*.json
-DAgger       × not needed; direct student PPO works. Old 0/1000 runs predate the sim fix.
+DAgger       × retired (rl/distill.py removed); direct student PPO works. Old 0/1000 runs predate the sim fix.
 deploy       ~ ugv.policy NumPy forward 0.90 ms/step desktop; parity 1.4e-7. Pi not measured.
 L6 Gazebo    × fake-bridge plumbing only; live bridge not built
 tests        ✓ root 131, rl 13
@@ -120,9 +120,7 @@ reward or collision margin until it passes. A student cannot exceed its teacher'
     (False for L0-L2, True from L3), `fov` limit, and whether tag noise is on. L0 = perfect
     state per spec: tag always valid, no noise, no latency.
 
-1.2 Experiment (cheap, decisive): DAgger at the new L0 with `runs/teacher_L0.pt`.
-    Hypothesis: with the tag visible through the slot, the student clones the teacher.
-    Report val MSE at the slot mouth versus the earlier 0.07, and success on 1000 eps.
+1.2 Skipped/retired: DAgger (`rl/distill.py` removed); direct student PPO works (see 1.3).
 
 1.3 Student PPO at L0 (`train_student.py`). Learned `logstd` ✓. Best 991/1000, 6 coll.
     Next: inspect the collision episodes (`visualize.py`), one targeted change, also aim
