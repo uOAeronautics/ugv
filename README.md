@@ -30,7 +30,9 @@ Simulation metrics come from `rl/evaluate.py` (1000 episodes, seed 11); hardware
 |---|---|---:|---|
 | Sim (`rl/sim.py`) | L0 teacher (`runs/teacher_L0_gate.pt`) | `1000/1000` (0 coll) | [RL parking](docs/RL_PARKING.md) |
 | Sim (`rl/sim.py`) | L0 student (`student_L0_ppo_v2_s0.pt` / `student_L0_lat_s1.pt`) | `991/1000` (6 coll) / `1000/1000` (0 coll) | [RL parking](docs/RL_PARKING.md), [Plan](rl/PLAN.md) |
-| Sim (`rl/sim.py`) | Best L1 student (`student_L1_best.npz`) | `966/1000` L1 (0 coll) · `0/20` Gazebo L6 | [State](docs/STATE.md), [Field notes](docs/L7_FIELD_NOTES.md) |
+| Sim (`rl/sim.py`) | Best L1 student (`student_L1_best.npz`) | `966/1000` L1 (0 coll) · `3/10` Gazebo L6 (10 ep, seed 11, emulated sensing) | [State](docs/STATE.md), [Board](docs/AGENT_BOARD.md) |
+| Sim (`rl/sim.py`) | L2 student + blind-search sweep (`student_L1_latw4_ft.pt`) | `143/1000` (323 coll); `135/1000` (333 coll) without sweep | [Board](docs/AGENT_BOARD.md) |
+| Sim (`rl/sim.py`) | L_real student + sweep (realistic plant) | `0/1000` (1 coll); 3 coll without sweep | [Board](docs/AGENT_BOARD.md) |
 | Sim (`rl/sim.py`) | `StagedBaseline` EKF (`baseline_ekf_staged_L*`) | `975` L0 · `896` L1 · `448` L2 · `215` L3 · `148` L4 | [RL parking](docs/RL_PARKING.md) |
 | Sim throughput | `MecanumVecEnv` CPU (`512`–`2048` envs) / Gazebo lockstep | `290k–302.6k` steps/s / `50.0 D-steps/s` (`1.0x` RT) | [Sim throughput](docs/SIM_THROUGHPUT.md) |
 | Policy inference | NumPy `StudentPolicy` GRU-64 (desktop CPU, full vs stateful) | `1.47 ms/step` vs `0.04 ms/step` | [Sim throughput](docs/SIM_THROUGHPUT.md) |
@@ -40,6 +42,7 @@ Simulation metrics come from `rl/evaluate.py` (1000 episodes, seed 11); hardware
 
 - Real-car plant ID (`probe`) measured `2.3 m/s` forward (deadzone `0.05`, onset `0.18 s`), `~1.6 m/s` strafe (deadzone `~0.13`, onset `0.25–0.37 s`), and `15.7 rad/s` yaw per duty (deadzone `0.10`, onset `0.07 s`), vs `0.0` deadzone in `simulation/gazebo/mecanum_bayesian_profile.json`.
 - Real gyro-rate std (`0.63 rad/s` vs `0.002 rad/s` in `rl/sim.py`) drove `|a2| > 0.8` turn saturation on `74%` of real ep3 ticks (`0%` when gyro-rate is zeroed in offline replay).
+- The older `0/20` Gazebo L6 result was `student_L1_latw5_s0.npz`, not the best checkpoint; the `3/10` above is the paired-seed diagnostic on `student_L1_best.npz` ([Board](docs/AGENT_BOARD.md)).
 
 ## Layout
 

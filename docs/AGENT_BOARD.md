@@ -217,3 +217,23 @@ red (best 989/10); seed-1 bifurcation (freeze vs clips) unresolved.
   GPU training run with `--blind-mouth-frac` (not started); belly vision behind L2>=80%.
 - Pi untouched: charging pause holds (`adv034` at `2fefd95`). The sweep is a deploy motion
   change — see HANDOFF section 11 before the next sync.
+
+## PROVENANCE (2026-11-15): AnyGoal paper -> Wave 2 integrations
+
+Source discussion: original orchestrator thread ("Sim-to-real RL training and observatory"),
+user question on https://hazel-heejeong-nam.github.io/anygoal — paper arXiv:2610.26844,
+code https://github.com/galilai-group/AnyGoal (sibling of `stable-envs`). The wave plan's
+"Wave 2: AnyGoal RL & Contract" was named after it. The AnyGoal codebase itself was NOT
+integrated (no dependency, no vendored code); its diagnostic framework was borrowed:
+
+| AnyGoal idea | Status | Where |
+|---|---|---|
+| Joint-support test (App. C-D: marginals pass, joint out of support) | integrated `afab309`, adapted to sim-vs-real observation channels | `tools/observatory/contract.py` joint whitened-KDE overlap (4 channels, threshold 0.35, complete-case rows, tri-state); honest FAIL 0.0 on best real run |
+| Regime-local mechanism coverage via `set_state()` (sec. 6) | integrated `7757879` as `--blind-mouth-frac` | `rl/train_student.py:39` `blind_mouth_replace` (pose-only resets, dedicated seed+777 RNG, frac=0 bit-identical); GPU run still pending |
+| Interventional 3x3 action-sensitivity audit (sec. 5.4 shortcut test) | integrated `7757879` | `rl/action_sensitivity.py` (counterfactual grid + closed-loop policy reference); finding: misdirected action at mouth, not freezing |
+| Belly vision: factorized pose grids + SMWM inverse-dynamics supervision (sec. 5.3) | NOT integrated; parked behind L2>=80% | old experiment archived in `docs/archive/council_2026-11-14/` |
+
+Enabling API: `stable-envs`-style `get_state()`/`set_state()` in `rl/sim.py:526` (full
+obs-history snapshots). Scope notes: the joint KDE tests observation-channel support, not
+the paper's state-action combinatorial-gap score over ADR failures (that half is unbuilt);
+no LeWM/SMWM world model was trained.
