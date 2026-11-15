@@ -1,4 +1,4 @@
-<img src="docs/assets/banner.png" alt="ugv: a mecanum car backing into the 0.31 m slot between a drone's skids, guided by ArUco tags 14, 6 and 3" width="100%">
+<img src="docs/assets/banner.png" alt="ugv field chart: a mecanum car's traverse into the 0.31 m drone-skid bay, ArUco stations 14, 6 and 3, RL ladder L0-L7 stamped at L7" width="100%">
 
 <p align="center"><i>A small mecanum car that parks itself under a drone, from simulation to the floor.</i></p>
 

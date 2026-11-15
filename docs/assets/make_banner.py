@@ -1,309 +1,260 @@
-"""ugv banner: a mecanum car slides into the drone's landing-skid slot, tags at the head.
+"""ugv README banner: the parking bay drawn as a topographic field-survey chart.
 
-Run: uv run --with pillow --with numpy python make_banner.py
-Policy frame, metres: drone at the origin, skids along y, anchor tag 14 at
-y = -0.08 (tags 6 and 3 beside it, offsets from calibration/runs/l7/tagmap.json),
-skid tips near y = +0.16, inside gap 0.31 m, car 0.17 m wide, parking goal
-(0, +0.04). Bit patterns are DICT_4X4_50. The approach starts from the ~1 m
-staging pose; the path between is schematic (a mecanum car can strafe and turn
-at once). Skid radius and tag-card outline are drawn, not measured.
+Run: uv run --with pillow --with numpy python docs/assets/make_banner.py
+Needs fontconfig plus Noto Sans Mono, DejaVu Serif and Fira Sans Condensed.
+
+Policy frame, metres: drone at the origin, skids along y, inside gap 0.31 m,
+ArUco tags 14/6/3 at the head. The bay is a contour saddle (0.32 -> 0.30), the
+tags are triangulation stations, and the approach is a dashed traverse chained
+ST 0+00 -> 0+00.5 -> GOAL 0+01. The chart is schematic (NTS); the rotated stamp
+carries the RL ladder L0-L7 with L7 filled.
 """
+
+from __future__ import annotations
 
 import math
 import os
+import subprocess
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
-W, H, SS = 1600, 480, 2
-INK, PAPER, MUTE, LINE, ACC = (
-    (14, 19, 26),
-    (236, 231, 218),
-    (107, 118, 134),
-    (38, 48, 60),
-    (242, 169, 59),
-)
-
-FONT = """
-u 2 #...# #...# #...# #...# .####
-g 2 .#### #...# #...# .#### ....# #...# .###.
-v 2 #...# #...# #...# .#.#. ..#..
-0 0 .###. #...# #..## #.#.# ##..# #...# .###.
-1 0 ..#.. .##.. ..#.. ..#.. ..#.. ..#.. .###.
-3 0 .###. #...# ....# ..##. ....# #...# .###.
-4 0 ...#. ..##. .#.#. #..#. ##### ...#. ...#.
-5 0 ##### #.... ####. ....# ....# #...# .###.
-6 0 .###. #.... #.... ####. #...# #...# .###.
-9 0 .###. #...# #...# .#### ....# ...#. .##..
-. 6 ..#..
-x 2 #...# .#.#. ..#.. .#.#. #...#
-c 2 .#### #.... #.... #.... .####
-a 2 .###. ....# .#### #...# .####
-r 2 #.##. ##..# #.... #.... #....
-l 0 .##.. ..#.. ..#.. ..#.. ..#.. ..#.. .###.
-o 2 .###. #...# #...# #...# .###.
-t 1 .#... ####. .#... .#... .#... ..###
-s 2 .#### #.... .###. ....# ####.
-2 0 .###. #...# ....# ...#. ..#.. .#... #####
-m 2 ##.#. #.#.# #.#.# #.#.# #.#.#
-"""
-GLYPHS = {}
-for ln in FONT.strip().splitlines():
-    c, r0, *rows = ln.split()
-    GLYPHS[c] = (int(r0), rows)
+W, H = 1600, 480
+INK, RED, MUTE, PAPER = (35, 42, 51), (181, 68, 44), (138, 133, 119), (242, 237, 225)
+_FONTS: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 
 
-def adv(c, s):
-    return (3 if c == "." else 6) * s
+def font(family: str, size: int) -> ImageFont.FreeTypeFont:
+    key = (family, size)
+    if key not in _FONTS:
+        path = subprocess.run(
+            ["fc-match", "-f", "%{file}", family], check=True, capture_output=True, text=True
+        ).stdout
+        _FONTS[key] = ImageFont.truetype(path, size)
+    return _FONTS[key]
 
 
-def text(d, x, y, s, scale, fill):
-    """Pixel lettering on a 5-wide grid; y is the top of the ascender row."""
-    for ch in s:
-        r0, rows = GLYPHS.get(ch, (0, []))
-        for j, row in enumerate(rows):
-            for i, c in enumerate(row):
-                if c == "#":
-                    px, py = x + i * scale, y + (r0 + j) * scale
-                    d.rectangle([px, py, px + scale - 1, py + scale - 1], fill=fill)
-        x += adv(ch, scale)
-
-
-def text_w(s, scale):
-    return sum(adv(c, scale) for c in s) - scale
-
-
-# --- geometry ---------------------------------------------------------------
-ARUCO = {  # DICT_4X4_50 inner 4x4 cells, 1 = white
-    14: ["0010", "0100", "1011", "0001"],
-    6: ["1001", "1110", "0010", "1110"],
-    3: ["1001", "1001", "0100", "0110"],
-}
-TAGS = {
-    14: (0.0, -0.08),
-    6: (0.088, -0.13),
-    3: (-0.077, -0.129),
-}  # (x, y), m; offsets of 6, 3 from the l7 tag map
-TAG = 0.05  # tag edge, m
-SKID_X, SKID_R = 0.185, 0.03  # skid centre lateral offset (inside gap 0.31 m), capsule radius
-SKID_Y = (-0.115, 0.13)  # capsule centre-line ends, so the tips reach about y = +0.16
-GOAL = (0.0, 0.04)  # camera reference at the goal; body centre sits 0.08 m behind it
-CAR_L, CAR_W = 0.22, 0.17
-
-S = 700 * SS  # px per metre
-OX, OY = 1400 * SS, 250 * SS  # canvas position of the origin
-GREY = (150, 160, 175, 255)
-
-
-def P(x, y):  # policy frame (x lateral, y along the skids) -> canvas; y runs leftwards
-    return (OX - y * S, OY - x * S)
-
-
-def layer():
-    im = Image.new("RGBA", (W * SS, H * SS), (0, 0, 0, 0))
+def layer() -> tuple[Image.Image, ImageDraw.ImageDraw]:
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     return im, ImageDraw.Draw(im)
 
 
-def disc(d, c, r, **kw):
-    d.ellipse([c[0] - r, c[1] - r, c[0] + r, c[1] + r], **kw)
+def grain(im: Image.Image, amount: int = 4, seed: int = 7) -> Image.Image:
+    rng = np.random.default_rng(seed)
+    a = np.array(im).astype(np.int16)
+    a[..., :3] = np.clip(
+        a[..., :3] + rng.integers(-amount, amount + 1, a.shape[:2])[..., None], 0, 255
+    )
+    return Image.fromarray(a.astype(np.uint8), "RGBA")
 
 
-def car(d, cx, cy, phi, fill, edge):
-    """Mecanum car footprint centred at (cx, cy); phi = heading measured from the -y direction."""
-    ux, uy = math.sin(phi), -math.cos(phi)
-    vx, vy = -uy, ux
-
-    def T(u, v):
-        return P(cx + u * ux + v * vx, cy + u * uy + v * vy)
-
+def mecanum(d: ImageDraw.ImageDraw, cx: float, cy: float, L: float, Wd: float) -> None:
+    """Top-down car footprint, heading along +y; roller diagonals form an X."""
     d.polygon(
         [
-            T(-CAR_L / 2, -CAR_W / 2 + 0.03),
-            T(CAR_L / 2, -CAR_W / 2 + 0.03),
-            T(CAR_L / 2, CAR_W / 2 - 0.03),
-            T(-CAR_L / 2, CAR_W / 2 - 0.03),
+            (cx - Wd / 2 + 6, cy - L / 2),
+            (cx + Wd / 2 - 6, cy - L / 2),
+            (cx + Wd / 2 - 6, cy + L / 2),
+            (cx - Wd / 2 + 6, cy + L / 2),
         ],
-        fill=fill,
-        outline=edge,
+        outline=INK + (235,),
+        width=3,
     )
-    for u in (-0.072, 0.072):
-        for v in (-CAR_W / 2 + 0.005, CAR_W / 2 - 0.005):
-            d.polygon(
-                [
-                    T(u - 0.03, v - 0.02),
-                    T(u + 0.03, v - 0.02),
-                    T(u + 0.03, v + 0.02),
-                    T(u - 0.03, v + 0.02),
-                ],
-                fill=INK + (255,),
-                outline=edge,
+    for u in (-L * 0.32, L * 0.32):
+        for v in (-Wd / 2 + 2, Wd / 2 - 2):
+            d.rectangle(
+                [cx + v - 7, cy + u - 14, cx + v + 7, cy + u + 14], outline=INK + (235,), width=3
             )
-            sg = 1 if u * v > 0 else -1  # roller diagonals form an X across the car
-            for k in (-0.018, -0.006, 0.006, 0.018):
+            sg = 1 if u * v > 0 else -1
+            for k in (-9, -3, 3, 9):
                 d.line(
-                    [T(u + k - 0.008 * sg, v - 0.02), T(u + k + 0.008 * sg, v + 0.02)],
-                    fill=edge,
-                    width=SS,
+                    [(cx + v - 7, cy + u + k - 4 * sg), (cx + v + 7, cy + u + k + 4 * sg)],
+                    fill=INK + (235,),
+                    width=3,
                 )
 
 
-def approach(s):
-    """Schematic path: body centre y = 1.0 -> 0.12 m; the 0.14 m lateral offset is slid out by y = 0.5."""
-    t = min(s / 0.55, 1.0)
-    return 0.14 * (1 - t * t * (3 - 2 * t)), 1.0 - 0.88 * s
+def main() -> None:
+    im = grain(Image.new("RGBA", (W, H), PAPER + (255,)))
 
-
-def heading(s):
-    x, y = approach(s)
-    x2, y2 = approach(min(s + 0.01, 1)) if s < 0.99 else approach(1)
-    x1, y1 = approach(max(s - 0.01, 0))
-    return math.atan2(x2 - x1, y1 - y2)
-
-
-def main():
-    base = Image.new("RGBA", (W * SS, H * SS), INK + (255,))
-
-    # 10 cm grid (bold every 50 cm), faded toward the edges
+    # contour saddle around the bay, knocked out under the stamp and GOAL label
     g, d = layer()
-    for k in range(-5, 6):
-        d.line(
-            [P(k * 0.1, -0.5), P(k * 0.1, 1.6)],
-            fill=(48, 60, 75, 255 if k % 5 == 0 else 150),
-            width=SS,
-        )
-    for k in range(-5, 17):
-        d.line(
-            [P(-0.5, k * 0.1), P(0.5, k * 0.1)],
-            fill=(48, 60, 75, 255 if k % 5 == 0 else 150),
-            width=SS,
-        )
-    ga = np.array(g).astype(float)
-    yy, xx = np.mgrid[0 : H * SS, 0 : W * SS] / SS
-    ga[..., 3] *= np.clip(1.3 - ((xx - 1020) / 600) ** 2 - ((yy - 250) / 330) ** 2, 0, 1)
-    base = Image.alpha_composite(base, Image.fromarray(ga.astype(np.uint8)))
-
-    # range ticks along the bottom edge
-    g, d = layer()
-    for m, lab in ((0, "0"), (0.5, "0.5"), (1.0, "1")):
-        x = P(0, m)[0]
-        d.line([(x, 452 * SS), (x, 460 * SS)], fill=GREY, width=SS)
-        text(d, int(x - text_w(lab, 2 * SS) / 2), 463 * SS, lab, 2 * SS, GREY)
-    base = Image.alpha_composite(base, g)
-
-    # camera view cone (half-angle 33.5 deg, rl/sim.py) from the staging pose toward the tags
-    g, d = layer()
-    sx, sy = approach(0)
-    ax, ay = sx, sy - CAR_L / 2
-    aim = math.atan2(TAGS[14][0] - ax, ay - TAGS[14][1])
-    for k in range(60):
-        r0, r1 = k * 0.0175, (k + 1) * 0.0175
-        pts = [
-            P(
-                ax + r * math.sin(aim + sg * math.radians(33.5)),
-                ay - r * math.cos(aim + sg * math.radians(33.5)),
+    cx, cy = 1150, 250
+    for k in range(9):
+        r0 = 60 + k * 34
+        pts = []
+        for t in np.linspace(0, 2 * math.pi, 220):
+            wob = (
+                1
+                + 0.10 * math.sin(3 * t + k * 0.7)
+                + 0.06 * math.sin(5 * t - k)
+                + 0.04 * math.sin(8 * t + 2 * k)
             )
-            for r, sg in ((r0, -1), (r1, -1), (r1, 1), (r0, 1))
-        ]
-        d.polygon(pts, fill=ACC + (int(16 * (1 - k / 60)),))
-    for sg in (-1, 1):
-        for k in range(60):
-            r0, r1 = k * 0.0175, (k + 1) * 0.0175
-            d.line(
-                [
-                    P(
-                        ax + r0 * math.sin(aim + sg * math.radians(33.5)),
-                        ay - r0 * math.cos(aim + sg * math.radians(33.5)),
-                    ),
-                    P(
-                        ax + r1 * math.sin(aim + sg * math.radians(33.5)),
-                        ay - r1 * math.cos(aim + sg * math.radians(33.5)),
-                    ),
-                ],
-                fill=ACC + (int(80 * (1 - k / 60)),),
-                width=SS,
-            )
-    base = Image.alpha_composite(base, g)
+            pts.append((cx + r0 * wob * 1.35 * math.cos(t), cy + r0 * wob * 0.82 * math.sin(t)))
+        d.line(pts + [pts[0]], fill=INK + (70 if k % 3 else 120,), width=2 if k % 3 else 3)
+    for k, lab in ((2, "0.30"), (5, "0.31"), (8, "0.32")):
+        lx, ly = cx - (60 + k * 34) * 1.35 - 52, cy - 10
+        d.rectangle([lx - 4, ly - 2, lx + 44, ly + 22], fill=PAPER + (255,))
+        d.text((lx, ly), lab, font=font("DejaVu Serif:style=Bold", 18), fill=INK + (215,))
+    clip = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(clip).rectangle([28, 28, W - 29, H - 29], fill=255)
+    ko = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(ko).rectangle([1216, 316, 1320, 348], fill=255)
+    sm = Image.new("L", (372, 128), 0)
+    ImageDraw.Draw(sm).rectangle([0, 0, 371, 127], fill=255)
+    ko.paste(sm.rotate(-6, expand=True, resample=Image.BICUBIC), (640, 36))
+    ga = np.array(g)
+    ga[..., 3] = (
+        ga[..., 3].astype(float) * np.minimum(np.array(clip), 255 - np.array(ko)) / 255
+    ).astype(np.uint8)
+    im.alpha_composite(Image.fromarray(ga, "RGBA"))
 
-    # tag card and the three tags at real relative scale
     g, d = layer()
-    c0, c1 = P(0.125, -0.175), P(-0.125, -0.045)
-    d.rounded_rectangle(
-        [min(c0[0], c1[0]), min(c0[1], c1[1]), max(c0[0], c1[0]), max(c0[1], c1[1])],
-        6 * SS,
-        fill=(24, 31, 42, 255),
-        outline=(74, 86, 102, 255),
-        width=SS,
-    )
-    h = TAG * S / 2
-    for tid, (x, y) in TAGS.items():
-        c = P(x, y)
-        d.rectangle([c[0] - h, c[1] - h, c[0] + h, c[1] + h], fill=PAPER + (255,))
-        cell = 2 * h / 6
-        d.rectangle(
-            [c[0] - h + cell, c[1] - h + cell, c[0] + h - cell, c[1] + h - cell], fill=INK + (255,)
+    for x in range(80, W, 80):
+        d.line([(x, 26), (x, 34)], fill=INK + (120,), width=2)
+        d.line([(x, H - 34), (x, H - 26)], fill=INK + (120,), width=2)
+    for y in range(80, H, 80):
+        d.line([(26, y), (34, y)], fill=INK + (120,), width=2)
+        d.line([(W - 34, y), (W - 26, y)], fill=INK + (120,), width=2)
+    d.rectangle([18, 18, W - 19, H - 19], outline=INK + (200,), width=3)
+    d.rectangle([26, 26, W - 27, H - 27], outline=INK + (120,), width=1)
+
+    # dashed traverse with survey chainage
+    p0, p1, n = (620, 400), (1150, 250), 26
+    for i in range(n):
+        t0, t1 = i / n, (i + 0.55) / n
+        a = (
+            p0[0] + (p1[0] - p0[0]) * t0,
+            p0[1] + (p1[1] - p0[1]) * t0 + 26 * math.sin(math.pi * t0),
         )
-        for r, row in enumerate(ARUCO[tid]):
-            for k, v in enumerate(row):
-                if v == "1":
-                    x0, y0 = c[0] - h + (k + 1) * cell, c[1] - h + (r + 1) * cell
-                    d.rectangle([x0, y0, x0 + cell - 1, y0 + cell - 1], fill=PAPER + (255,))
-        lab = str(tid)
-        text(d, int(P(0, -0.175)[0]) + 10 * SS, int(c[1]) - 7 * SS, lab, 2 * SS, GREY)
-    base = Image.alpha_composite(base, g)
-
-    # landing skids: capsules, inside gap 0.31 m
-    g, d = layer()
-    edge, body = (120, 134, 154, 255), (30, 39, 52, 255)
-    for sx_ in (-SKID_X, SKID_X):
-        a, b = P(sx_, SKID_Y[0]), P(sx_, SKID_Y[1])
-        for col, r in ((edge, SKID_R), (body, SKID_R - 0.0035)):
-            d.line([a, b], fill=col, width=int(2 * r * S))
-            for e in (a, b):
-                disc(d, e, r * S, fill=col)
-    ya = SKID_Y[1] + SKID_R + 0.045  # dimension line just beyond the skid tips
-    d.line([P(-SKID_X + SKID_R, ya), P(SKID_X - SKID_R, ya)], fill=PAPER + (255,), width=SS)
-    for sx_ in (-SKID_X + SKID_R, SKID_X - SKID_R):
-        d.line([P(sx_, ya - 0.012), P(sx_, ya + 0.012)], fill=PAPER + (255,), width=SS)
-    text(
-        d,
-        int(P(0, ya)[0]) - 10 * SS - text_w("0.31 m", 2 * SS),
-        int(P(SKID_X - SKID_R, ya)[1]) - 7 * SS,
-        "0.31 m",
-        2 * SS,
-        PAPER + (255,),
+        b = (
+            p0[0] + (p1[0] - p0[0]) * t1,
+            p0[1] + (p1[1] - p0[1]) * t1 + 26 * math.sin(math.pi * t1),
+        )
+        d.line([a, b], fill=RED + (220,), width=3)
+    for i, lab in ((0, "ST 0+00"), (13, "0+00.5")):
+        t = i / n
+        p = (p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t + 26 * math.sin(math.pi * t))
+        d.ellipse(
+            [p[0] - 5, p[1] - 5, p[0] + 5, p[1] + 5],
+            fill=PAPER + (255,),
+            outline=RED + (255,),
+            width=2,
+        )
+        d.text((p[0] - 24, p[1] - 30), lab, font=font("DejaVu Serif", 15), fill=INK + (220,))
+    d.ellipse(
+        [p1[0] - 5, p1[1] - 5, p1[0] + 5, p1[1] + 5],
+        fill=PAPER + (255,),
+        outline=RED + (255,),
+        width=2,
     )
-    base = Image.alpha_composite(base, g)
 
-    # approach: dotted centre line, car footprints from faint (staging) to solid (parked)
-    g, d = layer()
-    for i in range(0, 101, 2):
-        disc(d, P(*approach(i / 100)), 2.2 * SS, fill=ACC + (235,))
-    for k, s_ in enumerate((0.0, 0.33, 0.64)):
-        x, y = approach(s_)
-        car(d, x, y, heading(s_), ACC + ((40 + 40 * k) // 2,), ACC + (90 + 60 * k,))
-    car(d, 0.0, 0.12, 0.0, ACC + (70,), ACC + (255,))
-    gc = P(*GOAL)
-    d.line([(gc[0] - 9 * SS, gc[1]), (gc[0] + 9 * SS, gc[1])], fill=ACC + (255,), width=SS)
-    d.line([(gc[0], gc[1] - 9 * SS), (gc[0], gc[1] + 9 * SS)], fill=ACC + (255,), width=SS)
-    base = Image.alpha_composite(base, g)
+    # skid parcel, gap dimension, car at the goal
+    for sx in (-52, 52):
+        d.rounded_rectangle(
+            [1150 + sx - 12, 168, 1150 + sx + 12, 332],
+            12,
+            fill=INK + (30,),
+            outline=INK + (220,),
+            width=3,
+        )
+        for yy in range(180, 330, 12):
+            d.line([(1150 + sx - 10, yy + 8), (1150 + sx + 10, yy)], fill=INK + (90,), width=1)
+    d.line([(1098, 150), (1202, 150)], fill=INK + (230,), width=2)
+    for xx in (1098, 1202):
+        d.line([(xx, 144), (xx, 156)], fill=INK + (230,), width=2)
+    d.text((1112, 122), "0.31 m", font=font("DejaVu Serif:style=Bold", 20), fill=INK + (255,))
+    mecanum(d, 1150, 250, 96, 74)
+    d.line([(1141, 250), (1159, 250)], fill=RED + (255,), width=2)
+    d.line([(1150, 241), (1150, 259)], fill=RED + (255,), width=2)
 
-    # title: pixel lettering with a hard offset shadow, accent rule, caption
-    g, d = layer()
-    sc, x0, y0 = 20 * SS, 78 * SS, 140 * SS
-    text(d, x0 + sc // 2, y0 + sc // 2, "ugv", sc, (0, 0, 0, 150))
-    text(d, x0, y0, "ugv", sc, PAPER + (255,))
-    d.rectangle(
-        [x0, y0 + 9 * sc + 10 * SS, x0 + text_w("ugv", sc), y0 + 9 * sc + 22 * SS],
-        fill=ACC + (255,),
+    # triangulation stations for the three tags
+    for (tx, ty), tid in (((1330, 120), 14), ((1440, 250), 6), ((1330, 380), 3)):
+        d.polygon(
+            [(tx, ty - 12), (tx - 11, ty + 8), (tx + 11, ty + 8)], outline=RED + (230,), width=2
+        )
+        d.line([(tx, ty - 4), (tx, ty + 4)], fill=RED + (230,), width=2)
+        d.text((tx + 16, ty - 10), f"TAG {tid}", font=font("DejaVu Serif", 16), fill=INK + (220,))
+        d.line([(tx - 11, ty + 8), (1202, 250)], fill=MUTE + (110,), width=1)
+
+    rx, ry = 1490, 90
+    for k in range(8):
+        a = k * math.pi / 4
+        r = 30 if k % 2 == 0 else 16
+        d.polygon(
+            [
+                (rx, ry),
+                (rx + r * math.cos(a - 0.16), ry + r * math.sin(a - 0.16)),
+                (rx + (r + 12) * math.cos(a), ry + (r + 12) * math.sin(a)),
+                (rx + r * math.cos(a + 0.16), ry + r * math.sin(a + 0.16)),
+            ],
+            fill=INK + (200 if k % 2 == 0 else 90,),
+        )
+    d.text((rx - 6, ry - 52), "N", font=font("DejaVu Serif:style=Bold", 18), fill=INK + (230,))
+    d.text(
+        (74, 420),
+        "traverse & bay schematic · NTS",
+        font=font("DejaVu Serif", 17),
+        fill=MUTE + (230,),
     )
-    base = Image.alpha_composite(base, g)
 
-    out = base.resize((W, H), Image.LANCZOS)
-    mask = Image.new("L", (W * SS, H * SS), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, W * SS - 1, H * SS - 1], 16 * SS, fill=255)
-    out.putalpha(mask.resize((W, H), Image.LANCZOS))
-    ImageDraw.Draw(out).rounded_rectangle([0, 0, W - 1, H - 1], 16, outline=LINE + (255,), width=1)
-    out.save(os.path.join(os.path.dirname(os.path.abspath(__file__)), "banner.png"), optimize=True)
+    d.text((70, 100), "ugv", font=font("Noto Sans Mono:style=Black", 150), fill=INK + (255,))
+    d.rectangle([74, 306, 402, 316], fill=RED + (255,))
+    d.text(
+        (74, 332), "a mecanum car parks itself", font=font("DejaVu Serif", 26), fill=INK + (230,)
+    )
+    d.text(
+        (74, 366),
+        "under a drone, from sim to floor",
+        font=font("DejaVu Serif", 26),
+        fill=INK + (230,),
+    )
+    d.text(
+        (74, 60),
+        "FIELD CHART · SHEET L7 · uOAeronautics",
+        font=font("Fira Sans Condensed:style=Bold", 20),
+        fill=MUTE + (255,),
+    )
+    # GOAL label last, haloed over the tag leader that crosses it
+    d.rectangle([1220, 320, 1316, 344], fill=PAPER + (255,))
+    d.text((1224, 322), "GOAL 0+01", font=font("DejaVu Serif", 15), fill=INK + (220,))
+    im.alpha_composite(g)
+
+    # rotated survey stamp carrying the RL ladder
+    st = Image.new("RGBA", (372, 128), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(st)
+    sd.rectangle([4, 4, 367, 123], fill=PAPER + (255,), outline=RED + (210,), width=3)
+    sd.text(
+        (18, 12),
+        "L7 FIELD SURVEY",
+        font=font("Fira Sans Condensed:style=Bold", 30),
+        fill=RED + (225,),
+    )
+    sd.text((18, 50), "REV L7 · SIM TO FLOOR", font=font("DejaVu Serif", 19), fill=RED + (205,))
+    for i in range(8):
+        x = 18 + i * 42
+        lit = i == 7
+        sd.rectangle(
+            [x, 82, x + 34, 106],
+            outline=RED + (220 if lit else 120,),
+            width=2,
+            fill=RED + (210 if lit else 0,),
+        )
+        sd.text(
+            (x + 8, 86),
+            f"L{i}",
+            font=font("Noto Sans Mono", 15),
+            fill=PAPER + (255,) if lit else RED + (170,),
+        )
+    im.alpha_composite(st.rotate(-6, expand=True, resample=Image.BICUBIC), (640, 36))
+
+    mask = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, W - 1, H - 1], 16, fill=255)
+    im.putalpha(mask)
+    ImageDraw.Draw(im).rounded_rectangle(
+        [0, 0, W - 1, H - 1], 16, outline=(36, 46, 66, 255), width=2
+    )
+    im.save(os.path.join(os.path.dirname(os.path.abspath(__file__)), "banner.png"), optimize=True)
 
 
 if __name__ == "__main__":
