@@ -104,8 +104,13 @@ class Scorer:
 class FakeBridge:
     """Kinematic point mass with synthetic yaw coupling; not a dynamics model."""
 
+    def __init__(self, seed: int = 0):
+        self.seed = seed
+
     def reset(self, episode):
-        rng = random.Random(episode)
+        # --seed must steer the spawn stream; seed=0 reproduces the legacy
+        # per-episode stream (random.Random(episode)).
+        rng = random.Random(self.seed * 1000003 + episode)
         d, b = rng.uniform(0.5, 1.5), rng.uniform(-0.5, 0.5)
         self.pose = [d * math.sin(b), d * math.cos(b), rng.uniform(-1.0, 1.0)]
         self.vel = [0.0, 0.0, 0.0]
@@ -554,7 +559,7 @@ def main():
             photometric_dr=bool(args.lighting_dr and args.sensing.startswith("camera")),
         )
     else:
-        bridge = FakeBridge()
+        bridge = FakeBridge(seed=args.seed)
 
     trace_episodes = [] if args.save_traces else None
     try:

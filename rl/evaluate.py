@@ -313,10 +313,20 @@ def run(
     def q(v, p):
         return v[min(int(len(v) * p), len(v) - 1)] if v else float("nan")
 
+    level_label = level
+    if consistent_particles:
+        level_label += "_cons"
+    if dr_scale != 1.0:
+        level_label += f"_dr{dr_scale:g}"
     out = {
         "policy": policy,
         "level": level,
+        "level_label": level_label,
         "episodes": episodes,
+        "seed": seed,
+        "device": str(device),
+        "dr_scale": dr_scale,
+        "consistent_particles": consistent_particles,
         "use_mean_dynamics": use_mean_dynamics,
         "fov_search": fov_search,
         "success": succ,

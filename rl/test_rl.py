@@ -677,6 +677,23 @@ def test_evaluate_save_traces(tmp_path):
                 assert key in frame, key
 
 
+def test_evaluate_records_provenance():
+    from evaluate import run
+
+    base = run(4, "L2", "brake", "cpu", seed=11, dr_scale=0.45, consistent_particles=True)
+    assert base["seed"] == 11
+    assert base["device"] == "cpu"
+    assert base["dr_scale"] == 0.45
+    assert base["consistent_particles"] is True
+    assert base["level"] == "L2"
+    assert base["level_label"] == "L2_cons_dr0.45"
+
+    plain = run(4, "L1", "brake", "cpu", seed=0)
+    assert plain["level_label"] == "L1"
+    assert plain["dr_scale"] == 1.0
+    assert plain["consistent_particles"] is False
+
+
 def test_fov_search_sweep_mirrors_deploy_reflex():
     import evaluate
 

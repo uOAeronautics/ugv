@@ -76,9 +76,9 @@ def norm_checks(raw, real_metrics):
         checks.append(
             {
                 "name": "loop_rate_hz",
-                "pass": hz >= 40.0,
+                "pass": hz >= 45.0,
                 "measured": round(hz, 2),
-                "limit": ">= 40.0",
+                "limit": ">= 45.0",
             }
         )
     loop_ms = rm.get("loop_ms") if isinstance(rm.get("loop_ms"), dict) else {}
@@ -175,7 +175,7 @@ def norm_channels(real_metrics, sim):
 
 JOINT_OVERLAP_MIN = 0.35
 JOINT_MIN_SAMPLES = 20
-JOINT_CHANNELS = ["inter_tag_dt_s", "tag_age_s", "imu_w_rad_s", "loop_ms_s"]
+JOINT_CHANNELS = ["inter_tag_dt_s", "tag_age_s", "imu_w_rad_s"]
 JOINT_CHECK_NAME = "joint_whited_kde_overlap"
 JOINT_METHOD = "gaussian_kde_mc (Silverman bandwidth, 2000 draws, rng seed 11)"
 _JOINT_REF_CAP = 4096  # KDE reference cap per side; keeps the endpoint O(ms) not O(s)
@@ -190,11 +190,13 @@ def _joint_subsample(x: np.ndarray, cap: int, seed: int) -> np.ndarray:
 
 
 def real_joint_samples(run_dir: Path) -> np.ndarray:
-    """Matched per-event rows [inter_tag_dt_s, tag_age_s, imu_w_rad_s, loop_ms_s].
+    """Matched per-event rows [inter_tag_dt_s, tag_age_s, imu_w_rad_s].
 
     Each inter-tag interval is paired with the tick where the second tag landed
-    (imu, loop) and the tick just before it (tag_age, the interval's peak
-    staleness — age at the arrival tick itself is always 0).
+    (imu) and the tick just before it (tag_age, the interval's peak staleness —
+    age at the arrival tick itself is always 0). loop_ms is excluded: the sim
+    reference carries no per-step loop timing, so a constant sim channel would
+    make the whitened joint overlap fail by construction rather than by gap.
     """
     import json
 
@@ -222,17 +224,16 @@ def real_joint_samples(run_dir: Path) -> np.ndarray:
         imu = r.get("imu") or [0.0, 0.0]
         w = r.get("imu_w_fed")
         out[j, 2] = float(w if w is not None else (imu[1] if imu[1] is not None else 0.0))
-        lm = r.get("loop_ms")
-        out[j, 3] = float(lm) / 1000.0 if lm is not None else np.nan
     return out
 
 
 def sim_joint_samples(sim_ref_path: Path) -> np.ndarray:
-    """Sim joint rows over the same 4 channels, from the per-step reference frames.
+    """Sim joint rows over the same 3 channels, from the per-step reference frames.
 
-    inter_tag_dt uses the audit_contract episode-grouped valid-index diffs; the
-    npz carries no loop timing, so loop_ms_s is the nominal 20 ms tick budget
-    (the same constant norm_channels uses for the sim loop_ms marginals).
+    inter_tag_dt uses the audit_contract episode-grouped valid-index diffs. The
+    npz carries no loop timing, so loop_ms is not a joint channel (a constant
+    sim channel would zero the whitened covariance and fail the overlap by
+    construction); it survives only as the norm_channels marginal diagnostic.
     """
     from tools.l7.audit_contract import CHANNEL_NAMES
 
@@ -254,7 +255,6 @@ def sim_joint_samples(sim_ref_path: Path) -> np.ndarray:
         out[j, 0] = (b - a) * dt
         out[j, 1] = frames_s[b - 1, age_i]
         out[j, 2] = frames_s[b, imu_i]
-        out[j, 3] = dt  # nominal 50 Hz loop budget; sim records no per-step loop_ms
     return out
 
 

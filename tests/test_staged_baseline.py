@@ -41,6 +41,27 @@ def test_parks_on_fake_bridge_without_contact():
     assert all(r.success for r in res) and not any(r.collision for r in res)
 
 
+def test_fake_bridge_seed_steers_spawns_and_zero_is_legacy():
+    import math
+    import random
+
+    h = _harness()
+    # seed=0 reproduces the legacy per-episode stream random.Random(episode)
+    b0 = h.FakeBridge(seed=0)
+    b0.reset(3)
+    rng = random.Random(3)
+    d, bb = rng.uniform(0.5, 1.5), rng.uniform(-0.5, 0.5)
+    legacy = [d * math.sin(bb), d * math.cos(bb), rng.uniform(-1.0, 1.0)]
+    assert b0.pose == legacy
+    # a different --seed changes the spawn; the same seed repeats it
+    b11 = h.FakeBridge(seed=11)
+    b11.reset(3)
+    assert b11.pose != b0.pose
+    b11b = h.FakeBridge(seed=11)
+    b11b.reset(3)
+    assert b11b.pose == b11.pose
+
+
 def test_brakes_after_arrival():
     c = StagedBaseline(1)
     c.phase[:] = StagedBaseline.ENTER

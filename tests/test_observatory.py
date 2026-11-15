@@ -837,6 +837,31 @@ def test_zero_success_never_earns_pareto(tmp_path, monkeypatch):
     assert entries["gate_L1_100ep"]["pareto"] is True
 
 
+def test_leaderboard_surfaces_subset_provenance(tmp_path, monkeypatch):
+    (tmp_path / "cons_L2.json").write_text(
+        json.dumps(
+            {
+                "episodes": 1000,
+                "success": 528,
+                "collisions": 216,
+                "level": "L2",
+                "level_label": "L2_cons_dr0.45",
+                "consistent_particles": True,
+                "dr_scale": 0.45,
+                "seed": 11,
+                "device": "cuda",
+            }
+        )
+    )
+    monkeypatch.setattr(server_mod, "RL_RUNS", tmp_path)
+    entries = {e["run_id"]: e for e in server_mod._leaderboard()}
+    row = entries["cons_L2"]
+    assert row["level"] == "L2"
+    assert row["level_label"] == "L2_cons_dr0.45"
+    assert row["consistent_particles"] is True
+    assert row["dr_scale"] == 0.45
+
+
 def test_mark_pareto_rejects_lone_zero_success_run():
     rows = [
         {

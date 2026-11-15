@@ -13,8 +13,8 @@ from tools.observatory import contract
 
 def test_identical_distributions_overlap_high():
     rng = np.random.default_rng(3)
-    sim = rng.normal(size=(3000, 4))
-    real = rng.normal(size=(3000, 4))  # independent draws, same distribution
+    sim = rng.normal(size=(3000, 3))
+    real = rng.normal(size=(3000, 3))  # independent draws, same distribution
     r = contract.joint_overlap(real, sim)
     assert r["overlap"] > 0.8
     assert r["pass"] is True
@@ -26,8 +26,8 @@ def test_identical_distributions_overlap_high():
 
 def test_mean_shift_3sigma_overlap_below_threshold():
     rng = np.random.default_rng(4)
-    sim = rng.normal(size=(3000, 4))
-    real = sim + np.array([3.0, 0.0, 0.0, 0.0])  # 3-sigma shift on one channel
+    sim = rng.normal(size=(3000, 3))
+    real = sim + np.array([3.0, 0.0, 0.0])  # 3-sigma shift on one channel
     r = contract.joint_overlap(real, sim)
     assert r["overlap"] < contract.JOINT_OVERLAP_MIN == 0.35
     assert r["pass"] is False
@@ -52,29 +52,27 @@ def test_correlation_flip_caught_while_marginals_identical():
 
 def test_channels_below_min_samples_are_dropped():
     rng = np.random.default_rng(6)
-    real = rng.normal(size=(100, 4))
-    sim = rng.normal(size=(100, 4))
-    real[:, 3] = np.nan
-    real[:10, 3] = 0.5  # only 10 finite real samples on loop_ms_s
-    sim[:, 2] = np.nan
-    sim[:15, 2] = 0.1  # only 15 finite sim samples on imu_w_rad_s
+    real = rng.normal(size=(100, 3))
+    sim = rng.normal(size=(100, 3))
+    real[:, 2] = np.nan
+    real[:10, 2] = 0.5  # only 10 finite real samples on imu_w_rad_s
     r = contract.joint_overlap(real, sim)
-    assert r["dropped"] == ["imu_w_rad_s", "loop_ms_s"]
+    assert r["dropped"] == ["imu_w_rad_s"]
     assert r["channels"] == ["inter_tag_dt_s", "tag_age_s"]
     assert r["overlap"] is not None and r["pass"] is not None
 
 
 def test_fewer_than_two_channels_left_is_unknown_not_fail():
     rng = np.random.default_rng(7)
-    real = rng.normal(size=(100, 4))
-    sim = rng.normal(size=(100, 4))
+    real = rng.normal(size=(100, 3))
+    sim = rng.normal(size=(100, 3))
     real[:, 1:] = np.nan
     sim[:, 1:] = np.nan
     r = contract.joint_overlap(real, sim)
     assert r["overlap"] is None
     assert r["pass"] is None
     assert r["channels"] == ["inter_tag_dt_s"]
-    assert len(r["dropped"]) == 3
+    assert len(r["dropped"]) == 2
 
 
 def test_scattered_nans_keep_rows_aligned():
@@ -98,8 +96,8 @@ def test_scattered_nans_keep_rows_aligned():
 
 def test_overlap_is_deterministic():
     rng = np.random.default_rng(8)
-    sim = rng.normal(size=(500, 4))
-    real = rng.normal(size=(500, 4)) + 0.5
+    sim = rng.normal(size=(500, 3))
+    real = rng.normal(size=(500, 3)) + 0.5
     a = contract.joint_overlap(real, sim)
     b = contract.joint_overlap(real, sim)
     assert a["overlap"] == b["overlap"]
@@ -150,12 +148,11 @@ def test_real_joint_samples_builder(tmp_path):
         rows.append(row)
     (tmp_path / "ticks.jsonl").write_text("\n".join(json.dumps(r) for r in rows))
     out = contract.real_joint_samples(tmp_path)
-    assert out.shape == (9, 4)  # 10 tags -> 9 inter-tag intervals
+    assert out.shape == (9, 3)  # 10 tags -> 9 inter-tag intervals
     assert np.allclose(out[:, 0], 0.08)
     assert np.allclose(out[:, 1], 0.02)  # peak age: tick before the tag, after the dr fix
     assert out[1, 2] == 0.5  # imu_w_fed wins over raw imu at tick 8
     assert out[0, 2] == 0.04  # raw imu[1] at tick 4
-    assert np.allclose(out[:, 3], (2.0 + 0.1 * np.arange(4, 40, 4)) / 1000.0)
 
 
 def test_sim_joint_samples_builder(tmp_path):
@@ -167,7 +164,6 @@ def test_sim_joint_samples_builder(tmp_path):
     ref = tmp_path / "ref.npz"
     np.savez(ref, frames=frames, ep_id=ep_id, dt=0.02)
     out = contract.sim_joint_samples(ref)
-    assert out.shape == (4, 4)  # 2 valid-index pairs per episode
+    assert out.shape == (4, 3)  # 2 valid-index pairs per episode
     assert np.allclose(out[:, 0], [0.06, 0.04, 0.04, 0.06])
-    assert np.allclose(out[:, 3], 0.02)  # nominal loop budget
     assert out[0, 1] == 0.02 and out[0, 2] == 0.003  # age before arrival, imu at arrival

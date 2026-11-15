@@ -228,7 +228,7 @@ integrated (no dependency, no vendored code); its diagnostic framework was borro
 
 | AnyGoal idea | Status | Where |
 |---|---|---|
-| Joint-support test (App. C-D: marginals pass, joint out of support) | integrated `afab309`, adapted to sim-vs-real observation channels | `tools/observatory/contract.py` joint whitened-KDE overlap (4 channels, threshold 0.35, complete-case rows, tri-state); honest FAIL 0.0 on best real run |
+| Joint-support test (App. C-D: marginals pass, joint out of support) | integrated `afab309`, adapted to sim-vs-real observation channels | `tools/observatory/contract.py` joint whitened-KDE overlap (3 channels — constant sim `loop_ms` dropped, threshold 0.35, complete-case rows, tri-state); diagnostic, not a reward |
 | Regime-local mechanism coverage via `set_state()` (sec. 6) | integrated `7757879` as `--blind-mouth-frac` | `rl/train_student.py:39` `blind_mouth_replace` (pose-only resets, dedicated seed+777 RNG, frac=0 bit-identical); GPU run still pending |
 | Interventional 3x3 action-sensitivity audit (sec. 5.4 shortcut test) | integrated `7757879` | `rl/action_sensitivity.py` (counterfactual grid + closed-loop policy reference); finding: misdirected action at mouth, not freezing |
 | Belly vision: factorized pose grids + SMWM inverse-dynamics supervision (sec. 5.3) | NOT integrated; parked behind L2>=80% | old experiment archived in `docs/archive/council_2026-11-14/` |
