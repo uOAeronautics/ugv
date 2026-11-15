@@ -99,11 +99,12 @@
 - **Vision high-pressure test 2026-11-14, no actuation**: 30 s tight loop over `GET /api/calibration/frame` + `TagDetector.detect_jpeg` on-Pi: **473 frames, 468 tag detections, fetch+detect mean `45.5 ms` / p50 `44.3 ms` / p95 `52.4 ms`** (detect path alone exceeds the `33.3 ms` frame budget — consistent with `vision_ms_p50 = 50 ms` in watch-diag). Loader proc peak RSS `64.5 MB`; dashboard `uvicorn` RSS flat at `160.4 MB` before and peak (no growth over 473 requests); system used `532 -> 539 MB`, available `1312 -> 1304 MB`. No leak, no swap, no pressure.
 
 ## 11. Orchestrator Takeover Session (2026-11-14, waves 0-4): Head, Gates, Deploy Warning
-- **`main` head `7757879` (pushed)**: `51f59c6` aruco MOSSE->CSRT->template tracker fallback
+- **`main` head `78e1fd6` (pushed)**: `51f59c6` aruco MOSSE->CSRT->template tracker fallback
   (OpenCV 5 desktop; Pi OpenCV 4.x path byte-identical); `e47ccc3` blind-search yaw sweep in
   `src/ugv/policy.py` + `evaluate.py --fov-search` mirror + Gazebo replay traces; `afab309`
   Observatory modular UI + joint whitened-KDE sim-vs-real contract; `7757879`
-  `train_student --blind-mouth-frac` + `rl/action_sensitivity.py`. Banner `c144abb`/`3a04fbb`.
+  `train_student --blind-mouth-frac` + `rl/action_sensitivity.py`; `9edc212` session wrap docs;
+  `78e1fd6` CI fix (httpx2 dev dependency). Banner `c144abb`/`3a04fbb`.
 - **MOTION CHANGE PENDING DEPLOY**: `e47ccc3` changes deployed `StudentPolicy` behaviour
   during tag loss (dwell 1.5 s at yaw 0, then +/-100 deg triangle yaw sweep, zero
   translation). Sim-gated (1000 ep seed 11: L2 135->143 succ / coll 333->323; L_real coll
