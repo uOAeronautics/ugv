@@ -85,15 +85,19 @@ class KeypointNet(nn.Module):
         return torch.stack([kx, ky], -1), vis, hm
 
 
+FULL_FX = 968.0  # the car camera at 1280x720
+
+
 def load(data: Path):
+    """Images (memmap), keypoints, visibility, poses, per-sample intrinsics, meta."""
     images = np.load(data / "images.npy", mmap_mode="r")
-    return (
-        images,
-        np.load(data / "kp.npy"),
-        np.load(data / "vis.npy"),
-        np.load(data / "pose.npy"),
-        json.loads((data / "meta.json").read_text()),
-    )
+    meta = json.loads((data / "meta.json").read_text())
+    if (data / "K.npy").exists():
+        Ks = np.load(data / "K.npy")
+    else:
+        Ks = np.repeat(np.array(meta["K"], np.float32)[None], len(images), 0)
+    kp, vis, pose = (np.load(data / f) for f in ("kp.npy", "vis.npy", "pose.npy"))
+    return images, kp, vis, pose, Ks, meta
 
 
 def batches(idx: np.ndarray, bs: int, rng: np.random.Generator | None):
@@ -121,9 +125,10 @@ def to_gpu(images, kp, vis, b, dev, train: bool):
 
 
 @torch.no_grad()
-def evaluate(model, images, kp, vis, poses, idx, dev, K, model_pts, pnp_n: int = 400) -> dict:
+def evaluate(model, images, kp, vis, poses, idx, dev, Ks, model_pts, pnp_n: int = 400) -> dict:
+    """Keypoint error in input pixels and in full-camera pixels (each sample's own scale)."""
     model.eval()
-    errs, vis_ok, vis_n, preds, probs = [], 0, 0, [], []
+    errs, full, vis_ok, vis_n, preds, probs = [], [], 0, 0, [], []
     for b in batches(idx, 256, None):
         x, k, v = to_gpu(images, kp, vis, b, dev, False)
         with torch.autocast("cuda", dtype=torch.bfloat16):
@@ -131,18 +136,25 @@ def evaluate(model, images, kp, vis, poses, idx, dev, K, model_pts, pnp_n: int =
         pk, pv = pk.float(), pv.float()
         e = (pk - k).norm(dim=-1)
         errs.append(e[v].cpu().numpy())
+        scale = torch.from_numpy(FULL_FX / Ks[b, 0, 0]).to(dev)[:, None].expand_as(e)
+        full.append((e * scale)[v].cpu().numpy())
         vis_ok += ((pv > 0) == v).sum().item()
         vis_n += v.numel()
         preds.append(pk.cpu().numpy())
         probs.append(torch.sigmoid(pv).cpu().numpy())
-    errs = np.concatenate(errs)
+    errs, full = np.concatenate(errs), np.concatenate(full)
     preds, probs = np.concatenate(preds), np.concatenate(probs)
     hits, solved = 0, 0
     for j, i in enumerate(idx[:pnp_n]):
         use = probs[j] > 0.5
         if use.sum() < 6:
             continue
-        sol = solve_pnp(model_pts[use], preds[j][use].astype(np.float64), K, reproj_px=3.0)
+        sol = solve_pnp(
+            model_pts[use],
+            preds[j][use].astype(np.float64),
+            Ks[i].astype(np.float64),
+            reproj_px=3.0,
+        )
         if sol is None:
             continue
         solved += 1
@@ -154,6 +166,8 @@ def evaluate(model, images, kp, vis, poses, idx, dev, K, model_pts, pnp_n: int =
     return {
         "val_px_median": float(np.median(errs)),
         "val_px_p90": float(np.percentile(errs, 90)),
+        "val_px_median_at_1280": float(np.median(full)),
+        "val_px_p90_at_1280": float(np.percentile(full, 90)),
         "val_vis_acc": vis_ok / max(1, vis_n),
         "val_pnp_solved": solved / n,
         "val_pnp_within_5deg_10cm": hits / n,
@@ -190,11 +204,10 @@ def main() -> None:
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
     dev = "cuda"
-    images, kp, vis, poses, meta = load(args.data)
+    images, kp, vis, poses, Ks, meta = load(args.data)
     n = len(images)
     perm = np.random.default_rng(123).permutation(n)
     val, tr = np.sort(perm[: max(256, n // 12)]), np.sort(perm[max(256, n // 12) :])
-    K = np.array(meta["K"])
     kpd = keypoints(load_airframe())
     model_pts = np.array([kpd[k] for k in meta["keypoints"]])
     model = KeypointNet().to(dev)
@@ -219,7 +232,7 @@ def main() -> None:
             sched.step()
             losses.append((l_kp.item(), l_vis.item()))
             step += 1
-        m = evaluate(model, images, kp, vis, poses, val, dev, K, model_pts)
+        m = evaluate(model, images, kp, vis, poses, val, dev, Ks, model_pts)
         row = {
             "epoch": epoch,
             "step": step,
@@ -244,7 +257,7 @@ def main() -> None:
         opset_version=17,
         dynamo=False,
     )
-    final = evaluate(model.to(dev), images, kp, vis, poses, val, dev, K, model_pts, pnp_n=len(val))
+    final = evaluate(model.to(dev), images, kp, vis, poses, val, dev, Ks, model_pts, pnp_n=len(val))
     summary = {
         "data": str(args.data),
         "train_n": len(tr),
@@ -253,7 +266,6 @@ def main() -> None:
         "input": [h, w],
         "params": sum(p.numel() for p in model.parameters()),
         **final,
-        "val_px_median_at_1280": final["val_px_median"] * 1280 / w,
         **latency(onnx_path, h, w),
         "note": "synthetic validation (same generator); not evidence about real frames",
     }

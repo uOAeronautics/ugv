@@ -22,12 +22,25 @@ class Camera:
     width: int = 640
     height: int = 360
     hfov_deg: float = 66.9  # car camera: fx = 968 px at 1280x720 (docs/PARKING.md)
+    intrinsics: tuple[float, float, float] | None = None  # (f, cx, cy) overrides hfov
 
     def scaled(self, width: int, height: int) -> Camera:
         return Camera(width, height, self.hfov_deg)
 
+    def crop(self, x0: float, y0: float, size: float, out: int) -> Camera:
+        """The camera that sees the square crop [x0, x0+size) x [y0, y0+size) of this one,
+        resampled to out x out pixels. A crop of a pinhole image is a pinhole image."""
+        K = self.K
+        s = out / size
+        return Camera(
+            out, out, self.hfov_deg, (K[0, 0] * s, (K[0, 2] - x0) * s, (K[1, 2] - y0) * s)
+        )
+
     @property
     def K(self) -> np.ndarray:
+        if self.intrinsics is not None:
+            f, cx, cy = self.intrinsics
+            return np.array([[f, 0, cx], [0, f, cy], [0, 0, 1.0]])
         f = 0.5 * self.width / np.tan(np.radians(self.hfov_deg) / 2)
         return np.array([[f, 0, self.width / 2], [0, f, self.height / 2], [0, 0, 1.0]])
 

@@ -1,6 +1,8 @@
 import { api, esc, pct } from './app.js';
 import { lineChart } from './charts.js';
 
+const tile = (k, v, d) => `<section class="card stat"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></section>`;
+
 export async function render(main) {
   const pose = await api('/api/pose', { fresh: true });
   main.innerHTML = `
@@ -18,16 +20,22 @@ export async function render(main) {
       sec.className = 'card';
       sec.style.marginBottom = '16px';
       const m = t.metrics;
-      const keys = Object.keys(m[0] || {}).filter((k) => k !== 'step' && k !== 'epoch' && typeof m[0][k] === 'number');
-      sec.innerHTML = `<h2>Keypoint detector · ${esc(t.name)} <span class="muted">${m.length} logged steps</span></h2>
-        <div class="grid g2"><div class="c1"></div><div class="c2"></div></div>
-        ${t.summary ? `<pre class="road" style="margin-top:12px">${esc(JSON.stringify(t.summary, null, 1))}</pre>` : ''}`;
+      const sm = t.summary || {};
+      sec.innerHTML = `<h2>Keypoint detector · ${esc(t.name)} <span class="muted">${m.length} epochs · ${esc(sm.data || '')}</span></h2>
+        ${t.summary ? `<div class="grid g4" style="margin-bottom:12px">
+          ${tile('Keypoint error', `${(sm.val_px_median_at_1280 ?? 0).toFixed(1)}<small> px</small>`, `median at 1280x720 · p90 ${sm.val_px_p90_at_1280 != null ? sm.val_px_p90_at_1280.toFixed(0) : '–'} px`)}
+          ${tile('Pose within 5° / 10 cm', pct(sm.val_pnp_within_5deg_10cm ?? 0, 0), `PnP solved on ${pct(sm.val_pnp_solved ?? 0, 0)} of views`)}
+          ${tile('Visibility', pct(sm.val_vis_acc ?? 0, 0), 'per keypoint, visible or not')}
+          ${tile('CPU latency', `${sm.desktop_cpu_ms_1thread ?? '–'}<small> ms</small>`, `desktop, 1 thread · ${((sm.params || 0) / 1e6).toFixed(2)} M params · input ${esc((sm.input || []).join('x'))}`)}
+        </div><p class="muted">${esc(sm.note || '')}</p>` : ''}
+        <div class="grid g3"><div><div class="muted">loss</div><div class="c1"></div></div><div><div class="muted">keypoint error (px)</div><div class="c2"></div></div><div><div class="muted">rates</div><div class="c3"></div></div></div>`;
       train.appendChild(sec);
-      const x = (r, i) => r.step ?? r.epoch ?? i;
-      const losses = keys.filter((k) => k.includes('loss'));
-      const errs = keys.filter((k) => !k.includes('loss'));
-      lineChart(sec.querySelector('.c1'), losses.map((k) => ({ name: k, points: m.filter((r) => r[k] != null).map((r, i) => [x(r, i), r[k]]) })), { xLabel: 'step', yLabel: 'loss' });
-      lineChart(sec.querySelector('.c2'), errs.map((k) => ({ name: k, points: m.filter((r) => r[k] != null).map((r, i) => [x(r, i), r[k]]) })), { xLabel: 'step', yLabel: 'metric' });
+      const x = (r, i) => r.epoch ?? i;
+      const series = (keys) => keys.filter((k) => m.some((r) => r[k] != null)).map((k) => ({ name: k.replace('val_', '').replace('train_', ''), points: m.filter((r) => r[k] != null).map((r, i) => [x(r, i), r[k]]) }));
+      lineChart(sec.querySelector('.c1'), series(['train_kp_loss', 'train_vis_loss']), { xLabel: 'epoch' });
+      const px = m[0]?.val_px_median_at_1280 != null ? ['val_px_median_at_1280', 'val_px_p90_at_1280'] : ['val_px_median', 'val_px_p90'];
+      lineChart(sec.querySelector('.c2'), series(px), { xLabel: 'epoch' });
+      lineChart(sec.querySelector('.c3'), series(['val_vis_acc', 'val_pnp_solved', 'val_pnp_within_5deg_10cm']), { xLabel: 'epoch', yDomain: [0, 1], yFmt: (v) => pct(v, 0) });
     }
   } else {
     train.innerHTML = '<div class="empty">No detector training run yet (runs/pose_train/&lt;name&gt;/metrics.jsonl).</div>';
