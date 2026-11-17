@@ -19,6 +19,69 @@ Live work and its order: `uv run python tools/research/ledger.py roadmap`.
   wingtips, three rotor hubs, two V-tail tips, nose wheel, two main wheels. The wheels sit on
   the floor, which adds the ground-plane constraint (z = 0 at the contacts) for free.
 
+## How model-based pose estimation works, and what we use
+
+The task is *instance-level* 6-DoF pose: one known, rigid object with an exact CAD model.
+That is the easiest version of pose estimation; the hard parts are the domain gap (synthetic
+training, real camera) and small, distant or partly visible views. The standard families:
+
+| Family | Idea | Fit here |
+|---|---|---|
+| Keypoints + PnP (BB8, PVNet, HRNet/YOLO-pose style heatmaps) | a CNN finds a few named 3D points in the image; PnP turns them into pose | **first choice**: small, fast, exact geometry, runs on a Pi |
+| Dense correspondences (DPOD, GDR-Net, ZebraPose) | every pixel predicts its 3D model coordinate; PnP-RANSAC | more robust to occlusion; heavier |
+| Direct regression | the network outputs R, t | least accurate; no geometry |
+| Render-and-compare (DeepIM, CosyPose, MegaPose, FoundationPose) | render the model at a guess, compare, refine | most accurate; desktop GPU, not the Pi; a good offline ground-truth tool |
+| Classic features (SIFT/ORB vs reference renders) | match image features to features of known 3D points | no training; needs texture; the supervisor's suggestion, kept as a baseline |
+
+Two facts of this task make it easier still, and the code uses both
+(`src/ugv/park/perception.py`):
+
+1. **Both bodies stand on the floor.** The relative pose has 3 unknowns (x, y, yaw), not 6.
+   Two keypoints already fix x and y; three fix yaw. That is why the car keeps measuring deep
+   into the bay where only the nose and nose wheel are in view.
+2. **The camera mount is constant.** Its pitch is solved as a 4th unknown whenever 6+ points
+   are visible and then held, so the car calibrates its own mount as it drives.
+
+### Robustness: size, lighting, background, "fake but realistic", angles
+
+| Threat | Training-side answer | Run-time answer |
+|---|---|---|
+| Size (distance) | sample 0.4-4 m; heatmaps at stride 4 with soft-argmax for sub-pixel points | two-stage crop-and-zoom when the airframe is small; the planar solve needs only 2-3 points up close |
+| Lighting | random light direction and gain, gamma, blur, sensor noise | auto-exposure off, fixed shutter (4 ms worked on the car) |
+| Background | composite the render over **real car-camera frames** of the lab (9,045 in `calibration/runs`) and noise fields | the RANSAC / residual gate in the solver rejects stray points |
+| Texture of the real airframe | random procedural textures, plain paint and the fixed texture | the detector learns shape, not paint |
+| Synthetic-to-real gap | domain randomisation (`tools/pose/make_dataset.py`), then fine-tune on real frames labelled by the tags | evaluate only on the real set |
+| Viewing angle | 60% car-height views, 40% anywhere on the sphere | the orbit keeps the airframe in view from the side and the tail |
+
+A large synthetic set is cheap (24k views render in a few minutes on 16 cores) and is what the
+detector trains on; the decisive data is small and real: the 50-100 frame evaluation set and,
+later, a few thousand real frames labelled for free by the tags during ordinary drives.
+
+### Execution on a Raspberry Pi 4
+
+The trained detector (`train/pose_kp.py`) is MobileNetV3-small with a light heatmap head:
+1.18 M parameters, 320x180 mono input, **10.5 ms on one desktop CPU thread** with ONNX Runtime.
+A Pi 4's Cortex-A72 is several times slower: expect roughly 40-80 ms per frame (int8
+quantisation roughly halves it). Measuring this on the Pi is a task. That is fast enough
+because the estimator fuses fixes at whatever rate arrives (the simulator assumes 10 Hz with
+100 ms latency) and odometry carries the pose in between. Heavy models (render-and-compare,
+FoundationPose) belong on the desktop GPU, as ground truth or over the network.
+
+### World model + action head, or a mechanistic controller?
+
+The parking controller in `src/ugv/park/` is itself a small **mechanistic world model**: a
+motor model identified online (gain and deadzone per axis), a lag model, an estimator, and a
+declared state machine that plans against them. It parks 87% of 1000 randomised simulated
+episodes (Lab dashboard, Parking page), every failure is labelled, and nothing needs a GPU.
+
+A learned alternative is a LeJEPA encoder (fine-tuned, not frozen) feeding an
+action-conditioned latent predictor (the world model) and a small action head trained by
+imitating the state machine in simulation. On a Pi 4 that is affordable only if the encoder is
+the same small backbone as the detector (an MLP head costs nothing). Recommendation: keep the
+mechanistic controller for motion (it is interpretable, testable and already robust to the
+measured plant spread) and spend learning on perception, where the open risk is. Revisit the
+learned policy if real runs show failures the mechanistic model cannot express.
+
 ## What the smoke test already says (synthetic)
 
 `tools/pose/smoke.py`, records `research/attempts/2026-11-17-pose-smoke-*`:
@@ -64,16 +127,18 @@ Each one is a task in `research/tasks/`; its result is an attempt record.
 
 ## Parking as a declared state machine
 
-Each state has an entry condition, an exit on success and an exit per failure mode; the table
-lives in `src/ugv/fsm.py` so an undeclared transition fails in tests.
+Implemented and scored in simulation: `src/ugv/park/` (`docs/PARK_SIM.md`). Each state has an
+entry condition, an exit on success and an exit per failure mode; the table is
+`ugv.park.controller.TABLE` on top of `src/ugv/fsm.py`, so an undeclared transition fails.
 
 | State | Does | Leaves on success | Failure modes and exits |
 |---|---|---|---|
 | SEARCH | rotate in place, scan for the airframe | detection held for N frames | timeout: stop and report |
 | ACQUIRE | hold still, let the pose estimate settle | pose variance below a bound | pose jumps (left/right flip): back to SEARCH |
-| ORBIT | strafe on a circle around the airframe while yawing to keep it centred | car on the bay axis behind the tail | pose lost: SEARCH; obstacle (shield): stop |
-| APPROACH | drive in along the bay axis, correcting lateral error | distance under 0.4 m | drift off axis: back out to ORBIT |
-| CAREFUL_PARK | slow; dead-reckon from the last good pose plus gear contacts | end-frame check passes | collision risk or timeout: stop, back out |
+| ORBIT | strafe on a circle around the airframe while yawing to keep it centred | car on the fuselage line behind the tail | pose lost: SEARCH; pose jump: ACQUIRE |
+| APPROACH | drive along the line to the staging point, correcting lateral offset and heading | aligned at the staging point | lost far out: SEARCH; shield: BACKOFF |
+| ENTER | careful routine: stop, measure still, one small move (gyro turn, strafe, or a fraction of the remaining distance), repeat; each move's result calibrates the next | at the target | misaligned or shield: BACKOFF (bounded retries) |
+| BACKOFF | reverse out along the line | back at the staging point | lost: SEARCH; out of retries: ABORT |
 | PARKED | stop, confirm with the end frame | | |
 
 The orbit-and-face strategy keeps the airframe in view for as long as possible, which is when a
@@ -83,9 +148,7 @@ motor run (S4 gate, `docs/SAFETY.md`).
 
 ## Open questions
 
-- Supervisor: "SLAM for communication" (`ask-supervisor-slam`). Readings: a shared map so
-  either vehicle can localise the other, or visual SLAM on the car with the airframe as a
-  landmark. Feature placement on the airframe is part of the same question.
+- SLAM: resolved as standard SLAM; plan in `research/decisions/2026-11-17-slam-meaning.md`.
 - Which airframe points touch the floor, measured on the real airframe (the mesh says nose
   wheel plus two main wheels).
 

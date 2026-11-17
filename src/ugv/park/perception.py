@@ -139,11 +139,12 @@ def solve_planar(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Gauss-Newton on (x, y, yaw, camera pitch). Both bodies stand on the floor, so the pose
     has 3 unknowns; the camera pitch is a 4th, shared by every frame, so the car calibrates its
-    own mount as it goes. With 4 or more points all four are solved; with 3, pitch stays at
-    `init`; with 2 (often both on the centreline, where yaw is unobservable) yaw stays too.
+    own mount as it goes. With 6 or more points all four are solved; with 3-5, pitch stays at
+    `init` (freeing it with so few points washes out yaw); with 2 (often both on the
+    centreline, where yaw is unobservable) yaw stays too.
     Returns (x, y, yaw, pitch) and per-point residuals (px)."""
     q = init.astype(float).copy()
-    free = [0, 1, 2, 3] if len(obs) >= 4 else [0, 1, 2] if len(obs) == 3 else [0, 1]
+    free = [0, 1, 2, 3] if len(obs) >= 6 else [0, 1, 2] if len(obs) >= 3 else [0, 1]
     eps = 1e-4
     for _ in range(iters):
         r = (project_planar(model, q) - obs).ravel()

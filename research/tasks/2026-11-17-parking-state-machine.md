@@ -3,13 +3,14 @@ id: 2026-11-17-parking-state-machine
 date: 2026-11-17
 author: fer-claude
 owner: fernando
-state: open
+state: done
 updated: 2026-11-17
 due: none
-after: [2026-11-17-pose-on-car]
+after: []
 check: none
 refs: []
-tags: [parking, fsm, milestone]
+tags: [parking, fsm]
+result: [2026-11-17-park-v6-stepped-finale]
 ---
 
 ## Goal
@@ -27,3 +28,7 @@ operator stop. Simulate it against synthetic pose noise first.
 Transition table and failure-mode table in `docs/PARKING.md`; the machine runs in simulation
 from random car and airframe start poses with a measured success rate; no motor change without
 the S4 gate.
+
+## Log
+- 2026-11-17 fernando: claim
+- 2026-11-17 fernando: done: simulated; car runs are park-on-car

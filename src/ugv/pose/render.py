@@ -23,6 +23,9 @@ class Camera:
     height: int = 360
     hfov_deg: float = 66.9  # car camera: fx = 968 px at 1280x720 (docs/PARKING.md)
 
+    def scaled(self, width: int, height: int) -> Camera:
+        return Camera(width, height, self.hfov_deg)
+
     @property
     def K(self) -> np.ndarray:
         f = 0.5 * self.width / np.tan(np.radians(self.hfov_deg) / 2)
@@ -121,7 +124,9 @@ def render(
     cam: Camera,
     rng: np.random.Generator,
     albedo: np.ndarray,
+    background: np.ndarray | None = None,
 ) -> View:
+    """Draw the airframe over `background` (BGR, camera size) or a random noise field."""
     K = cam.K
     pts = frame.tris.reshape(-1, 3) @ R.T + t  # (3N, 3) camera frame
     z = pts[:, 2].reshape(-1, 3)
@@ -136,7 +141,7 @@ def render(
     shade = 0.35 + 0.65 * np.abs(normals @ (R.T @ light))  # two-sided: STL winding is unreliable
     colour = (albedo * shade[:, None] * rng.uniform(0.6, 1.2) * 255).clip(0, 255)
 
-    image = noise_background(rng, cam)
+    image = noise_background(rng, cam) if background is None else background.copy()
     ids = np.full((cam.height, cam.width), -1, np.int32)
     order = np.flatnonzero(keep)[np.argsort(-z[keep].mean(axis=1))]
     for i in order:

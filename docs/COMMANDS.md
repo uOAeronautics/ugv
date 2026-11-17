@@ -17,6 +17,11 @@ Canonical commands verified against existing scripts and docs. For Pi SSH/URL de
 | New record / move a task | `uv run python tools/research/ledger.py new <decision\|attempt\|task> <slug> --author <you>`; `claim\|block\|release\|done\|drop <id> --as <you>` | `done` needs `--result` |
 | Check records | `uv run python tools/research/ledger.py check` | Same rules as `tests/test_research.py` |
 | Pose smoke test (synthetic, CPU) | `uv run python tools/pose/smoke.py [--views car] --out runs/pose_smoke` | Renders the airframe, PnP from keypoints, SIFT bank; see `docs/POSE.md` |
+| Parking simulation: score | `uv run python tools/park/eval.py --name <name> [--params <json>] --sweep --traces 16` | 1000 episodes, seed 11; writes `runs/park_eval/<name>.json`; see `docs/PARK_SIM.md` |
+| Parking simulation: tune | `uv run python tools/park/search.py --out runs/park_search/<name>` | Failure-guided search; `tree.jsonl` keeps every candidate |
+| Lab dashboard | `uv run ugv-lab` | Port 8768: overview, parking, search tree, 3D challenge, pose, ledger. Read-only |
+| Pose training data | `uv run python tools/pose/make_dataset.py --out runs/pose_data/<name> --n 24000` | Airframe composited over real car-camera frames |
+| Pose detector training (GPU) | `cd train && uv run python pose_kp.py --data ../runs/pose_data/<name> --out ../runs/pose_train/<name>` | Separate CUDA env (`train/pyproject.toml`); exports ONNX |
 
 ## Pi CLI & bounded hardware diagnostics
 

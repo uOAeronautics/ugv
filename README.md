@@ -26,6 +26,7 @@ A Freenove `FNK0043` 4WD mecanum car on a Raspberry Pi 4B (`ugv-dashboard.servic
 
 | Area | State | Source |
 |---|---|---|
+| Parking in simulation | 872/1000 parked (95% CI 85-89%), 15 collisions, over randomised cars, cameras and starts; the 3D mesh defines the bay | [docs/PARK_SIM.md](docs/PARK_SIM.md), `uv run ugv-lab` |
 | Pose from the 3D model | Synthetic smoke test: PnP on 12 true keypoints with 1 px noise lands within 5 deg / 10 cm on every solved view; SIFT bank as first set up fails (0/40). No real frames yet | `research/attempts/2026-11-17-pose-smoke-*` |
 | 2D RL parking (retired) | Best sim student 966/1000 at L1, 0/3 parked on the car | `research/attempts/2026-11-17-track-2d-rl.md` |
 | Hardware (Pi 4B) | Classical go-to reached its target 4/4; ArUco + KLT decodes 97% while moving | [Field notes](docs/L7_FIELD_NOTES.md) |
@@ -39,6 +40,9 @@ Open work and its order: `uv run python tools/research/ledger.py roadmap`.
 |---|---|
 | `src/ugv/` | Torch-free Pi runtime: FastAPI/WS dashboard (`web.py`), ArUco + KLT vision, BMI270 IMU heading, `swept_clear` shield, state machines (`fsm.py`) |
 | `src/ugv/pose/` | Airframe mesh and keypoint skeleton, synthetic renderer, PnP and SIFT pose |
+| `src/ugv/park/` | Parking simulator and the state-machine controller |
+| `src/ugv/lab/` | Lab dashboard: experiments, search tree, 3D parking challenge, ledger (`uv run ugv-lab`) |
+| `train/` | GPU training of the keypoint detector (own environment) |
 | `src/ugv/research/`, `research/`, `tools/research/` | Decisions, attempts and tasks (one Markdown file each) and the `ledger.py` CLI |
 | `simulation/gazebo/` | Gazebo 3D car/drone/lab worlds, native `ugv::TTMotorSystem` plugin, camera/IMU models, and browser drive console |
 | `arduino/` | Standalone Nano 33 BLE Sense Rev2 firmware (`firmware/MotionStream`), BLE streaming, and VQF dashboard |
@@ -58,6 +62,8 @@ uv run pytest -q                     # root + simulation/gazebo tests
 ./simulation/gazebo/launch_control.command   # Gazebo + local console on :8767
 ```
 
+- **Lab dashboard**: `uv run ugv-lab`, then open http://127.0.0.1:8768 (try the Challenge page).
+- **Parking simulation**: `uv run python tools/park/eval.py --name default --sweep`; see [docs/PARK_SIM.md](docs/PARK_SIM.md).
 - **Pose smoke test**: `uv run python tools/pose/smoke.py --views car --out runs/pose_smoke`; see [docs/POSE.md](docs/POSE.md).
 - **Arduino IMU companion**: standalone BLE + VQF orientation dashboard on port `8766`; see [arduino/README.md](arduino/README.md).
 - **Docs & safety**: check [docs/SAFETY.md](docs/SAFETY.md) and [docs/STATE.md](docs/STATE.md) before any Pi SSH or motor actuation. See [docs/INDEX.md](docs/INDEX.md) for all documents and [docs/COMMANDS.md](docs/COMMANDS.md) for the canonical command table.

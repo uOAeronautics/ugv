@@ -96,10 +96,10 @@ class Estimator:
         `t_capture`."""
         rel = meas[:3]
         points = int(meas[4]) if len(meas) > 4 else 12
-        if len(meas) > 3 and points >= 4:
+        if len(meas) > 3 and points >= 6:
             self.pitch += 0.1 * (float(meas[3]) - self.pitch)
         sample = compose(self.odom_at(t_capture), rel)
-        if points < 4 and self.airframe is not None:
+        if points < 3 and self.airframe is not None:
             # Few points: yaw is barely observable (often taken from the prior). Keep the
             # airframe heading; re-solve the position with it.
             odom_c = self.odom_at(t_capture)

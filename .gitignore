@@ -26,7 +26,6 @@ calibration/runs/**/*.log
 *.mp4
 tools/l7/sim_reference_L1.npz
 runs/*
-!runs/student.npz
 
 # Retired 2D RL stack: local runs and venv left on disk, code at tag pre-pose-20261117
 rl/

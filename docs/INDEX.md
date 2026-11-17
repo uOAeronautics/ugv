@@ -25,6 +25,7 @@ L2 HARDWARE.md + COMMANDS.md + DASHBOARD.md
 
 - [`README.md`](../README.md) — project overview, verified status metrics, layout, and quickstart.
 - [`docs/STATE.md`](STATE.md) — whether the car may be touched: Pi pause, deploy state, hardware.
+- [`docs/PARK_SIM.md`](PARK_SIM.md) — parking simulator: what is modelled from where, results, limits.
 - [`docs/POSE.md`](POSE.md) — current direction: airframe pose from the 3D model, experiments in order, parking state machine.
 - [`research/README.md`](../research/README.md) — decisions, attempts (a tree of what was tried) and tasks; `tools/research/ledger.py`.
 - [`docs/NETWORK.md`](NETWORK.md) — single source of truth for Pi SSH (`ssh pi` via `glinet`), IP, and Wi-Fi hardening.

@@ -48,8 +48,8 @@ uv run ruff check . && uv run ruff format --check . && uv run pytest -q
 ## Environment
 
 Root `pyproject.toml`, Python >= 3.13, same package on the desktop and the Pi. No torch: code
-under `src/ugv` must import without it. Pose training, when it starts, gets its own CUDA
-environment in a subdirectory, as the retired `rl/` had.
+under `src/ugv` must import without it. Detector training lives in `train/` with its own CUDA
+environment (`cd train && uv sync`); it imports `ugv`, never the other way round.
 
 ## Where things live
 
@@ -57,6 +57,9 @@ environment in a subdirectory, as the retired `rl/` had.
 |---|---|
 | `src/ugv/` | Pi runtime: dashboard (`web.py`), vision, heading, parking, state machines (`fsm.py`) |
 | `src/ugv/pose/` | Airframe mesh, keypoint skeleton, synthetic renderer, PnP and SIFT pose |
+| `src/ugv/park/` | Parking simulator and controller: bay from the mesh, plant, perception, estimator, state machine, search (`docs/PARK_SIM.md`) |
+| `src/ugv/lab/` | Lab dashboard (`uv run ugv-lab`), read-only over `runs/` and `research/` |
+| `train/` | Separate CUDA environment for detector training; never imported by `src/ugv` |
 | `src/ugv/research/`, `research/` | Ledger schema and checks; the decision, attempt and task files |
 | `tools/pose/`, `tools/research/` | Pose smoke test; `ledger.py` |
 | `simulation/gazebo/` | Worlds, models, bridge, physics and camera checks |
@@ -68,7 +71,7 @@ environment in a subdirectory, as the retired `rl/` had.
 | `tests/` | Root unit tests |
 
 Source of truth per topic: car status → `docs/STATE.md`; direction and experiments →
-`docs/POSE.md`; work, decisions and past attempts → `research/`; safety → `docs/SAFETY.md`;
+`docs/POSE.md`; parking simulator and its numbers → `docs/PARK_SIM.md`; work, decisions and past attempts → `research/`; safety → `docs/SAFETY.md`;
 network and SSH → `docs/NETWORK.md`; field findings → `docs/L7_FIELD_NOTES.md`. State a fact in
 one place and link to it from the others.
 
