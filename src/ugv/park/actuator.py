@@ -45,7 +45,9 @@ class Axis:
         # Prior covariance of (a, b) = (g, -g dz), in the units of the observations.
         self._P = np.diag([(PRIOR_REL * self.gain) ** 2, (self.gain * PRIOR_DZ) ** 2])
 
-    def observe(self, duty: float, speed: float, weight: float = 1.0, stall_ok: bool = True) -> None:
+    def observe(
+        self, duty: float, speed: float, weight: float = 1.0, stall_ok: bool = True
+    ) -> None:
         """One (mean duty, measured mean speed) pair over a window of steady duty. `stall_ok`:
         whether a still reading may raise the deadzone (only for clean, direct measurements)."""
         if abs(duty) < 1e-3:

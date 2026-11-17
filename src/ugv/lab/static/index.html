@@ -1,1 +1,36 @@
-<!doctype html><title>ugv lab</title><p>Lab dashboard: being rebuilt.</p>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UGV Lab</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <nav class="rail" aria-label="Sections">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+          <rect x="3" y="12" width="26" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M6 12 L16 6 L26 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="8" cy="24" r="2.5" fill="currentColor"/><circle cx="24" cy="24" r="2.5" fill="currentColor"/>
+        </svg>
+        <div><b>UGV Lab</b><small>park under STRL-001</small></div>
+      </div>
+      <a href="#overview" data-page="overview">Overview</a>
+      <a href="#parking" data-page="parking">Parking</a>
+      <a href="#search" data-page="search">Search tree</a>
+      <a href="#challenge" data-page="challenge">Challenge</a>
+      <a href="#pose" data-page="pose">Pose</a>
+      <a href="#research" data-page="research">Research</a>
+      <div class="rail-foot">
+        <button id="theme" class="ghost" type="button" title="Toggle theme">Theme</button>
+        <span class="muted">read-only · never talks to the car</span>
+      </div>
+    </nav>
+    <main id="page" tabindex="-1"></main>
+  </div>
+  <div id="tip" class="tip" role="tooltip" hidden></div>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

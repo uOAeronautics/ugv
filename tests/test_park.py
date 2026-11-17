@@ -67,3 +67,23 @@ def test_ideal_episode_parks() -> None:
     sc = Scenario((0.2, -0.3, 1.0), (1.8, 1.0, -2.0), plant_scale=0.0, detector=det)
     r = run(sc, seed=3)
     assert r.outcome == "parked", r
+
+
+def test_lab_api_serves_every_view() -> None:
+    from fastapi.testclient import TestClient
+
+    from ugv.lab.server import create_app
+
+    c = TestClient(create_app())
+    for path in (
+        "/",
+        "/api/ledger",
+        "/api/park/evals",
+        "/api/park/searches",
+        "/api/park/world",
+        "/api/pose",
+    ):
+        assert c.get(path).status_code == 200, path
+    assert c.get("/runs/../pyproject.toml").status_code == 404
+    world = c.get("/api/park/world").json()
+    assert len(world["bay"]["obstacles"]) > 10 and world["bay"]["target"][2] == 0.0
