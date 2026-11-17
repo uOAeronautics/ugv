@@ -9,6 +9,7 @@ spec + gates   := ../docs/RL_PARKING.md   (do not change gates or parked thresho
                  D1/D2 compaction approved 2026-11-14: p0 plant, L0 canary, L1 >=90% floor, L2_cons subset)
 work queue     := PLAN.md                 (State = current truth; update it when a result changes)
 code map       := README.md
+hypotheses     := ../explore/LOOP.md      (propose/predict/start/close via tools/explore.py only)
 ```
 
 ## Goal of each step

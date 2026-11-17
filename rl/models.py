@@ -80,6 +80,9 @@ class Student(nn.Module):
         self.dyn_head = nn.Linear(h, DYN_DIM)
         nn.init.orthogonal_(self.dyn_head.weight, gain=1.0)
         nn.init.zeros_(self.dyn_head.bias)
+        # Action-conditioned forward model (training-only world model): predicts the next
+        # privileged [pose, vel] from the hidden state and the action taken.
+        self.fwd_head = nn.Sequential(nn.Linear(h + act_dim, 64), nn.Tanh(), nn.Linear(64, 6))
 
     def forward(self, hist, h0=None):
         _, h = self.gru(hist, h0)
@@ -92,6 +95,10 @@ class Student(nn.Module):
     def predict_dynamics(self, h_seq: torch.Tensor) -> torch.Tensor:
         """Normalized privileged dynamics vector from hidden state [.., h]."""
         return self.dyn_head(h_seq)
+
+    def predict_next(self, h: torch.Tensor, act: torch.Tensor) -> torch.Tensor:
+        """Next privileged [pose(3), vel(3)] given hidden state and action."""
+        return self.fwd_head(torch.cat([h, act], dim=-1))
 
     def n_params(self):
         return sum(p.numel() for p in self.parameters())

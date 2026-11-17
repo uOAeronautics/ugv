@@ -1,75 +1,64 @@
 # UGV Research Pipeline
 
-High-Orchestrator / Low-Scout + Adversary workflow for the RL parking ladder
-(L0 -> L5 in `rl/sim.py`, L6 Gazebo, L7 real robot).
+How the RL parking ladder (L0 -> L5 in `rl/sim.py`, L6 Gazebo, L7 real robot) is worked. The
+hypothesis cycle itself is in [`explore/LOOP.md`](../explore/LOOP.md); this page covers roles,
+GPU use, gating and the two ledgers. Do not restate the cycle here.
 
 ## Roles
 
-- **High-Orchestrator** (this session, Gemini 4 Argon Medium): owns `rl/PLAN.md`
-  State, gates, merge order. Splits work into disjoint scopes, spawns scouts,
-  judges results, commits. Zero direct file/log reading; delegates ALL file
-  reads, log checks, diagnostics, implementations, experiments, and git
-  status/commits to subagents, consuming only their clean synthesized reports.
-- **Low-Scout** (subagent, `opencode-go/muse-spark-1.3-contributor#medium`):
-  read-only explore or single-scope edit. Never touches another scout's scope.
-  Never merges, never pushes.
-- **Adversary** (subagent, `opencode-go/muse-spark-1.3-contributor#medium`):
-  reviews a scout claim or diff before it gates. Must cite file:line
-  evidence. A gate pass without adversary review is not a pass.
-- **All subagents (Scout / EXP / Adversary / Ops)**: run on
-  `opencode-go/muse-spark-1.3-contributor#medium` (medium reasoning).
+- **Orchestrator** (the main session): owns `rl/PLAN.md` State, gates and commit order. Splits
+  work into disjoint scopes, delegates, judges the reports it gets back.
+- **Subagents** (scout, experiment, adversary): briefed and gated per
+  [`.agents/skills/mastermind/SKILL.md`](../.agents/skills/mastermind/SKILL.md). Model tiers are
+  set there, not here.
+- **Scout**: read-only, or edits one scope. Never merges, never pushes, never commits.
+- **Adversary**: reviews a claim or diff before it gates, citing file:line evidence. A gate pass
+  without adversary review is not a pass.
 
-## 1-GPU-job rule
+## One GPU job at a time
 
-One GPU job at a time on the 3090 (student PPO at 1024 envs uses ~10 GB;
-three in parallel OOM). Before training, check `nvidia-smi` and the board:
-if a `[SCOUT]` row is `running`, wait. Never edit `sim.py`, `reward.py`,
-`models.py`, or a trainer while a job importing it is starting.
+One GPU job at a time on the 3090 (student PPO at 1024 envs uses ~10 GB; three in parallel
+run out of memory). Check `nvidia-smi` and `ps` first. Do not edit `rl/sim.py`, `reward.py`,
+`models.py` or a trainer while a job that imports it is starting.
 
-## evaluate.py is the sole judge
+## The judge
 
-- Judge: `cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics
-  --json runs/<name>.json` (p0 gate plant). Training `succ` logs are not success.
-- One seed per experiment. Pass -> keep checkpoint, move on. Fail -> one more
-  seed before declaring the idea dead (seed variance spans 0-256/256).
-- Change one thing per experiment. Before changing reward, watch failures:
-  `visualize.py --policy runs/<ckpt>.pt --level <L> --episodes 6 --seed 11`.
-- Check observations before blaming the policy (two past "can't learn X"
-  conclusions were sim bugs). A `sim.py`/`reward.py` change invalidates
-  earlier numbers: re-measure the compared baseline.
+`cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics --json runs/<name>.json`
+(p0 gate plant). Training `succ` logs are not success. One seed per experiment; a failure gets one
+more seed before the idea is called dead. Gates and thresholds live in `docs/RL_PARKING.md`.
 
 ## Monotonic gating
 
-- Gates live in `docs/RL_PARKING.md` (do not change thresholds to pass).
-- Order: teacher L0 -> student L0 -> L1 -> ... An L(n+1) claim requires L(n)
-  still passing on the same tree. Regression = revert, no exceptions.
-- Gate artifacts: checkpoint + `runs/<name>.json` (gitignored) + board `[GATE]`
-  row. Never overwrite a gate-passing checkpoint. Never leave results only
-  in `/tmp`.
+Order: teacher L0 -> student L0 -> L1 -> ... An L(n+1) claim needs L(n) still passing on the same
+tree. A regression means revert. Gate artifacts are the checkpoint, `runs/<name>.json` (gitignored)
+and a gate row in the explore ledger's evidence (see below). Never overwrite a gate-passing
+checkpoint. Never leave results only in `/tmp`.
 
-## archive.jsonl + AGENT_BOARD.md protocol
+## Two ledgers, two jobs
 
-- Every 1000-ep eval appends one JSON line to `rl/runs/archive.jsonl`:
-  `run_id, parent_id, track, level, config_delta, wall_s, eval_metrics`.
-- Every spawn, result, adversary verdict, and gate gets one row in
-  `docs/AGENT_BOARD.md` with format `[TYPE] id | scope | status | evidence`.
-- Orchestrator updates `rl/PLAN.md` State when a measured result changes
-  (replace the line, do not append history).
+These are different files with different writers. Do not mix their rows.
 
-## Commit/push discipline
+| | `rl/runs/archive.jsonl` | `explore/HYPOTHESES.jsonl` |
+|---|---|---|
+| Unit | one 1000-episode eval run | one hypothesis, over its life |
+| Written by | the eval, one line per run | `tools/explore.py` only, one event per line |
+| Holds | `run_id, parent_id, track, level, config_delta, wall_s, eval_metrics` | events `propose`, `predict`, `start`, `close`, `retro`; a hypothesis is the events sharing one `id` |
+| Key fields | run id, metrics | `family`, `statement`, `prediction`, `falsifier`, outcome, and `evidence` (a run id or an existing path) |
+| Rule | every eval appends one line; tracked by Git | a claim is not evidence; close only with a run id or path |
 
-- Scouts do not commit. Orchestrator commits per completed scope with message
-  `<scope>: <what changed> + <eval result>`.
-- Push only green gates or explicitly marked work-in-progress. `rl/runs/`
-  artifacts stay gitignored; `archive.jsonl` is the exception and is tracked.
-- Before push: `cd rl && uv run pytest test_rl.py` and root `uv run pytest`.
+The run ledger records what was measured. The hypothesis ledger records what was predicted,
+what was tried, and what it showed. A closed hypothesis points at run ids in `archive.jsonl`; it
+does not copy their numbers. Cycle, refusals and retro rule: [`explore/LOOP.md`](../explore/LOOP.md).
+
+`rl/PLAN.md` State is replaced, not appended, when a measured result changes.
+
+## Commits
+
+Scouts do not commit. The orchestrator commits per completed scope as
+`<scope>: <what changed> + <eval result>`. Push only green gates or work marked in progress.
+Before push: `cd rl && uv run pytest -q test_rl.py` and `uv run pytest -q` from the root.
 
 ## Safety
 
-- L0-L6 are sim only. No L7 actuation while config flags read false
-  (see `docs/SAFETY.md`: S0 default, S3/S4 require wheels-off-ground +
-  clear-zone + human-present + timeout).
-- Motion commands always carry finite duration + explicit stop/finally.
-  Credentials stay runtime-only; never in logs/docs/git.
-- `src/ugv/policy.py` deployed student stays NumPy-only; torch lives in `rl/`
-  venv (`cd rl && uv run ...`). Root package stays torch-free.
+L0-L6 are simulation only. No L7 actuation while the `docs/SAFETY.md` flags read false. Motion
+commands carry a finite duration and an explicit stop. Hardware runs follow `docs/STATE.md`.

@@ -1,6 +1,7 @@
 ---
 name: orchestrate-and-gate
-description: Orchestrator trajectory discipline, log-first adversarial diagnosis, and sim-to-real release gates. Use when running multi-step debugging, spawning T3 subagents, diagnosing policy/control failures, or deploying RL policies to real hardware.
+description: Orchestrator trajectory discipline, log-first adversarial diagnosis, and sim-to-real release gates. Use when running multi-step debugging, spawning subagents, diagnosing policy/control failures, or deploying RL policies to real hardware.
+compatibility: UGV repo; hardware gates need SSH to the Pi (`docs/STATE.md`) and the S4 gate (a human present, wheels off the ground).
 ---
 
 # Orchestrate and gate
@@ -9,7 +10,7 @@ Prevent linear-thread bloat, false root-cause retrains, and unverified hardware 
 
 ## 1. T3 Orchestration & Delegation
 
-- **Split early, never run linear marathons.** Do not chain >3–4 diagnostic or hardware-debug turns in one agent. Delegate file/log/thread scouting to `gemini-4-hydrogen` (`thinking_level: low`) in parallel, and keep a separate **adversarial reviewer** (`thinking_level: medium/high`) running against every diagnosis before acting.
+- **Split early, never run linear marathons.** Do not chain >3–4 diagnostic or hardware-debug turns in one agent. Delegate file/log/thread scouting to subagents in parallel, briefed and gated as in `.agents/skills/mastermind/SKILL.md` (model tiers are set there), and keep a separate **adversarial reviewer** running against every diagnosis before acting.
 - **Check workspace access before delegating.** Verify the target repo matches the active project/sandbox before spawning workers; use the right `projectId` or provider so pre-tool hooks do not reject edits.
 - **Never poll or block on `t3_thread_wait`.** Launch `delegate_task(..., mode="async")` and end the turn. Completion wakes the thread.
 - **Keep `t3_thread_read` bounded.** Always pass `limit=20, maxCharsPerItem=2000` and page with `afterPosition`; never dump `maxCharsPerItem=6000+` into context.

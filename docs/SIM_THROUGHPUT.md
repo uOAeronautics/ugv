@@ -63,7 +63,7 @@ vs single-frame 0.04 ms/step (see d).
 
 **Bottleneck (c): physics + per-episode reset, not IPC.**
 IPC overhead (1.2 ms) is 6% of a D-step. At L3 (median 8.16 s sim,
-`AGENT_BOARD.md` smoke test) one episode costs ~8.2 s sim + 0.8 s reset
+superseded agent board in git history, smoke test) one episode costs ~8.2 s sim + 0.8 s reset
 ≈ 9 s wall → **~2.5 h per 1000 ep per world**, fixed at 1x realtime.
 Only parallelism helps.
 
@@ -116,3 +116,15 @@ matches the `stateful` checkpoint path in `evaluate.py:62`.
   1× `reset_pose`.
 - (d): root `python3` + `src/ugv/policy.py StudentPolicy` with random
   GRU-64 weights, 200-rep `forward` vs `_step_gru+_head` timing.
+
+## Engine decision (2026-11-16, scout; unverified items marked ?)
+
+Keep `rl/sim.py` (custom batched torch, planar 3-DoF + fitted slip/deadzone plant) for training.
+Skild's Steel (Nov 9 2026, `skild-ai/steel`, Apache-2.0, a Newton solver) is built for arm and hand
+manipulation; neither its repo nor its blog mentions wheeled vehicles or friction models, it needs a
+Newton dev fork, and its 3.6 M steps/s headline is on a Blackwell workstation GPU (3090 fit ?). The sim
+already steps ~3e5 env-steps/s on CPU at 512 envs (about 6000x real time for a 50 Hz plant) versus 1x
+for Gazebo lockstep, so physics is not the bottleneck; policy inference and PPO are. Newton's
+`robot_omniwheel` example is a possible offline cross-check of a few trajectories, not a trainer.
+H-JEPA (`kevinghst/H-JEPA`, MIT, research code for visual planning) is not adoptable; the
+action-conditioned forward-model loss in `train_student.py --fwd-weight` takes its useful idea.

@@ -1377,7 +1377,7 @@ def main():
                         outcome = "geofence"
                         stop["flag"], stop["why"] = True, outcome
                 if args.mode == "policy":
-                    if reason.startswith("brake: stale"):
+                    if reason.startswith(("brake: stale", "brake: sensors stale")):
                         brake_stale_since = brake_stale_since or now
                         if now - brake_stale_since > 4.0:
                             outcome = "lost"

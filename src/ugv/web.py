@@ -23,7 +23,7 @@ from smbus2 import SMBus
 
 from . import SERVO_CHANNELS, WHEEL_CHANNELS, _configure_pca9685, _set_pulse, _set_pwm, _stop_wheels
 from .aruco import ArucoFollower
-from .autopark import AutoParkRunner, TagDetector
+from .autopark import TERMINAL_STAGES, AutoParkRunner, TagDetector
 from .dynamics_telemetry import DynamicsTelemetry
 from .heading import RelativeHeading
 from .imu import ImuStream
@@ -854,7 +854,7 @@ class RobotController:
                 pass
         self.auto_park_owner = None
         if was_active:
-            if self.state.auto_park_stage not in ("parked", "blocked", "aborted", "error"):
+            if self.state.auto_park_stage not in TERMINAL_STAGES:
                 self.state.auto_park_stage = "idle"
             self.state.auto_park_status = reason
             await self.stop(reason, release=False)
@@ -975,7 +975,7 @@ class RobotController:
                     await self.stop(cmd.reason or "auto-park-stop", release=False)
                     self.perf.record("drive_ms", (time.perf_counter() - drive_t0) * 1000.0)
                     self.perf.record("autopark_loop_ms", (time.perf_counter() - loop_t0) * 1000.0)
-                    if cmd.done or cmd.stage in ("parked", "blocked", "aborted", "error"):
+                    if cmd.done or cmd.stage in TERMINAL_STAGES:
                         break
                 else:
                     await self.drive(
@@ -1000,7 +1000,7 @@ class RobotController:
                 self.state.auto_park = False
                 self.auto_park_owner = None
                 self.auto_park_task = None
-                if self.state.auto_park_stage not in ("parked", "blocked", "aborted", "error"):
+                if self.state.auto_park_stage not in TERMINAL_STAGES:
                     self.state.auto_park_stage = "idle"
                 await self.stop(self.state.auto_park_status or "auto-park-stopped", release=False)
                 await self.broadcast()

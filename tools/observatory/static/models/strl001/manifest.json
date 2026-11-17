@@ -1,0 +1,323 @@
+{
+  "parts": [
+    {
+      "id": "base_link",
+      "file": "body.bin.stl",
+      "tris": 8000,
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": null
+    },
+    {
+      "id": "right_aileron_link",
+      "file": "aileron_right.bin.stl",
+      "tris": 24,
+      "pose": [
+        -0.106,
+        -0.38,
+        -0.0056,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "parent": "base_link",
+        "child": "right_aileron_link"
+      }
+    },
+    {
+      "id": "left_aileron_link",
+      "file": "aileron_left.bin.stl",
+      "tris": 24,
+      "pose": [
+        -0.106,
+        0.38,
+        -0.0065,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "parent": "base_link",
+        "child": "left_aileron_link"
+      }
+    },
+    {
+      "id": "right_ruddervator_link",
+      "file": "ruddervator_right.bin.stl",
+      "tris": 14,
+      "pose": [
+        -0.6409,
+        -0.0804,
+        0.0673,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0057,
+          -0.7363,
+          0.6768
+        ],
+        "parent": "base_link",
+        "child": "right_ruddervator_link"
+      }
+    },
+    {
+      "id": "left_ruddervator_link",
+      "file": "ruddervator_left.bin.stl",
+      "tris": 14,
+      "pose": [
+        -0.6413,
+        0.0817,
+        0.0659,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          -0.0124,
+          0.7325,
+          0.6806
+        ],
+        "parent": "base_link",
+        "child": "left_ruddervator_link"
+      }
+    },
+    {
+      "id": "right_nacelle_link",
+      "file": "nacelle_right.bin.stl",
+      "tris": 600,
+      "pose": [
+        0.0735,
+        -0.27535,
+        -0.0141,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "parent": "base_link",
+        "child": "right_nacelle_link"
+      }
+    },
+    {
+      "id": "right_prop_link",
+      "file": "prop_right.bin.stl",
+      "tris": 160,
+      "pose": [
+        0.1234,
+        -0.27535,
+        -0.0129,
+        0.0,
+        1.5707963,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "parent": "right_nacelle_link",
+        "child": "right_prop_link"
+      }
+    },
+    {
+      "id": "left_nacelle_link",
+      "file": "nacelle_left.bin.stl",
+      "tris": 800,
+      "pose": [
+        0.0735,
+        0.27525,
+        -0.0141,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "parent": "base_link",
+        "child": "left_nacelle_link"
+      }
+    },
+    {
+      "id": "left_prop_link",
+      "file": "prop_left.bin.stl",
+      "tris": 160,
+      "pose": [
+        0.1233,
+        0.2753,
+        -0.012,
+        0.0,
+        1.5707963,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "parent": "left_nacelle_link",
+        "child": "left_prop_link"
+      }
+    },
+    {
+      "id": "rear_prop_link",
+      "file": "prop_rear.bin.stl",
+      "tris": 160,
+      "pose": [
+        -0.3708,
+        0.0,
+        0.0323,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "parent": "base_link",
+        "child": "rear_prop_link"
+      }
+    },
+    {
+      "id": "imu_link",
+      "file": null,
+      "tris": 0,
+      "pose": [
+        -0.062,
+        0.0,
+        -0.01,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint": {
+        "type": "fixed",
+        "axis": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parent": "base_link",
+        "child": "imu_link"
+      }
+    }
+  ],
+  "tree": {
+    "root": "base_link",
+    "children": {
+      "base_link": [
+        "right_aileron_link",
+        "left_aileron_link",
+        "right_ruddervator_link",
+        "left_ruddervator_link",
+        "right_nacelle_link",
+        "left_nacelle_link",
+        "rear_prop_link",
+        "imu_link"
+      ],
+      "right_aileron_link": [],
+      "left_aileron_link": [],
+      "right_ruddervator_link": [],
+      "left_ruddervator_link": [],
+      "right_nacelle_link": [
+        "right_prop_link"
+      ],
+      "right_prop_link": [],
+      "left_nacelle_link": [
+        "left_prop_link"
+      ],
+      "left_prop_link": [],
+      "rear_prop_link": [],
+      "imu_link": []
+    }
+  },
+  "tags": [
+    {
+      "id": 14,
+      "role": "entry",
+      "pos": [
+        -0.3,
+        0.0,
+        -0.06
+      ],
+      "normal": [
+        -1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 6,
+      "role": "side +x policy",
+      "pos": [
+        -0.12,
+        0.1,
+        -0.06
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "role": "side -x policy",
+      "pos": [
+        -0.12,
+        -0.1,
+        -0.06
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ]
+    }
+  ],
+  "totalTris": 9956,
+  "totalBytes": 498640
+}

@@ -1,62 +1,36 @@
 ---
 name: ugv-research
-description: Run the UGV RL-parking research pipeline as orchestrator or scout. Use when spawning parallel Muse Spark low scouts, gating experiments, or updating the agent board.
+description: Run the UGV explore loop (explore/ ledger, tools/explore.py) that drives the car toward a parked car under the drone. Use when proposing, predicting, starting or closing a hypothesis, holding a retro, or deciding the next research step.
+compatibility: UGV repo (explore/ + tools/explore.py); needs uv and Python >= 3.13 for the root venv. Safety S0 by default; motion is out of scope.
 ---
 
-# UGV Research Skill
+# UGV explore loop
 
-## Pipeline (summary of `docs/PIPELINE.md`)
+Source of truth: `explore/LOOP.md` (cycle, refusals). Runner: `tools/explore.py`. Ledger:
+`explore/HYPOTHESES.jsonl`. History: `explore/HISTORY.md`. Status: `docs/STATE.md`.
 
-Ladder L0->L5 (`rl/sim.py`), L6 Gazebo, L7 robot. Judge is
-`cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics
---json runs/<name>.json` (p0 gate plant). One GPU job at a time. Monotonic gating per
-`docs/RL_PARKING.md`. Scouts never commit; orchestrator commits per scope.
-Orchestrator is Gemini 4 Argon (Medium): zero direct file/log reading;
-delegates ALL file reads, log checks, diagnostics, implementations,
-experiments, and git status/commits to subagents, consuming only their clean
-synthesized reports. All subagents (Scout / EXP / Adversary / Ops) run on
-`opencode-go/muse-spark-1.3-contributor#medium` (medium reasoning).
+## Use the tool, not the ledger
 
-## Spawning parallel low scouts
+Append to the ledger only through `tools/explore.py`; it refuses illegal steps and exits 2
+without writing. Start with:
 
-1. Read `rl/PLAN.md` State + `docs/AGENT_BOARD.md` running rows first.
-2. Give each scout a disjoint scope (file set + level + run_id prefix).
-   Example scopes: `reward-shaping/L2`, `student-capacity/L1`,
-   `gazebo-lockstep/L6`, `adversary/review-<run_id>`.
-3. Instruct: model `opencode-go/muse-spark-1.3-contributor#medium`
-   (medium reasoning), read-only except own scope files, one seed
-   per experiment, append `rl/runs/archive.jsonl`, never touch `rl/runs/`
-   of another scout, stop if another session owns `rl/`.
-4. Cap at 3 scouts (1 GPU + 1 CPU/sim + 1 adversary/reviewer).
-
-## Scout instructions (paste into subagent prompt)
-
-```text
-Scope: <scope>. Files: <files>. Do not touch anything else.
-Read rl/AGENTS.md, docs/PIPELINE.md, rl/PLAN.md State first.
-Eval: cd rl && uv run python evaluate.py --episodes 1000 --seed 11 --no-mean-dynamics --json runs/<run_id>.json.
-Append one line to rl/runs/archive.jsonl. Post board row (format below).
-Return: changed files, eval numbers, next step. Do not commit.
+```sh
+uv run python tools/explore.py next     # the one legal next step
+uv run python tools/explore.py list     # ledger as a table
 ```
 
-## Board posting format
+Cycle: `propose` -> `predict` -> `start` -> `close --outcome confirmed|refuted|inconclusive
+--evidence <run id or existing path>`; `retro` every 5 closed hypotheses.
 
-```text
-[SCOUT] <run_id> | <scope> | running|done|blocked | <evidence: json path or finding>
-[EXP] <run_id> | L<n> <succ/coll/med> | pass|fail | <runs/<name>.json + ckpt>
-[ADVERSARY] <run_id> | <verdict> | <file:line citations>
-[GATE] L<n> <track> | pass|fail | <ckpt + json + adversary sign-off>
-```
+## Rules that bind
 
-## Gating checklist (orchestrator)
+- One hypothesis runs at a time. A claim is not evidence: close with a run id or a path.
+- Write the prediction and falsifier before any run.
+- Three refutations in a family force a family change unless `--escalate` is given.
+- Anything that moves the car is outside the loop. Motion follows `docs/SAFETY.md` and
+  `docs/STATE.md`; the loop records the decision and its evidence only.
+- The RL judge is `rl/evaluate.py`, 1000 episodes, seed 11. Run it only with the GPU free
+  (one job at a time, see `rl/AGENTS.md`).
 
-- `runs/<name>.json` exists from `evaluate.py` (1000 eps, seed 11).
-- `archive.jsonl` line appended. Lower levels still pass (monotonic).
-- Adversary reviewed with file:line evidence.
-- `rl/PLAN.md` State updated; commit `<scope>: <change> + <eval>`.
-- Tests: `cd rl && uv run pytest test_rl.py`, root `uv run pytest`.
-
-## Safety reminder
-
-Sim only (L0-L6). No L7 while safety config flags are false. See
-`docs/SAFETY.md`. Torch in `rl/` venv only; deployed policy is NumPy.
+For delegating reads, runs or reviews to subagents, use `.agents/skills/mastermind`.
+For log-first diagnosis and release gates, use `.agents/skills/orchestrate-and-gate`.

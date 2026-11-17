@@ -1,0 +1,144 @@
+{
+  "hypothesis": "H-0001",
+  "worker": "K",
+  "question": "Does a sim plant fitted to the measured real-car probe-axes fit reproduce the car's turn-saturation / oscillation failure of the student policy?",
+  "setup": {
+    "policy": "rl/runs/gazebo_l6/student_L1_best.npz (sha 10c8b41ab69dd7c5, stateful=False, h=64, head_w=64, act_dim=3)",
+    "policy_note": "rl/evaluate.py loads torch checkpoints only, so the npz weights were copied unchanged into out/student_L1_best_wrapped.pt (round-trip parity max abs diff 0.0). Same weights, different container.",
+    "level": "L1_fitted (new LEVELS entry = L1 + real_plant + randomize_dynamics=False + plant_gain + plant_dz + gyro_noise_std=0.63)",
+    "plant_fixed_values": {
+      "gain_per_duty_strafe_fwd_yaw": [1.6, 2.3186, 15.66],
+      "deadzone_strafe_fwd_yaw": [0.13, 0.05, 0.10],
+      "gyro_noise_std_rad_s": 0.63
+    },
+    "plant_value_sources": {
+      "fwd_gain": "calibration/runs/l7/20261113-181040-probe-axes/fit.json fit.fwd.gain = 2.3186",
+      "yaw_gain": "fit.ccw.gain = 897.2 deg/s per duty = 15.66 rad/s per duty",
+      "fwd_deadzone_and_yaw_deadzone": "brief values 0.05 and 0.10 (fit.json gives 0.0514 and 0.1013)",
+      "strafe_gain_and_deadzone": "NOT measured: fit.json fit.left = gain 0.0648, deadzone -3.69, n=3 (degenerate). Nominal 1.6 and 0.13 kept from rl/sim.py.",
+      "gyro_std": "docs/L7_FIELD_NOTES.md: 0.63 rad/s"
+    },
+    "not_fixed": "Onset delays (0.21/0.11/0.04 s) and drive tau stay at the rl/sim.py nominal constants used when randomize_dynamics=False. fit.json onsets are fwd ~0.18 s, yaw ~0.07 s. Camera rate stays at the L1 default 30 Hz (field: ~13 valid poses/s on one staging run).",
+    "use_mean_dynamics": false,
+    "seed": 11,
+    "episodes": 1000,
+    "device": "cpu (CUDA_VISIBLE_DEVICES empty)"
+  },
+  "success": {
+    "harness": "rl/evaluate.py --real-plant --no-mean-dynamics --episodes 1000 --seed 11",
+    "success": 0,
+    "success_wilson_95": [0.0, 0.004],
+    "collisions": 17,
+    "false_parked": 0,
+    "timeouts": 983,
+    "timeout_rate": 0.983,
+    "time_median_s": 45.0,
+    "pos_p95_mm": 1546,
+    "yaw_p95_deg": 59.2
+  },
+  "saturation": {
+    "definition": "fraction of running ticks (ticks whose episode is not yet done when the action is taken) with |a2| > 0.8, a2 = the raw clamped policy output for the yaw channel, before the duty cap and before any blind-search reflex (--fov-search not set)",
+    "primary_1000ep_harness": {
+      "turn_sat_frac": 0.8360,
+      "turn_sat_ticks": 1848549,
+      "active_ticks": 2211308,
+      "source": "out/H-0001-eval.json"
+    },
+    "crosscheck_200ep_dump_with_blind_reflex": {
+      "turn_sat_frac": 0.5481,
+      "total_ticks": 439301,
+      "note": "tools/l7/dump_sim_reference.py path; applies the deployed StudentPolicy blind-search reflex, which clamps a2 to +-0.6 on blind ticks, so it is the deploy-equivalent number and lower",
+      "source": "out/H-0001-overlap-raw.json"
+    },
+    "control_L1_nominal_200ep_dump": {
+      "turn_sat_frac": 0.0014,
+      "total_ticks": 202622,
+      "success": 197,
+      "collision": 1,
+      "timeout": 2
+    },
+    "real_car_same_definition": [
+      {"run": "calibration/runs/l7/20261113-183857-policy-ep3-p0", "sat_frac": 0.7412, "ticks_with_act": 2237, "matches_field_note_74pct": true},
+      {"run": "calibration/runs/l7/20261113-182150-policy-ep1-front", "sat_frac": 0.8216, "ticks_with_act": 1833},
+      {"run": "calibration/runs/l7/20261113-182645-policy-ep2-mean", "sat_frac": 0.2278, "ticks_with_act": 395}
+    ],
+    "source_real": "out/H-0001-residual-raw.json"
+  },
+  "joint_overlap": {
+    "computed": true,
+    "method": "tools/observatory/contract.py real_joint_samples / sim_joint_samples / joint_overlap (gaussian_kde_mc, Silverman, 2000 draws, rng seed 11), channels inter_tag_dt_s, tag_age_s, imu_w_rad_s, pass threshold 0.35",
+    "real_run": "calibration/runs/l7/20261113-185204-stage-park-0.45",
+    "sim_reference_L1_fitted_200ep": {"overlap": 0.6182, "pass": true},
+    "sim_reference_L1_nominal_200ep_control": {"overlap": 0.742, "pass": true},
+    "committed_tools_l7_sim_reference_L1": {"overlap": 0.742, "pass": true},
+    "caveat": "The real run is a stage-park run, not a policy run; the sim references are policy rollouts. The overlap is the contract's defined comparison, not a policy-vs-policy test."
+  },
+  "fit_residual": {
+    "definition": "residual = measured steady-state value (v_ss in m/s for fwd and left, yaw_rate_dps_ss in deg/s for ccw) minus the steady-state model gain * sign(d) * max(|d| - deadzone, 0), over the pulses in fit.json",
+    "source": "out/H-0001-residual-raw.json",
+    "fwd": {
+      "fit_json": {"n": 4, "rms_m_s": 0.0314, "max_abs": 0.0492, "bias": -0.0272},
+      "L1_fitted_plant": {"n": 4, "rms_m_s": 0.0315, "max_abs": 0.0459, "bias": -0.0272},
+      "nominal_real_plant": {"n": 4, "rms_m_s": 0.0314, "max_abs": 0.0497, "bias": -0.0267}
+    },
+    "yaw_ccw": {
+      "fit_json": {"n": 6, "rms_deg_s": 8.862, "max_abs": 13.529, "bias": -0.417},
+      "L1_fitted_plant": {"n": 6, "rms_deg_s": 8.936, "max_abs": 12.385, "bias": -0.417},
+      "nominal_real_plant": {"n": 6, "rms_deg_s": 8.988, "max_abs": 12.041, "bias": -0.417}
+    },
+    "strafe_left": {
+      "fit_json": {"n": 5, "rms_m_s": 0.1524, "max_abs": 0.2379, "bias": -0.0167, "note": "fit.json values gain 0.0648, deadzone -3.69 are degenerate"},
+      "L1_fitted_plant_nominal_1.6_0.13": {"n": 5, "rms_m_s": 0.0642, "max_abs": 0.1055, "bias": 0.0014}
+    },
+    "conclusion": "Forward and yaw residuals are the same for the fitted and nominal plants (differences under 0.5%). The fit is not a strong discriminator among these plants. The strafe fit in fit.json is worse than the nominal strafe values on the same pulses."
+  },
+  "verdict": {
+    "falsifier": "turn saturation under 10% of ticks refutes H-0001",
+    "measured_turn_saturation": "83.6% (1000-ep harness, raw action) and 54.8% (200-ep deploy-equivalent with blind reflex)",
+    "refuted": false,
+    "control": "same policy on nominal L1 p0: 0.14% saturation, 197/200 success. The fitted plant moves the policy from success to saturation-driven failure.",
+    "real_car_comparison": "real ep3 74.1% saturation (field note: 74%), 0/3 real parks across ep1-ep3; fitted sim 0/1000 success, 83.6% raw saturation.",
+    "scope_limits": [
+      "Tests saturation and success, not a tick-by-tick oscillation trace match. No trajectory comparison was made.",
+      "A pass only means this plant reproduces the failure mode. Other causes are not excluded.",
+      "Strafe plant values are nominal. Onsets and camera rate are not fitted (see setup.not_fixed).",
+      "joint overlap fell from 0.742 to 0.618 when the plant was fitted, even though the gyro std now matches. Both pass the 0.35 gate."
+    ]
+  },
+  "code_changes": {
+    "rl/sim.py": "LEVELS['L1_fitted'] added after LEVELS; new method _plant_nominal(); latent_dynamics, _sample_dynamics and the wheel-fault branch read nominal gains/deadzones from it (defaults unchanged). Diff: .steward/agents/K/out/H-0001-sim.diff",
+    "rl/evaluate.py": "default-off --real-plant flag (runs level L1_fitted, requires --level L1 default) and track_sat in run(): adds turn_sat_frac, turn_sat_ticks, active_ticks to the output only when the flag is set. Diff: .steward/agents/K/out/H-0001-evaluate.diff",
+    "identity_check": "L1, L_real and L3 env rollouts are bit-identical between the pre-edit snapshot (out/pre/sim.py) and the edited rl/sim.py (out/check_identity.py: identical obs and rf True).",
+    "tests": "cd rl && CUDA_VISIBLE_DEVICES= uv run pytest -q test_rl.py -> 33 passed in 40.34s. ruff check and ruff format --check on rl/sim.py and rl/evaluate.py: all checks passed, 2 files already formatted."
+  },
+  "commands": [
+    {
+      "cmd": "python3 out/npz_to_ckpt.py (cd rl; CUDA_VISIBLE_DEVICES= uv run python ../.steward/agents/K/out/npz_to_ckpt.py)",
+      "output": "npz keys: ['meta_level', 'meta_sha', 'meta_stateful']; h 64 head_w 64 act_dim 3 stateful False sha 10c8b41ab69dd7c5; unexpected keys: []; parity max abs diff: 0.0"
+    },
+    {
+      "cmd": "CUDA_VISIBLE_DEVICES= uv run python evaluate.py --policy /home/fer/Documents/ugv/.steward/agents/K/out/student_L1_best_wrapped.pt --real-plant --no-mean-dynamics --episodes 1000 --seed 11 --json /home/fer/Documents/ugv/.steward/agents/K/out/H-0001-eval.json  (run from rl/)",
+      "output": "/home/fer/Documents/ugv/.steward/agents/K/out/student_L1_best_wrapped.pt@L1_fitted: success 0/1000 lb 0.000 hi 0.004 coll 17 fp 0 timeout 983 med 45.0s p95 45.0s pos_p95 1546mm yaw_p95 59.2deg | turn_sat_frac 0.8360 sat_ticks 1848549 active_ticks 2211308 | wrote out/H-0001-eval.json"
+    },
+    {
+      "cmd": "CUDA_VISIBLE_DEVICES= uv run python ../.steward/agents/K/out/exp_overlap.py (from rl/): dump_reference x2 (200 eps, seed 11, use_mean_dynamics=False) and joint_overlap",
+      "output": "L1_fitted success=0 collision=20 timeout=180 total_ticks=439301 sat=0.5481 | L1_nominal success=197 collision=1 timeout=2 total_ticks=202622 sat=0.0014 | joint_overlap L1_fitted=0.6182 pass=true | L1_nominal=0.742 pass=true | committed tools/l7/sim_reference_L1.npz=0.742 pass=true"
+    },
+    {
+      "cmd": "python3 out/exp_residual.py",
+      "output": "real sat ep3=0.7412 ep1=0.8216 ep2=0.2278; fwd rms 0.0314 (fit) / 0.0315 (fitted sim); yaw rms 8.862 (fit) / 8.936 (fitted sim) deg/s; strafe rms 0.1524 (fit.json) / 0.0642 (nominal 1.6, 0.13)"
+    },
+    {
+      "cmd": "cd rl && CUDA_VISIBLE_DEVICES= uv run pytest -q test_rl.py",
+      "output": "33 passed in 40.34s"
+    }
+  ],
+  "artifacts_local": {
+    "dir": ".steward/agents/K/out/",
+    "files": ["H-0001-eval.json", "H-0001-overlap-raw.json", "H-0001-residual-raw.json", "H-0001-sim.diff", "H-0001-evaluate.diff", "student_L1_best_wrapped.pt", "sim_reference_L1_fitted_200.npz", "sim_reference_L1_nominal_200.npz"]
+  },
+  "not_done": [
+    "No explore.py start/close; HYPOTHESES.jsonl untouched.",
+    "No Pi, ssh, deploy, motor or GPU job."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "status": "provisional: placed by hand on the 9,956-triangle model, not surveyed on the airframe",
+  "dictionary": "DICT_4X4_50",
+  "tag_m": 0.05,
+  "card_m": 0.068,
+  "frame": "model: x nose, y left, z up (SDF). Policy +y (car entry) is model -x (tail)",
+  "tags": [
+    {"id": 14, "role": "entry", "pos": [-0.30, 0.0, -0.06], "normal": [-1, 0, 0]},
+    {"id": 6, "role": "side +x policy", "pos": [-0.12, 0.10, -0.06], "normal": [0, 1, 0]},
+    {"id": 3, "role": "side -x policy", "pos": [-0.12, -0.10, -0.06], "normal": [0, -1, 0]}
+  ]
+}

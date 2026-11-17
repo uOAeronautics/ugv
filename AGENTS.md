@@ -11,7 +11,7 @@ real hardware: a change that alters motion is a hardware change, whatever the co
 
 - Never raise a level without the gate that document names. `S4` needs wheels off the ground or a
   clear zone, a human present and a timeout.
-- Read `HANDOFF.md` before any contact with the Pi. If it says the car is charging or paused, do
+- Read `docs/STATE.md` before any contact with the Pi. If it says the car is charging or paused, do
   not ssh, deploy or move it.
 - One agent owns the car at a time, and one job owns the GPU at a time.
 - Do not change gains, caps, watchdog timing, `config/parking.json` or the systemd units as a side
@@ -54,7 +54,7 @@ Code under `src/ugv` must import without torch.
 | `docs/` | One topic per file, indexed in `docs/INDEX.md`; dated history in `docs/archive/` |
 | `tests/` | Root unit tests |
 
-Source of truth per topic: status → `HANDOFF.md` and `docs/AGENT_BOARD.md`; safety →
+Source of truth per topic: status → `docs/STATE.md` and `explore/`; safety →
 `docs/SAFETY.md`; network and SSH → `docs/NETWORK.md`; RL plan and gates → `rl/PLAN.md` and
 `docs/RL_PARKING.md`; field findings → `docs/L7_FIELD_NOTES.md`. State a fact in one place and link
 to it from the others.
@@ -88,6 +88,12 @@ to it from the others.
 
 Project skills live in `.agents/skills/` (`.claude/skills` and `.opencode/skills` link there):
 
-- `ugv-research`: the RL research loop (levels, evaluation gate, archive, board).
+- `ugv-research`: the explore loop (`explore/` ledger driven by `tools/explore.py`; see `explore/LOOP.md`).
 - `mastermind`: delegating to subagents and gating their output.
 - `orchestrate-and-gate`: log-first diagnosis and sim-to-real release gates.
+- `mesh-optimization`: simplify heavy meshes into game-ready ones behind a camera-truth gate.
+
+Skills follow the Agent Skills spec (agentskills.io): a directory with `SKILL.md`, `name`
+matching the directory, and a `description` that says when to use it. Keep them under
+~500 lines and push detail into `references/`. `agents.md` spec: plain Markdown, no required
+fields; the nearest `AGENTS.md` to a file wins, so `rl/AGENTS.md` refines this file under `rl/`.

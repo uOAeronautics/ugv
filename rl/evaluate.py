@@ -114,6 +114,7 @@ def run(
     consistent_particles=False,
     save_traces="",
     max_trace_episodes=20,
+    track_sat=False,
 ):
     env = MecanumVecEnv(
         min(episodes, 512),
@@ -133,6 +134,7 @@ def run(
     stateful = meta["stateful"]
     succ = coll = false_p = tout = 0
     times, epos, eyaw, jerk = [], [], [], []
+    sat_ticks = active_ticks = 0  # track_sat: |a2| > 0.8 over ticks whose episode is running
     # Replay trace recording (ugv_replay_v1): at most max_trace_episodes
     # complete episodes, per-step frames in the Observatory schema.
     recording = bool(save_traces)
@@ -176,6 +178,10 @@ def run(
                     )
                     z = torch.zeros_like(u_turn)
                     a[blind] = torch.stack([z, z, u_turn], dim=1)[:, : a.shape[1]]
+            if track_sat:
+                running = ~done[:n]
+                sat_ticks += int(((a[:, 2].abs() > 0.8) & running).sum())
+                active_ticks += int(running.sum())
             full = torch.zeros(env.n, act_dim, device=env.device)
             full[:n] = a
             obs_full, _, d, info = env.step(full)
@@ -344,11 +350,20 @@ def run(
         "yaw_p95_deg": math.degrees(q(eyaw, 0.95)),
         "jerk_mean": sum(jerk) / len(jerk) if jerk else float("nan"),
     }
+    if track_sat:
+        out["turn_sat_ticks"] = sat_ticks
+        out["active_ticks"] = active_ticks
+        out["turn_sat_frac"] = sat_ticks / max(active_ticks, 1)
     print(
         f"{policy}@{level}: success {succ}/{episodes} lb {lo:.3f} hi {hi:.3f} "
         f"coll {coll} fp {false_p} timeout {tout} med {out['time_median']:.1f}s p95 {out['time_p95']:.1f}s "
         f"pos_p95 {out['pos_p95'] * 1000:.0f}mm yaw_p95 {out['yaw_p95_deg']:.1f}deg"
     )
+    if track_sat:
+        print(
+            f"turn_sat_frac {out['turn_sat_frac']:.4f} "
+            f"sat_ticks {sat_ticks} active_ticks {active_ticks}"
+        )
     return out
 
 
@@ -393,11 +408,27 @@ def main():
         action="store_true",
         help="student blind-search spin reflex after 1 s without a tag",
     )
+    ap.add_argument(
+        "--real-plant",
+        action="store_true",
+        help="H-0001: run on level L1_fitted (fixed measured real-car plant, gyro std 0.63) "
+        "and report turn saturation (|a2| > 0.8 fraction of running ticks)",
+    )
     ap.add_argument("--json", default=None)
+    ap.add_argument(
+        "--record",
+        default=None,
+        metavar="RUN_ID",
+        help="also write this result to the experiment archive (rl/runs/archive.jsonl) under RUN_ID",
+    )
+    ap.add_argument("--parent-id", default=None, help="parent run id for --record lineage")
     args = ap.parse_args()
+    if args.real_plant and args.level != "L1":
+        ap.error("--real-plant runs the L1 fitted plant; use the default --level L1")
+    level = "L1_fitted" if args.real_plant else args.level
     out = run(
         args.episodes,
-        args.level,
+        level,
         args.policy,
         "cuda" if torch.cuda.is_available() else "cpu",
         args.seed,
@@ -409,11 +440,20 @@ def main():
         consistent_particles=args.consistent_particles,
         save_traces=args.save_traces,
         max_trace_episodes=args.max_trace_episodes,
+        track_sat=args.real_plant,
     )
     if args.json:
         with open(args.json, "w") as f:
             json.dump(out, f, indent=2)
         print(f"wrote {args.json}")
+    if args.record:
+        from experiment_tree import record_run
+
+        delta = {"episodes": args.episodes, "seed": args.seed, "dr_scale": args.dr_scale}
+        delta["mean_dynamics"] = not args.no_mean_dynamics
+        track = "baseline" if args.policy in BASELINES else "student"
+        record_run(args.record, args.parent_id, track, level, delta, None, out)
+        print(f"recorded {args.record} in archive")
 
 
 if __name__ == "__main__":

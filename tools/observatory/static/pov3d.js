@@ -2,6 +2,7 @@
 // Pinhole intrinsics from simulation/gazebo/camera_profile.json (fy 968 px at 720 rows, hfov ~67 deg).
 // Policy frame (x, y, z up) maps to three.js as X = x, Y = z, Z = -y. Yaw is counter-clockwise from -y.
 import * as THREE from '/static/vendor/three.module.min.js';
+import { loadStrlModel } from '/static/stl.js';
 
 const CAM_FWD = 0.071;
 const CAM_Z = 0.0645;
@@ -64,7 +65,7 @@ async function markerTexture(id) {
 }
 
 // Flat card facing `normal` ('+y' | '-y' | '+x' | '-x'), 68 mm paper around a 50 mm marker.
-function card(id, x, y, z, normal) {
+function cardMesh(id) {
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(0.068, 0.068),
     new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }),
@@ -74,6 +75,11 @@ function card(id, x, y, z, normal) {
     mesh.material.needsUpdate = true;
     if (R) R.dirty = true;
   });
+  return mesh;
+}
+
+function card(id, x, y, z, normal) {
+  const mesh = cardMesh(id);
   mesh.position.copy(P(x, y, z));
   mesh.rotation.y = { '+y': Math.PI, '-y': 0, '+x': Math.PI / 2, '-x': -Math.PI / 2 }[normal];
   return mesh;
@@ -129,38 +135,42 @@ function buildQuad(geo) {
   return g;
 }
 
+// Real STRL-001 geometry from /static/models/strl001: one group per link, loaded once
+// and reused across target swaps. The group is returned empty and filled as meshes land.
+let strlTarget = null;
+let strlJoints = null;
+const PROP_JOINTS = ['right_prop_joint', 'left_prop_joint', 'rear_prop_joint'];
+const PROP_RATE = 18; // rad/s, so the props read as running
+
 function buildStrl() {
-  const g = new THREE.Group();
-  const white = new THREE.MeshStandardMaterial({ color: 0xe7e9ec, roughness: 0.7 });
-  const red = new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.6 });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x1b1d21, roughness: 0.8 });
-  const box = (sx, sy, sz, x, y, z, m) => {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(sx, sz, sy), m);
-    b.position.copy(P(x, y, z));
-    b.castShadow = true;
-    return b;
-  };
-  g.add(box(2.4, 0.2, 0.02, 0, -0.04, 0.585, white));
-  g.add(box(0.3, 0.7, 0.2, 0, 0.0, 0.36, white));
-  [-1, 1].forEach((s) => g.add(box(0.02, 0.28, 0.4, s * 0.6, 0.42, 0.28, red)));
-  [
-    [0, -0.45, 0.075],
-    [-0.28, -0.05, 0.085],
-    [0.28, -0.05, 0.085],
-  ].forEach(([x, y, r]) => {
-    const w = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.05, 24), dark);
-    w.rotation.z = Math.PI / 2;
-    w.position.copy(P(x, y, r));
-    w.castShadow = true;
-    g.add(w);
-    g.add(tube(P(x, y, r), P(x * 0.5, y, 0.4), 0.01, dark));
-  });
-  [
-    [20, -0.435, 0.35, 0.245],
-    [21, 0.435, 0.35, 0.245],
-    [22, 0, 0.02, 0.345],
-  ].forEach(([id, x, y, z]) => g.add(card(id, x, y, z, '+y')));
-  return g;
+  if (strlTarget) return strlTarget;
+  strlTarget = new THREE.Group();
+  loadStrlModel(() => {
+    if (R) R.dirty = true;
+  }, cardMesh)
+    .then(({ root, joints }) => {
+      strlTarget.add(root);
+      strlJoints = joints;
+      window.POV3D.joints = joints;
+      if (R) R.dirty = true;
+    })
+    .catch((e) => console.warn('STRL-001 unavailable', e));
+  return strlTarget;
+}
+
+/** Rotate one joint about its SDF axis, clamped to its SDF limits. */
+function setJoint(joint, angle) {
+  if (!joint) return;
+  const a = Math.min(joint.max, Math.max(joint.min, angle));
+  joint.angle = a;
+  joint.pivot.quaternion.setFromAxisAngle(joint.axis, a);
+}
+
+// Props spin; the control surfaces and nacelle tilt stay at their SDF zero pose.
+function animateStrl(now) {
+  if (!strlJoints) return;
+  const a = now * PROP_RATE;
+  for (let i = 0; i < PROP_JOINTS.length; i++) setJoint(strlJoints[PROP_JOINTS[i]], a);
 }
 
 function init(canvas) {
@@ -210,6 +220,7 @@ window.POV3D = {
       r.camera.aspect = w / h;
       r.camera.updateProjectionMatrix();
       setTarget(kind, geo);
+      if (kind === 'strl001_belly') animateStrl(performance.now() / 1000);
       const fx = Math.sin(pose.yaw);
       const fy = -Math.cos(pose.yaw);
       r.camera.position.copy(P(pose.x + CAM_FWD * fx, pose.y + CAM_FWD * fy, CAM_Z));
@@ -226,6 +237,12 @@ window.POV3D = {
       R.dirty = false;
       if (typeof drawPov === 'function') drawPov();
     }
+  },
+  /** Joint handles, filled once the meshes land: { pivot, axis, min, max, angle }. */
+  joints: {},
+  /** Pose one joint by name, clamped to its SDF limits. */
+  setJoint(name, angle) {
+    setJoint(strlJoints?.[name], angle);
   },
 };
 setInterval(() => window.POV3D.redraw(), 250);

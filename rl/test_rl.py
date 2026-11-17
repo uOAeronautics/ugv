@@ -775,3 +775,16 @@ def test_action_sensitivity_smoke(tmp_path):
     back = json.loads(out.read_text())
     assert set(back["regimes"]) == {"mouth", "blind"}
     assert back["config"]["steps"] == 10
+
+
+def test_l_field_folds_tags_and_widens_calibration_but_l_real_is_untouched():
+    real = MecanumVecEnv(128, EnvConfig(level="L_real", device="cpu", seed=3))
+    field = MecanumVecEnv(128, EnvConfig(level="L_field", device="cpu", seed=3))
+    for env in (real, field):
+        env.reset()
+        for _ in range(250):
+            env.step(torch.zeros(128, 3))
+    assert float(real.fold_left.sum()) == 0.0  # fold is opt-in
+    assert real.eff_calib_gain == (0.7, 1.3) and field.eff_calib_gain == (0.5, 1.5)
+    assert float(field.fold_vec.abs().sum()) > 0.0
+    assert "fold_left" in field.get_state()

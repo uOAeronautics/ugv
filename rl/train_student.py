@@ -193,6 +193,13 @@ def main():
         help="weight on dyn_head MSE loss predicting env.latent_dynamics()",
     )
     ap.add_argument(
+        "--fwd-weight",
+        type=float,
+        default=0.0,
+        help="weight on the action-conditioned forward-model loss: MSE(fwd_head(h, a), "
+        "next privileged [pose, vel]); 0 disables (training-only, never exported)",
+    )
+    ap.add_argument(
         "--metrics-jsonl",
         type=str,
         default="",
@@ -516,6 +523,16 @@ def main():
                 dyn_pred = student.predict_dynamics(h_last)
                 dyn_tgt = DYNs[:, sl].reshape(-1, DYN_DIM)
                 loss_dyn = (dyn_pred - dyn_tgt).pow(2).mean()
+                loss_fwd = h_last.new_zeros(())
+                if args.fwd_weight > 0:
+                    # Time-major layout [T, len(sl)]: pair step t with t+1, skip episode ends.
+                    k = len(sl)
+                    h_t = h_last.reshape(args.steps, k, -1)[:-1]
+                    a_t = A[:-1, sl]
+                    nxt = PRs[1:, sl, :6]
+                    live = (1.0 - D[:-1, sl]).unsqueeze(-1)
+                    pred = student.predict_next(h_t, a_t)
+                    loss_fwd = ((pred - nxt).pow(2) * live).sum() / live.sum().clamp_min(1.0) / 6
                 dist = torch.distributions.Normal(mean, logstd.exp())
                 nlp = dist.log_prob(A[:, sl].reshape(-1, args.act_dim)).sum(-1)
                 ratio = torch.exp(nlp - LP[:, sl].reshape(-1))
@@ -538,6 +555,7 @@ def main():
                         + ent * loss_e
                         + args.aux_weight * loss_aux
                         + args.dyn_weight * loss_dyn
+                        + args.fwd_weight * loss_fwd
                     )
                 loss.backward()
                 nn.utils.clip_grad_norm_(params, 0.5)

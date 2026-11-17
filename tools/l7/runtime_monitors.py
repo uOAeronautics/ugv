@@ -3,7 +3,7 @@
 Pure rolling-window brake predicates over the L1 sim reference thresholds. This
 module is a DRAFT: it is not imported by l7_run.py or the dashboard and commands
 no motors. Wiring it into the runtime is a hardware-gated change (SAFETY S3->S4,
-HANDOFF H3); the dashboard remains the sole motor authority. Kept here so the
+docs/STATE.md); the dashboard remains the sole motor authority. Kept here so the
 spec is executable and testable before that gate.
 
 Windows are 1.0 s (50 ticks) and 2.0 s (100 ticks) at the 50 Hz loop. Each

@@ -16,7 +16,9 @@ Canonical commands verified against existing scripts and docs. For Pi SSH/URL de
 | Gazebo run (GUI) | `./simulation/gazebo/launch_control.command` | Opens Gazebo + local console on `127.0.0.1:8767`. |
 | Gazebo run (policy) | `uv run python simulation/gazebo/run_policy_episodes.py --weights <policy.npz>` | Headless L6 policy episode runner; `--bridge fake\|gazebo`, `--save-traces <path>` writes an Observatory replay bundle. |
 | Field harness (L7) | `tools/l7/run.sh <mode> [l7_run.py args...]` | Deploys L7 harness to Pi, runs `probe\|stage\|policy\|watch`, pulls logs. |
-| Pi deploy / restart | `ssh pi 'cd ~/ugv && sudo systemctl restart ugv-dashboard.service'` | Preserve `~/ugv/runs/student.npz` and `vision-camera.conf`; see [`HANDOFF.md`](../HANDOFF.md). |
+| Pi deploy / restart | `ssh pi 'cd ~/ugv && sudo systemctl restart ugv-dashboard.service'` | Preserve `~/ugv/runs/student.npz` and `vision-camera.conf`; see [`STATE.md`](STATE.md). |
+| Explore loop: next step | `uv run python tools/explore.py next` | Prints the one legal step; cycle in [`explore/LOOP.md`](../explore/LOOP.md). Ledger `explore/HYPOTHESES.jsonl`. |
+| Explore loop: propose / predict / start / close / retro / list | `uv run python tools/explore.py <propose\|predict\|start\|close\|retro\|list> --help` | Stdlib state machine; refuses illegal steps with exit 2. Only runner for the loop. |
 
 ## Pi CLI & bounded hardware diagnostics
 
@@ -56,14 +58,31 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 | Dump L1 sim rollout channels to `.npz` for offline contract audit | `tools/l7/dump_sim_reference.py` |
 | Offline sim-to-real contract audit on L7 logs | `tools/l7/audit_contract.py` |
 
+### 3D model
+
+One canonical airframe: `simulation/gazebo/strl_001/` (9,956 triangles, `tags.json` holds ArUco 14/6/3). `uv run python tools/observatory/build_strl_assets.py` regenerates the observatory assets from it. Full-resolution originals and earlier experiments were moved out of the repo to `~/ugv_archive_2026-11-16/`.
+
+### Mesh optimisation (`tools/mesh_opt/`)
+
+Render meshes only; nothing here touches the car. Workflow and lessons: `.agents/skills/mesh-optimization/SKILL.md`.
+All run with `uv run --no-project --python 3.12 --with trimesh --with numpy --with scipy --with embreex --with pillow` (add `--with pymeshlab` for `py_optimize.py`, `--with networkx` for `export_glb.py`).
+
+| Purpose | Script |
+|---|---|
+| Gate a simplified mesh against its original (silhouette, depth, normals, surface distance); exit 0 = pass | `tools/mesh_opt/meshgate.py ORIG CAND --out DIR [--seed N]` |
+| Simplify every STL with a quadric collapse, stepping down to the smallest count that passes the gate (dense organic parts: body, nacelles) | `tools/mesh_opt/py_optimize.py --out DIR` |
+| Simplify per loose part to a deviation bound inside headless Blender (thin and flat parts: props, control surfaces) | `flatpak run org.blender.Blender -b --factory-startup --python $PWD/tools/mesh_opt/blender_optimize.py -- --out DIR` |
+| Pack per-link STLs into one indexed GLB with crease-split normals and a node per link | `tools/mesh_opt/export_glb.py IN_DIR OUT.glb` |
+
 ### RL training & evaluation (`rl/`)
 
 | Purpose | Script |
 |---|---|
 | Train privileged PPO teacher | `rl/train_teacher.py` |
-| Train deployable GRU student via PPO | `rl/train_student.py` |
-| Seeded 1000-episode evaluation gate (`evaluate.py`) | `rl/evaluate.py` |
+| Train deployable GRU student via PPO (`--level L_field` adds folded-tag bursts and wide calibration DR; `--fwd-weight` adds a training-only forward-model loss) | `rl/train_student.py` |
+| Seeded 1000-episode evaluation gate; `--record RUN_ID --parent-id P` writes the result into `rl/runs/archive.jsonl` | `rl/evaluate.py` |
 | Benchmark `StagedBaseline` EKF controller in `rl/sim.py` | `rl/baselines.py` |
+| Benchmark the classical stage P go-to + dead-reckoned finale (H-0002; CPU, `--probe-axes` for channel signs) | `rl/exp_classical_l1.py` |
 | Export student `.pt` to NumPy `.npz` and check parity | `rl/export.py` |
 | Render top-down episode PNG/MP4 visualizations | `rl/visualize.py` |
 | Query/seed experiment lineage archive (`rl/runs/archive.jsonl`) | `rl/experiment_tree.py` |

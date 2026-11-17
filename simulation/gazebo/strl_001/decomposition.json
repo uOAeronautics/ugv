@@ -1,0 +1,489 @@
+{
+  "model": "strl_001",
+  "links": [
+    {
+      "name": "base_link",
+      "mesh": "body.stl",
+      "scale": null,
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 1.065,
+      "inertia": {
+        "ixx": 0.04,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 0.05,
+        "iyz": 0.0,
+        "izz": 0.085
+      }
+    },
+    {
+      "name": "right_aileron_link",
+      "mesh": "aileron_right.stl",
+      "scale": null,
+      "pose": [
+        -0.106,
+        -0.38,
+        -0.0056,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.02,
+      "inertia": {
+        "ixx": 0.0001,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 1e-05,
+        "iyz": 0.0,
+        "izz": 0.0001
+      }
+    },
+    {
+      "name": "left_aileron_link",
+      "mesh": "aileron_left.stl",
+      "scale": null,
+      "pose": [
+        -0.106,
+        0.38,
+        -0.0065,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.02,
+      "inertia": {
+        "ixx": 0.0001,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 1e-05,
+        "iyz": 0.0,
+        "izz": 0.0001
+      }
+    },
+    {
+      "name": "right_ruddervator_link",
+      "mesh": "ruddervator_right.stl",
+      "scale": null,
+      "pose": [
+        -0.6409,
+        -0.0804,
+        0.0673,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.02,
+      "inertia": {
+        "ixx": 0.0001,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 1e-05,
+        "iyz": 0.0,
+        "izz": 0.0001
+      }
+    },
+    {
+      "name": "left_ruddervator_link",
+      "mesh": "ruddervator_left.stl",
+      "scale": null,
+      "pose": [
+        -0.6413,
+        0.0817,
+        0.0659,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.02,
+      "inertia": {
+        "ixx": 0.0001,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 1e-05,
+        "iyz": 0.0,
+        "izz": 0.0001
+      }
+    },
+    {
+      "name": "right_nacelle_link",
+      "mesh": "nacelle_right.stl",
+      "scale": null,
+      "pose": [
+        0.0735,
+        -0.27535,
+        -0.0141,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.06,
+      "inertia": {
+        "ixx": 5e-05,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 5e-05,
+        "iyz": 0.0,
+        "izz": 5e-05
+      }
+    },
+    {
+      "name": "right_prop_link",
+      "mesh": "prop_right.stl",
+      "scale": null,
+      "pose": [
+        0.1234,
+        -0.27535,
+        -0.0129,
+        0.0,
+        1.5707963,
+        0.0
+      ],
+      "mass": 0.01,
+      "inertia": {
+        "ixx": 9.75e-06,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 0.000166704,
+        "iyz": 0.0,
+        "izz": 0.000167604
+      }
+    },
+    {
+      "name": "left_nacelle_link",
+      "mesh": "nacelle_left.stl",
+      "scale": null,
+      "pose": [
+        0.0735,
+        0.27525,
+        -0.0141,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.06,
+      "inertia": {
+        "ixx": 5e-05,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 5e-05,
+        "iyz": 0.0,
+        "izz": 5e-05
+      }
+    },
+    {
+      "name": "left_prop_link",
+      "mesh": "prop_left.stl",
+      "scale": null,
+      "pose": [
+        0.1233,
+        0.2753,
+        -0.012,
+        0.0,
+        1.5707963,
+        0.0
+      ],
+      "mass": 0.01,
+      "inertia": {
+        "ixx": 9.75e-06,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 0.000166704,
+        "iyz": 0.0,
+        "izz": 0.000167604
+      }
+    },
+    {
+      "name": "rear_prop_link",
+      "mesh": "prop_rear.stl",
+      "scale": null,
+      "pose": [
+        -0.3708,
+        0.0,
+        0.0323,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.01,
+      "inertia": {
+        "ixx": 9.75e-06,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 0.000166704,
+        "iyz": 0.0,
+        "izz": 0.000167604
+      }
+    },
+    {
+      "name": "imu_link",
+      "mesh": null,
+      "scale": null,
+      "pose": [
+        -0.062,
+        0.0,
+        -0.01,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass": 0.005,
+      "inertia": {
+        "ixx": 1e-05,
+        "ixy": 0.0,
+        "ixz": 0.0,
+        "iyy": 1e-05,
+        "iyz": 0.0,
+        "izz": 1e-05
+      }
+    }
+  ],
+  "joints": [
+    {
+      "name": "right_aileron_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "right_aileron_link",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "left_aileron_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "left_aileron_link",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "right_ruddervator_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "right_ruddervator_link",
+      "axis": [
+        0.0057,
+        -0.7363,
+        0.6768
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "left_ruddervator_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "left_ruddervator_link",
+      "axis": [
+        -0.0124,
+        0.7325,
+        0.6806
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "right_tilt_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "right_nacelle_link",
+      "axis": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "right_prop_joint",
+      "type": "revolute",
+      "parent": "right_nacelle_link",
+      "child": "right_prop_link",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "left_tilt_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "left_nacelle_link",
+      "axis": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "left_prop_joint",
+      "type": "revolute",
+      "parent": "left_nacelle_link",
+      "child": "left_prop_link",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "rear_prop_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "rear_prop_link",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "imu_joint",
+      "type": "fixed",
+      "parent": "base_link",
+      "child": "imu_link",
+      "axis": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pose": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "tree": {
+    "root": "base_link",
+    "children": {
+      "base_link": [
+        "right_aileron_link",
+        "left_aileron_link",
+        "right_ruddervator_link",
+        "left_ruddervator_link",
+        "right_nacelle_link",
+        "left_nacelle_link",
+        "rear_prop_link",
+        "imu_link"
+      ],
+      "right_aileron_link": [],
+      "left_aileron_link": [],
+      "right_ruddervator_link": [],
+      "left_ruddervator_link": [],
+      "right_nacelle_link": [
+        "right_prop_link"
+      ],
+      "right_prop_link": [],
+      "left_nacelle_link": [
+        "left_prop_link"
+      ],
+      "left_prop_link": [],
+      "rear_prop_link": [],
+      "imu_link": []
+    }
+  },
+  "groups": {
+    "airframe": [
+      "base_link"
+    ],
+    "control": [
+      "right_aileron_link",
+      "left_aileron_link",
+      "right_ruddervator_link",
+      "left_ruddervator_link"
+    ],
+    "propulsion": [
+      "right_nacelle_link",
+      "right_prop_link",
+      "left_nacelle_link",
+      "left_prop_link",
+      "rear_prop_link"
+    ],
+    "sensor": [
+      "imu_link"
+    ]
+  }
+}

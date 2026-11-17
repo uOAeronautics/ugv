@@ -141,6 +141,32 @@ LEVELS = {
         disturbance_std=0.03,
         reanchor_imu_yaw=True,
     ),
+    "L_field": dict(
+        # L_real plus what the field adds: a miscalibrated plant (gain 0.5-1.5x, deadzone
+        # 0.4-2x, vs L_real 0.7-1.3x / 0.5-1.5x) and folded or oblique tags, modelled as
+        # correlated measurement bursts (fold_rate events/s, fold_len seconds each).
+        dist=(0.5, 1.5),
+        bearing=30.0,
+        yaw=60.0,
+        noise=1.0,
+        latency=(0.05, 0.10),
+        drops=0.0,
+        outliers=0.0,
+        blackout=0.0,
+        under_drone_loss=True,
+        full_posterior=False,
+        area=1.5,
+        cam_hz=20.0,
+        cam_hz_range=(10.0, 30.0),
+        min_tag_range=0.40,
+        gyro_noise_std=(0.05, 0.7),
+        duty_cap=0.44,
+        real_plant=True,
+        calib_gain=(0.5, 1.5),
+        calib_dz=(0.4, 2.0),
+        fold_rate=0.15,
+        fold_len=(0.3, 1.5),
+    ),
     "L_real": dict(
         dist=(0.5, 1.5),
         bearing=30.0,
@@ -161,6 +187,21 @@ LEVELS = {
         real_plant=True,
     ),
 }
+
+# H-0001 plant-calibration: L1 with the real-car plant held at FIXED measured values (no DR on
+# the plant). Gains [strafe, fwd, yaw] per duty and deadzones [strafe, fwd, yaw] as used by
+# the real_plant branch; gyro std 0.63 rad/s is the field value. Forward and yaw gains come
+# from calibration/runs/l7/20261113-181040-probe-axes/fit.json. The strafe gain and deadzone
+# are NOT measured here: that fit's strafe entry is degenerate (n=3, deadzone -3.69), so the
+# nominal 1.6 / 0.13 are kept.
+LEVELS["L1_fitted"] = dict(
+    LEVELS["L1"],
+    real_plant=True,
+    randomize_dynamics=False,
+    plant_gain=(1.6, 2.3186, 15.66),
+    plant_dz=(0.13, 0.05, 0.10),
+    gyro_noise_std=0.63,
+)
 
 # Provisional geometry (config/parking.json unverified): car 0.16 x 0.22 m,
 # gear clear width 0.254 m, bar length 0.3048 m, radius 0.03 m.
@@ -213,6 +254,9 @@ class EnvConfig:
     gyro_noise_std: float | tuple[float, float] | None = None  # gyro white noise std (rad/s)
     cam_hz_range: tuple[float, float] | None = None  # per-env valid-pose rate range (Hz)
     min_tag_range: float | None = None  # tag loss range threshold when under_drone_loss is True
+    calib_gain: tuple[float, float] | None = None  # real-plant gain multiplier range
+    calib_dz: tuple[float, float] | None = None  # real-plant deadzone multiplier range
+    fold_rate: float | None = None  # folded-tag measurement bursts per second
     # --- Domain-randomization scaling (Deliverable A) ---
     dr_scale: float = 1.0  # 0 = nominal/easy anchor, 1 = full distribution
     consistent_particles: bool = False  # sample only turn-consistent posterior particles
@@ -325,6 +369,12 @@ class MecanumVecEnv:
             if cfg.disturbance_std > 0
             else self.level.get("disturbance_std", 0.0)
         )
+        self.eff_calib_gain = tuple(cfg.calib_gain or self.level.get("calib_gain", (0.7, 1.3)))
+        self.eff_calib_dz = tuple(cfg.calib_dz or self.level.get("calib_dz", (0.5, 1.5)))
+        self.eff_fold_rate = float(
+            cfg.fold_rate if cfg.fold_rate is not None else self.level.get("fold_rate", 0.0)
+        )
+        self.eff_fold_len = tuple(self.level.get("fold_len", (0.3, 1.5)))
         self.eff_floor_slip = float(self.level.get("floor_slip_prob", 0.0))
         self.eff_wheel_fault = float(self.level.get("wheel_fault_prob", 0.0))
         self.eff_action_delay = float(self.level.get("action_delay_prob", 0.0))
@@ -359,6 +409,9 @@ class MecanumVecEnv:
         self.action_delay = torch.zeros(n, dtype=torch.long, device=dev)
         # Markov-sticky vision dropout state (burst_drops).
         self.drop_streak = torch.zeros(n, dtype=torch.long, device=dev)
+        # Folded-tag burst: seconds left and the (x, y, yaw) measurement error it adds.
+        self.fold_left = torch.zeros(n, device=dev)
+        self.fold_vec = torch.zeros(n, 3, device=dev)
         self.wheel_fault = torch.zeros(n, dtype=torch.bool, device=dev)
         self.particle_id = torch.full((n,), -1, dtype=torch.long, device=dev)
         # Posterior particles whose turn channel actually works at cmd=[0,0,±1].
@@ -509,6 +562,8 @@ class MecanumVecEnv:
         "cmd_count",
         "action_delay",
         "drop_streak",
+        "fold_left",
+        "fold_vec",
         "wheel_fault",
         "particle_id",
         "env_min_tag_range",
@@ -542,6 +597,14 @@ class MecanumVecEnv:
         self.gen_cpu.set_state(state["gen_cpu_state"].clone())
 
     # ---- privileged latent dynamics for the extrinsics head (RMA) ----
+    def _plant_nominal(self):
+        """Nominal real-plant (gains, deadzones) per [strafe, fwd, yaw] axis: the level's
+        plant_gain / plant_dz when set (L1_fitted), else the 2026-11-13 defaults."""
+        return (
+            tuple(self.level.get("plant_gain", (1.6, 2.3, 15.7))),
+            tuple(self.level.get("plant_dz", (0.13, 0.05, 0.10))),
+        )
+
     def latent_dynamics(self) -> torch.Tensor:
         """Normalized ground-truth dynamics parameters per env, [N, 12] float32,
         clamped to [-5, 5]. Column layout:
@@ -554,7 +617,7 @@ class MecanumVecEnv:
         """
         dev = self.device
         if self.real_plant:
-            nom = torch.tensor([1.6, 2.3, 15.7], device=dev)
+            nom = torch.tensor(self._plant_nominal()[0], device=dev)
             scale = torch.tensor([0.5, 0.7, 5.0], device=dev)
             c0 = (self.rf_gain - nom) / scale
             c3 = (self.rf_dz - 0.12) / 0.08
@@ -595,11 +658,14 @@ class MecanumVecEnv:
             # Real-car fit (2026-11-13 calibration): axes [left (+x), fwd (-y), ccw (+yaw)].
             # Nominal gains: [1.6 m/s, 2.3 m/s, 15.7 rad/s] per duty; +-30% DR.
             # Nominal deadzones: [0.13, 0.05, 0.10]; 0.5x-1.5x DR.
-            nom_gain = torch.tensor([1.6, 2.3, 15.7], device=dev)
-            nom_dz = torch.tensor([0.13, 0.05, 0.10], device=dev)
+            g_nom, z_nom = self._plant_nominal()
+            nom_gain = torch.tensor(g_nom, device=dev)
+            nom_dz = torch.tensor(z_nom, device=dev)
             if self.eff_randomize:
-                g_scale = 0.7 + 0.6 * torch.rand(m, 3, device=dev, generator=self.gen)
-                dz_scale = 0.5 + 1.0 * torch.rand(m, 3, device=dev, generator=self.gen)
+                g_lo, g_hi = self.eff_calib_gain
+                z_lo, z_hi = self.eff_calib_dz
+                g_scale = g_lo + (g_hi - g_lo) * torch.rand(m, 3, device=dev, generator=self.gen)
+                dz_scale = z_lo + (z_hi - z_lo) * torch.rand(m, 3, device=dev, generator=self.gen)
                 # Onset lag = pure delay + first-order tau matching measured onset times:
                 # strafe 0.25-0.37 s, fwd ~0.18 s, yaw ~0.07 s.
                 d_left = 0.16 + 0.10 * torch.rand(m, device=dev, generator=self.gen)
@@ -757,7 +823,7 @@ class MecanumVecEnv:
                             g[msk, a] *= mag[msk]
                     self.rf_gain[idx_d] = g
                     coef = coef.clone()
-                    coef[:, 0, :] = g / torch.tensor([1.6, 2.3, 15.7], device=dev)
+                    coef[:, 0, :] = g / torch.tensor(self._plant_nominal()[0], device=dev)
                 else:
                     sel = torch.randint(0, 4, (m,), device=dev, generator=self.gen)
                     w = self.wheel_gain[idx_d].clone()
@@ -919,6 +985,8 @@ class MecanumVecEnv:
                 else:
                     self.blackout_start[di] = 1e9
         self.drop_streak[di] = 0
+        self.fold_left[di] = 0
+        self.fold_vec[di] = 0
         self.prev_act[di] = 0
         self.hist[di] = 0
         self.hist_age[di] = 1e9
@@ -973,6 +1041,31 @@ class MecanumVecEnv:
         self.cmd_ring[di] = 0.0
         self.cmd_count[di] = 1
         return self._privileged()
+
+    def _fold_error(self, cam_tick: torch.Tensor, cam_period: torch.Tensor) -> torch.Tensor:
+        """Folded or oblique tag: a burst whose error keeps one sign (a curled card leans
+        one way), not white noise. Starts at `fold_rate * dr_scale` events/s."""
+        dev, n = self.device, self.n
+        rand = lambda *shape: torch.rand(*shape, device=dev, generator=self.gen)  # noqa: E731
+        start = (
+            (self.fold_left <= 0)
+            & cam_tick
+            & (rand(n) < self.eff_fold_rate * self.dr_scale * cam_period)
+        )
+        lo, hi = self.eff_fold_len
+        sign = torch.where(rand(n) < 0.5, -1.0, 1.0)
+        new = (
+            torch.stack(
+                [sign * (0.01 + 0.03 * rand(n)), 0.05 * rand(n), sign * (0.15 + 0.25 * rand(n))],
+                dim=1,
+            )
+            * self.dr_scale[:, None]
+        )
+        self.fold_vec = torch.where(start[:, None], new, self.fold_vec)
+        self.fold_left = torch.where(start, lo + (hi - lo) * rand(n), self.fold_left)
+        err = torch.where((self.fold_left > 0)[:, None], self.fold_vec, torch.zeros_like(new))
+        self.fold_left = (self.fold_left - self.dt).clamp_min(0.0)
+        return err
 
     def _push_buffer(self):
         self.pose_ring[:, self.ring_head % _RING_K] = self.pose
@@ -1198,6 +1291,8 @@ class MecanumVecEnv:
             tag[spike, :2] += 0.15 * torch.randn(
                 int(spike.sum()), 2, device=dev, generator=self.gen
             )
+        if self.eff_fold_rate > 0:
+            tag = tag + self._fold_error(cam_tick, cam_period)
         tag_raw = tag.clone()  # pre-zeroing estimator values, for the golden trace
         tag[~valid] = 0
         self.tag_raw = tag_raw

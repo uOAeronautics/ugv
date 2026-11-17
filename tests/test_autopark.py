@@ -172,7 +172,7 @@ def test_autopark_runner_corridor_and_blind_dr_timeout_and_parked():
 
     loc2 = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
     runner2 = autopark.AutoParkRunner(localizer=loc2, obstacles=[])
-    runner2.stage = "entering"
+    runner2.fsm.force("entering")
     loc2.off = 0.0
     loc2.pose_t = 5.0
     loc2.dr_t = 5.0
@@ -184,7 +184,7 @@ def test_autopark_runner_corridor_and_blind_dr_timeout_and_parked():
 
     loc3 = autopark.Localizer(tagmap=tagmap, tag_y=-0.08)
     runner3 = autopark.AutoParkRunner(localizer=loc3, obstacles=[])
-    runner3.stage = "entering"
+    runner3.fsm.force("entering")
     loc3.off = 0.0
     loc3.pose_t = 5.0
     loc3.dr_t = 5.0
@@ -448,7 +448,7 @@ def test_staging_perimeter_orbit_clears_skids_from_side_and_rear_poses():
         loc.last_gyro = 0.0
         loc.last_used_calibrated = True
         runner = autopark.AutoParkRunner(localizer=loc, obstacles=obstacles)
-        runner.stage = "staging"
+        runner.fsm.force("staging")
 
         cmd = runner.step(
             1.05, imu_age_s=0.01, frame_age_s=0.01, imu_w_dps=0.0, gyro_yaw_rad=0.0, rec=None
@@ -532,3 +532,20 @@ def test_autopark_cw_to_ccw_imu_sign_chain_converges_and_unnegated_diverges():
 
     _, bug_true_deg, _ = _run_closed_loop(negate_imu=False)
     assert bug_true_deg > 5.0  # unnegated CW+ diverges away from 0 deg
+
+
+def test_stage_table_rejects_undeclared_moves():
+    from ugv.fsm import IllegalTransition
+
+    runner = autopark.AutoParkRunner(localizer=autopark.Localizer(tagmap={}), obstacles=[])
+    with pytest.raises(IllegalTransition):
+        runner.stage = "parked"  # cannot skip staging, entering and braking
+    runner.stage = "staging"
+    assert runner.stage == "staging" and runner.fsm.history[-1][1:3] == ("acquiring", "staging")
+    assert set(autopark.STAGE_TABLE) == {
+        "acquiring",
+        "staging",
+        "entering",
+        "braking",
+        *autopark.TERMINAL_STAGES,
+    }

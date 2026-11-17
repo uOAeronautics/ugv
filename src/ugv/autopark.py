@@ -17,6 +17,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from ugv.fsm import Machine
 from ugv.parking import Capsule, Pose2, swept_clear
 
 cv2.setNumThreads(1)
@@ -506,6 +507,21 @@ class AutoParkCommand:
     pose: tuple[float, float, float] | None = None
 
 
+# The only legal stage moves. Every stage may fall to `error` (stale sensors); the four
+# terminal stages are final apart from that. web.py reads TERMINAL_STAGES, not its own copy.
+STAGE_TABLE = {
+    "acquiring": ("staging", "aborted", "error"),
+    "staging": ("entering", "blocked", "error"),
+    "entering": ("braking", "aborted", "error"),
+    "braking": ("parked", "aborted", "error"),
+    "parked": ("error",),
+    "blocked": ("error",),
+    "aborted": ("error",),
+    "error": (),
+}
+TERMINAL_STAGES = frozenset({"parked", "blocked", "aborted", "error"})
+
+
 class AutoParkRunner:
     """2-phase docking sequence: acquiring -> staging (0, 0.55, 0) -> entering (0, 0.02, 0) -> parked."""
 
@@ -540,7 +556,7 @@ class AutoParkRunner:
         self.lookahead_m = float(lookahead_m)
         self.acquire_timeout_s = float(acquire_timeout_s)
 
-        self.stage = "acquiring"
+        self.fsm = Machine("autopark", "acquiring", STAGE_TABLE)
         self.acquire_started_at: float | None = None
         self.stage_goto = GoTo((0.0, 0.55, 0.0), tol_pos=0.05, tol_yaw_deg=3.5, settle_s=0.1)
         self.enter_goto = GoTo(
@@ -694,6 +710,14 @@ class AutoParkRunner:
             done=False,
             pose=pose,
         )
+
+    @property
+    def stage(self) -> str:
+        return self.fsm.state
+
+    @stage.setter
+    def stage(self, value: str) -> None:
+        self.fsm.go(value)
 
     def step(
         self,

@@ -1,0 +1,57 @@
+{
+  "hypothesis": "H-0007",
+  "family": "evaluation-validity",
+  "question": "Is the Gazebo vs fake-bridge gap for student_L1_best.npz an artefact of FakeBridge ignoring --seed, so that spawn-paired seeds remove most of it?",
+  "weights": "rl/runs/gazebo_l6/student_L1_best.npz",
+  "weights_sha": "10c8b41ab69dd7c5",
+  "level": "L1",
+  "seed": 11,
+  "episodes_per_arm": 20,
+  "safety": "S0 sim only; no Pi, ssh, deploy, car, wheels or motor; CUDA_VISIBLE_DEVICES empty",
+  "seeding_check": "simulation/gazebo/run_policy_episodes.py:113 FakeBridge.reset uses random.Random(seed*1000003+episode); seed=0 reproduces legacy random.Random(episode)",
+  "arms": {
+    "fake": {
+      "run_file": "rl/runs/gazebo_l6/student_L1_best_fake_20ep_s11_20261117.json",
+      "bridge": "fake",
+      "sensing": "emulated (default)",
+      "controller": "student",
+      "success": 0,
+      "collisions": 20,
+      "timeouts": 0,
+      "success_rate": 0.0,
+      "time_median_s": 8.08,
+      "time_p95_s": 16.06,
+      "frames": "not emitted (frame/decode counters exist only for camera sensing)",
+      "decodes": "not emitted (frame/decode counters exist only for camera sensing)"
+    },
+    "gazebo": {
+      "run_file": "rl/runs/gazebo_l6/student_L1_best_gazebo_20ep_s11_20261117.json",
+      "bridge": "gazebo",
+      "sensing": "emulated",
+      "controller": "student-shield-none",
+      "success": 6,
+      "collisions": 14,
+      "timeouts": 0,
+      "success_rate": 0.3,
+      "time_median_s": 5.42,
+      "time_p95_s": 15.22,
+      "frames": "not emitted (frame/decode counters exist only for camera sensing)",
+      "decodes": "not emitted (frame/decode counters exist only for camera sensing)"
+    }
+  },
+  "gap_success": 6,
+  "gap_success_note": "gazebo minus fake = 6 successes in 20 episodes",
+  "caveat": "The arms are seed-paired, NOT spawn-identical. FakeBridge draws d in [0.5,1.5], bearing +/-0.5 rad, yaw +/-1.0 rad via random.Random. Gazebo draws from LEVELS['L1'] via np.random.default_rng([seed, episode]). Same seed and episode index do not give the same start pose. FakeBridge and the world were not changed. The controller labels also differ (student vs student-shield-none); the shield setting is not verified as the cause. Determinism: matched-config runs are not bitwise reproducible (H-0006: 2803 vs 2616 frames, decode 45.6 vs 48.2), so no bitwise claim is made here.",
+  "old_result": {
+    "file": "rl/runs/gazebo_l6/diag_paired_analysis.json",
+    "fake_success": 0,
+    "fake_collisions": 10,
+    "gazebo_success": 3,
+    "gazebo_collisions": 7,
+    "episodes": 10,
+    "note": "Predates FakeBridge honouring --seed. Only 10 episodes per arm."
+  },
+  "falsifier": "gap <= 1 success in 20 supports the prediction; gap >= 2 falsifies it",
+  "prediction": "With spawn-paired seeds the fake-bridge and Gazebo arms differ by at most 1 success in 20 episodes for student_L1_best.npz.",
+  "verdict": "FALSIFIED. Gap = 6 successes in 20 episodes (Gazebo 6/20 vs fake 0/20), which is >= 2. The gap survives seed pairing, so the old 0/10 vs 3/10 gap is not explained by FakeBridge ignoring --seed alone. Because spawn distributions differ, this gap cannot be attributed to the plant alone either: it mixes plant/sensing differences with spawn-distribution differences. Attribution needs spawn-identical runs, which the brief forbids forcing here."
+}
