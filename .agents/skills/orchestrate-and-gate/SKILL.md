@@ -14,7 +14,7 @@ Prevent linear-thread bloat, false root-cause retrains, and unverified hardware 
 - **Check workspace access before delegating.** Verify the target repo matches the active project/sandbox before spawning workers; use the right `projectId` or provider so pre-tool hooks do not reject edits.
 - **Never poll or block on `t3_thread_wait`.** Launch `delegate_task(..., mode="async")` and end the turn. Completion wakes the thread.
 - **Keep `t3_thread_read` bounded.** Always pass `limit=20, maxCharsPerItem=2000` and page with `afterPosition`; never dump `maxCharsPerItem=6000+` into context.
-- **Verify environment & parity once up front.** In one command, check `git rev-parse HEAD`, `git status -s`, Python venv packages (`rl/.venv` vs root `.venv`), and OS flags (`macOS nc -G`, `OpenWrt uname -n`) before running or patching remote hosts. Create `scratch/` with `mkdir -p` before `scp`, use `ssh -M -S <sock>` control sockets instead of `pkill -f`, and never run broad `grep` across `~/Documents`.
+- **Verify environment & parity once up front.** In one command, check `git rev-parse HEAD`, `git status -s`, Python venv packages (root `.venv` and any training venv), and OS flags (`macOS nc -G`, `OpenWrt uname -n`) before running or patching remote hosts. Create `scratch/` with `mkdir -p` before `scp`, use `ssh -M -S <sock>` control sockets instead of `pkill -f`, and never run broad `grep` across `~/Documents`.
 - **Never patch remotes ad hoc while another agent owns hardware.** Keep one source of truth on host git, and reconcile remote working trees cleanly instead of editing individual UI/runtime files mid-run.
 
 ### Multi-Agent Efficiency & Shared-KB Discipline
