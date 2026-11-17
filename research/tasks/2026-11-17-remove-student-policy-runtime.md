@@ -3,13 +3,14 @@ id: 2026-11-17-remove-student-policy-runtime
 date: 2026-11-17
 author: fer-claude
 owner: fernando
-state: open
+state: done
 updated: 2026-11-17
 due: none
 after: []
 check: none
 refs: []
 tags: [cleanup, runtime]
+result: [a72bbdd]
 ---
 
 ## Goal
@@ -21,3 +22,7 @@ the hardware gate in `docs/SAFETY.md` before deploy.
 ## Done when
 
 Root tests pass, the dashboard still drives manually, and the deploy is checked on the car.
+
+## Log
+- 2026-11-17 fernando: claim
+- 2026-11-17 fernando: done: code removed; not deployed: the next deploy is a hardware change (docs/STATE.md)
