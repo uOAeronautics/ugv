@@ -40,7 +40,7 @@ every box is checked. Confirmation flags live in `config/parking.json`.
 - [ ] Credentials runtime-only; none in logs/docs/git.
 
 ## 7. Dashboard observability (required tiles before L7)
-- [ ] ArUco age, EKF sigma, IMU yaw/bias, stage/policy, swept-clear margin, ms/tick, watchdog visible.
+- [ ] ArUco age, EKF sigma, IMU yaw/bias, stage, swept-clear margin, ms/tick, watchdog visible.
 
 ## 8. 30-second SysID + turn-column refit (src/ugv/calibration.py)
 - [ ] Emit the excitation CSV (50 Hz, exactly 30.0 s, 1500 steps):
@@ -75,6 +75,6 @@ every box is checked. Confirmation flags live in `config/parking.json`.
   host (taskset -c0, 10k iters) -> **0.47–0.54 ms** Pi 4B projected =
   **PASS vs 5.0 ms budget** (~9–10x headroom); export parity 4.8e-7
   (< 1e-5 gate); shield PASS under 200 ms stale pose
-  (`tests/test_policy_and_shield.py`, STOP_HORIZON 0.18 -> 0.35 =
+  (`tests/test_shield.py` keeps the swept-clear checks; the policy shield tests went with the retired policy, STOP_HORIZON 0.18 -> 0.35 =
   0.4445 m sweep > 0.254 m latency travel at vmax, dt_stale
   forward-prediction of sweep start).

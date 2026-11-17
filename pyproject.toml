@@ -18,7 +18,7 @@ dependencies = [
 [project.scripts]
 ugv = "ugv:main"
 ugv-dashboard = "ugv.web:main"
-ugv-observatory = "ugv.observatory:main"
+ugv-lab = "ugv.lab.server:main"
 
 [build-system]
 requires = ["uv_build>=0.12.7,<0.13.0"]

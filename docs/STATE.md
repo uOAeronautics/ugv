@@ -9,7 +9,7 @@ SSH and IP: [`NETWORK.md`](NETWORK.md). Work in progress, decisions and past att
 
 - **Pause (2026-11-13)**: `adv034` (`advanced@192.168.8.100`, ssh `pi`) paused for battery
   charging — **do not SSH, deploy or move the car until charging is complete.** Safety stays
-  S0 (`docs/SAFETY.md`); any Auto Park / policy-mode run needs the S4 gate (wheels off the
+  S0 (`docs/SAFETY.md`); any Auto Park or closed-loop run needs the S4 gate (wheels off the
   ground or a clear zone, a human present, a timeout) and the car free. Confirm a parked
   car with the end frame, not an estimate.
 - **Last known pose** (read-only watch run `20261113-193354-watch-diag`): stationary
@@ -17,13 +17,14 @@ SSH and IP: [`NETWORK.md`](NETWORK.md). Work in progress, decisions and past att
   facing Tag 6 (`0.62 m`); Tags 14 and 3 not in FOV.
 - **Pi is behind ferpc** at `2fefd95`; `ferpc` `main` is at least `1b2590d` plus the
   2026-11-14 `PerfMonitor` (`9edc212`+). Next deploy runbook: sync latest `main` to
-  `pi:~/ugv` (**preserve `~/ugv/runs/student.npz` and
+  `pi:~/ugv` (**preserve
   `/etc/systemd/system/ugv-dashboard.service.d/vision-camera.conf`**), restart
-  `ugv-dashboard.service`, verify `GET /api/state`, then the S4 gate before policy-mode
-  runs. `1b2590d` changes deployed `StudentPolicy` behaviour during tag loss
-  (dwell 1.5 s, ±100 deg yaw sweep, zero translation): treat as a hardware change.
-- **2026-11-17**: 2D RL stack retired (`research/decisions/2026-11-17-retire-2d-rl.md`); the
-  Pi still runs the old `StudentPolicy` code until `remove-student-policy-runtime` is done.
+  `ugv-dashboard.service`, verify `GET /api/state`, then the S4 gate before any closed-loop
+  run. Since 2026-11-17 `main` has no RL controller: the dashboard offers `manual` and
+  `staged_ekf` only, and the L7 harness `probe`, `stage` and `watch`. That removal changes what
+  the car can run, so the next deploy is a hardware change.
+- **2026-11-17**: 2D RL stack retired (`research/decisions/2026-11-17-retire-2d-rl.md`) and
+  its controller removed from `main`; the Pi still runs the old code until the next deploy.
   Car untouched, nothing deployed, S0 throughout.
 
 ## Current verified hardware & software

@@ -42,7 +42,7 @@ Open work and its order: `uv run python tools/research/ledger.py roadmap`.
 | `src/ugv/research/`, `research/`, `tools/research/` | Decisions, attempts and tasks (one Markdown file each) and the `ledger.py` CLI |
 | `simulation/gazebo/` | Gazebo 3D car/drone/lab worlds, native `ugv::TTMotorSystem` plugin, camera/IMU models, and browser drive console |
 | `arduino/` | Standalone Nano 33 BLE Sense Rev2 firmware (`firmware/MotionStream`), BLE streaming, and VQF dashboard |
-| `tools/` | Pose smoke test (`tools/pose/`), ledger, L7 field harness (`tools/l7/`), calibration (`tools/calibration/`), mesh optimisation, Observatory |
+| `tools/` | Pose smoke test (`tools/pose/`), ledger, L7 field harness (`tools/l7/`), calibration (`tools/calibration/`), mesh optimisation |
 | `docs/` | Topic documentation indexed in [docs/INDEX.md](docs/INDEX.md) (state, safety, network, commands, pose plan, field notes) |
 | `tests/` | Root torch-free unit and dashboard tests (`pytest` also covers `simulation/gazebo/test_*.py`) |
 

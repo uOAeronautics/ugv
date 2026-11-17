@@ -8,7 +8,7 @@ Terse record of real-car L7 tests on 2026-11-13. Evidence lives under `calibrati
 
 - `tools/l7/l7_run.py` (+ `tools/l7/deploy.sh`, `tools/l7/run.sh`, `tools/l7/fit_probe.py`, `tools/l7/pull_frames.sh`) runs on the Pi over the dashboard websocket while preserving the `600 ms` watchdog and `1800/4095` PWM cap.
 - Modes: `probe`, `stage`, `policy`, `watch`. Logs `ticks.jsonl`, `frames.jsonl`, `imu.jsonl`, `meta.json`, `summary.json`, and sampled JPEGs under `calibration/runs/l7/`.
-- Frame convention: `rl/sim.py` axes are rotated 90 deg from the camera; handled by `rl_sim` remap (`tools/l7/l7_run.py:action_to_duty`).
+- Frame convention: `rl/sim.py` axes are rotated 90 deg from the camera; handled by the `rl_sim` remap, removed with the policy mode.
 
 ## Student Policy on Real Car (`rl/runs/gazebo_l6/student_L1_best.npz`)
 

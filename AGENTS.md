@@ -18,7 +18,7 @@ real hardware: a change that alters motion is a hardware change, whatever the co
 - One agent owns the car at a time, and one job owns the GPU at a time.
 - Do not change gains, caps, watchdog timing, `config/parking.json` or the systemd units as a side
   effect of other work. The dashboard owns the motors: 600 ms watchdog, PWM cap 1800/4095.
-- A deploy must preserve `~/ugv/runs/student.npz` and the camera drop-in `vision-camera.conf`.
+- A deploy must preserve the camera drop-in `vision-camera.conf`.
 - An estimate-based "arrived" is not a parked car. Confirm with the end frame.
 
 ## Research memory and coordination
@@ -59,7 +59,7 @@ environment in a subdirectory, as the retired `rl/` had.
 | `src/ugv/pose/` | Airframe mesh, keypoint skeleton, synthetic renderer, PnP and SIFT pose |
 | `src/ugv/research/`, `research/` | Ledger schema and checks; the decision, attempt and task files |
 | `tools/pose/`, `tools/research/` | Pose smoke test; `ledger.py` |
-| `simulation/gazebo/` | Worlds, models, bridge, policy episode runner |
+| `simulation/gazebo/` | Worlds, models, bridge, physics and camera checks |
 | `tools/l7/` | Field harness: deploy, run one mode on the Pi, pull records |
 | `tools/calibration/` | SysID trials, fits and reports |
 | `calibration/` | Curated fits and manifests. Raw session logs stay local and on the Pi, ignored by Git |
@@ -76,7 +76,7 @@ one place and link to it from the others.
 
 - Policy frame: drone at the origin, skids along y, the car enters from +y facing −y; pose is
   `(x, y, yaw)`.
-- Yaw is counter-clockwise positive in `autopark.py`, `policy.py`, `tools/l7/l7_run.py` and
+- Yaw is counter-clockwise positive in `autopark.py`, `tools/l7/l7_run.py` and
   the retired `rl/sim.py`. `parking.Pose2` is clockwise positive. Cross the boundary only through
   `pose2_from_ccw` / `pose2_to_ccw` in `src/ugv/parking.py`.
 - The drone carries tags 14, 6 and 3. The older layout 9/12/13/14 survives in some configs and

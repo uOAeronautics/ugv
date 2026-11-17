@@ -9,8 +9,8 @@ Canonical commands verified against existing scripts and docs. For Pi SSH/URL de
 | Unit tests (root) | `uv run pytest -q` | Runs `tests/` and `simulation/gazebo/test_*.py` (torch-free). |
 | Lint & format check | `uv run ruff check . && uv run ruff format --check .` | Configured in `pyproject.toml`. |
 | Gazebo run (GUI) | `./simulation/gazebo/launch_control.command` | Opens Gazebo + local console on `127.0.0.1:8767`. |
-| Field harness (L7) | `tools/l7/run.sh <mode> [l7_run.py args...]` | Deploys L7 harness to Pi, runs `probe\|stage\|policy\|watch`, pulls logs. |
-| Pi deploy / restart | `ssh pi 'cd ~/ugv && sudo systemctl restart ugv-dashboard.service'` | Preserve `~/ugv/runs/student.npz` and `vision-camera.conf`; see [`STATE.md`](STATE.md). |
+| Field harness (L7) | `tools/l7/run.sh <mode> [l7_run.py args...]` | Deploys L7 harness to Pi, runs `probe\|stage\|watch`, pulls logs. |
+| Pi deploy / restart | `ssh pi 'cd ~/ugv && sudo systemctl restart ugv-dashboard.service'` | Preserve `vision-camera.conf`; see [`STATE.md`](STATE.md). |
 | Live tasks / your inbox | `uv run python tools/research/ledger.py status [--as <you>]` | Blocked and stale first |
 | Roadmap | `uv run python tools/research/ledger.py roadmap` | Milestone tasks and what each waits on |
 | Prior attempts on a topic | `uv run python tools/research/ledger.py list --grep <topic>` | Read before re-running anything |
@@ -42,7 +42,6 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 | Robot hardware CLI (`snapshot`, `servo-test`, `wheel-test`, `led-test`) | `uv run ugv` (`src/ugv/__init__.py`) |
 | Dashboard web/WebSocket server | `uv run ugv-dashboard` (`src/ugv/web.py`) |
 | 30 s SysID CSV generator & Bayesian profile refitter | `src/ugv/calibration.py` |
-| Standalone NumPy `StudentPolicy` benchmark / parity CLI | `src/ugv/policy.py` |
 
 ### L7 field harness (`tools/l7/`)
 
@@ -51,13 +50,12 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 | Sync L7 harness + `src/ugv/` deploy modules to `pi:l7/` | `tools/l7/deploy.sh` |
 | Deploy, run one L7 mode on Pi, and pull JSON/JSONL logs | `tools/l7/run.sh` |
 | Pull raw camera JPEGs from `pi:l7_runs/` | `tools/l7/pull_frames.sh` |
-| On-Pi L7 controller (`probe`, `stage`, `policy`, `watch`) | `tools/l7/l7_run.py` |
+| On-Pi L7 controller (`probe`, `stage`, `watch`) | `tools/l7/l7_run.py` |
 | Analyze `probe` run dynamics (deadzone, onset, steady-state gains) | `tools/l7/fit_probe.py` |
-| Offline sim-to-real contract audit on L7 logs | `tools/l7/audit_contract.py` |
 
 ### 3D model
 
-One canonical airframe: `simulation/gazebo/strl_001/` (9,956 triangles, `tags.json` holds ArUco 14/6/3). `uv run python tools/observatory/build_strl_assets.py` regenerates the observatory assets from it. Full-resolution originals and earlier experiments were moved out of the repo to `~/ugv_archive_2026-11-16/`.
+One canonical airframe: `simulation/gazebo/strl_001/` (9,956 triangles, `tags.json` holds ArUco 14/6/3). `uv run python tools/build_strl_assets.py` regenerates the Lab dashboard assets from it. Full-resolution originals and earlier experiments were moved out of the repo to `~/ugv_archive_2026-11-16/`.
 
 ### Mesh optimisation (`tools/mesh_opt/`)
 
@@ -82,7 +80,6 @@ All run with `uv run --no-project --python 3.12 --with trimesh --with numpy --wi
 | Build native `ugv::TTMotorSystem` C++ Gazebo plugin | `simulation/gazebo/build_motor_plugin.py` |
 | Browser drive console backend (FastAPI + gz-transport) | `simulation/gazebo/control_panel.py` |
 | Bounded simulation-only drive demo | `simulation/gazebo/demo_drive.py` |
-| Run student policy or baseline episodes in Gazebo L6 | `simulation/gazebo/run_policy_episodes.py` |
 | Run standalone EKF baseline episodes in Gazebo | `simulation/gazebo/run_baseline_gazebo.py` |
 | Run parallel `GZ_PARTITION` Gazebo batch workers | `simulation/gazebo/parallel_worlds.py` |
 | Regenerate `assets/test_pad.png` floor texture | `simulation/gazebo/make_test_pad.py` |
@@ -111,7 +108,7 @@ All run with `uv run --no-project --python 3.12 --with trimesh --with numpy --wi
 
 | Command | Description |
 |---|---|
-| `uv run ugv-observatory` | UGV Research Observatory (port 8768) |
+| `uv run ugv-lab` | Lab dashboard: research ledger, experiments, pose, parking challenge (port 8768) |
 
 | Purpose | Script |
 |---|---|

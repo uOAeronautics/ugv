@@ -131,7 +131,7 @@ def test_static_hud_ids_present_and_legacy_preserved():
     for attr in ('data-key="KeyW"', 'data-wheel="front-left"'):
         assert attr in html, attr
     assert '<select id="controller-select"' in html
-    for value in ("manual", "staged_ekf", "rl_student"):
+    for value in ("manual", "staged_ekf"):
         assert f'value="{value}"' in html, value
     assert 'send({type: "controller", controller:' in (
         STATIC / "app.js"

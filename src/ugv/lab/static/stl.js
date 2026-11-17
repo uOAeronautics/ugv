@@ -1,6 +1,6 @@
-// Binary STL parsing and the STRL-001 assembly for the observatory POV view.
+// Binary STL parsing and the STRL-001 assembly for the Lab dashboard.
 // The manifest and meshes are generated from the Gazebo reference SDF by
-// tools/observatory/build_strl_assets.py, which is the source of truth for poses,
+// tools/build_strl_assets.py, which is the source of truth for poses,
 // joint axes and limits. Meshes are authored in the model frame (every SDF visual
 // carries `<pose relative_to="__model__">`), so the link pose locates the joint
 // pivot, not the vertices.

@@ -67,26 +67,11 @@ def test_staged_select_and_guard_fallback_to_manual():
     asyncio.run(scenario())
 
 
-def test_rl_student_requires_artifact_and_budget(tmp_path):
+def test_rl_student_is_gone():
     async def scenario():
         c = RobotController()
-        _armed(c)
-        with (
-            patch.object(c, "_imu_ready", return_value=True),
-            patch.object(
-                c.parking, "snapshot", return_value={"blockers": [], "position_sigma_m": None}
-            ),
-        ):
-            with patch.object(c, "_policy_artifact_path", return_value=tmp_path / "missing.npz"):
-                with pytest.raises(PermissionError):
-                    await c.select_controller("t", "rl_student")
-            # unloadable artifact
-            bad = tmp_path / "bad.npz"
-            bad.write_bytes(b"nope")
-            with patch.object(c, "_policy_artifact_path", return_value=bad):
-                with pytest.raises(PermissionError):
-                    await c.select_controller("t", "rl_student")
-        assert c.state.controller == "manual"
+        with pytest.raises(ValueError):
+            await c.select_controller("t", "rl_student")
 
     asyncio.run(scenario())
 

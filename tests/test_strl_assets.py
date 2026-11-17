@@ -10,7 +10,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tools.observatory import build_strl_assets as assets  # noqa: E402
+from tools import build_strl_assets as assets  # noqa: E402
 
 MANIFEST = assets.MANIFEST_PATH
 DECOMPOSITION = assets.DECOMPOSITION_PATH
@@ -18,13 +18,13 @@ DECOMPOSITION = assets.DECOMPOSITION_PATH
 
 @pytest.fixture(scope="module")
 def manifest() -> dict:
-    assert MANIFEST.exists(), "run tools/observatory/build_strl_assets.py"
+    assert MANIFEST.exists(), "run tools/build_strl_assets.py"
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
 @pytest.fixture(scope="module")
 def decomposition() -> dict:
-    assert DECOMPOSITION.exists(), "run tools/observatory/build_strl_assets.py"
+    assert DECOMPOSITION.exists(), "run tools/build_strl_assets.py"
     return json.loads(DECOMPOSITION.read_text(encoding="utf-8"))
 
 

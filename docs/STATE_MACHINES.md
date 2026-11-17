@@ -26,4 +26,3 @@ one table to read, AX gets `fsm.history` (who moved, when, why) in logs.
 6. AutoPark: `entering` does not re-check calibration after `staging -> entering`; `acquire_started_at` never resets.
 7. Three IMU freshness limits in web autopark (0.25 s start, 0.15 s ready, 0.25 s guard): pick one constant.
 
-Observatory JS has no real mode machine (`LB.stage` is a filter toggle).

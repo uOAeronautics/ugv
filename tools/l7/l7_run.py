@@ -5,7 +5,7 @@ Runs ON THE PI against the live dashboard service (ws://127.0.0.1:8765). The das
 motor authority, its 600 ms watchdog and the 1800/4095 PWM cap; this process only sends
 `drive` messages, so killing it brakes the car.
 
-Frames (same as rl/sim.py): drone at the origin, skids along y, car pose (x, y, yaw) with
+Frames (as in the retired rl/sim.py): drone at the origin, skids along y, car pose (x, y, yaw) with
 yaw 0 = camera facing the drone along -y, yaw **CCW-positive** (opposite to
 ``ugv.parking.Pose2`` CW-positive yaw, so ``swept_clear`` checks negate yaw). The frame is
 anchored on the primary ArUco tag (default 14, assumed centred in the corridor, facing +y);
@@ -14,8 +14,6 @@ other tags are mapped online by co-observation and saved to the tag map for the 
 Modes
   probe    open-loop axis pulses; prints measured body displacement per pulse (signs, gains)
   stage    go-to-pose P controller (reset between episodes; also a classical reference)
-  policy   StudentPolicy (rl_sim axes remapped to the physical car as in
-           simulation/gazebo/run_policy_episodes.py)
   watch    no motion; localize and record only
 
 Outputs (one directory per run): meta.json, ticks.jsonl (50 Hz control record),
@@ -49,7 +47,6 @@ HALF_BASE = (0.21 + 0.149) / 2
 PWM_LIMIT = 1800  # dashboard hard cap
 KDUTY = PWM_LIMIT / 4095.0
 DT = 0.02
-V_MAX = (1.27, 0.63, 2.20)  # policy.py V_X_MAX, V_Y_MAX, W_MAX
 
 
 def wrap(a: float) -> float:
@@ -674,14 +671,6 @@ def duty_to_dashboard(duty_fwd: float, duty_left: float, duty_ccw: float):
     return F / s, S / s, T / s, s
 
 
-def action_to_duty(act, gain: float):
-    """Student action (rl_sim axes) -> physical wheel-level duties (forward, left, CCW).
-
-    rl/sim.py: act[0] drives +x_drone (car-left at yaw 0), act[1] drives +y_drone
-    (backward), act[2] is +yaw (CCW). The sim's turn wheel term is w * HALF_BASE * 4."""
-    return (-float(act[1]) * gain, float(act[0]) * gain, float(act[2]) * HALF_BASE * 4.0 * gain)
-
-
 # ----------------------------------------------------------------------------- controllers
 _STAGE_GEAR = {
     "clear_width_m": 0.31,
@@ -829,10 +818,9 @@ def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("mode", choices=["probe", "stage", "policy", "watch"])
+    ap.add_argument("mode", choices=["probe", "stage", "watch"])
     ap.add_argument("--out", type=Path, default=Path.home() / "l7_runs")
     ap.add_argument("--name", default="")
-    ap.add_argument("--weights", type=Path, default=Path.home() / "ugv/runs/student.npz")
     ap.add_argument("--ids", default="3,6,14")
     ap.add_argument("--primary", type=int, default=14)
     ap.add_argument("--tagmap", type=Path, default=Path.home() / "l7_runs/tagmap.json")
@@ -848,14 +836,6 @@ def main():
         "--save-every", type=int, default=4, help="save every Nth processed JPEG (0=off)"
     )
     ap.add_argument("--target", default="0,0.9,0", help="stage: x,y,yaw_deg in the policy frame")
-    ap.add_argument("--act-gain", type=float, default=1.0, help="policy: action -> duty scale")
-    ap.add_argument(
-        "--imu-w-mode",
-        choices=["raw", "zero", "lp"],
-        default="raw",
-        help="policy: gyro rate passed to policy.step (lp = EMA alpha 0.1)",
-    )
-    ap.add_argument("--shield", choices=["real", "sim", "off"], default="real")
     ap.add_argument(
         "--dr-max", type=float, default=1.0, help="s of dead reckoning allowed outside the corridor"
     )
@@ -887,25 +867,12 @@ def main():
     ap.add_argument("--dz-left", type=float, default=0.13)
     ap.add_argument("--dz-yaw", type=float, default=0.16)
     ap.add_argument(
-        "--adapter",
-        choices=["vel", "raw"],
-        default="vel",
-        help="policy: vel = reproduce the sim plant's body velocity with the fitted real "
-        "plant; raw = identical wheel pattern to rl/sim.py",
-    )
-    ap.add_argument(
         "--acquire-dps", type=float, default=25.0, help="search spin rate; sign = direction (+CCW)"
     )
-    ap.add_argument("--sim-plant", choices=["mean", "p0"], default="p0")
     ap.add_argument(
         "--yaw-ki", type=float, default=0.8, help="duty per rad of integrated rate error"
     )
     ap.add_argument("--yaw-kp", type=float, default=0.03, help="duty per rad/s")
-    ap.add_argument(
-        "--profile",
-        type=Path,
-        default=Path(__file__).resolve().parent / "mecanum_bayesian_profile.json",
-    )
     # go-to controller (duty units)
     ap.add_argument("--kp-pos", type=float, default=1.2, help="1/s")
     ap.add_argument("--kp-yaw", type=float, default=1.5, help="1/s")
@@ -961,71 +928,6 @@ def main():
     loc = Localizer(imu, tagmap, args.tag_y, args.primary, args)
     vis.start()
     imu.start()
-
-    policy = None
-    if args.mode == "policy":
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
-        from ugv.parking import Pose2
-        from ugv.policy import StudentPolicy
-
-        kw = {}
-        if args.shield == "real":  # simulation/gazebo/drone_dimensions.json + Gazebo car footprint
-            kw = dict(
-                gear={
-                    "clear_width_m": 0.31,
-                    "bar_length_m": 0.48,
-                    "bar_radius_m": 0.015,
-                    "inward_slope": 0.0,
-                },
-                vehicle={"width_m": 0.172, "length_m": 0.203},
-            )
-        policy = StudentPolicy.load(args.weights, **kw)
-        if args.shield == "off":
-            policy.obstacles = []
-        meta["policy"] = {
-            "sha": policy.sha,
-            "stateful": policy.stateful,
-            "weights": str(args.weights),
-        }
-        sim_model = None
-        if args.adapter == "vel":
-            # rl/sim.py EnvConfig.use_mean_dynamics=True is the L0/L1 training plant: posterior-mean
-            # coefficients, in which a full turn command yields only ~0.03-0.2 rad/s.
-            from ugv.staged_baseline import mix, wheel_features
-
-            prof = json.loads(args.profile.read_text())
-            if args.sim_plant == "mean":
-                coef0 = np.mean([q["coefficients"] for q in prof["posterior_particles"]], axis=0)
-                dz0 = prof["deadzone"]
-            else:
-                coef0 = np.array(prof["posterior_particles"][0]["coefficients"])
-                dz0 = prof["posterior_particles"][0]["deadzone"]
-
-            def sim_model(a):
-                return wheel_features(mix(a), dz0) @ coef0
-
-        yaw_i = [0.0]
-
-        def adapt(act):
-            """Sim steady-state body velocity for this action -> real duties that produce it."""
-            if sim_model is None:
-                return action_to_duty(act, args.act_gain), None
-            v = sim_model(np.asarray(act[:3], dtype=float))
-            want = (-float(v[1]), float(v[0]), float(v[2]))  # forward, left, ccw
-
-            def inv(x, gain, dz, eps):
-                return 0.0 if abs(x) < eps else math.copysign(dz + abs(x) / gain, x) * args.act_gain
-
-            # Yaw: gyro rate loop (PI on duty) so small commanded rates survive the turn deadzone
-            # and translation-induced yaw is cancelled.
-            e_w = want[2] - imu.snapshot()[1]
-            yaw_i[0] = max(-0.22, min(0.22, yaw_i[0] + args.yaw_ki * e_w * DT))
-            d_yaw = max(-0.25, min(0.25, yaw_i[0] + args.yaw_kp * e_w))
-            return (
-                inv(want[0], args.gain_fwd, args.dz_fwd, 0.02),
-                inv(want[1], args.gain_left, args.dz_left, 0.02),
-                d_yaw,
-            ), want
 
     (out / "meta.json").write_text(json.dumps(meta, indent=1))
 
@@ -1242,13 +1144,12 @@ def main():
                         )
             summary["probe"] = rows
 
-        # ---- closed loop: stage / policy ----
-        if args.mode in ("stage", "policy") and drv:
+        # ---- closed loop: stage ----
+        if args.mode == "stage" and drv:
             ctrl = None
             if args.mode == "stage":
                 tx, ty, tyaw = (float(v) for v in args.target.split(","))
                 ctrl = GoTo((tx, ty, math.radians(tyaw)), args)
-            prev_act = np.zeros(3)
             duty = (0.0, 0.0, 0.0)
             applied = (0.0, 0.0)
             still_s, k = 0.0, 0
@@ -1258,8 +1159,6 @@ def main():
             t_start = time.monotonic()
             t_next = t_start
             outcome = "timeout"
-            brake_stale_since = None
-            imu_w_lp = None
             while not stop["flag"]:
                 now = time.monotonic()
                 if now - t_start > args.time:
@@ -1307,49 +1206,20 @@ def main():
                 reason = ""
                 if frame_age > 0.45 or now - imu_at > 0.2 or not drv.alive:
                     duty, reason = (0.0, 0.0, 0.0), "brake: sensors stale"
-                    act = np.zeros(3)
                 elif args.mode == "stage":
                     stage_dr_cap = min(1.5, args.stage_dr_max)
                     if should_abort_corridor(args.mode, est, loc.pose_t, now):
-                        duty, reason, act = (0.0, 0.0, 0.0), "abort: blind_corridor_x", np.zeros(3)
+                        duty, reason = (0.0, 0.0, 0.0), "abort: blind_corridor_x"
                         outcome = "abort_corridor"
                         stop["flag"], stop["why"] = True, outcome
                     elif est is None or now - last_valid_t > stage_dr_cap:
-                        duty, reason, act = (0.0, 0.0, 0.0), "brake: no pose", np.zeros(3)
+                        duty, reason = (0.0, 0.0, 0.0), "brake: no pose"
                     else:
                         duty, done = ctrl.step(est, now)
-                        act, reason = np.zeros(3), ctrl.last_reason
+                        reason = ctrl.last_reason
                         if done:
                             outcome = "arrived"
                             stop["flag"], stop["why"] = True, "arrived"
-                else:
-                    valid = src != "none"
-                    tag = pose if valid else None
-                    t_inf = time.perf_counter()
-                    e = est if est is not None else (0.0, 2.0, 0.0)
-                    imu_w_lp = imu_w if imu_w_lp is None else 0.1 * imu_w + 0.9 * imu_w_lp
-                    imu_w_fed = (
-                        0.0
-                        if args.imu_w_mode == "zero"
-                        else (imu_w_lp if args.imu_w_mode == "lp" else imu_w)
-                    )
-                    act, reason = policy.step(
-                        tag,
-                        stale,
-                        valid,
-                        imu_w_fed,
-                        fy if fy is not None else 0.0,
-                        prev_act,
-                        Pose2(e[0], e[1], e[2]),
-                        dt=DT,
-                        dt_stale=min(stale, 0.3),
-                    )
-                    infer_ms.append((time.perf_counter() - t_inf) * 1e3)
-                    prev_act = np.asarray(act[:3], dtype=float)
-                    duty, want = adapt(act)
-                    rec["imu_w_fed"] = round(float(imu_w_fed), 6)
-                    rec["act"] = [round(float(v), 4) for v in act[:3]]
-                    rec["want"] = want
                 F, S, T, sc = duty_to_dashboard(*duty)
                 if any(duty):
                     drv.drive(F, S, T)
@@ -1370,20 +1240,9 @@ def main():
                     )
                     slow = abs(imu_w) < math.radians(2) and not any(wheels)
                     still_s = still_s + DT if (near and slow) else 0.0
-                    if args.mode == "policy" and still_s >= 1.0:
-                        outcome = "parked(est)"
-                        stop["flag"], stop["why"] = True, outcome
                     if abs(est[0]) > 1.6 or est[1] > 2.6 or est[1] < -0.35:
                         outcome = "geofence"
                         stop["flag"], stop["why"] = True, outcome
-                if args.mode == "policy":
-                    if reason.startswith(("brake: stale", "brake: sensors stale")):
-                        brake_stale_since = brake_stale_since or now
-                        if now - brake_stale_since > 4.0:
-                            outcome = "lost"
-                            stop["flag"], stop["why"] = True, outcome
-                    else:
-                        brake_stale_since = None
                 t_done = time.monotonic()
                 rec["loop_ms"] = round((t_done - now) * 1e3, 2)
                 loop_ms.append((t_done - now) * 1e3)

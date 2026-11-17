@@ -298,8 +298,7 @@ class RobotController:
         self.perf = PerfMonitor()
         self._perf_snapshot_at: float = 0.0
 
-    CONTROLLERS = ("manual", "staged_ekf", "rl_student")
-    RL_INFERENCE_BUDGET_MS = 20.0
+    CONTROLLERS = ("manual", "staged_ekf")
 
     def imu_sample(self, acceleration: list[float], gyroscope: list[float], rate_hz: float) -> None:
         self.state.imu_accel_g = dict(zip("xyz", acceleration, strict=False))
@@ -500,36 +499,6 @@ class RobotController:
             self.bus.close()
             self.bus = None
 
-    def _policy_artifact_path(self) -> Path:
-        import os
-
-        return Path(os.environ.get("UGV_STUDENT_POLICY", "runs/student.npz"))
-
-    def _numpy_only_ok(self) -> bool:
-        import sys
-
-        if "torch" in sys.modules:
-            return False
-        try:
-            src = (Path(__file__).parent / "policy.py").read_text()
-        except OSError:
-            return False
-        return "import torch" not in src and "from torch" not in src
-
-    def _measure_policy_ms(self, path: Path) -> float | None:
-        try:
-            import time
-
-            from .policy import StudentPolicy
-
-            p = StudentPolicy.load(path)
-            t0 = time.perf_counter()
-            for _ in range(5):
-                p.forward(p.hist)
-            return (time.perf_counter() - t0) / 5 * 1000
-        except Exception:
-            return None
-
     def _swept_margin(self) -> float | None:
         try:
             snap = self.parking.snapshot()
@@ -569,21 +538,8 @@ class RobotController:
                 blockers = self.parking.snapshot()["blockers"]
                 if blockers:
                     raise PermissionError("controller unavailable: " + "; ".join(blockers))
-                if name == "rl_student":
-                    if not self._numpy_only_ok():
-                        raise PermissionError("rl_student requires NumPy-only policy path")
-                    path = self._policy_artifact_path()
-                    if not path.is_file():
-                        raise PermissionError("rl_student policy artifact missing")
-                    ms = self._measure_policy_ms(path)
-                    if ms is None:
-                        raise PermissionError("rl_student policy artifact unloadable")
-                    if ms > self.RL_INFERENCE_BUDGET_MS:
-                        raise PermissionError(f"rl_student inference {ms:.1f}ms over budget")
-                    self.inference_ms = round(ms, 3)
-                    self.state.inference_ms = self.inference_ms
                 self.state.controller = name
-                self.controller_stage = "armed-hold" if name == "staged_ekf" else "policy-hold"
+                self.controller_stage = "armed-hold"
                 self.state.controller_stage = self.controller_stage
                 self.state.reason = f"controller-{name}"
                 self.state.revision += 1

@@ -5,7 +5,7 @@ STL, and writes the assembly decomposition plus the browser manifest.  The SDF i
 the single source of truth: geometry, poses and joint wiring are parsed, never
 hand-copied.
 
-    uv run python tools/observatory/build_strl_assets.py
+    uv run python tools/build_strl_assets.py
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 MODEL_DIR = ROOT / "simulation/gazebo/strl_001"
 SDF_PATH = MODEL_DIR / "model.sdf"
 DECOMPOSITION_PATH = MODEL_DIR / "decomposition.json"
-OUT_DIR = ROOT / "tools/observatory/static/models/strl001"
+OUT_DIR = ROOT / "src/ugv/lab/static/models/strl001"
 MANIFEST_PATH = OUT_DIR / "manifest.json"
 TAGS_PATH = MODEL_DIR / "tags.json"
 

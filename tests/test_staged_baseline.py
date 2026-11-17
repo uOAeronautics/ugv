@@ -1,20 +1,6 @@
-import importlib.util
-import sys
-from pathlib import Path
-
 import numpy as np
 
 from ugv.staged_baseline import MeanModel, StagedBaseline
-
-HARNESS = Path(__file__).resolve().parents[1] / "simulation" / "gazebo" / "run_policy_episodes.py"
-
-
-def _harness():
-    spec = importlib.util.spec_from_file_location("run_policy_episodes", HARNESS)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod  # dataclasses resolve their module through sys.modules
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def test_translation_inverse_round_trip():
@@ -32,34 +18,6 @@ def test_searches_without_tag_and_holds_when_never_seen():
     # phase-1 pre-acquisition: bearing dither (translation, no rotation:
     # turn commands drag ~0.3 m/s on roller-coupled draws) instead of spin.
     assert abs(act[0, :2]).max() > 0 and act[0, 2] == 0
-
-
-def test_parks_on_fake_bridge_without_contact():
-    h = _harness()
-    step, reset = h.baseline_controller(0.0)
-    res = h.run_episodes(step, reset, h.FakeBridge(), 5)
-    assert all(r.success for r in res) and not any(r.collision for r in res)
-
-
-def test_fake_bridge_seed_steers_spawns_and_zero_is_legacy():
-    import math
-    import random
-
-    h = _harness()
-    # seed=0 reproduces the legacy per-episode stream random.Random(episode)
-    b0 = h.FakeBridge(seed=0)
-    b0.reset(3)
-    rng = random.Random(3)
-    d, bb = rng.uniform(0.5, 1.5), rng.uniform(-0.5, 0.5)
-    legacy = [d * math.sin(bb), d * math.cos(bb), rng.uniform(-1.0, 1.0)]
-    assert b0.pose == legacy
-    # a different --seed changes the spawn; the same seed repeats it
-    b11 = h.FakeBridge(seed=11)
-    b11.reset(3)
-    assert b11.pose != b0.pose
-    b11b = h.FakeBridge(seed=11)
-    b11b.reset(3)
-    assert b11b.pose == b11.pose
 
 
 def test_brakes_after_arrival():
