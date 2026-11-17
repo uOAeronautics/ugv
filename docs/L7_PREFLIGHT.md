@@ -70,7 +70,7 @@ every box is checked. Confirmation flags live in `config/parking.json`.
   (`linearize` / `inv`) and the yaw channel (`AdaptiveYaw.turn`); confirm
   `JoystickMapper`-equivalent stick mapping in `web.py` `_apply_vector`
   (body-centric + field-centric drive with dz compensation).
-- [ ] Pi 4B shield verification (`rl/runs/pi_inference_bench.json`):
+- [ ] Pi 4B shield verification (`rl/runs/pi_inference_bench.json`, retired stack, tag `pre-pose-20261117`):
   stateful GRU-64 + vectorized swept_clear p50 **0.134 ms** single-core
   host (taskset -c0, 10k iters) -> **0.47–0.54 ms** Pi 4B projected =
   **PASS vs 5.0 ms budget** (~9–10x headroom); export parity 4.8e-7

@@ -1,12 +1,9 @@
 # STATE
 
-Current operational state. For SSH/IP details see [`docs/NETWORK.md`](NETWORK.md). Consolidated
-2026-11-17: the live content of `HANDOFF.md` (deleted, recoverable via git) now lives here.
-
-- **Historical snapshots (`2026-08-29`..`2026-10-17`)**: [`docs/archive/STATE_HISTORY.md`](archive/STATE_HISTORY.md).
-- **Superseded Dream-RSI failure-replay proposal**: [`docs/archive/FAILURE_REPLAY.md`](archive/FAILURE_REPLAY.md).
-- **Decision history, dead ends, open questions and 2026-11-17 corrections**: [`explore/HISTORY.md`](../explore/HISTORY.md).
-- **Roadmap run and hypothesis status**: [`explore/ROADMAP.md`](../explore/ROADMAP.md) and `explore/HYPOTHESES.jsonl`.
+Current state of the car and the Pi: the only file that says whether the car may be touched.
+SSH and IP: [`NETWORK.md`](NETWORK.md). Work in progress, decisions and past attempts:
+`research/` (`uv run python tools/research/ledger.py status`). Dated snapshots before
+2026-10-17: [`archive/STATE_HISTORY.md`](archive/STATE_HISTORY.md).
 
 ## Pi pause & deploy state (paused — charging)
 
@@ -25,10 +22,9 @@ Current operational state. For SSH/IP details see [`docs/NETWORK.md`](NETWORK.md
   `ugv-dashboard.service`, verify `GET /api/state`, then the S4 gate before policy-mode
   runs. `1b2590d` changes deployed `StudentPolicy` behaviour during tag loss
   (dwell 1.5 s, ±100 deg yaw sweep, zero translation): treat as a hardware change.
-- **Checks before every commit**: `uv run ruff check . && uv run ruff format --check . &&
-  uv run pytest -q` (root); `cd rl && uv run pytest -q test_rl.py` when `rl/` changed.
-- **2026-11-17**: explore roadmap run; car untouched, nothing deployed, S0 throughout.
-  See [`explore/HISTORY.md`](../explore/HISTORY.md) §4 and [`explore/ROADMAP.md`](../explore/ROADMAP.md).
+- **2026-11-17**: 2D RL stack retired (`research/decisions/2026-11-17-retire-2d-rl.md`); the
+  Pi still runs the old `StudentPolicy` code until `remove-student-policy-runtime` is done.
+  Car untouched, nothing deployed, S0 throughout.
 
 ## Current verified hardware & software
 
@@ -37,6 +33,5 @@ Current operational state. For SSH/IP details see [`docs/NETWORK.md`](NETWORK.md
 - **IMU**: Arduino Nano 33 BLE Sense Rev2 (BMI270) over USB (`/dev/ttyACM0`), `~100 Hz` JSON.
 - **Car PCB**: Freenove PCB V3.0 (`i2c-1`: `0x40` PCA9685, `0x48` ADC, `0x70` all-call); SPI/LEDs unused.
 - **L7 & Auto Park**: [`docs/L7_FIELD_NOTES.md`](L7_FIELD_NOTES.md) for 2026-11-13 real-car L7 runs; pending Pi deploy items are listed above.
-- **Baseline & RL**: StagedBaseline v2 reaches `1000/1000` L0, **~986–989/1000 L1** (2026-11-17 working band, `explore/HISTORY.md` §4), `604/1000` L2 (unverified figure, kept as recorded); best L1 student `966/1000` (`rl/runs/gazebo_l6/student_L1_best.npz`). See [`explore/HISTORY.md`](../explore/HISTORY.md) and [`rl/PLAN.md`](../rl/PLAN.md).
-- **Archive note**: `HANDOFF.md` was deleted 2026-11-17 after its live content was
-  consolidated here; recover it with `git show HEAD:HANDOFF.md`. Decisions live in `explore/`.
+- **Past sim and car results** (RL, baseline, Gazebo): `research/attempts/`, roots
+  `2026-11-17-track-2d-rl` and `2026-11-17-track-explore-loop`.

@@ -25,6 +25,5 @@ one table to read, AX gets `fsm.history` (who moved, when, why) in logs.
 5. `staged_baseline.py` phases: HOLD has no loss timeout (can latch braked); `_short_n` resets on APPROACH so APPROACH/ENTER can cycle unbounded; `_retreat` lags one step.
 6. AutoPark: `entering` does not re-check calibration after `staging -> entering`; `acquire_started_at` never resets.
 7. Three IMU freshness limits in web autopark (0.25 s start, 0.15 s ready, 0.25 s guard): pick one constant.
-8. `rl/sim.py` episode flags: `latched_timeout` latches only timeout; not traced through reset.
 
 Observatory JS has no real mode machine (`LB.stage` is a filter toggle).

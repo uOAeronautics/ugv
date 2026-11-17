@@ -9,7 +9,7 @@
 <p align="center">
   <a href="docs/COMMANDS.md"><b>Commands</b></a> ·
   <a href="docs/SAFETY.md"><b>Safety</b></a> ·
-  <a href="docs/RL_PARKING.md"><b>RL parking</b></a> ·
+  <a href="docs/POSE.md"><b>Pose plan</b></a> ·
   <a href="docs/L7_FIELD_NOTES.md"><b>Field notes</b></a> ·
   <a href="docs/INDEX.md"><b>All docs</b></a>
 </p>
@@ -18,47 +18,37 @@
 
 # UGV
 
-Autonomous drone-skid parking stack for an `FNK0043` / Freenove 4WD mecanum car on Raspberry Pi 4B (`ugv-dashboard.service` on port `8765`). The repo pairs a torch-free Pi dashboard, ArUco + BMI270 IMU closed-loop control, and a `swept_clear` safety shield with PyTorch `MecanumVecEnv` RL teacher/student training, Gazebo 3D physics and vision verification, and an Arduino Nano 33 BLE Sense IMU companion.
+A Freenove `FNK0043` 4WD mecanum car on a Raspberry Pi 4B (`ugv-dashboard.service`, port `8765`) that should park itself under the STRL-001 airframe. Current direction (2026-11-17): estimate the airframe's 6-DoF pose from the car camera with its 3D model and synthetic data, then park with a declared state machine. Plan: [docs/POSE.md](docs/POSE.md); what was tried before, including the retired 2D RL stack: `research/attempts/`.
 
-**[Commands](docs/COMMANDS.md)** · [Safety gates](docs/SAFETY.md) · [Hardware](docs/HARDWARE.md) · [Network & SSH](docs/NETWORK.md) · [Field notes](docs/L7_FIELD_NOTES.md) · [All docs](docs/INDEX.md)
+**[Commands](docs/COMMANDS.md)** · [Pose plan](docs/POSE.md) · [Safety gates](docs/SAFETY.md) · [Hardware](docs/HARDWARE.md) · [Network & SSH](docs/NETWORK.md) · [Field notes](docs/L7_FIELD_NOTES.md) · [All docs](docs/INDEX.md)
 
 ## Status
 
-Simulation metrics come from `rl/evaluate.py` (1000 episodes, seed 11); hardware L7 metrics come from the [2026-11-13 field runs](docs/L7_FIELD_NOTES.md).
+| Area | State | Source |
+|---|---|---|
+| Pose from the 3D model | Synthetic smoke test: PnP on 12 true keypoints with 1 px noise lands within 5 deg / 10 cm on every solved view; SIFT bank as first set up fails (0/40). No real frames yet | `research/attempts/2026-11-17-pose-smoke-*` |
+| 2D RL parking (retired) | Best sim student 966/1000 at L1, 0/3 parked on the car | `research/attempts/2026-11-17-track-2d-rl.md` |
+| Hardware (Pi 4B) | Classical go-to reached its target 4/4; ArUco + KLT decodes 97% while moving | [Field notes](docs/L7_FIELD_NOTES.md) |
+| Real plant | 2.3 m/s forward, ~1.6 m/s strafe, 15.7 rad/s yaw per duty; deadzones 0.05 / 0.13 / 0.10 | [Field notes](docs/L7_FIELD_NOTES.md) |
 
-| Domain | Metric | Measured | Source |
-|---|---|---:|---|
-| Sim (`rl/sim.py`) | L0 teacher (`runs/teacher_L0_gate.pt`) | `1000/1000` (0 coll) | [RL parking](docs/RL_PARKING.md) |
-| Sim (`rl/sim.py`) | L0 student (`student_L0_ppo_v2_s0.pt` / `student_L0_lat_s1.pt`) | `991/1000` (6 coll) / `1000/1000` (0 coll) | [RL parking](docs/RL_PARKING.md), [Plan](rl/PLAN.md) |
-| Sim (`rl/sim.py`) | Best L1 student (`student_L1_best.npz`) | `966/1000` L1 (0 coll) · `3/10` Gazebo L6 (10 ep, seed 11, emulated sensing) | [State](docs/STATE.md), [History](explore/HISTORY.md) |
-| Sim (`rl/sim.py`) | L2 student + blind-search sweep (`student_L1_latw4_ft.pt`) | `143/1000` (323 coll); `135/1000` (333 coll) without sweep | [History](explore/HISTORY.md) |
-| Sim (`rl/sim.py`) | L_real student + sweep (realistic plant) | `0/1000` (1 coll); 3 coll without sweep | [History](explore/HISTORY.md) |
-| Sim (`rl/sim.py`) | `StagedBaseline` EKF (`baseline_ekf_staged_L*`) | `975` L0 · `896` L1 · `448` L2 · `215` L3 · `148` L4 | [RL parking](docs/RL_PARKING.md) |
-| Sim throughput | `MecanumVecEnv` CPU (`512`–`2048` envs) / Gazebo lockstep | `290k–302.6k` steps/s / `50.0 D-steps/s` (`1.0x` RT) | [Sim throughput](docs/SIM_THROUGHPUT.md) |
-| Policy inference | NumPy `StudentPolicy` GRU-64 (desktop CPU, full vs stateful) | `1.47 ms/step` vs `0.04 ms/step` | [Sim throughput](docs/SIM_THROUGHPUT.md) |
-| Hardware (Pi 4B / L7) | Classical go-to P (`stage` mode, `4 cm` / `5 deg` tol) | `4/4` reached target (`6.49–10.84 s`) | [Field notes](docs/L7_FIELD_NOTES.md) |
-| Hardware (Pi 4B / L7) | L1 student (`student_L1_best.npz`) | `0/3` parked (timeouts / tag loss) | [Field notes](docs/L7_FIELD_NOTES.md) |
-| Hardware (Pi 4B / L7) | ArUco + KLT (`1280x720`, `4 ms` shutter / gain `8`) | `97%` motion decode (`~13 poses/s`, `~65 ms`) | [Field notes](docs/L7_FIELD_NOTES.md) |
-
-- Real-car plant ID (`probe`) measured `2.3 m/s` forward (deadzone `0.05`, onset `0.18 s`), `~1.6 m/s` strafe (deadzone `~0.13`, onset `0.25–0.37 s`), and `15.7 rad/s` yaw per duty (deadzone `0.10`, onset `0.07 s`), vs `0.0` deadzone in `simulation/gazebo/mecanum_bayesian_profile.json`.
-- Real gyro-rate std (`0.63 rad/s` vs `0.002 rad/s` in `rl/sim.py`) drove `|a2| > 0.8` turn saturation on `74%` of real ep3 ticks (`0%` when gyro-rate is zeroed in offline replay).
-- The older `0/20` Gazebo L6 result was `student_L1_latw5_s0.npz`, not the best checkpoint; the `3/10` above is the paired-seed diagnostic on `student_L1_best.npz` ([History](explore/HISTORY.md)).
+Open work and its order: `uv run python tools/research/ledger.py roadmap`.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `src/ugv/` | Torch-free Pi runtime: FastAPI/WS dashboard (`web.py`), ArUco + KLT vision, BMI270 IMU heading, `swept_clear` shield, `StagedBaseline`, and NumPy `StudentPolicy` |
-| `rl/` | CUDA RL subproject (`rl/.venv`): `MecanumVecEnv` (`sim.py`), PPO teacher/student trainers, `evaluate.py` (1000-episode gate), and `.npz` export |
+| `src/ugv/` | Torch-free Pi runtime: FastAPI/WS dashboard (`web.py`), ArUco + KLT vision, BMI270 IMU heading, `swept_clear` shield, state machines (`fsm.py`) |
+| `src/ugv/pose/` | Airframe mesh and keypoint skeleton, synthetic renderer, PnP and SIFT pose |
+| `src/ugv/research/`, `research/`, `tools/research/` | Decisions, attempts and tasks (one Markdown file each) and the `ledger.py` CLI |
 | `simulation/gazebo/` | Gazebo 3D car/drone/lab worlds, native `ugv::TTMotorSystem` plugin, camera/IMU models, and browser drive console |
 | `arduino/` | Standalone Nano 33 BLE Sense Rev2 firmware (`firmware/MotionStream`), BLE streaming, and VQF dashboard |
-| `tools/` | L7 field harness (`tools/l7/`) and system identification / calibration scripts (`tools/calibration/`) |
-| `docs/` | Topic documentation indexed in [docs/INDEX.md](docs/INDEX.md) (safety, network, commands, RL ladder, throughput, field notes) |
+| `tools/` | Pose smoke test (`tools/pose/`), ledger, L7 field harness (`tools/l7/`), calibration (`tools/calibration/`), mesh optimisation, Observatory |
+| `docs/` | Topic documentation indexed in [docs/INDEX.md](docs/INDEX.md) (state, safety, network, commands, pose plan, field notes) |
 | `tests/` | Root torch-free unit and dashboard tests (`pytest` also covers `simulation/gazebo/test_*.py`) |
 
 ## Setup
 
-Root Python `>= 3.13` stays torch-free for Pi deployment; `rl/` uses a separate CUDA environment (`rl/.venv`).
+Root Python `>= 3.13` stays torch-free for Pi deployment. Pose training (when it starts) gets its own CUDA environment, as `rl/` had.
 
 ```bash
 uv sync
@@ -68,7 +58,7 @@ uv run pytest -q                     # root + simulation/gazebo tests
 ./simulation/gazebo/launch_control.command   # Gazebo + local console on :8767
 ```
 
-- **RL training (`rl/`)**: `cd rl && uv sync && uv run pytest -q test_rl.py`; see [rl/README.md](rl/README.md) and [docs/RL_PARKING.md](docs/RL_PARKING.md).
+- **Pose smoke test**: `uv run python tools/pose/smoke.py --views car --out runs/pose_smoke`; see [docs/POSE.md](docs/POSE.md).
 - **Arduino IMU companion**: standalone BLE + VQF orientation dashboard on port `8766`; see [arduino/README.md](arduino/README.md).
 - **Docs & safety**: check [docs/SAFETY.md](docs/SAFETY.md) and [docs/STATE.md](docs/STATE.md) before any Pi SSH or motor actuation. See [docs/INDEX.md](docs/INDEX.md) for all documents and [docs/COMMANDS.md](docs/COMMANDS.md) for the canonical command table.
 

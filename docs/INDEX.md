@@ -8,7 +8,6 @@
 L0 ../README.md
 L1 STATE.md + SAFETY.md + NETWORK.md
 L2 HARDWARE.md + COMMANDS.md + DASHBOARD.md
-L3 PROTOCOL.md
 ```
 
 ## Epistemics
@@ -25,8 +24,9 @@ L3 PROTOCOL.md
 ## Document map
 
 - [`README.md`](../README.md) — project overview, verified status metrics, layout, and quickstart.
-- [`STATE.md`](STATE.md) — current operational state: Pi charging pause, preservation rules, deploy runbook (HANDOFF.md deleted 2026-11-17).
-- [`docs/STATE.md`](STATE.md) — current hardware/software status and pointers to field notes and archive.
+- [`docs/STATE.md`](STATE.md) — whether the car may be touched: Pi pause, deploy state, hardware.
+- [`docs/POSE.md`](POSE.md) — current direction: airframe pose from the 3D model, experiments in order, parking state machine.
+- [`research/README.md`](../research/README.md) — decisions, attempts (a tree of what was tried) and tasks; `tools/research/ledger.py`.
 - [`docs/NETWORK.md`](NETWORK.md) — single source of truth for Pi SSH (`ssh pi` via `glinet`), IP, and Wi-Fi hardening.
 - [`docs/COMMANDS.md`](COMMANDS.md) — canonical command table, grouped script index, and bounded hardware diagnostics.
 - [`docs/SAFETY.md`](SAFETY.md) — S0–S4 actuation gates, watchdog/stop invariants, and abort rules.
@@ -34,24 +34,13 @@ L3 PROTOCOL.md
 - [`docs/DASHBOARD.md`](DASHBOARD.md) — WebSocket/MJPEG dashboard contract, manual controls, and Follow behavior.
 - [`docs/ARUCO.md`](ARUCO.md) — 50 mm DICT_4X4_50 detection, curled/oblique rescue, follow control, and failsafes.
 - [`docs/PARKING.md`](PARKING.md) — provisional tag/IMU/scene map, `swept_clear` planner, and entry gates.
-- [`docs/RL_PARKING.md`](RL_PARKING.md) — RL goal, parked thresholds, L0–L7 ladder, contracts, and known gaps.
 - [`docs/DYNAMICS.md`](DYNAMICS.md) — 100 Hz IMU/PWM capture, drift-bracketed identification, and Gazebo effort fit.
 - [`docs/MECANUM_REAL2SIM.md`](MECANUM_REAL2SIM.md) — Bayesian mecanum movement model, visual–inertial scale, and heldout metrics.
 - [`docs/L7_PREFLIGHT.md`](L7_PREFLIGHT.md) — L7 real-robot preflight checklist, confirmation flags, and 30 s SysID workflow.
 - [`docs/L7_FIELD_NOTES.md`](L7_FIELD_NOTES.md) — 2026-11-13 L7 real-car field test results, plant ID, and camera/tag notes.
-- [`docs/PIPELINE.md`](PIPELINE.md) — RL roles, 1-GPU rule, monotonic gating, and the two ledgers (run archive vs hypothesis ledger).
-- [`explore/LOOP.md`](../explore/LOOP.md) — explore cycle (propose, predict, start, close, retro), refusals, and the runner `tools/explore.py`.
-- [`explore/HYPOTHESES.jsonl`](../explore/HYPOTHESES.jsonl) — append-only hypothesis ledger; written only by `tools/explore.py`.
 - [`docs/STATE_MACHINES.md`](STATE_MACHINES.md) — audit of implicit state machines, what is now an explicit `Machine`, ranked open items.
-- [`docs/SIM_THROUGHPUT.md`](SIM_THROUGHPUT.md) — measured env/eval/Gazebo/NumPy throughput and worker settings.
-- [`explore/HISTORY.md`](../explore/HISTORY.md) — decision and experiment history (mined from the superseded agent board), adversary verdicts, and gate decisions.
-- [`docs/PROTOCOL.md`](PROTOCOL.md) — compact agent coordination grammar.
 - [`docs/archive/STATE_HISTORY.md`](archive/STATE_HISTORY.md) — archived dated state snapshots (`2026-08-29`..`2026-10-17`).
-- [`docs/archive/FAILURE_REPLAY.md`](archive/FAILURE_REPLAY.md) — archived failure-replay curriculum proposal (`2026-11-13`).
-- [`docs/archive/council_2026-11-14/`](archive/council_2026-11-14/) — archived council_v2 analysis reports (`2026-11-14`; scratch scripts/outputs removed).
-- [`rl/README.md`](../rl/README.md) — RL subproject file map and L0 training/eval recipes (3090 CUDA env).
-- [`rl/PLAN.md`](../rl/PLAN.md) — RL phase work queue, measured gate state, and guardrails.
-- [`rl/AGENTS.md`](../rl/AGENTS.md) — RL agent rules, safety gates, and torch isolation constraints.
+- [`docs/archive/council_2026-11-14/`](archive/council_2026-11-14/) — 2026-11-14 council reports; 03, 06, 07 and 08 are prior analysis for `POSE.md`.
 - [`simulation/gazebo/README.md`](../simulation/gazebo/README.md) — Gazebo Freenove/drone/lab models, Blender previews, and keyboard console.
 - [`simulation/gazebo/MECANUM_MECHANICS.md`](../simulation/gazebo/MECANUM_MECHANICS.md) — passive mecanum roller geometry, native plugin params, and replay commands.
 - [`simulation/gazebo/MECANUM_REAL2SIM.md`](../simulation/gazebo/MECANUM_REAL2SIM.md) — native mecanum Gazebo candidate `pilot02_v1` metrics and limitations.

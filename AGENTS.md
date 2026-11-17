@@ -1,8 +1,10 @@
 # Project scope
 
-A Freenove 4WD mecanum car (Raspberry Pi 4B) that parks itself between a drone's skids, localising
-from ArUco tags and a gyro. The repo holds the Pi runtime and dashboard, the RL training stack, the
-Gazebo simulation, calibration tooling and the field harness. This is a team repository that drives
+A Freenove 4WD mecanum car (Raspberry Pi 4B) that should park itself under the STRL-001 airframe.
+Direction since 2026-11-17: estimate the airframe's 6-DoF pose from the car camera using its 3D
+model and synthetic data, then park with a declared state machine (`docs/POSE.md`). The 2D RL
+stack is retired (tag `pre-pose-20261117`). The repo holds the Pi runtime and dashboard, the pose
+code, the Gazebo simulation, calibration tooling and the field harness. This is a team repository that drives
 real hardware: a change that alters motion is a hardware change, whatever the commit calls it.
 
 ## Safety comes first
@@ -19,6 +21,19 @@ real hardware: a change that alters motion is a hardware change, whatever the co
 - A deploy must preserve `~/ugv/runs/student.npz` and the camera drop-in `vision-camera.conf`.
 - An estimate-based "arrived" is not a parked car. Confirm with the end frame.
 
+## Research memory and coordination
+
+`research/` is the only memory and work queue: decisions, attempts and tasks, one Markdown file
+each (`research/README.md`, skill `research-ledger`). Attempts form a tree through `parent`
+(Dream-RSI style), so what failed and why can be replayed instead of re-run.
+
+1. Start: `git pull --ff-only`, then `uv run python tools/research/ledger.py status --as <you>`.
+2. Before designing or running: `ledger.py list --grep <topic>`. A `negative`, `invalid` or
+   `retracted` attempt is closed unless its "Re-run only if" holds.
+3. Claim the task (`ledger.py claim`; refused until its `after` tasks are done), do the work.
+4. Finish: an attempt record for any result, then `ledger.py done --result <attempt-id|commit>`.
+5. The roadmap is `ledger.py roadmap`, computed from task `after` links; there is no roadmap file.
+
 ## Commands
 
 `docs/COMMANDS.md` is the single command table and entry-point index. Add a row there when you add
@@ -28,24 +43,22 @@ Checks, required before every commit and run by CI:
 
 ```sh
 uv run ruff check . && uv run ruff format --check . && uv run pytest -q
-cd rl && uv run pytest -q test_rl.py        # when rl/ changed; needs the CUDA environment
 ```
 
-## Two environments
+## Environment
 
-| Where | Python | Holds |
-|---|---|---|
-| repo root (`pyproject.toml`) | ≥ 3.13 on the desktop; the Pi runs the same package | `src/ugv`, tools, Gazebo tests. No torch: the deployed policy is NumPy. |
-| `rl/` (`rl/pyproject.toml`, `rl/.venv`) | ≥ 3.11, CUDA torch | Training, evaluation, export. See `rl/AGENTS.md`. |
-
-Code under `src/ugv` must import without torch.
+Root `pyproject.toml`, Python >= 3.13, same package on the desktop and the Pi. No torch: code
+under `src/ugv` must import without it. Pose training, when it starts, gets its own CUDA
+environment in a subdirectory, as the retired `rl/` had.
 
 ## Where things live
 
 | Path | Holds |
 |---|---|
-| `src/ugv/` | Pi runtime: dashboard (`web.py`), vision, heading, parking, the NumPy `StudentPolicy` |
-| `rl/` | Simulator (`sim.py`), teacher and student training, `evaluate.py` (the success gate) |
+| `src/ugv/` | Pi runtime: dashboard (`web.py`), vision, heading, parking, state machines (`fsm.py`) |
+| `src/ugv/pose/` | Airframe mesh, keypoint skeleton, synthetic renderer, PnP and SIFT pose |
+| `src/ugv/research/`, `research/` | Ledger schema and checks; the decision, attempt and task files |
+| `tools/pose/`, `tools/research/` | Pose smoke test; `ledger.py` |
 | `simulation/gazebo/` | Worlds, models, bridge, policy episode runner |
 | `tools/l7/` | Field harness: deploy, run one mode on the Pi, pull records |
 | `tools/calibration/` | SysID trials, fits and reports |
@@ -54,28 +67,29 @@ Code under `src/ugv` must import without torch.
 | `docs/` | One topic per file, indexed in `docs/INDEX.md`; dated history in `docs/archive/` |
 | `tests/` | Root unit tests |
 
-Source of truth per topic: status → `docs/STATE.md` and `explore/`; safety →
-`docs/SAFETY.md`; network and SSH → `docs/NETWORK.md`; RL plan and gates → `rl/PLAN.md` and
-`docs/RL_PARKING.md`; field findings → `docs/L7_FIELD_NOTES.md`. State a fact in one place and link
-to it from the others.
+Source of truth per topic: car status → `docs/STATE.md`; direction and experiments →
+`docs/POSE.md`; work, decisions and past attempts → `research/`; safety → `docs/SAFETY.md`;
+network and SSH → `docs/NETWORK.md`; field findings → `docs/L7_FIELD_NOTES.md`. State a fact in
+one place and link to it from the others.
 
 ## Frames and tags
 
 - Policy frame: drone at the origin, skids along y, the car enters from +y facing −y; pose is
   `(x, y, yaw)`.
 - Yaw is counter-clockwise positive in `autopark.py`, `policy.py`, `tools/l7/l7_run.py` and
-  `rl/sim.py`. `parking.Pose2` is clockwise positive. Cross the boundary only through
+  the retired `rl/sim.py`. `parking.Pose2` is clockwise positive. Cross the boundary only through
   `pose2_from_ccw` / `pose2_to_ccw` in `src/ugv/parking.py`.
 - The drone carries tags 14, 6 and 3. The older layout 9/12/13/14 survives in some configs and
   simulation flags; check which one a file means before using it.
 
 ## Evidence rules
 
-- `rl/evaluate.py`, 1000 episodes, seed 11, is the only success gate. Training loss is not success.
-- Simulation success is not hardware success. Before a retrain, measure the sensor at rest, check
-  loop lag and action-to-duty parity; a policy that oscillates is usually a loop problem.
-- Record measured numbers with their run id. Never commit weights, raw logs, frames, videos,
-  credentials or machine-specific paths.
+- Synthetic pose numbers debug the pipeline; only the real evaluation set
+  (`research/tasks/2026-11-17-real-pose-eval-set.md`) is evidence about the method.
+- Simulation success is not hardware success. Before trusting a controller on the car, measure
+  the sensor at rest, loop lag and action-to-duty parity.
+- Record measured numbers in an attempt with their run id. Never commit weights, raw logs,
+  frames, videos, credentials or machine-specific paths.
 
 ## Code shape
 
@@ -88,7 +102,7 @@ to it from the others.
 
 Project skills live in `.agents/skills/` (`.claude/skills` and `.opencode/skills` link there):
 
-- `ugv-research`: the explore loop (`explore/` ledger driven by `tools/explore.py`; see `explore/LOOP.md`).
+- `research-ledger`: reading and writing `research/` (session start, claiming, finishing, asking).
 - `mastermind`: delegating to subagents and gating their output.
 - `orchestrate-and-gate`: log-first diagnosis and sim-to-real release gates.
 - `mesh-optimization`: simplify heavy meshes into game-ready ones behind a camera-truth gate.
@@ -96,4 +110,4 @@ Project skills live in `.agents/skills/` (`.claude/skills` and `.opencode/skills
 Skills follow the Agent Skills spec (agentskills.io): a directory with `SKILL.md`, `name`
 matching the directory, and a `description` that says when to use it. Keep them under
 ~500 lines and push detail into `references/`. `agents.md` spec: plain Markdown, no required
-fields; the nearest `AGENTS.md` to a file wins, so `rl/AGENTS.md` refines this file under `rl/`.
+fields; the nearest `AGENTS.md` to a file wins.

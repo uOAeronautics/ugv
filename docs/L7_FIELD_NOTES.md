@@ -1,5 +1,7 @@
 # L7 Field Notes (2026-11-13)
 
+Historical record of the 2026-11-13 runs. Paths under `rl/` refer to the retired 2D RL stack at tag `pre-pose-20261117`.
+
 Terse record of real-car L7 tests on 2026-11-13. Evidence lives under `calibration/runs/l7/`.
 
 ## Harness (`tools/l7/`)
@@ -14,7 +16,7 @@ Terse record of real-car L7 tests on 2026-11-13. Evidence lives under `calibrati
   - ep1 (`calibration/runs/l7/20261113-182150-policy-ep1-front/summary.json`): timeout (`42.96 s`), oscillating around `~1.3 m` (`end_est y=1.39 m`).
   - ep2 (`calibration/runs/l7/20261113-182645-policy-ep2-mean/summary.json`): `lost` (`11.31 s`), lost tag after strafe-induced yaw.
   - ep3 (`calibration/runs/l7/20261113-183857-policy-ep3-p0/summary.json`): timeout (`45.98 s`), oscillating while drifting from `0.57 m` (`acquired_pose y=0.568 m`) to `1.10 m` (`end_pose_tag y=1.103 m`).
-- Sim comparison: same student scores `954-966/1000` on L1 in `rl/sim.py` (`explore/HISTORY.md`), and `0/20` in Gazebo L6 (`rl/runs/gazebo_l6/student_L1_latw5_s0_L1_20ep_s11.json` — Gazebo L6 `0/20` timeout pattern).
+- Sim comparison: same student scores `954-966/1000` on L1 in the retired 2D sim and `0/20` in Gazebo L6 (timeouts); records under `research/attempts/` (root `2026-11-17-track-2d-rl`).
 
 ## Cause Analysis
 

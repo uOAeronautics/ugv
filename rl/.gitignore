@@ -1,5 +1,0 @@
-runs/*
-!runs/archive.jsonl
-*.pt
-*.npz
-*.onnx
