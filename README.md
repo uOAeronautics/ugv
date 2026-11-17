@@ -26,7 +26,7 @@ A Freenove `FNK0043` 4WD mecanum car on a Raspberry Pi 4B (`ugv-dashboard.servic
 
 | Area | State | Source |
 |---|---|---|
-| Parking in simulation | 872/1000 parked (95% CI 85-89%), 15 collisions, over randomised cars, cameras and starts; the 3D mesh defines the bay | [docs/PARK_SIM.md](docs/PARK_SIM.md), `uv run ugv-lab` |
+| Parking in simulation | 909/1000 parked (95% CI 89-93%), 7 collisions (`config/park_params.json`), over randomised cars, cameras and starts; the 3D mesh defines the bay | [docs/PARK_SIM.md](docs/PARK_SIM.md), `uv run ugv-lab` |
 | Pose from the 3D model | Synthetic smoke test: PnP on 12 true keypoints with 1 px noise lands within 5 deg / 10 cm on every solved view; SIFT bank as first set up fails (0/40). No real frames yet | `research/attempts/2026-11-17-pose-smoke-*` |
 | 2D RL parking (retired) | Best sim student 966/1000 at L1, 0/3 parked on the car | `research/attempts/2026-11-17-track-2d-rl.md` |
 | Hardware (Pi 4B) | Classical go-to reached its target 4/4; ArUco + KLT decodes 97% while moving | [Field notes](docs/L7_FIELD_NOTES.md) |

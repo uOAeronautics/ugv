@@ -26,11 +26,12 @@ the target, and no contact at any time.
 |---|---|---|---|---|
 | v6, default parameters | 872/1000 | 85.0-89.1% | 15 | `runs/park_eval/default.json` |
 | v7 (3-5 point fixes update yaw), default parameters | 882/1000 | 86.1-90.1% | 7 | `runs/park_eval/v7-default.json` |
-| v7, parameters from search s1 (`config/park_params.json`) | 899/1000 | 87.9-91.6% | 13 | `runs/park_eval/s1-best.json` |
+| v7, parameters from search s1 | 899/1000 | 87.9-91.6% | 13 | `runs/park_eval/s1-best.json` |
+| **v7, parameters from search s2 (`config/park_params.json`)** | **909/1000** | **89.0-92.5%** | **7** | `runs/park_eval/s2-best.json` |
 
-All three are the same 1000 episodes. The tuned parameters park more but collide more: the
-search scored a collision like any other failure. Until a search penalises collisions, the
-default parameters are the safer choice for the car.
+All four are the same 1000 episodes. Search s1 scored a collision like any other failure and
+bought success with collisions; s2 rejects any candidate that collides more than its parent and
+beats both. Use `--params config/park_params.json`.
 
 Robustness sweep of v6 `default` (300 episodes each): ideal world 100%, detector noise only 99%,
 car spread only 95%, worse detector (4 px, 20% misses, 8% outliers) 77%, worse calibration
