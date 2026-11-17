@@ -157,6 +157,7 @@ def search(
         "wilson95": root["wilson95"],
         "outcomes": root["outcomes"],
         "verdict": "ROOT",
+        "collisions": root["collisions"],
         "params": asdict(best),
         "t": round(time.time() - t0, 1),
     }
@@ -182,8 +183,13 @@ def search(
                 "t": round(time.time() - t0, 1),
             }
             counter += 1
-            # PASS: beats the parent by more than the paired noise we accept (2 episodes).
-            node["verdict"] = "PASS" if r["success"] >= best_node["success"] + 2 else "FAIL"
+            # PASS: beats the parent by more than the paired noise we accept (2 episodes) and
+            # does not collide more often. A collision on the car needs a person; it is never
+            # traded for success.
+            node["collisions"] = r["collisions"]
+            better = r["success"] >= best_node["success"] + 2
+            safe = r["collisions"] <= best_node.get("collisions", root["collisions"])
+            node["verdict"] = "PASS" if better and safe else "FAIL"
             write(node)
             results.append((node, cand))
             log(f"gen {gen} {node['id']} {node['verdict']} {r['success']}/{n} {change}")

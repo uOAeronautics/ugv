@@ -24,9 +24,15 @@ the target, and no contact at any time.
 
 | Version | Parked | 95% CI | Collisions | Record |
 |---|---|---|---|---|
-| `default` (commit before the 3-5 point yaw change) | 872/1000 | 85.0-89.1% | 15 | `runs/park_eval/default.json` |
+| v6, default parameters | 872/1000 | 85.0-89.1% | 15 | `runs/park_eval/default.json` |
+| v7 (3-5 point fixes update yaw), default parameters | 882/1000 | 86.1-90.1% | 7 | `runs/park_eval/v7-default.json` |
+| v7, parameters from search s1 (`config/park_params.json`) | 899/1000 | 87.9-91.6% | 13 | `runs/park_eval/s1-best.json` |
 
-Robustness sweep of `default` (300 episodes each): ideal world 100%, detector noise only 99%,
+All three are the same 1000 episodes. The tuned parameters park more but collide more: the
+search scored a collision like any other failure. Until a search penalises collisions, the
+default parameters are the safer choice for the car.
+
+Robustness sweep of v6 `default` (300 episodes each): ideal world 100%, detector noise only 99%,
 car spread only 95%, worse detector (4 px, 20% misses, 8% outliers) 77%, worse calibration
 (2.5 deg mount yaw, 3 deg pitch) 74%, 1.5x wider spread of cars 67%. The residual failures are
 mostly final heading just over 5 deg; with a nominal car the 90th-percentile heading error is

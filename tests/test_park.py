@@ -87,3 +87,21 @@ def test_lab_api_serves_every_view() -> None:
     assert c.get("/runs/../pyproject.toml").status_code == 404
     world = c.get("/api/park/world").json()
     assert len(world["bay"]["obstacles"]) > 10 and world["bay"]["target"][2] == 0.0
+
+
+def test_mutation_follows_failure_levers() -> None:
+    from collections import Counter
+
+    from ugv.park.controller import ParkParams
+    from ugv.park.search import LEVERS, SPACE, mutate
+
+    rng = np.random.default_rng(0)
+    hits = Counter()
+    for _ in range(200):
+        p, change = mutate(ParkParams(), Counter({"collision": 10}), rng)
+        assert len(change) == 3
+        for k, v in change.items():
+            lo, hi = SPACE[k]
+            assert lo <= v <= hi and getattr(p, k) == v
+            hits[k in LEVERS["collision"]] += 1
+    assert hits[True] > hits[False], "failure levers are favoured"
