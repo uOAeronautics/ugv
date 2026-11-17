@@ -10,8 +10,9 @@ floor, so the car fits them while it drives:
 
 The fit is a recursive least squares on `v = a * d + b * sign(d)` (so `g = a`,
 `dz = -b / a`), started from the nominal model as a prior (gain within 30%, deadzone within
-0.05 duty), with the axis's `still` speed as the observation noise. A window in which a non-zero duty
-moved the car by nothing raises the deadzone to at least that duty. This is the small,
+0.05 duty), with the axis's `still` speed as the observation noise. A steady window in which a non-zero duty
+left the gyro still raises the yaw deadzone to at least that duty (translation windows, measured
+through the camera, are too noisy for that). This is the small,
 mechanistic world model the controller and the odometry share: commands are inverted through
 it, and odometry integrates through it.
 """
@@ -44,11 +45,14 @@ class Axis:
         # Prior covariance of (a, b) = (g, -g dz), in the units of the observations.
         self._P = np.diag([(PRIOR_REL * self.gain) ** 2, (self.gain * PRIOR_DZ) ** 2])
 
-    def observe(self, duty: float, speed: float, weight: float = 1.0) -> None:
-        """One (mean duty, measured mean speed) pair over a window of constant-sign duty."""
+    def observe(self, duty: float, speed: float, weight: float = 1.0, stall_ok: bool = True) -> None:
+        """One (mean duty, measured mean speed) pair over a window of steady duty. `stall_ok`:
+        whether a still reading may raise the deadzone (only for clean, direct measurements)."""
         if abs(duty) < 1e-3:
             return
         if abs(speed) < self.still:
+            if not stall_ok:
+                return
             # Commanded but no motion: the deadzone is at least this duty.
             self.stall_floor = max(self.stall_floor, abs(duty) + 0.005)
             self.deadzone = max(self.deadzone, self.stall_floor)

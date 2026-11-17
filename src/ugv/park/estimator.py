@@ -146,8 +146,11 @@ class Estimator:
         if len(duties) and abs(d_meas[2]) < 0.15:  # little rotation: body axes stay comparable
             for i in range(2):
                 col = duties[:, i]
-                if (col > 0).all() or (col < 0).all():
-                    self.actuator.axes[i].observe(float(col.mean()), float(d_meas[i] / (t - t0)))
+                steady = col.std() < 0.01 and ((col > 0).all() or (col < 0).all())
+                if steady:
+                    self.actuator.axes[i].observe(
+                        float(col.mean()), float(d_meas[i] / (t - t0)), stall_ok=False
+                    )
         if t - t0 > 0.8:
             yaw_err = wrap(d_odom[2] - d_meas[2])
             self.gyro_bias = float(np.clip(self.gyro_bias + 0.05 * yaw_err / (t - t0), -0.03, 0.03))
