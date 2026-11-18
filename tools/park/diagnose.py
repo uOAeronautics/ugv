@@ -21,6 +21,7 @@ import numpy as np
 from ugv.park.controller import ParkParams
 from ugv.park.episode import Episode, Scenario
 from ugv.park.faults import FAMILIES, Faults
+from ugv.park.perception import DetectorModel
 from ugv.park.search import load_params
 
 
@@ -46,9 +47,10 @@ def _families(f: Faults) -> list[str]:
 
 
 def one(args) -> dict:
-    i, seed, params, faults, start = args
+    i, seed, params, faults, start, near = args
     s = seed * 100003 + i
-    sc = Scenario.sample(np.random.default_rng(s), 1.0, None, faults, None, start)
+    det = DetectorModel(near_field=near)
+    sc = Scenario.sample(np.random.default_rng(s), 1.0, det, faults, None, start)
     ep = Episode(sc, params, s)
     while not ep.tick():
         pass
@@ -67,8 +69,10 @@ def one(args) -> dict:
     }
 
 
-def diagnose(params: ParkParams, n: int, seed: int, faults: float, start: str) -> dict:
-    jobs = [(i, seed, params, faults, start) for i in range(n)]
+def diagnose(
+    params: ParkParams, n: int, seed: int, faults: float, start: str, near: bool = False
+) -> dict:
+    jobs = [(i, seed, params, faults, start, near) for i in range(n)]
     with ProcessPoolExecutor(min(16, os.cpu_count() or 1)) as ex:
         rows = list(ex.map(one, jobs, chunksize=4))
     out: dict = {"n": n, "outcomes": dict(Counter(r["outcome"] for r in rows).most_common())}
@@ -105,10 +109,11 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=21)
     ap.add_argument("--faults", type=float, default=1.0)
     ap.add_argument("--start", choices=["ring", "close"], default="ring")
+    ap.add_argument("--near-field", action="store_true", help="detector sees the tyre points")
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
     params = load_params(args.params) if args.params else ParkParams()
-    d = diagnose(params, args.n, args.seed, args.faults, args.start)
+    d = diagnose(params, args.n, args.seed, args.faults, args.start, args.near_field)
     if args.out:
         args.out.write_text(json.dumps(d))
     d.pop("rows")

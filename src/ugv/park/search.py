@@ -51,11 +51,18 @@ SPACE = {
     "shield_inflate_m": (0.0, 0.02),
     "max_retries": (1, 6),
     "k_hold": (0.0, 6.0),
+    "calib_min_points": (0, 6),
+    "blind_max_m": (0.01, 0.15),
+    "blind_waits": (1, 8),
+    "misalign_confirm": (1, 5),
+    "still_gain": (0.0, 0.3),
 }
 
 # Which parameters plausibly drive each failure outcome.
 LEVERS = {
     "collision": [
+        "blind_max_m",
+        "blind_waits",
         "shield_inflate_m",
         "abort_lat_m",
         "abort_yaw_deg",
@@ -68,6 +75,7 @@ LEVERS = {
     ],
     "parked-off-target": [
         "k_hold",
+        "calib_min_points",
         "stop_tol_m",
         "lat_tol_m",
         "yaw_tol_deg",
@@ -78,6 +86,8 @@ LEVERS = {
         "step_v",
     ],
     "abort:misaligned in the bay; out of retries": [
+        "misalign_confirm",
+        "still_gain",
         "align_lat_m",
         "align_yaw_deg",
         "abort_lat_m",

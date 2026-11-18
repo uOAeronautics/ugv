@@ -125,8 +125,10 @@ class Episode:
                 self.cam = replace(
                     c, focal_scale=c.focal_scale * fs, cx_px=cx, cy_px=cy, k1=k1, k2=k2
                 )
-        self.est = Estimator()
         self.params = params or ParkParams()
+        self.est = Estimator(
+            calib_min_points=self.params.calib_min_points, still_gain=self.params.still_gain
+        )
         self.ctl = ParkController(self.b, self.params) if engaged else None
         self.pending: list[tuple[int, float, np.ndarray]] = []
         self.states: dict[str, float] = {}

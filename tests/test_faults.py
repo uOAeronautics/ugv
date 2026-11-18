@@ -61,3 +61,28 @@ def test_manual_ticks_do_not_need_a_controller():
     for _ in range(50):
         ep.tick(np.array([0.3, 0, 0]))
     assert ep.state == "MANUAL" and ep.true_rel()[0] > -1.4 + 0.1
+
+
+def test_pitch_refit_recovers_a_knocked_camera_from_five_points():
+    from ugv.park.perception import (
+        CameraError,
+        DetectorModel,
+        _model_points,
+        _true_projection,
+        camera_points,
+        solve,
+    )
+
+    rel = np.array([0.6, 0.02, 0.05])  # airframe 0.6 m ahead, near the bay
+    knocked = CameraError(pitch=np.radians(-4))
+    uv, _ = _true_projection(camera_points(rel), knocked)
+    _, model = _model_points()
+    idx = [0, 4, 5, 9, 10]  # five points: pitch is not freed by the normal path
+    prior = np.array([*rel, 0.0])
+    det = DetectorModel(pixel_std=0.0)
+    m = solve(model[idx], uv[idx], det, prior)
+    assert m is not None and len(m) > 5 and m[5] == 1  # re-fitted
+    assert abs(m[3] - np.radians(4)) < np.radians(1)  # pitch found (sign: positive = up)
+    assert abs(m[0] - rel[0]) < 0.02
+    old = solve(model[idx], uv[idx], DetectorModel(pixel_std=0.0, refit_pitch=False), prior)
+    assert old is None or abs(old[0] - rel[0]) > abs(m[0] - rel[0])  # without it: lost or worse

@@ -45,6 +45,10 @@ class Estimator:
     actuator: Actuator = field(default_factory=Actuator)
     gyro_bias: float = 0.0
     pitch: float = 0.0  # camera pitch, self-calibrated from fixes with 4+ points
+    calib_min_points: int = (
+        0  # fixes with fewer keypoints do not calibrate motor gains or gyro bias
+    )
+    still_gain: float = 0.0  # weight of a new sample while the car stands still (0 = `gain`)
     tau: tuple[float, float] = (0.12, 0.2)  # nominal motor lag (plant.NOMINAL.tau), s
     _v: np.ndarray = field(default_factory=lambda: np.zeros(2))
     _anchor: tuple | None = None  # (t, odom at t, car-in-airframe measured at t)
@@ -82,6 +86,9 @@ class Estimator:
             w.clear()
         w.append((d, gyro))
 
+    def _moving(self) -> bool:
+        return bool(self._history and np.any(self._history[-1][2] != 0))
+
     def odom_at(self, t: float) -> np.ndarray:
         for ts, pose, _ in reversed(self._history):
             if ts <= t:
@@ -98,6 +105,8 @@ class Estimator:
         points = int(meas[4]) if len(meas) > 4 else 12
         if len(meas) > 3 and points >= 6:
             self.pitch += 0.1 * (float(meas[3]) - self.pitch)
+        elif len(meas) > 5 and meas[5]:  # pitch re-fitted from 4-5 points: the mount moved
+            self.pitch += 0.3 * (float(meas[3]) - self.pitch)
         sample = compose(self.odom_at(t_capture), rel)
         if points < 3 and self.airframe is not None:
             # Few points: yaw is barely observable (often taken from the prior). Keep the
@@ -119,9 +128,12 @@ class Estimator:
                 self.last_fix_t, self.since_fix_m = now, 0.0
                 return "reinit"
             return "rejected"
-        if self.adapt:
+        if self.adapt and points >= self.calib_min_points:
             self._calibrate(t_capture, rel)
-        k = max(self.gain, 1.0 / (self.samples + 1))
+        gain = self.gain
+        if self.still_gain and np.abs(self._v).max() < 0.005 and not self._moving():
+            gain = self.still_gain  # nothing moves: average many looks at the same pose
+        k = max(gain, 1.0 / (self.samples + 1))
         self.airframe = self.airframe + k * d
         self.airframe[2] = wrap(self.airframe[2])
         self.samples += 1

@@ -20,6 +20,36 @@ tree under `research/attempts/2026-11-17-track-3d-parking.md`.
 Success is judged on the true pose, never the estimate: PARKED within ±2 cm, ±2 cm, ±5 deg of
 the target, and no contact at any time.
 
+## Faults and awkward starts
+
+The table above is a healthy car with calibration errors. `faults.py` adds what goes wrong on
+the day, per episode, from its own random stream (a fault-free run is bit-identical). At
+severity 1 each family is present with probability 0.5:
+
+| Family | What | Magnitude at severity 1 |
+|---|---|---|
+| wheel | one or two wheels weaker or stronger, through mecanum kinematics | ±10-40% |
+| battery | supply vs calibration day, before the deadzone; sags while driving | 80-108%, 0-10%/min |
+| stall | one wheel cuts out for 50-300 ms | 0.1-1 per s |
+| slip | per-wheel traction loss each tick | 5-20% |
+| delay | extra command latency | 20-60 ms |
+| drops | camera frames lost, sometimes in runs | 5-30% |
+| phantom | a false airframe detection at a plausible range | 1-5% of frames |
+| gyro | scale error and wandering bias | ±5%, 0-0.001 rad/s/√s |
+| exposure | over/under-exposed spells that hide most keypoints | 0.05-0.3 per s, 0.3-2 s |
+| blur, noise | motion blur with turn rate; sensor noise | 2-10 px per rad/s; 0.5-2 px |
+| occlusion | a fixed region of the image blocked | 2-20% of the image |
+| shake | mount jitter per frame (also blurs) | 0.2-1 deg |
+| bump | the mount knocked once, at a random time | 1-4 deg |
+| lens | focal, principal point, radial distortion the solver does not know | ±6%, ±25 px, k1 -0.2..0.1 |
+| focus | fixed focus: defocus blur grows with distance from the focus | focus 0.3-3 m, 2-8 px/dioptre |
+
+`--start close` places the car 0.4-1.3 m from the airframe on any side (nose and wingtips
+included). The challenge page drives the same faulty cars live, and named awkward starts
+(nose-on, beside the nose wheel, under a wingtip) are in `ugv.lab.sim.PRESETS`.
+Attempts: `research/attempts/2026-11-18-park-*`. Magnitudes are guesses until measured on
+the car; the per-family sweep (`eval.py --families`) says which ones matter.
+
 ## Results (seed 11, 1000 episodes, full noise)
 
 | Version | Parked | 95% CI | Collisions | Record |

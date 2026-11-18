@@ -34,6 +34,12 @@ class DetectorModel:
     min_planar_points: int = 2  # floor-constrained solve (needs a prior); 2 points: yaw from prior
     min_span_px: float = 40.0  # airframe smaller than this in the image: not detected
     max_range_m: float = 4.0
+    # Car-side solver: with 4-5 points whose fit misses the gate, retry with the camera pitch
+    # free (a knocked mount) before dropping points (attempt 2026-11-18-park-pitch-refit).
+    refit_pitch: bool = True
+    # Near-field keypoints on the nose wheel's tyre (left, right, top), visible from the bay
+    # where the 12-point skeleton is mostly out of view (attempt 2026-11-18-park-near-field).
+    near_field: bool = True
     # Calibration errors drawn once per episode (the same bias on every frame).
     focal_rel_std: float = 0.02
     mount_yaw_std: float = np.radians(1.0)
@@ -72,10 +78,30 @@ def _model_points() -> tuple[tuple[str, ...], np.ndarray]:
     return names, pts
 
 
-def camera_points(rel: np.ndarray) -> np.ndarray:
+@cache
+def _near_points() -> np.ndarray:
+    """The nose wheel's tyre seen from behind: its left, right and top extremes (floor heights)."""
+    frame = load_airframe()
+    v = frame.tris.reshape(-1, 3).copy()
+    v[:, 2] -= bay().floor_z
+    g = keypoints(frame)["gear_nose"]
+    wheel = v[(np.linalg.norm(v[:, :2] - g[:2], axis=1) < 0.05) & (v[:, 2] < 0.06)]
+    return np.array(
+        [wheel[wheel[:, 1].argmax()], wheel[wheel[:, 1].argmin()], wheel[wheel[:, 2].argmax()]]
+    )
+
+
+def model_points(det: DetectorModel | None = None) -> np.ndarray:
+    """The points the detector looks for, heights above the floor: the 12-point skeleton, plus
+    the near-field tyre points when `det.near_field`."""
+    _, pts = _model_points()
+    return np.vstack([pts, _near_points()]) if det is not None and det.near_field else pts
+
+
+def camera_points(rel: np.ndarray, det: DetectorModel | None = None) -> np.ndarray:
     """Keypoints in the OpenCV camera frame, for the airframe at planar pose `rel` in the car
     frame (airframe origin on the floor)."""
-    _, pts = _model_points()
+    pts = model_points(det)
     c, s = np.cos(rel[2]), np.sin(rel[2])
     x = rel[0] + c * pts[:, 0] - s * pts[:, 1] - CAMERA_X_M
     y = rel[1] + s * pts[:, 0] + c * pts[:, 1]
@@ -125,8 +151,7 @@ def measure(
     if o is None:
         return None
     keep, obs = o
-    _, model = _model_points()
-    return solve(model[keep], obs, det, prior)
+    return solve(model_points(det)[keep], obs, det, prior)
 
 
 def observe(
@@ -141,7 +166,7 @@ def observe(
     Keypoints inside `occluder` (u0, v0, u1, v1) are hidden."""
     if np.hypot(rel_true[0], rel_true[1]) > det.max_range_m:
         return None
-    uv, front = _true_projection(camera_points(rel_true), cam or CameraError())
+    uv, front = _true_projection(camera_points(rel_true, det), cam or CameraError())
     inside = front & (uv[:, 0] >= 0) & (uv[:, 0] < WIDTH) & (uv[:, 1] >= 0) & (uv[:, 1] < HEIGHT)
     if occluder is not None:
         u0, v0, u1, v1 = occluder
@@ -171,7 +196,11 @@ def project_planar(model: np.ndarray, q: np.ndarray) -> np.ndarray:
 
 
 def solve_planar(
-    model: np.ndarray, obs: np.ndarray, init: np.ndarray, iters: int = 12
+    model: np.ndarray,
+    obs: np.ndarray,
+    init: np.ndarray,
+    iters: int = 12,
+    free_pitch: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Gauss-Newton on (x, y, yaw, camera pitch). Both bodies stand on the floor, so the pose
     has 3 unknowns; the camera pitch is a 4th, shared by every frame, so the car calibrates its
@@ -181,6 +210,8 @@ def solve_planar(
     Returns (x, y, yaw, pitch) and per-point residuals (px)."""
     q = init.astype(float).copy()
     free = [0, 1, 2, 3] if len(obs) >= 6 else [0, 1, 2] if len(obs) >= 3 else [0, 1]
+    if free_pitch and len(obs) >= 4:
+        free = [0, 1, 2, 3]
     eps = 1e-4
     for _ in range(iters):
         r = (project_planar(model, q) - obs).ravel()
@@ -229,5 +260,9 @@ def solve(
         worst = int(np.argmax(res))
         if res[worst] <= gate:
             return np.array([q[0], q[1], wrap(q[2]), q[3], len(o)])
+        if det.refit_pitch and 4 <= len(o) < 6:
+            q2, res2 = solve_planar(m, o, init, free_pitch=True)
+            if np.isfinite(q2).all() and res2.max() <= gate and abs(q2[3] - init[3]) < 0.12:
+                return np.array([q2[0], q2[1], wrap(q2[2]), q2[3], len(o), 1.0])
         m, o = np.delete(m, worst, axis=0), np.delete(o, worst, axis=0)
     return None

@@ -84,6 +84,11 @@ class ParkParams:
         0.0  # ENTER moves: hold the heading the move started with, by the gyro (0 = off)
     )
     shield_backoff: bool = False  # also shield the reverse out of the bay
+    calib_min_points: int = 0  # estimator: keypoints a fix needs to calibrate gains and gyro bias
+    blind_max_m: float = 1.0  # ENTER: farther than this from the target, never move unseen
+    blind_waits: int = 3  # ENTER: empty measure windows to wait out before backing off
+    misalign_confirm: int = 1  # ENTER: consecutive misaligned windows before backing off
+    still_gain: float = 0.0  # estimator: sample weight while still (0 = its default 0.3)
 
 
 def _body(v_air: np.ndarray, yaw: float) -> np.ndarray:
@@ -105,6 +110,8 @@ class ParkController:
     _k: list = field(default_factory=lambda: [1.0, 1.0])  # measured/commanded, forward and strafe
     _last_move: tuple | None = None  # (axis, commanded distance, car pose before)
     steps: int = 0
+    _unseen: int = 0
+    _misaligned: int = 0
 
     def __post_init__(self) -> None:
         self.fsm = Machine("park", "SEARCH", TABLE, clock=lambda: self.clock_t)
@@ -240,9 +247,27 @@ class ParkController:
                 self._k[axis] = float(np.clip(self._k[axis] * ratio, 0.3, 3.0))
         self._last_move = None
         if abs(y) > p.abort_lat_m or abs(yaw) > np.radians(p.abort_yaw_deg):
+            # A single few-point fix couples lateral and yaw errors: confirm before giving up.
+            self._misaligned += 1
+            if self._misaligned < p.misalign_confirm:
+                self._step = ("measure", t, est.samples)
+                return np.zeros(3)
+            self._misaligned = 0
             self._step = None
             return self._backoff("misaligned in the bay")
+        self._misaligned = 0
         remaining = xt - x
+        if not seen and remaining > p.blind_max_m:
+            # Nothing seen (exposure, lost frames, occlusion) and too far to go blind: look again.
+            self._unseen += 1
+            if self._unseen > p.blind_waits:
+                self._unseen = 0
+                self._step = None
+                return self._backoff("lost in the bay")
+            self._step = ("measure", t, est.samples)
+            return np.zeros(3)
+        if seen:
+            self._unseen = 0
         if abs(yaw) > np.radians(p.yaw_tol_deg) and seen:
             self._step = ("turn", wrap(est.odom[2] - yaw), -np.sign(yaw) * p.step_w)
             self.steps += 1
