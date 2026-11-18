@@ -57,6 +57,13 @@ the task file at once; it is the message.
 An attempt names the flag that sank it in `failure_mode` (the list in `src/ugv/research/records.py`). Its
 `## Lesson` is one sentence another agent can act on. Every number names its run id or command.
 
+- **An invalid run is recorded, not erased.** A mis-set magnitude or a contaminated host makes
+  the numbers invalid, not private: mark `outcome: invalid`, state what was wrong, keep the
+  table, and link the re-run that replaces it. Silent re-runs make every other number suspect.
+- **`negative` means removed.** If the mechanism lost, delete it from the tree and say where it
+  was; a losing mechanism left behind a flag will be switched on by someone who reads the
+  flag's name and not the record. A flag is for a winner that is not yet default.
+
 ## Rules
 
 - One record per file; edit only records you own (owner or author). Exception: mark a

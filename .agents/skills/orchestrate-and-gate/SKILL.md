@@ -1,48 +1,130 @@
 ---
 name: orchestrate-and-gate
-description: Orchestrator trajectory discipline, log-first adversarial diagnosis, and sim-to-real release gates. Use when running multi-step debugging, spawning subagents, diagnosing policy/control failures, or deploying RL policies to real hardware.
-compatibility: UGV repo; hardware gates need SSH to the Pi (`docs/STATE.md`) and the S4 gate (a human present, wheels off the ground).
+description: How to work when a system misbehaves - the temperament (fingerprint before refactor, decompose before tuning, delete what lost, close each phase at a commit), T3 orchestration and subagent gating, log-first diagnosis, and the sim-to-real release gates. Use for multi-step debugging, any control, perception or tuning failure, parameter searches, long unattended runs, and before claiming a result or deploying to the Pi.
+compatibility: UGV repo; hardware gates need SSH to the Pi (docs/STATE.md) and the S4 gate (a human present, wheels off the ground).
 ---
 
 # Orchestrate and gate
 
-Prevent linear-thread bloat, false root-cause retrains, and unverified hardware deployments.
+Long sessions fail in three ways: the agent tunes a parameter when the structure is wrong, it
+believes a difference smaller than its noise, and it leaves the work in a state nobody can pick
+up. The stance below is the counterweight. Worked examples with numbers:
+`references/decision-profiles.md`.
 
-## 1. T3 Orchestration & Delegation
+## 1. Temperament
 
-- **Split early, never run linear marathons.** Do not chain >3–4 diagnostic or hardware-debug turns in one agent. Delegate file/log/thread scouting to subagents in parallel, briefed and gated as in `.agents/skills/mastermind/SKILL.md` (model tiers are set there), and keep a separate **adversarial reviewer** running against every diagnosis before acting.
-- **Check workspace access before delegating.** Verify the target repo matches the active project/sandbox before spawning workers; use the right `projectId` or provider so pre-tool hooks do not reject edits.
-- **Never poll or block on `t3_thread_wait`.** Launch `delegate_task(..., mode="async")` and end the turn. Completion wakes the thread.
-- **Keep `t3_thread_read` bounded.** Always pass `limit=20, maxCharsPerItem=2000` and page with `afterPosition`; never dump `maxCharsPerItem=6000+` into context.
-- **Verify environment & parity once up front.** In one command, check `git rev-parse HEAD`, `git status -s`, Python venv packages (root `.venv` and any training venv), and OS flags (`macOS nc -G`, `OpenWrt uname -n`) before running or patching remote hosts. Create `scratch/` with `mkdir -p` before `scp`, use `ssh -M -S <sock>` control sockets instead of `pkill -f`, and never run broad `grep` across `~/Documents`.
-- **Never patch remotes ad hoc while another agent owns hardware.** Keep one source of truth on host git, and reconcile remote working trees cleanly instead of editing individual UI/runtime files mid-run.
+Ordered by how often the move is right, not by ceremony.
 
-### Multi-Agent Efficiency & Shared-KB Discipline
+**Fingerprint the number before you move the code.** Hash a fixed, small evaluation (here: 24
+episodes) before a structural change, and require the same hash after. A refactor that quietly
+moves the metric invalidates every comparison you have; the hash costs seconds, the alternative
+costs a night. When the hash does move, name the cause before accepting it: a new summary field
+is not a regression, an intentional default flip is, and a changed episode row is a bug.
 
-- **Split into micro-agents (`<= 5` tool calls each).** Never bundle 3–5 unrelated files or tasks into one 40–60 call scout; spawn 4–8 parallel micro-agents scoped to one file, diff, or edit set with an explicit command budget.
-- **Query the shared KB and pass targeted slices.** Before scanning a repo, run the repo knowledge base (`.agent_kb/kb.py`, where one exists) (`facts`, `query <term> --slice N`, `slice <file>:<start>-<end>`) and embed exact file paths, line ranges, SSH/venv facts, and prior conclusions in each child's Task Card so subagents skip `find`, `wc -l`, `grep -rn`, and 500-line `sed` dumps.
-- **Refresh the KB on milestones.** After behavior/layout changes or real hardware runs, re-run `kb.py index` and update `FACTS.md` before spawning downstream agents.
+**Decompose before you tune.** An aggregate number is a symptom, not a diagnosis. A failure has
+a state, a place, an error at the moment of failure, and an observability count at that place.
+Measure those four before touching a gain. The night this rule was learned, "41% parked" became
+"111 of 125 collisions happen in ENTER, the estimate is 3-4 cm behind, and ENTER sees 1.2
+keypoints per frame" - which is a perception bug, not a tuning problem.
 
-## 2. Single-Owner Resource & Interrupt Discipline
+**Treat a plateau as evidence about the model.** If every candidate lands within noise of its
+root, the parameters are not the bottleneck. Stop the search and go read code. A search that
+returns noise is telling you the failure is structural.
 
-- **One GPU job and one robot owner at a time.** Check `nvidia-smi` and `ps` before launching training or hardware scripts; concurrent edits to `sim.py`/trainers or overlapping `l7_run.py` sessions invalidate runs.
-- **Make long runs resumable.** Launch GPU training detached with `--ckpt-every <= 25` and never keep milestone weights only in `/tmp`.
-- **Recover cleanly after any interrupt.** If a hardware `run.sh` or SSH session is interrupted, `rsync` remote logs immediately, verify the robot is braked and check its true physical rest pose before starting the next step.
+**Prefer converting a bad failure into a good one.** The order is parked > abort > off-target >
+collision (an abort costs a retry; a collision costs a person walking over). Rules that turn the
+first into the second earn their lost successes. This is also a search gate: no candidate may
+collide more than its parent, however many successes it buys.
 
-## 3. Adversarial Log-First Diagnosis (Before Any Retrain)
+**Say the noise floor before you believe a delta.** Binomial, not vibes: at n=200 the 95%
+interval is about ±7 points near p=0.5 and ±4 near p=0.9, so a 5-point difference at n=100 is
+inside the interval. Quote it, then decide whether the effect is bigger than it.
 
-Never blame a policy failure on "sensor noise" or "FOV loss" from replay alone, and never launch a GPU retrain until all four checks pass:
+**If it lost, delete it.** A mechanism that loses to its parent is a liability even behind a
+flag: it will be switched on by someone who reads the flag's name and not the attempt. Revert
+the code, record the attempt, keep the lesson. A flag is for a mechanism that won somewhere
+and is not yet default, not for one that lost.
 
-1. **Stationary sensor floor:** Measure `std` on stationary/idle ticks (`st=True`), not during closed-loop motion. *(Example: real gyro noise was `0.00077 rad/s`, 2.6x lower than sim's `0.002`; the `0.63 rad/s` signal was a `1.4 Hz` limit cycle.)*
-2. **Loop lag & cross-correlation:** Check PSD peak, lag between commanded duty and sensor rate (`~240 ms` HTTP+onset lag), and whether an EMA filter worsens phase margin.
-3. **Raw vs masked observation cadence:** Separate true sensor detections (`src == "tag"`) from dead-reckoned/held `valid` ticks (`13.5%` raw vs `46.9%` DR-masked; `40%` `valid=0` ticks zeroing small translation commands).
-4. **Plant & adapter parity:** Verify training dynamics (`mean` vs `p0`), axis orientation, deadzones, velocity caps, `stale` timestamp propagation, and `swept_clear` yaw-sign conventions match between `sim.py`, `policy.py`, and the hardware adapter. Run a single-variable discriminating test (e.g., raw sensor + open-loop feed-forward) before retraining.
+**Own the invalid run in writing.** A mis-set magnitude or a contaminated host makes a run
+invalid; it does not make it private. Say so in the attempt, mark the row invalid, re-run, and
+keep the old numbers visible with the reason. Silent re-runs destroy trust in every other
+number you produced.
 
-## 4. Pre-Hardware & Post-Run Gates
+**Close a phase at a commit and one promotable artifact.** The candidate that beat its parent
+belongs in `config/` or it does not exist. A green tree with an unvalidated `runs/.../best.json`
+and a stale config is the most expensive state to resume from. Commit, promote or explicitly
+park, then start the next phase - especially when a context or usage cap is near.
 
-- **Live-frame & config parity check:** Before moving wheels, run tag detection + relaxed-param sweep on one live camera frame to verify physical tag IDs match `drone_tag_ids`, confirm `*_confirmed` flags, check camera shutter/gain drop-ins (`<= 4000 us` for moving robots), and ensure probes wait for fresh timestamped `/ws` or `/api/state` deltas (never pre-pulse cached state).
-- **Embedded harness hygiene:** Pin `OMP_NUM_THREADS=1` / `OPENBLAS_NUM_THREADS=1`, isolate OpenCV in a `spawn` worker started before I/O threads (`imu`), guard `cornerSubPix` near frame edges, and exclude bulk `frames/` from routine WireGuard `rsync` (`end.jpg` + `jsonl` only).
-- **Sim-to-sim SHA gate:** Require a passing (`> 0` success) 3D/Gazebo evaluation matching the **exact checkpoint SHA-256** of the exported `.npz` before moving to hardware.
-- **Offline observation-contract gate:** Audit logged `ticks.jsonl` + axis probes against the sim reference distribution (gyro std/span, raw tag rate, inter-tag dt, action saturation/sign-flips, plant deadzones/gains/cross-coupling) and parity-test PyTorch vs NumPy exports (`< 1e-5`).
-- **Online runtime monitor (<= 2 s brake):** Brake automatically if 1 s rolling `std(imu_w)`, action saturation (`|a| > 0.8`), z-score vs sim, or 2 s sign-flip / raw-tag-drop thresholds trip.
-- **Never trust dead-reckoned `"arrived"`:** On every hardware run, reject PnP flips, compare `end_est` against `end_pose_tag`, confirm near-zero rest velocity (`|imu_w|`), and visually inspect `end.jpg` before advancing to blind `< 0.4 m` final-approach steps.
+## 2. Orchestration
+
+Split early; briefs and routing live in `mastermind`. The parts that decide whether a fan-out
+was worth it:
+
+- **One deliverable per child, checkable without reading its transcript.** A file, a JSON
+  answer, a passing command.
+- **One owner per exclusive resource**: a GPU, the car, a deploy target, a file another job
+  re-imports. Concurrent edits to a module a running search imports invalidate its results.
+- **Brief in a file**, with paths and line ranges, output format, self-check and a report cap.
+- **Launch async and do not poll.** No sleep loops, no `gh --watch`. One watcher per job; three
+  watchers on one search produce messages, not information.
+- **Gate the deliverable yourself.** A child's "tests pass" counts its own tests.
+- **Bounded reads.** `limit`, `maxCharsPerItem`, `afterPosition`; never dump a whole transcript
+  into context to answer one question.
+
+## 3. Diagnosis before you retrain or retune
+
+Never blame "sensor noise" or "field of view" from a replay. Pass these first:
+
+1. **Stationary floor.** Measure noise at rest, not in closed loop. A 0.63 rad/s "signal" once
+   turned out to be a 1.4 Hz limit cycle over a 0.0008 rad/s sensor floor.
+2. **Lag and phase.** Command-to-motion lag, loop period, and whether a filter costs phase
+   margin. A 20-60 ms command delay is enough to turn a careful creep into a limit cycle.
+3. **Observability per phase.** Count the measurements the controller actually gets in the
+   phase where it fails. Blind where precision is needed is a perception bug, and no gain fixes
+   it; five points that observe yaw beat twelve that do not.
+4. **Plant and frame parity.** Deadzones, gains, axis signs, units (mm vs m, clockwise vs
+   counter-clockwise yaw), and the exact camera model: focal, principal point, mount pitch.
+   Cross a frame boundary only through the named conversion.
+
+Then change one thing and A/B on matched seeds. Same n, same seeds, same candidates; scale up
+only after the effect is bigger than the interval. Test a targeted fix on the failure it was
+built for, not only on the aggregate: the pitch refit was judged on the bump and lens families
+(+12 and +12 out of 150) with a healthy-car control that had to stay flat.
+
+**Check the check.** A new test that passes on the old code proves nothing. Run it against the
+behaviour you replaced, or assert a difference between two paths (with and without the
+mechanism). One pitch-refit test originally ended in an assertion that was true by construction;
+the real version asserts that without the refit the solve fails or comes out worse.
+
+## 4. Release gates
+
+Simulation success is not hardware success, and a synthetic number is not evidence about a
+method that must run on real frames. Before any claim or deploy:
+
+- **Evidence class named.** Synthetic, simulated-camera, real-frame, real-car. A dashboard or a
+  doc that mixes them without labels is lying by layout.
+- **Artifact identity.** The thing you validated is the thing you will deploy: commit and model
+  file, not "the latest run". An unvalidated `best.json` is not a candidate.
+- **Detector on real frames.** Keypoint error on the real evaluation set, not the synthetic
+  validation split; check that every keypoint the controller relies on exists in the real
+  detector's output.
+- **Live-frame parity.** Tag IDs, intrinsics, camera drop-in intact (`vision-camera.conf`),
+  fresh timestamped state rather than cached values.
+- **Rest and end frame.** Never trust an estimate-based "arrived": confirm near-zero velocity
+  and inspect the end frame. PnP flips are silent.
+- **S4 only with the gate.** `docs/SAFETY.md`: wheels off the ground or a clear zone, a human
+  present, a timeout. A skill never raises the level on its own.
+
+## 5. Traps that cost real time
+
+- `pkill -f <pattern>` matches its own shell when the pattern appears in the command line,
+  killing the command that would have reported the result. Use the port (`fuser -k 8768/tcp`)
+  or the task id.
+- `sed -i` on a symlink replaces the link with a file. Edit the target; check `git status` for
+  type changes before committing.
+- Editing a module while a background job re-imports it changes the experiment mid-run. Stop
+  the job, or work on other files.
+- `sleep`-based polling is blocked in several harnesses and wastes a turn when it is not. Use
+  the task's completion notification.
+- A reviewer's claim is a hypothesis. A team of agents agreeing is still a hypothesis. The
+  screenshot, the command output or the hash is the arbiter.

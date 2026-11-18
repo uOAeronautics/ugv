@@ -107,7 +107,8 @@ Project skills live in `.agents/skills/` (`.claude/skills` and `.opencode/skills
 
 - `research-ledger`: reading and writing `research/` (session start, claiming, finishing, asking).
 - `mastermind`: delegating to subagents and gating their output.
-- `orchestrate-and-gate`: log-first diagnosis and sim-to-real release gates.
+- `orchestrate-and-gate`: working temperament (fingerprint, decompose, delete what lost, close
+  each phase at a commit), log-first diagnosis and sim-to-real release gates.
 - `mesh-optimization`: simplify heavy meshes into game-ready ones behind a camera-truth gate.
 - `ui-taste`: build and review web UI without AI-slop tells; screenshot-and-verify loop with reviewer subagents.
 

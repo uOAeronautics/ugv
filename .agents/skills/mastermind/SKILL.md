@@ -24,6 +24,24 @@ editing.
    evidence to a second child with the opposite prior and compare.
 6. **Report** what was checked and how; say what was not.
 
+### Gating reviewers
+
+A review is a hypothesis generator, not a vote. Three reviewers agreeing is three samples from
+the same weak evidence.
+
+- **Synthesize, do not average.** Keep what survives contact with the artifact; overrule a claim
+  the screenshot or command contradicts, and say why. A confident wrong finding is common.
+- **A fresh child is a fresh prior.** For a second round, start new reviewers on the *new*
+  artifact rather than re-prompting the first ones; a reviewer asked to re-check mostly defends
+  its earlier answer.
+- **Give opposite priors on purpose.** One child argues the boldest version of the design, one
+  audits for what is broken. Do not let both share a brief that presumes the current direction
+  is right.
+- **Reviewers never edit.** They output a verdict, exact fixes, and the evidence for each; the
+  orchestrator applies and re-shoots.
+- **The artifact is the arbiter.** "Looks better" is not a gate; a screenshot at the same size,
+  theme and state is.
+
 ## Routing
 
 ### Standing override (user, 2026-11-14)
@@ -56,6 +74,8 @@ guidance for when that provider is unavailable.
   non-interactive mode when launching.
 - **Spawn cost.** A fresh child pays for its whole prompt once. Run a one-command question
   yourself.
+- **Watcher fan-out.** One watcher per job. Three watchers on the same search produce three
+  messages and no extra information, and each one wakes you to read the same log.
 - **Children may commit or push against the brief.** Check `git log`, `origin/main` and the
   reflog before committing; gate the deliverable on disk with your own commands and treat
   the child's report as a claim, not evidence.
