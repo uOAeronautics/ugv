@@ -16,7 +16,7 @@ tree under `research/attempts/2026-11-17-track-3d-parking.md`.
 | Pose solver | `perception.solve` | 6-DoF PnP when 6+ points are seen, then a floor-constrained solve of x, y, yaw (and camera pitch with 6+ points); with 2-5 points, from the estimator's prior |
 | Estimator | `estimator.py` | the airframe as a static landmark in an odometry frame; gated fusion; odometry through the identified motor model and lag |
 | Motor model | `actuator.py` | gain and deadzone per axis identified online: yaw from the gyro, forward and strafe from fix-to-fix motion |
-| Behaviour | `controller.py` | the state machine in `docs/POSE.md`; the careful ENTER routine calibrates each move from the last |
+| Behaviour | `controller.py` | the state machine in `docs/POSE.md`; the careful ENTER routine calibrates each move from the last, but a move shorter than `step_v` times the motor lag (~1.6 cm) reflects the lag, not the gain, and is not used |
 
 Success is judged on the true pose, never the estimate: PARKED within ±2 cm, ±2 cm, ±5 deg of
 the target, and no contact at any time.
@@ -69,13 +69,14 @@ Poly Haven panorama gets 0.25. With `config/park_params.json`, 300 episodes, see
 | Condition | Parked | Collisions |
 |---|---|---|
 | clean | 297/300 | 0 |
-| slippery | 285/300 | 5 |
-| faulty | 60/300 | 55 |
-| faulty + slippery | 55/300 | 51 |
+| slippery | 287/300 | 3 |
+| faulty | 61/300 | 49 |
+| faulty + slippery | 62/300 | 49 |
 
-Traction is not the main fault cost: a bad car already collides often, and the floor adds
-little to that. Severity 1 is a stress test that can draw several fault families at once; it
-is not a typical car. Both numbers are simulation; the real floor is unmeasured.
+(`runs/park_eval/traction-2026-11-18-floor.json`.) Traction is not the main fault cost: a bad
+car already collides often, and the floor adds little to that. Severity 1 is a stress test that
+can draw several fault families at once; it is not a typical car. Both numbers are simulation;
+the real floor is unmeasured.
 
 ## Camera, faults and panoramas in the challenge
 
@@ -100,14 +101,16 @@ car and airframe still cast their shadows onto it.
 | v7 (3-5 point fixes update yaw), default parameters | 882/1000 | 86.1-90.1% | 7 | `runs/park_eval/v7-default.json` |
 | v7, parameters from search s1 | 899/1000 | 87.9-91.6% | 13 | `runs/park_eval/s1-best.json` |
 | v7, search s2 parameters before the blind gate | 909/1000 | 89.0-92.5% | 7 | `runs/park_eval/s2-best.json` |
-| **v7, current config (s2 + blind gate)** | **979/1000** | **96.8-98.6%** | **1** | `runs/park_eval/s2-blind.json` |
+| v7, s2 + blind gate | 979/1000 | 96.8-98.6% | 1 | `runs/park_eval/s2-blind.json` |
+| **v7, current config (s2 + blind gate, ENTER calibrates only moves over the motor lag)** | **980/1000** | **96.9-98.7%** | **0** | `runs/park_eval/s2-floor.json` |
 
 The first four are the same 1000 episodes. Search s1 scored a collision like any other failure
 and bought success with collisions; s2 rejects any candidate that collides more than its parent
 and beats both. The current config adds the blind gate that a later attempt recorded as kept
-(`research/attempts/2026-11-18-park-blind-config.md`); the 979 row is a fresh run on the current
-code and config, so it is not a paired comparison with the 909 row. Use
-`--params config/park_params.json`.
+(`research/attempts/2026-11-18-park-blind-config.md`). The ENTER calibration floor
+(`2026-11-18-park-drive-check`: a move shorter than `step_v` times the motor lag measures the
+lag, not the gain) is the only difference from the 979 row; the 980 row is a fresh run, so the
+pair is not a controlled comparison. Use `--params config/park_params.json`.
 
 Robustness sweep of v6 `default` (300 episodes each): ideal world 100%, detector noise only 99%,
 car spread only 95%, worse detector (4 px, 20% misses, 8% outliers) 77%, worse calibration

@@ -256,7 +256,10 @@ class ParkController:
         if self._last_move is not None and seen:
             axis, dist, before = self._last_move
             got = (q[:2] - before[:2])[axis]  # airframe axes ~ car axes (yaw small)
-            if abs(dist) > 0.01 and np.sign(got) == np.sign(dist):
+            # A move shorter than the distance covered while the motors spin up (step_v times
+            # the motor lag, ~1.6 cm) measures the lag, not the gain; calibrating on it makes
+            # the next move overshoot.
+            if abs(dist) > 0.02 and np.sign(got) == np.sign(dist):
                 ratio = float(np.clip(got / dist, 0.3, 3.0))
                 self._k[axis] = float(np.clip(self._k[axis] * ratio, 0.3, 3.0))
         self._last_move = None
