@@ -3,13 +3,14 @@ id: 2026-11-18-park-slip-robustness
 date: 2026-11-18
 author: fernando
 owner: fernando
-state: claimed
+state: done
 updated: 2026-11-18
 due: none
 after: []
 check: none
 refs: []
 tags: []
+result: [2026-11-18-park-search-s8]
 ---
 
 ## Goal
@@ -31,3 +32,4 @@ record says whether it is kept.
 - 2026-11-18 fernando: s6 held-out was negative; see `2026-11-18-park-search-s6`. Launched s7
   from `config/park_params.json` with clean, faults, slip and faults+slip (4 generations, 8
   children, n=100 per condition).
+- 2026-11-18 fernando: done
