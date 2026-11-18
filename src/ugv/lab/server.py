@@ -18,17 +18,16 @@ from ugv.lab import data, sim
 STATIC = Path(__file__).resolve().parent / "static"
 
 
-class Drive(BaseModel):
+class NewSession(BaseModel):
     seed: int
-    level: str
-    start: list[float]
+    start: list[float] | None = None
+    preset: str | None = None
 
 
-class Frame(BaseModel):
-    seed: int
-    level: str
-    car: list[float]
-    tick: int
+class Step(BaseModel):
+    ticks: int
+    duty: list[float] | None = None
+    auto: bool = False
 
 
 def create_app() -> FastAPI:
@@ -74,20 +73,21 @@ def create_app() -> FastAPI:
     def park_plan() -> dict:
         return {**data.plan(), "skeleton": sim.skeleton()}
 
-    @app.get("/api/park/round")
-    def park_round(seed: int, level: str = "nominal") -> dict:
-        _level(level)
-        return sim.new_round(seed, level)
+    @app.post("/api/park/session")
+    def park_session(n: NewSession) -> dict:
+        if n.preset and n.preset not in sim.PRESETS:
+            raise HTTPException(400, f"preset must be one of {sorted(sim.PRESETS)}")
+        try:
+            return sim.SESSIONS.create(n.seed, n.start, n.preset)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
 
-    @app.post("/api/park/autopilot")
-    def park_autopilot(d: Drive) -> dict:
-        _level(d.level)
-        return sim.autopilot(d.seed, d.level, d.start)
-
-    @app.post("/api/park/perceive")
-    def park_perceive(f: Frame) -> dict:
-        _level(f.level)
-        return sim.perceive(f.seed, f.level, f.car, f.tick)
+    @app.post("/api/park/session/{sid}/step")
+    def park_step(sid: str, st: Step) -> dict:
+        try:
+            return sim.SESSIONS.step(sid, st.ticks, st.duty, st.auto)
+        except KeyError as e:
+            raise HTTPException(404, "session expired; start a new round") from e
 
     @app.get("/api/pose/mesh")
     def pose_mesh() -> list:
@@ -105,11 +105,6 @@ def create_app() -> FastAPI:
         return FileResponse(p)
 
     return app
-
-
-def _level(level: str) -> None:
-    if level not in sim.LEVELS:
-        raise HTTPException(400, f"level must be one of {sorted(sim.LEVELS)}")
 
 
 def main() -> None:

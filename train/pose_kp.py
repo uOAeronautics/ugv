@@ -87,6 +87,54 @@ class KeypointNet(nn.Module):
 
 FULL_FX = 968.0  # the car camera at 1280x720
 
+# Camera faults seen in training, each with its own probability per image (see `camera_faults`).
+AUG = {
+    "gain": 1.0,  # brightness/contrast jitter, always
+    "exposure": 0.15,  # badly over- or under-exposed
+    "blur": 0.25,  # Gaussian defocus
+    "motion": 0.2,  # motion blur along a random direction
+    "noise": 0.5,  # sensor noise, up to 6% of full scale
+    "occlusion": 0.3,  # 1-3 blocked rectangles (cable, smudge, a hand), keypoints stay labelled
+}
+
+
+def camera_faults(x: torch.Tensor, p: dict) -> torch.Tensor:
+    """Photometric and occlusion faults on a batch (B, 1, H, W) in [0, 1], on the GPU. Geometry is
+    untouched, so the keypoint labels stay valid (mount shake and knocks are the PnP's problem)."""
+    n, _, h, w = x.shape
+    dev = x.device
+    u = lambda lo, hi: torch.empty(n, 1, 1, 1, device=dev).uniform_(lo, hi)  # noqa: E731
+    pick = lambda q: (torch.rand(n, 1, 1, 1, device=dev) < q).float()  # noqa: E731
+    x = x * u(0.7, 1.3) + u(-0.1, 0.1)
+    e = pick(p["exposure"])
+    over = (torch.rand(n, 1, 1, 1, device=dev) < 0.5).float()
+    x = e * (over * (x * u(2.0, 4.0)) + (1 - over) * (x * u(0.08, 0.3))) + (1 - e) * x
+    x = x.clamp(0, 1)
+    if p["blur"]:
+        k = torch.tensor([1, 4, 6, 4, 1], device=dev, dtype=x.dtype)
+        k2 = (k[:, None] * k[None, :]) / 256
+        b = F.conv2d(F.pad(x, (2, 2, 2, 2), mode="replicate"), k2[None, None])
+        b = F.conv2d(F.pad(b, (2, 2, 2, 2), mode="replicate"), k2[None, None])
+        x = torch.lerp(x, b, pick(p["blur"]))
+    if p["motion"]:
+        horiz = torch.full((1, 1, 1, 9), 1 / 9, device=dev, dtype=x.dtype)
+        mh = F.conv2d(F.pad(x, (4, 4, 0, 0), mode="replicate"), horiz)
+        mv = F.conv2d(F.pad(x, (0, 0, 4, 4), mode="replicate"), horiz.transpose(2, 3))
+        which = (torch.rand(n, 1, 1, 1, device=dev) < 0.7).float()  # turning blurs sideways
+        x = torch.lerp(x, which * mh + (1 - which) * mv, pick(p["motion"]))
+    x = x + torch.randn_like(x) * u(0, 0.06) * pick(p["noise"])
+    if p["occlusion"]:
+        for _ in range(3):
+            on = torch.rand(n, device=dev) < p["occlusion"] / 2
+            for i in torch.nonzero(on).flatten().tolist():
+                bh, bw = (
+                    int(h * np.random.uniform(0.1, 0.35)),
+                    int(w * np.random.uniform(0.05, 0.3)),
+                )
+                y0, x0 = np.random.randint(0, h - bh), np.random.randint(0, w - bw)
+                x[i, :, y0 : y0 + bh, x0 : x0 + bw] = float(np.random.uniform(0, 1))
+    return x.clamp_(0, 1)
+
 
 def load(data: Path):
     """Images (memmap), keypoints, visibility, poses, per-sample intrinsics, meta."""
@@ -108,14 +156,8 @@ def batches(idx: np.ndarray, bs: int, rng: np.random.Generator | None):
 
 def to_gpu(images, kp, vis, b, dev, train: bool):
     x = torch.from_numpy(np.ascontiguousarray(images[b])).to(dev).float().div_(255).unsqueeze(1)
-    if train:  # photometric jitter on the GPU
-        n = x.shape[0]
-        x = x * torch.empty(n, 1, 1, 1, device=dev).uniform_(0.7, 1.3) + torch.empty(
-            n, 1, 1, 1, device=dev
-        ).uniform_(-0.1, 0.1)
-        x = (
-            x + torch.randn_like(x) * torch.empty(n, 1, 1, 1, device=dev).uniform_(0, 0.03)
-        ).clamp_(0, 1)
+    if train:
+        x = camera_faults(x, AUG)
     k = torch.from_numpy(kp[b]).to(dev)
     v = torch.from_numpy(vis[b]).to(dev)
     inside = (

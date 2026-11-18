@@ -1,26 +1,5 @@
-// Driving the simulated car by hand: the plant (a line-for-line port of ugv.park.plant.Plant.step)
-// and the input, keyboard or touch, with a watchdog like the car's own.
-
-export const DUTY_CAP = 1800 / 4095;
-
-/** Port of `Plant.step`: duty -> deadzone/gain -> first-order lag -> pose. Gyro is not needed here. */
-export function stepPlant(q, vel, duty, p, dt) {
-  const target = [0, 1, 2].map((i) => {
-    const d = Math.max(-DUTY_CAP, Math.min(DUTY_CAP, duty[i]));
-    const mag = Math.max(Math.abs(d) - p.deadzone[i], 0);
-    return Math.sign(d) * mag * p.gain[i] * (1 + p.speed_noise * gauss());
-  });
-  for (let i = 0; i < 3; i++) vel[i] += (1 - Math.exp(-dt / p.tau[i])) * (target[i] - vel[i]);
-  const w = vel[2] + p.strafe_yaw * vel[1];
-  const c = Math.cos(q[2]), s = Math.sin(q[2]);
-  const yaw = q[2] + w * dt;
-  return [q[0] + (c * vel[0] - s * vel[1]) * dt, q[1] + (s * vel[0] + c * vel[1]) * dt, Math.atan2(Math.sin(yaw), Math.cos(yaw))];
-}
-
-function gauss() {
-  const u = 1 - Math.random(), v = Math.random();
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-}
+// Driving the simulated car by hand: keyboard or touch input, with a watchdog like the car's own.
+// The car itself is simulated on the server (ugv.lab.sim); this only turns keys into duty.
 
 // Duty per held key: [axis, sign]; normal and fine (Shift) magnitudes per axis (vx, vy, w).
 const MAP = {
@@ -58,7 +37,7 @@ export function makeInput({ onAction }) {
       return;
     }
     if (!e.repeat) expect = false; // a modifier or another key now owns the repeat
-    if (['Space', 'KeyR', 'KeyV', 'KeyP'].includes(e.code)) {
+    if (['Space', 'KeyR', 'KeyV', 'KeyP', 'KeyT'].includes(e.code)) {
       e.preventDefault();
       if (!e.repeat) onAction(e.code);
     }

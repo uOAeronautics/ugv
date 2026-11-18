@@ -1,17 +1,15 @@
-// Park it yourself, or watch the tuned controller do it from the same start in the same car.
-// Rounds, the autopilot (ugv.park.episode.run) and the keypoint detector run on the server; the
-// hand-driven plant is a port of ugv.park.plant. Simulation only.
+// Park it yourself, hand the car to the tuned controller and take it back at any moment. The car,
+// its faults, the camera and the estimator run on the server (ugv.lab.sim) in real time; the page
+// drives, draws and interpolates. Simulation only.
 import * as THREE from '/static/vendor/three.module.min.js';
 import { api, color } from './app.js';
-import { makeInput, stepPlant } from './drive.js';
-import { hud } from './hud.js';
+import { makeInput } from './drive.js';
+import { hud, START_NAME } from './hud.js';
+import { makeOrbit } from './orbit.js';
 import { makeWorld, P } from './scene3d.js';
 import { drawWorld, loadPlan, makeView } from './world2d.js';
 
-const LEVELS = { nominal: 'Nominal car', random: 'Random car', blind: 'Camera only' };
-const VIEWS = ['cam', 'chase', 'top'];
-const W0 = 1280, H0 = 720, F0 = 968;
-
+const W0 = 1280, H0 = 720, F0 = 968, TICK = 20;
 let stop = () => {};
 let rethemeFn = () => {};
 export function dispose() { stop(); }
@@ -25,188 +23,213 @@ export async function render(main) {
   const [world, plan] = await Promise.all([api('/api/park/world'), loadPlan()]);
   const bay = world.bay;
   main.classList.add('stage-page');
-  main.innerHTML = hud.markup(LEVELS);
+  main.innerHTML = hud.markup();
   const $ = (s) => main.querySelector(s);
-  const stage = $('#ch-stage');
-  const W = await makeWorld($('#ch-3d'), bay, plan.skeleton);
-  const ov = $('#ch-ov'), og = ov.getContext('2d');
-  const mini = makeView($('#ch-map'), 2.0, [-0.45, 0]);
+  const stage = $('#ch-stage'), pipBox = $('#ch-pip-box');
+  const W = await makeWorld($('#ch-3d'), $('#ch-pip'), bay, plan.skeleton);
+  const ov = $('#ch-ov'), pipOv = $('#ch-pip-ov');
+  const mapCanvas = $('#ch-map');
+  let mini = makeView(mapCanvas, 2.0, [-0.3, 0]);
   const H = hud.bind(main);
+  const orbit = makeOrbit($('#ch-3d'), (fpv) => { stage.classList.toggle('fpv', fpv); });
 
-  let level = 'nominal', view = 'chase', round = null, raf = 0, last = 0, tick = 0, busy = false;
-  const input = makeInput({ onAction: (k) => ({ Space: declare, KeyR: () => newRound(), KeyV: cycleView, KeyP: autopilot })[k]?.() });
+  let sess = null, snap = null, prev = null, recvAt = 0, interval = 100, lastPump = 0, inflight = false;
+  let auto = false, truth = false, started = false, done = null, startName = 'random', raf = 0;
+  let paths = { est: [], true: [] };
+  const input = makeInput({ onAction: (k) => ({ Space: declare, KeyR: () => newRound(), KeyV: () => orbit.toggle(), KeyP: toggleAuto, KeyT: toggleTruth })[k]?.() });
   input.pad($('#ch-pad'));
 
   // --- rounds
-  const newRound = async (seed = Math.floor(Math.random() * 1e6)) => {
-    const r = await api(`/api/park/round?seed=${seed}&level=${level}`, { fresh: true });
-    round = { ...r, q: r.start.slice(), vel: [0, 0, 0], t: 0, started: false, done: null, path: [r.start.slice(0, 2)], penalty: 0, seen: null, auto: null };
-    input.reset();
-    H.banner('ready', { level: LEVELS[level], seed });
-    H.mode('MANUAL');
-  };
-  const collides = (q) => {
-    const c = Math.cos(q[2]), s = Math.sin(q[2]);
-    const hit = (pts, x0, x1, y0, y1) => pts.some(([x, y]) => {
-      const dx = x - q[0], dy = y - q[1], u = c * dx + s * dy, v = -s * dx + c * dy;
-      return u >= x0 && u <= x1 && v >= y0 && v <= y1;
-    });
-    const L = bay.car.length / 2, Wd = bay.car.width / 2;
-    return hit(bay.obstacles, -L, L, -Wd, Wd) || hit(bay.tall, bay.car.tower_x[0], bay.car.tower_x[1], bay.car.tower_y[0], bay.car.tower_y[1]);
-  };
-  const error = (q) => [q[0] - bay.target[0], q[1] - bay.target[1], wrap(q[2] - bay.target[2])];
-  const finish = (ok, why) => {
-    const r = round, e = error(r.q);
-    r.done = { ok, why, t: r.t + r.penalty, e };
-    H.banner(ok ? 'parked' : 'fail', { why, t: r.t + r.penalty, e, who: r.auto ? 'Autopilot' : 'You', outcome: r.auto?.res.outcome });
-    if (!r.auto) H.log({ when: Date.now(), level, seed: r.seed, ok, why: why || 'parked', t: +(r.t + r.penalty).toFixed(1), e: e.map((v) => +v.toFixed(3)) });
-  };
-  const declare = () => {
-    const r = round;
-    if (!r || r.done || !r.started || r.auto) return;
-    const e = error(r.q), tol = bay.tolerance;
-    const ok = Math.abs(e[0]) <= tol.x && Math.abs(e[1]) <= tol.y && Math.abs(e[2]) <= (tol.yaw_deg * Math.PI) / 180;
-    if (ok && Math.hypot(r.vel[0], r.vel[1]) < 0.01) finish(true);
-    else { r.penalty += 5; H.flash(`NOT PARKED · ${(e[0] * 100).toFixed(1)} / ${(e[1] * 100).toFixed(1)} cm · ${((e[2] * 180) / Math.PI).toFixed(1)}° · +5 s`); }
-  };
-  const autopilot = async () => {
-    if (!round || busy) return;
-    busy = true;
-    H.mode('AUTOPILOT · computing');
+  const newRound = async ({ seed = Math.floor(Math.random() * 1e6), start = null } = {}) => {
+    const body = { seed };
+    if (start) body.start = start;
+    else if (startName !== 'random' && startName !== 'placed') body.preset = startName;
     try {
-      const res = await api('/api/park/autopilot', { body: { seed: round.seed, level, start: round.start } });
-      Object.assign(round, { q: round.start.slice(), vel: [0, 0, 0], t: 0, started: true, done: null, path: [], penalty: 0, auto: { res, k: 0 } });
-      H.banner(null);
-      H.mode('AUTOPILOT');
-    } finally { busy = false; }
-  };
-  const cycleView = () => { view = VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length]; H.view(view); };
-
-  // --- detector frames for the hand-driven car (10 Hz, one request in flight)
-  let inflight = false;
-  const perceive = async () => {
-    if (inflight || !round || round.auto || round.done) return;
-    inflight = true;
-    const r = round, q = r.q.slice();
-    try {
-      const res = await api('/api/park/perceive', { body: { seed: r.seed, level, car: q, tick: tick++ } });
-      if (r === round) r.seen = { kp: res.kp, est: res.pose ? compose(q, res.pose) : null, t: performance.now() };
-    } catch { /* keep the last frame */ } finally { inflight = false; }
-  };
-  const percTimer = setInterval(perceive, 100);
-
-  // --- camera: the true camera, mount errors included (what the image is formed by)
-  const camRig = (q) => {
-    const cam = W.cam, w = stage.clientWidth, h = stage.clientHeight;
-    const ce = round?.camera_error || { focal_scale: 1, yaw: 0, pitch: 0 };
-    const k = Math.min(w / W0, h / H0);
-    if (view === 'cam') {
-      cam.fov = (2 * Math.atan(h / 2 / (F0 * ce.focal_scale * k)) * 180) / Math.PI;
-      const c = Math.cos(q[2]), s = Math.sin(q[2]), cx = bay.car.camera_x;
-      cam.position.copy(P(q[0] + cx * c, q[1] + cx * s, bay.car.camera_z));
-      cam.lookAt(P(q[0] + (cx + 1) * c, q[1] + (cx + 1) * s, bay.car.camera_z));
-      const cy = Math.cos(ce.yaw), sy = Math.sin(ce.yaw), cp = Math.cos(ce.pitch), sp = Math.sin(ce.pitch);
-      const M = new THREE.Matrix3().set(1, 0, 0, 0, cp, -sp, 0, sp, cp).multiply(new THREE.Matrix3().set(cy, 0, -sy, 0, 1, 0, sy, 0, cy));
-      const S = new THREE.Matrix3().set(1, 0, 0, 0, -1, 0, 0, 0, -1);
-      const C = S.clone().multiply(M.clone().transpose()).multiply(S);
-      cam.quaternion.multiply(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().setFromMatrix3(C)));
-    } else if (view === 'chase') {
-      cam.fov = 50;
-      const c = Math.cos(q[2]), s = Math.sin(q[2]);
-      cam.position.copy(P(q[0] - 0.75 * c, q[1] - 0.75 * s, 0.42));
-      cam.lookAt(P(q[0] + 0.35 * c, q[1] + 0.35 * s, 0.03));
-    } else {
-      cam.fov = 45;
-      cam.position.copy(P(-0.3, -1.9, 3.1));
-      cam.lookAt(P(-0.2, 0, 0));
+      sess = await api('/api/park/session', { body });
+    } catch {
+      H.flash('THAT START TOUCHES THE AIRFRAME OR LEAVES THE ROOM');
+      return;
     }
+    snap = prev = sess;
+    auto = false; started = false; done = null; paths = { est: [], true: [] };
+    lastPump = performance.now();
+    input.reset();
+    H.auto(false);
+    H.start(startName);
+    H.banner('ready', { start: START_NAME[startName] || 'Placed on the map', seed });
+  };
+  const finish = (ok, why) => {
+    done = { ok, why };
+    const e = [snap.car[0] - bay.target[0], snap.car[1] - bay.target[1], wrap(snap.car[2] - bay.target[2])];
+    H.banner(ok ? 'parked' : 'fail', { who: auto ? 'Autopilot' : 'You', t: snap.t, why, e, faults: sess.faults });
+    if (!auto) H.log({ when: Date.now(), seed: sess.seed, ok, why: why || 'parked', t: snap.t });
+  };
+  const OUTCOME = { parked: 'Parked', 'parked-off-target': 'Parked off target', collision: 'Contact with the airframe', geofence: 'Left the room', timeout: 'Timed out' };
+  const declare = () => {
+    if (!snap || done || auto || !started) return;
+    const e = [snap.car[0] - bay.target[0], snap.car[1] - bay.target[1], wrap(snap.car[2] - bay.target[2])], tol = bay.tolerance;
+    const ok = Math.abs(e[0]) <= tol.x && Math.abs(e[1]) <= tol.y && Math.abs(e[2]) <= (tol.yaw_deg * Math.PI) / 180;
+    if (ok && Math.hypot(snap.vel[0], snap.vel[1]) < 0.01) finish(true);
+    else H.flash('NOT PARKED YET · open Truth (T) to see by how much');
+  };
+  const toggleAuto = () => {
+    if (!sess || done) return;
+    auto = !auto;
+    started = true;
+    H.auto(auto);
+    H.banner(null);
+    H.flash(auto ? 'CONTROLLER HAS THE CAR · press a drive key to take over' : 'YOU HAVE THE CAR');
+  };
+  const toggleTruth = () => { truth = !truth; H.truth(truth); };
+
+  // --- the server advances the world in real time; one request in flight
+  const pump = async (now) => {
+    if (!sess || inflight || done) return;
+    const duty = input.duty();
+    const driving = duty.some((d) => d);
+    if (auto && driving) { auto = false; H.auto(false); H.flash('YOU HAVE THE CAR'); }
+    if (!auto && !started) {
+      if (!driving) { lastPump = now; return; }
+      started = true;
+      H.banner(null);
+    }
+    const ticks = Math.max(1, Math.min(25, Math.round((now - lastPump) / TICK)));
+    if (now - lastPump < TICK) return;
+    lastPump += ticks * TICK;
+    if (now - lastPump > 500) lastPump = now; // a stall (tab hidden): do not try to catch up
+    inflight = true;
+    const s = sess;
+    try {
+      const r = await api(`/api/park/session/${s.id}/step`, { body: { ticks, duty: auto ? null : duty, auto } });
+      if (s !== sess) return;
+      prev = snap; snap = r; recvAt = performance.now(); interval = ticks * TICK;
+      if (r.est) {
+        const l = paths.est.at(-1);
+        if (l && Math.hypot(r.est[0] - l[0], r.est[1] - l[1]) > 0.25) paths.est = []; // the estimate jumped: new track
+        paths.est.push(r.est.slice(0, 2));
+      }
+      paths.true.push(r.car.slice(0, 2));
+      if (r.outcome) finish(r.result === 'parked', OUTCOME[r.result] || (r.result.startsWith('abort') ? `Aborted: ${r.reason || r.result.slice(6)}` : r.result));
+    } catch {
+      H.flash('SESSION EXPIRED · press R');
+      done = { ok: false };
+    } finally { inflight = false; }
+  };
+
+  // --- cameras: the car's own (the true camera, mount errors included) and the orbit
+  const carCamera = (q, w, h) => {
+    const ce0 = sess?.camera_error || { focal_scale: 1, yaw: 0, pitch: 0 }, fx = snap?.cam_fx;
+    const cam = W.carCam, ce = { ...ce0, yaw: ce0.yaw + (fx?.yaw || 0), pitch: ce0.pitch + (fx?.pitch || 0) };
+    const k = Math.min(w / W0, h / H0);
+    cam.aspect = w / h;
+    cam.fov = (2 * Math.atan(h / 2 / (F0 * ce.focal_scale * k)) * 180) / Math.PI;
+    const c = Math.cos(q[2]), s = Math.sin(q[2]), cx = bay.car.camera_x;
+    cam.position.copy(P(q[0] + cx * c, q[1] + cx * s, bay.car.camera_z));
+    cam.lookAt(P(q[0] + (cx + 1) * c, q[1] + (cx + 1) * s, bay.car.camera_z));
+    const cy = Math.cos(ce.yaw), sy = Math.sin(ce.yaw), cp = Math.cos(ce.pitch), sp = Math.sin(ce.pitch);
+    const M = new THREE.Matrix3().set(1, 0, 0, 0, cp, -sp, 0, sp, cp).multiply(new THREE.Matrix3().set(cy, 0, -sy, 0, 1, 0, sy, 0, cy));
+    const S = new THREE.Matrix3().set(1, 0, 0, 0, -1, 0, 0, 0, -1);
+    cam.quaternion.multiply(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().setFromMatrix3(S.clone().multiply(M.clone().transpose()).multiply(S))));
     cam.updateProjectionMatrix();
     return k;
   };
-
-  // --- overlay: sensor frame and detections, car-camera view only
-  const overlay = (k, kp) => {
-    const w = stage.clientWidth, h = stage.clientHeight, dpr = devicePixelRatio || 1;
-    if (ov.width !== Math.round(w * dpr)) { ov.width = Math.round(w * dpr); ov.height = Math.round(h * dpr); }
-    og.setTransform(dpr, 0, 0, dpr, 0, 0);
-    og.clearRect(0, 0, w, h);
-    if (view !== 'cam') return;
+  // what the camera faults do to the picture: exposure, blur, a blocked region
+  const pipImg = $('#ch-pip'), mainImg = $('#ch-3d');
+  // (blur only on the small inset: a full-screen CSS blur over WebGL costs a frame per frame)
+  const imageFaults = (img, on, small) => {
+    const fx = snap?.cam_fx;
+    const expo = fx?.exposure > 0 ? 'brightness(2.6) contrast(.6)' : fx?.exposure < 0 ? 'brightness(.28)' : '';
+    const blur = small && fx?.blur > 0.5 ? `blur(${Math.min(3, fx.blur / 3).toFixed(1)}px)` : '';
+    const f = on ? `grayscale(1) contrast(1.08) ${expo} ${blur}`.trim() : '';
+    if (img.style.filter !== f) img.style.filter = f;
+  };
+  const occlude = (g, w, h, k) => {
+    const o = snap?.cam_fx?.occluder;
+    if (!o) return;
     const X = (u) => w / 2 + (u - W0 / 2) * k, Y = (v) => h / 2 + (v - H0 / 2) * k;
-    og.strokeStyle = 'rgba(236,232,222,.7)'; og.lineWidth = 1.5;
-    const b = 22, x0 = X(0) + 10, x1 = X(W0) - 10, y0 = Y(0) + 10, y1 = Y(H0) - 10;
-    for (const [x, y, dx, dy] of [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]]) { og.beginPath(); og.moveTo(x + dx * b, y); og.lineTo(x, y); og.lineTo(x, y + dy * b); og.stroke(); }
-    og.beginPath(); og.moveTo(w / 2 - 8, h / 2); og.lineTo(w / 2 + 8, h / 2); og.moveTo(w / 2, h / 2 - 8); og.lineTo(w / 2, h / 2 + 8); og.stroke();
-    og.fillStyle = color('var(--signal)');
-    for (const [, u, v] of kp || []) { og.fillRect(X(u) - 4, Y(v) - 4, 8, 8); og.strokeStyle = '#000'; og.lineWidth = 1; og.strokeRect(X(u) - 4.5, Y(v) - 4.5, 9, 9); }
+    g.fillStyle = 'rgba(8,8,8,.92)';
+    g.fillRect(X(o[0]), Y(o[1]), X(o[2]) - X(o[0]), Y(o[3]) - Y(o[1]));
+  };
+  const detections = (canvas, w, h, k, kp, frame) => {
+    const dpr = devicePixelRatio || 1;
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+    const g = canvas.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const X = (u) => w / 2 + (u - W0 / 2) * k, Y = (v) => h / 2 + (v - H0 / 2) * k;
+    if (frame) {
+      g.strokeStyle = 'rgba(236,232,222,.7)'; g.lineWidth = 1.5;
+      const b = 22, x0 = X(0) + 10, x1 = X(W0) - 10, y0 = Y(0) + 10, y1 = Y(H0) - 10;
+      for (const [x, y, dx, dy] of [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]]) { g.beginPath(); g.moveTo(x + dx * b, y); g.lineTo(x, y); g.lineTo(x, y + dy * b); g.stroke(); }
+    }
+    if (kp) occlude(g, w, h, k);
+    const s = Math.max(3, 4 * k * 1.6);
+    g.fillStyle = color('var(--signal)');
+    g.strokeStyle = '#000'; g.lineWidth = 1;
+    for (const [, u, v] of kp || []) { g.fillRect(X(u) - s, Y(v) - s, 2 * s, 2 * s); g.strokeRect(X(u) - s - 0.5, Y(v) - s - 0.5, 2 * s + 1, 2 * s + 1); }
   };
 
   // --- loop
+  let last = 0;
   const frame = (now) => {
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
-    const r = round;
-    let kp = null, believed = null, state = null;
-    if (r?.auto) {
-      const tr = r.auto.res.trace;
-      if (!r.done) r.t += dt;
-      while (r.auto.k < tr.length - 1 && tr[r.auto.k + 1].t <= r.t) r.auto.k++;
-      const a = tr[r.auto.k], b = tr[Math.min(tr.length - 1, r.auto.k + 1)];
-      const f = b.t > a.t ? Math.min(1, (r.t - a.t) / (b.t - a.t)) : 0;
-      const prev = r.q;
-      r.q = [a.car[0] + f * (b.car[0] - a.car[0]), a.car[1] + f * (b.car[1] - a.car[1]), a.car[2] + f * wrap(b.car[2] - a.car[2])];
-      const c = Math.cos(r.q[2]), s = Math.sin(r.q[2]), dx = (r.q[0] - prev[0]) / (dt || 1), dy = (r.q[1] - prev[1]) / (dt || 1);
-      r.vel = [c * dx + s * dy, -s * dx + c * dy, wrap(r.q[2] - prev[2]) / (dt || 1)];
-      if (!r.path.length || Math.hypot(r.q[0] - r.path.at(-1)[0], r.q[1] - r.path.at(-1)[1]) > 0.01) r.path.push(r.q.slice(0, 2));
-      kp = a.kp; state = a.state;
-      if (a.est) believed = compose(r.q, inverse(a.est));
-      r.est = a.est;
-      if (!r.done && r.auto.k >= tr.length - 1) { r.t = r.auto.res.time_s; finish(r.auto.res.success, r.auto.res.success ? null : r.auto.res.outcome); }
-    } else if (r && !r.done) {
-      const duty = input.duty();
-      if (!r.started && duty.some((d) => d)) { r.started = true; H.banner(null); }
-      if (r.started) {
-        r.t += dt;
-        const next = stepPlant(r.q, r.vel, duty, r.plant, dt);
-        if (collides(next)) finish(false, 'Contact with the airframe');
-        else if (Math.hypot(next[0], next[1]) > 3.5) finish(false, 'Left the room');
-        else r.q = next;
-        if (Math.hypot(r.q[0] - r.path.at(-1)[0], r.q[1] - r.path.at(-1)[1]) > 0.01) r.path.push(r.q.slice(0, 2));
-      }
-      if (r.seen && now - r.seen.t < 400) { kp = r.seen.kp; believed = r.seen.est; }
-    } else if (r?.done && !r.auto) { r.vel = [0, 0, 0]; }
-    const q = r?.q || [1.5, 0, Math.PI];
-    W.setCar(q, r?.vel, dt);
-    W.showCar(view !== 'cam');
-    W.xray(view === 'top');
-    W.setSkeleton(believed, 0.9);
-    const k = camRig(q);
-    W.render();
-    overlay(k, kp);
-    const blind = level === 'blind' && !r?.done;
-    if (!blind) drawWorld(mini, bay, plan, { paths: [{ pts: r?.path || [], color: 'var(--signal)', width: 1.25 }], car: q, carEst: r?.auto ? r.est : null, scaleBar: false, grid: true });
-    H.update({ r, q, e: error(q), state, kp, believed, input, blind, level });
+    pump(now);
+    const f = snap && prev ? Math.min(1, (now - recvAt) / interval) : 1;
+    const q = snap ? (prev ? [0, 1].map((i) => prev.car[i] + f * (snap.car[i] - prev.car[i])).concat(prev.car[2] + f * wrap(snap.car[2] - prev.car[2])) : snap.car) : [-1.4, 0, 0];
+    const est = snap?.est || null;
+    W.setCar(q, snap?.vel, done ? 0 : dt);
+    W.setSkeleton(est ? compose(q, inverse(est)) : null, 0.9);
+    const fpv = orbit.state.fpv;
+    const w = stage.clientWidth, h = stage.clientHeight;
+    W.xray(!fpv && orbit.state.el > 1.0);
+    if (!fpv) orbit.apply(W.cam, q);
+    const pw = pipBox.clientWidth, ph = pipBox.clientHeight - 0;
+    const k = fpv ? carCamera(q, w, h) : carCamera(q, pw, ph);
+    W.resize(w, h, fpv ? 0 : pw, ph);
+    W.render(fpv, !fpv);
+    detections(ov, w, h, k, fpv ? snap?.kp : null, fpv);
+    imageFaults(mainImg, fpv, false);
+    if (!fpv) imageFaults(pipImg, true, true);
+    if (!fpv) detections(pipOv, pw, ph, k, snap?.kp, false);
+    drawWorld(mini, bay, plan, {
+      paths: [{ pts: paths.est, color: 'var(--signal)', width: 1.25 }, ...(truth ? [{ pts: paths.true, color: 'var(--ink-2)', width: 1, dashed: true }] : [])],
+      car: est || undefined, carEst: truth ? q : undefined, scaleBar: false,
+      label: est ? null : 'NO FIX YET',
+    });
+    const e = est ? [est[0] - bay.target[0], est[1] - bay.target[1], wrap(est[2] - bay.target[2])] : null;
+    const eTrue = [q[0] - bay.target[0], q[1] - bay.target[1], wrap(q[2] - bay.target[2])];
+    H.update({ snap, est, e, eTrue, input, truth, auto, faults: sess?.faults || [] });
+    H.mode(auto ? 'AUTOPILOT' : 'MANUAL');
     raf = requestAnimationFrame(frame);
   };
 
-  const resize = () => { W.resize(stage.clientWidth, stage.clientHeight); };
-  const ro = new ResizeObserver(resize);
-  ro.observe(stage);
-  resize();
-  H.on({ level: (l) => { level = l; newRound(); }, view: (v) => { view = v; H.view(v); }, auto: autopilot, fresh: () => newRound(), retry: () => newRound(round.seed), drive: () => H.banner(null) });
-  H.view(view);
+  // place the car on the map: press for the spot, drag to aim
+  let placing = null;
+  const mapXY = (e) => { const r = mapCanvas.getBoundingClientRect(); const px = e.clientX - r.left, py = e.clientY - r.top; return [mini.centre[0] + (px - mini.w / 2) / mini.scale, mini.centre[1] - (py - mini.h / 2) / mini.scale]; };
+  mapCanvas.addEventListener('pointerdown', (e) => { placing = { p: mapXY(e), yaw: 0 }; mapCanvas.setPointerCapture(e.pointerId); });
+  mapCanvas.addEventListener('pointermove', (e) => { if (!placing) return; const [x, y] = mapXY(e); if (Math.hypot(x - placing.p[0], y - placing.p[1]) > 0.05) placing.yaw = Math.atan2(y - placing.p[1], x - placing.p[0]); });
+  mapCanvas.addEventListener('pointerup', () => { if (!placing) return; const s = [...placing.p, placing.yaw]; placing = null; startName = 'placed'; newRound({ start: s }); });
+
+  H.on({
+    start: (v) => { startName = v; newRound(); },
+    auto: toggleAuto, truth: toggleTruth, fresh: () => newRound(),
+    retry: () => newRound({ seed: sess.seed, start: sess.start }),
+    drive: () => { started = true; H.banner(null); },
+  });
   rethemeFn = () => { W.theme(); mini.layer = null; };
+  const onResize = () => { mini = makeView(mapCanvas, 2.0, [-0.3, 0]); };
+  addEventListener('resize', onResize);
   await newRound();
-  if (location.hash.endsWith('/auto')) { view = 'chase'; H.view(view); autopilot(); }
+  if (location.hash.endsWith('/auto')) toggleAuto();
   raf = requestAnimationFrame(frame);
-  document.body.dataset.driving = '1';
   stop = () => {
     cancelAnimationFrame(raf);
-    clearInterval(percTimer);
-    ro.disconnect();
     input.dispose();
+    orbit.dispose();
     W.dispose();
+    removeEventListener('resize', onResize);
     main.classList.remove('stage-page');
-    delete document.body.dataset.driving;
     rethemeFn = () => {};
   };
 }

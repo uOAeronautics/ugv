@@ -40,8 +40,10 @@ async function buildCar() {
   return { car, wheels };
 }
 
-export async function makeWorld(canvas, bay, skeleton) {
+export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const pip = new THREE.WebGLRenderer({ canvas: pipCanvas, antialias: true });
+  pip.setPixelRatio(Math.min(2, devicePixelRatio || 1));
   renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -49,14 +51,14 @@ export async function makeWorld(canvas, bay, skeleton) {
   const hemi = new THREE.HemisphereLight(0xffffff, 0x404040, 1.0);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-  sun.position.set(1.5, 4, 2.5);
+  sun.position.set(1.2, 5, 1.8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5, near: 0.5, far: 10 });
+  Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 12 });
   sun.shadow.bias = -0.0004;
   scene.add(sun);
   const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.92 });
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), floorMat);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
@@ -85,6 +87,7 @@ export async function makeWorld(canvas, bay, skeleton) {
   scene.add(joints);
 
   const cam = new THREE.PerspectiveCamera(40, 16 / 9, 0.02, 40);
+  const carCam = new THREE.PerspectiveCamera(40, 16 / 9, 0.02, 40);
   const { car, wheels } = await buildCar();
   car.traverse((o) => { o.castShadow = true; });
   scene.add(car);
@@ -98,13 +101,13 @@ export async function makeWorld(canvas, bay, skeleton) {
   const theme = () => {
     const bg = new THREE.Color(css('--stage'));
     scene.background = bg;
-    scene.fog = new THREE.Fog(bg, 3.5, 9);
+    scene.fog = new THREE.Fog(bg, 4, 14);
     floorMat.color.set(css('--stage-floor'));
     const night = document.documentElement.dataset.mode === 'night';
     hemi.intensity = night ? 0.7 : 1.25;
     sun.intensity = night ? 1.8 : 2.4;
     if (grid) scene.remove(grid);
-    grid = new THREE.GridHelper(14, 56, new THREE.Color(css('--stage-grid')), new THREE.Color(css('--stage-grid')));
+    grid = new THREE.GridHelper(20, 80, new THREE.Color(css('--stage-grid')), new THREE.Color(css('--stage-grid')));
     grid.position.y = 0.0015;
     grid.material.transparent = true;
     grid.material.opacity = night ? 0.9 : 0.7;
@@ -115,9 +118,9 @@ export async function makeWorld(canvas, bay, skeleton) {
   };
   theme();
 
-  let spin = 0;
+  let spin = 0, sized = '';
   return {
-    renderer, scene, cam, airframe, theme,
+    renderer, scene, cam, carCam, airframe, theme,
     /** Place the car (airframe frame pose) and spin its wheels by the body velocity. */
     setCar(q, vel, dt) {
       car.position.copy(P(q[0], q[1], 0));
@@ -153,8 +156,19 @@ export async function makeWorld(canvas, bay, skeleton) {
       jp.needsUpdate = true;
       skMat.opacity = jointMat.opacity = opacity;
     },
-    resize(w, h) { renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); },
-    render() { renderer.render(scene, cam); },
-    dispose() { renderer.dispose(); },
+    resize(w, h, pw, ph) {
+      const key = `${w}x${h}:${pw}x${ph}`;
+      if (key === sized) return;
+      sized = key;
+      renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+      if (pw) pip.setSize(pw, ph, false);
+    },
+    /** Main view from `cam` (car shown unless `fpv`), and the car camera into the inset. */
+    render(fpv, inset) {
+      car.visible = !fpv;
+      renderer.render(scene, fpv ? carCam : cam);
+      if (inset) { car.visible = false; pip.render(scene, carCam); car.visible = true; }
+    },
+    dispose() { renderer.dispose(); pip.dispose(); },
   };
 }

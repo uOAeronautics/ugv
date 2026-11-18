@@ -1,27 +1,41 @@
-"""The parking challenge's server side: rounds, the real controller as autopilot, the detector.
+"""The parking challenge's server side: live simulation sessions a person and the controller share.
 
-A round is a seed. The car the player drives (gains, deadzones, lags, roller slip) and its camera
-calibration error are drawn exactly as `ugv.park.episode.run` draws them for that seed, so the
-autopilot started from the player's start pose drives the very same car with the tuned
-controller, the estimator and the simulated keypoint detector. Everything is in the airframe
-frame (airframe at the origin, nose along +x). Simulation only; nothing here talks to the car.
+A session is one `ugv.park.episode.Episode` with the airframe at the origin (airframe frame, nose
+along +x), a car drawn like a scored episode with faults (weak wheels, battery, stalls, lost
+frames, false detections ...), the tuned controller parameters, and the simulated keypoint
+detector. The browser advances it in real time: with a duty when a person drives, without one
+when the controller is engaged, and can switch at any tick. Simulation only; nothing here talks
+to the car.
 """
 
 from __future__ import annotations
 
+import threading
+import time
+from collections import OrderedDict
 from functools import cache
 from pathlib import Path
 
 import numpy as np
 
-from ugv.park.episode import Scenario, detections, run
-from ugv.park.geometry import bay, wrap
-from ugv.park.perception import CameraError, DetectorModel, _model_points, observe, solve
-from ugv.park.plant import PlantParams
+from ugv.park.episode import DT, Episode, Scenario
+from ugv.park.geometry import bay
+from ugv.park.perception import _model_points
 
-LEVELS = {"nominal": 0.0, "random": 1.0, "blind": 1.0}  # plant/camera spread per level
 PARAMS = Path(__file__).resolve().parents[3] / "config" / "park_params.json"
-HALF_ROOM = 1.8  # start inside the episode geofence (2 m) with margin
+FAULTS = 1.0  # fault severity of every challenge car
+MAX_SESSIONS = 8
+MAX_TICKS = 25  # per request: 0.5 s of simulation
+
+# Named starts in the airframe frame (x, y, yaw); the awkward ones are near the nose and gear.
+PRESETS = {
+    "tail": (-1.4, 0.0, 0.0),
+    "nose-on": (0.75, 0.0, np.pi),
+    "nose-oblique": (0.6, 0.45, -2.4),
+    "beside-nose-gear": (0.15, 0.42, -np.pi / 2),
+    "under-wingtip": (-0.1, 0.75, np.pi),
+    "side": (-0.1, -1.2, np.pi / 2),
+}
 
 
 @cache
@@ -31,72 +45,96 @@ def _params():
     return load_params(PARAMS)
 
 
-def _car(seed: int, scale: float) -> tuple[PlantParams, CameraError]:
-    """The plant and camera error `episode.run` draws for this seed (same RNG order)."""
-    rng = np.random.default_rng(seed)
-    plant = PlantParams.sample(rng, scale)
-    cam = CameraError.sample(rng, DetectorModel()) if scale > 0 else CameraError()
-    return plant, cam
-
-
-def new_round(seed: int, level: str) -> dict:
-    scale = LEVELS[level]
+def start_pose(seed: int, start: list[float] | None, preset: str | None) -> np.ndarray:
     b = bay()
-    rng = np.random.default_rng([seed, 1])
-    while True:
-        d, bearing = rng.uniform(1.3, 2.2), rng.uniform(-np.pi, np.pi)
-        q = np.array([d * np.cos(bearing), d * np.sin(bearing), rng.uniform(-np.pi, np.pi)])
-        if max(abs(q[0]), abs(q[1])) < HALF_ROOM and not b.collides(q, inflate=0.05):
-            break
-    plant, cam = _car(seed, scale)
-    return {
-        "seed": seed,
-        "level": level,
-        "start": [round(float(v), 4) for v in q],
-        "plant": {
-            "gain": plant.gain,
-            "deadzone": plant.deadzone,
-            "tau": plant.tau,
-            "strafe_yaw": plant.strafe_yaw,
-            "speed_noise": plant.speed_noise,
-        },
-        "camera_error": {"focal_scale": cam.focal_scale, "yaw": cam.yaw, "pitch": cam.pitch},
+    if preset:
+        q = np.array(PRESETS[preset], dtype=float)
+    elif start is not None:
+        q = np.array(start, dtype=float)
+    else:  # random, close or far, any side
+        rng = np.random.default_rng([seed, 1])
+        while True:
+            d, bearing = rng.uniform(0.5, 2.0), rng.uniform(-np.pi, np.pi)
+            q = np.array([d * np.cos(bearing), d * np.sin(bearing), rng.uniform(-np.pi, np.pi)])
+            if not b.collides(q, 0.03) and max(abs(q[:2])) < 1.75:
+                break
+    if b.collides(q, 0.01) or max(abs(q[:2])) > 1.8:
+        raise ValueError("that start touches the airframe or leaves the room")
+    return q
+
+
+class Sessions:
+    def __init__(self) -> None:
+        self._s: OrderedDict[str, tuple[Episode, threading.Lock]] = OrderedDict()
+        self._lock = threading.Lock()
+
+    def create(
+        self, seed: int, start: list[float] | None = None, preset: str | None = None
+    ) -> dict:
+        q = start_pose(seed, start, preset)
+        sc = Scenario((0.0, 0.0, 0.0), tuple(float(v) for v in q), 1.0, faults=FAULTS)
+        ep = Episode(sc, _params(), seed=seed, engaged=False)
+        sid = f"{seed}-{time.monotonic_ns()}"
+        with self._lock:
+            self._s[sid] = (ep, threading.Lock())
+            while len(self._s) > MAX_SESSIONS:
+                self._s.popitem(last=False)
+        faults = ep.faults.f.describe() if ep.faults else []
+        cam = {"focal_scale": ep.cam.focal_scale, "yaw": ep.cam.yaw, "pitch": ep.cam.pitch}
+        return {
+            "id": sid,
+            "seed": seed,
+            "start": q.round(4).tolist(),
+            "faults": faults,
+            "camera_error": cam,
+            **snapshot(ep),
+        }
+
+    def step(self, sid: str, ticks: int, duty: list[float] | None, auto: bool) -> dict:
+        with self._lock:
+            if sid not in self._s:
+                raise KeyError(sid)
+            self._s.move_to_end(sid)
+            ep, lock = self._s[sid]
+        with lock:
+            if auto != (ep.ctl is not None):
+                ep.engage(auto)
+            d = None if auto else np.clip(np.asarray(duty or [0, 0, 0], dtype=float), -1, 1)
+            for _ in range(max(0, min(ticks, MAX_TICKS))):
+                if ep.tick(d):
+                    break
+            return snapshot(ep)
+
+
+def snapshot(ep: Episode) -> dict:
+    est = ep.est.car_in_airframe()
+    out = {
+        "t": round(ep.t, 2),
+        "car": ep.true_rel().round(4).tolist(),
+        "vel": np.asarray(ep.plant.vel).round(3).tolist(),
+        "est": None if est is None else np.round(est, 4).tolist(),
+        "state": ep.state,
+        "reason": ep.ctl.reason if ep.ctl else "",
+        "fix": bool(ep.t - ep.est.last_fix_t < 0.3),
+        "kp": ep.last_kp,
+        "outcome": ep.outcome,
+        "cam_fx": ep.cam_fx,
     }
-
-
-def autopilot(seed: int, level: str, start: list[float]) -> dict:
-    sc = Scenario(
-        airframe=(0.0, 0.0, 0.0), car=tuple(float(v) for v in start), plant_scale=LEVELS[level]
-    )
-    r = run(sc, _params(), seed=seed, keep_trace=True)
-    return {
-        "outcome": r.outcome,
-        "success": r.success,
-        "time_s": r.time_s,
-        "final_error": r.final_error,
-        "retries": r.retries,
-        "trace": r.trace,
-    }
-
-
-def perceive(seed: int, level: str, car: list[float], tick: int) -> dict:
-    """One camera frame for a car the player drives: detected keypoints and, with 6 or more, the
-    6-DoF PnP pose of the airframe in the car frame. No odometry prior: the player has none."""
-    _, cam = _car(seed, LEVELS[level])
-    q = np.asarray(car, dtype=float)
-    c, s = np.cos(q[2]), np.sin(q[2])
-    rel = np.array([-(c * q[0] + s * q[1]), s * q[0] - c * q[1], wrap(-q[2])])  # airframe in car
-    det = DetectorModel()
-    o = observe(rel, np.random.default_rng([seed, 2, tick]), det, cam)
-    pose = None
-    if o is not None:
-        _, model = _model_points()
-        m = solve(model[o[0]], o[1], det, None)
-        pose = None if m is None else [round(float(v), 4) for v in m[:4]]
-    return {"kp": detections(o), "pose": pose}
+    if ep.outcome:
+        res = ep.result()
+        out |= {"result": res.outcome, "final_error": res.final_error}
+    return out
 
 
 @cache
 def skeleton() -> dict:
     names, pts = _model_points()
-    return {"names": list(names), "points": np.round(pts, 4).tolist()}
+    return {
+        "names": list(names),
+        "points": np.round(pts, 4).tolist(),
+        "presets": {k: [float(x) for x in v] for k, v in PRESETS.items()},
+        "dt": DT,
+    }
+
+
+SESSIONS = Sessions()

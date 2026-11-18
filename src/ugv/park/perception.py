@@ -42,11 +42,17 @@ class DetectorModel:
 
 @dataclass(frozen=True)
 class CameraError:
-    """The true camera differs from the one the car assumes: focal scale and mount angles."""
+    """The true camera differs from the one the car assumes: focal scale and mount angles, and
+    (as a fault, `faults.py`) the lens: principal-point offset and radial distortion k1, k2 in
+    normalised coordinates. The car's solver always assumes the nominal pinhole."""
 
     focal_scale: float = 1.0
     yaw: float = 0.0
     pitch: float = 0.0
+    cx_px: float = 0.0
+    cy_px: float = 0.0
+    k1: float = 0.0
+    k2: float = 0.0
 
     @staticmethod
     def sample(rng: np.random.Generator, det: DetectorModel) -> CameraError:
@@ -86,8 +92,14 @@ def _true_projection(pc: np.ndarray, cam: CameraError) -> tuple[np.ndarray, np.n
     k = K.copy()
     k[0, 0] *= cam.focal_scale
     k[1, 1] *= cam.focal_scale
+    k[0, 2] += cam.cx_px
+    k[1, 2] += cam.cy_px
     front = q[:, 2] > 0.05
-    uv = (q @ k.T)[:, :2] / np.where(front, q[:, 2], 1.0)[:, None]
+    xy = q[:, :2] / np.where(front, q[:, 2], 1.0)[:, None]
+    if cam.k1 or cam.k2:
+        r2 = (xy**2).sum(axis=1, keepdims=True)
+        xy = xy * (1 + cam.k1 * r2 + cam.k2 * r2 * r2)
+    uv = xy * k[[0, 1], [0, 1]] + k[:2, 2]
     return uv, front
 
 
@@ -98,6 +110,7 @@ def measure(
     cam: CameraError | None = None,
     prior: np.ndarray | None = None,
     seen: list | None = None,
+    occluder: tuple[float, float, float, float] | None = None,
 ) -> np.ndarray | None:
     """One noisy planar measurement (x, y, yaw, camera pitch) of the airframe pose in the car frame, or None.
 
@@ -106,7 +119,7 @@ def measure(
     plus its camera-pitch estimate (from its estimator); it lets the floor-constrained solve run
     with only 2 keypoints. `seen`, if given, receives the detector output (or None).
     """
-    o = observe(rel_true, rng, det, cam)
+    o = observe(rel_true, rng, det, cam, occluder)
     if seen is not None:
         seen.append(o)
     if o is None:
@@ -121,13 +134,18 @@ def observe(
     rng: np.random.Generator,
     det: DetectorModel,
     cam: CameraError | None = None,
+    occluder: tuple[float, float, float, float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray] | None:
     """What the keypoint detector reports: (mask of detected keypoints, their pixels with noise
-    and outliers), or None when the airframe is out of range, out of view or too small."""
+    and outliers), or None when the airframe is out of range, out of view or too small.
+    Keypoints inside `occluder` (u0, v0, u1, v1) are hidden."""
     if np.hypot(rel_true[0], rel_true[1]) > det.max_range_m:
         return None
     uv, front = _true_projection(camera_points(rel_true), cam or CameraError())
     inside = front & (uv[:, 0] >= 0) & (uv[:, 0] < WIDTH) & (uv[:, 1] >= 0) & (uv[:, 1] < HEIGHT)
+    if occluder is not None:
+        u0, v0, u1, v1 = occluder
+        inside &= ~((uv[:, 0] >= u0) & (uv[:, 0] <= u1) & (uv[:, 1] >= v0) & (uv[:, 1] <= v1))
     if inside.sum() < 2 or np.hypot(*np.ptp(uv[inside], axis=0)) < det.min_span_px:
         return None
     keep = inside & (rng.random(len(uv)) > det.miss_rate)

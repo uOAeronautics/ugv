@@ -50,6 +50,7 @@ SPACE = {
     "stop_tol_m": (0.003, 0.015),
     "shield_inflate_m": (0.0, 0.02),
     "max_retries": (1, 6),
+    "k_hold": (0.0, 6.0),
 }
 
 # Which parameters plausibly drive each failure outcome.
@@ -63,8 +64,10 @@ LEVERS = {
         "step_v",
         "max_step_m",
         "k_lat",
+        "k_hold",
     ],
     "parked-off-target": [
+        "k_hold",
         "stop_tol_m",
         "lat_tol_m",
         "yaw_tol_deg",
@@ -129,23 +132,38 @@ def search(
     n: int = 128,
     seed: int = 7,
     start: ParkParams | None = None,
-    cond: Conditions | None = None,
+    cond: Conditions | list[Conditions] | None = None,
     log=print,
 ) -> ParkParams:
+    """`cond` may be a list: each candidate is scored on `n` episodes of every condition (for
+    example healthy cars and faulty cars) and the counts are summed, so robustness bought in one
+    condition at the expense of another does not pass."""
     out.mkdir(parents=True, exist_ok=True)
     tree = out / "tree.jsonl"
     rng = np.random.default_rng(seed)
-    cond = cond or Conditions()
+    conds = cond if isinstance(cond, list) else [cond or Conditions()]
     best = start or ParkParams()
     t0 = time.time()
 
     def score(p: ParkParams) -> dict:
-        return evaluate(p, n=n, seed=seed, cond=cond)
+        rs = [evaluate(p, n=n, seed=seed + j, cond=c) for j, c in enumerate(conds)]
+        outcomes: Counter = Counter()
+        for r in rs:
+            outcomes.update(r["outcomes"])
+        k, total = sum(r["success"] for r in rs), n * len(rs)
+        return {
+            "success": k,
+            "wilson95": [round(v, 4) for v in wilson(k, total)],
+            "outcomes": dict(outcomes.most_common()),
+            "collisions": sum(r["collisions"] for r in rs),
+            "per_condition": [r["success"] for r in rs],
+        }
 
     def write(node: dict) -> None:
         with tree.open("a") as f:
             f.write(json.dumps(node) + "\n")
 
+    n_total = n * len(conds)
     root = score(best)
     best_node = {
         "id": "n0",
@@ -153,7 +171,8 @@ def search(
         "gen": 0,
         "change": {},
         "success": root["success"],
-        "n": n,
+        "n": n_total,
+        "per_condition": root["per_condition"],
         "wilson95": root["wilson95"],
         "outcomes": root["outcomes"],
         "verdict": "ROOT",
@@ -162,7 +181,7 @@ def search(
         "t": round(time.time() - t0, 1),
     }
     write(best_node)
-    log(f"root {root['success']}/{n} {root['outcomes']}")
+    log(f"root {root['success']}/{n_total} {root['per_condition']} {root['outcomes']}")
     counter = 1
     for gen in range(1, generations + 1):
         failures = Counter({k: v for k, v in best_node["outcomes"].items() if k != "parked"})
@@ -176,7 +195,8 @@ def search(
                 "gen": gen,
                 "change": change,
                 "success": r["success"],
-                "n": n,
+                "n": n_total,
+                "per_condition": r["per_condition"],
                 "wilson95": r["wilson95"],
                 "outcomes": r["outcomes"],
                 "params": asdict(cand),
@@ -187,16 +207,18 @@ def search(
             # does not collide more often. A collision on the car needs a person; it is never
             # traded for success.
             node["collisions"] = r["collisions"]
-            better = r["success"] >= best_node["success"] + 2
+            better = r["success"] >= best_node["success"] + 2 * len(conds)
             safe = r["collisions"] <= best_node.get("collisions", root["collisions"])
             node["verdict"] = "PASS" if better and safe else "FAIL"
             write(node)
             results.append((node, cand))
-            log(f"gen {gen} {node['id']} {node['verdict']} {r['success']}/{n} {change}")
+            log(
+                f"gen {gen} {node['id']} {node['verdict']} {r['success']}/{n_total} {r['per_condition']} c{r['collisions']} {change}"
+            )
         winner, cand = max(results, key=lambda nc: nc[0]["success"])
         if winner["verdict"] == "PASS":
             best, best_node = cand, winner
-            log(f"gen {gen}: new best {winner['id']} {winner['success']}/{n}")
+            log(f"gen {gen}: new best {winner['id']} {winner['success']}/{n_total}")
         else:
             log(f"gen {gen}: no improvement, keep {best_node['id']}")
     (out / "best.json").write_text(

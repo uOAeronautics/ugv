@@ -1,48 +1,50 @@
-"""The Lab dashboard's server side: rounds draw the same car as the simulator, the autopilot is the
-real episode, perception sees the airframe from behind the tail, and the APIs answer."""
+"""The Lab dashboard's server side: live sessions shared by a person and the controller, named and
+placed starts, and the APIs."""
 
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
 
 from ugv.lab import sim
 from ugv.lab.server import create_app
-from ugv.park.episode import Scenario, run
 from ugv.park.geometry import bay
 
 
-def test_round_draws_the_car_episode_run_draws():
-    r = sim.new_round(11, "random")
-    res = run(Scenario((0.0, 0.0, 0.0), tuple(r["start"]), 1.0), sim._params(), seed=11)
-    again = sim.autopilot(11, "random", r["start"])
-    assert again["outcome"] == res.outcome and again["time_s"] == res.time_s
-    assert again["trace"] and {"car", "est", "state", "kp"} <= set(again["trace"][0])
+def test_presets_are_clear_of_the_airframe():
+    for name, q in sim.PRESETS.items():
+        assert not bay().collides(np.array(q), 0.01), name
 
 
-def test_round_start_is_clear_and_inside_the_room():
+def test_random_starts_are_clear_and_inside_the_room():
     for seed in range(20):
-        q = np.array(sim.new_round(seed, "nominal")["start"])
-        assert max(abs(q[:2])) < sim.HALF_ROOM
-        assert not bay().collides(q)
+        q = sim.start_pose(seed, None, None)
+        assert max(abs(q[:2])) < 1.8 and not bay().collides(q)
 
 
-def test_nominal_level_has_no_spread():
-    r = sim.new_round(3, "nominal")
-    assert r["camera_error"] == {"focal_scale": 1.0, "yaw": 0.0, "pitch": 0.0}
+def test_a_start_inside_the_airframe_is_refused():
+    with pytest.raises(ValueError):
+        sim.start_pose(0, [-0.16, 0.13, 0.0], None)  # on the main gear
 
 
-def test_perceive_sees_the_airframe_from_behind_the_tail():
-    out = sim.perceive(0, "nominal", [-0.9, 0.0, 0.0], tick=0)
-    assert len(out["kp"]) >= 6
-    assert out["pose"] is not None and abs(out["pose"][0] - 0.9) < 0.1  # airframe ahead of the car
-    assert sim.perceive(0, "nominal", [-0.9, 0.0, np.pi], tick=0)["kp"] == []  # facing away
+def test_hand_over_to_the_controller_and_back():
+    s = sim.Sessions()
+    r = s.create(5, preset="tail")
+    assert r["state"] == "MANUAL" and r["faults"] is not None
+    moved = s.step(r["id"], 25, [0.3, 0, 0], auto=False)
+    assert moved["car"][0] > r["car"][0]  # driven forward along +x, towards the airframe
+    auto = s.step(r["id"], 25, None, auto=True)
+    assert auto["state"] != "MANUAL"
+    back = s.step(r["id"], 5, [0, 0, 0], auto=False)
+    assert back["state"] == "MANUAL"
 
 
 def test_api():
     c = TestClient(create_app())
-    assert c.get("/api/park/round", params={"seed": 1, "level": "bogus"}).status_code == 400
-    r = c.get("/api/park/round", params={"seed": 1, "level": "nominal"}).json()
-    body = {"seed": 1, "level": "nominal", "car": r["start"], "tick": 0}
-    assert c.post("/api/park/perceive", json=body).status_code == 200
+    assert c.post("/api/park/session", json={"seed": 1, "preset": "bogus"}).status_code == 400
+    r = c.post("/api/park/session", json={"seed": 1, "preset": "nose-on"}).json()
+    step = c.post(f"/api/park/session/{r['id']}/step", json={"ticks": 5, "auto": True})
+    assert step.status_code == 200 and {"car", "est", "state", "kp"} <= set(step.json())
+    assert c.post("/api/park/session/nope/step", json={"ticks": 1}).status_code == 404
     plan = c.get("/api/park/plan").json()
     assert len(plan["skeleton"]["names"]) == 12 and len(plan["tris"][0]) == 8
     assert c.get("/static/app.js").headers["cache-control"] == "no-cache"

@@ -6,7 +6,9 @@
 
 `--sweep` adds the robustness conditions: ideal world, detector-only, plant-only, worse
 detector (4 px, 20% misses, 8% outliers), worse camera calibration, and a 1.5x wider spread
-of cars. Output: `runs/park_eval/<name>.json` (and `<name>_traces.json`).
+of cars, starts close to the airframe on any side, and per-episode faults (`faults.py`).
+`--families` scores each fault family alone. `--faults S --start close` set the main run.
+Output: `runs/park_eval/<name>.json` (and `<name>_traces.json`).
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ import numpy as np
 from ugv.park.controller import ParkParams
 from ugv.park.episode import Scenario, run
 from ugv.park.evaluate import Conditions, evaluate
+from ugv.park.faults import FAMILIES as FAULT_FAMILIES
 from ugv.park.perception import DetectorModel
 from ugv.park.search import load_params
 
@@ -44,7 +47,11 @@ SWEEP = {
         ),
     ),
     "wider-cars": Conditions(1.5, DetectorModel()),
+    "close-start": Conditions(start="close"),
+    "faults": Conditions(faults=1.0),
+    "close+faults": Conditions(faults=1.0, start="close"),
 }
+FAMILIES = {f"fault:{f}": Conditions(only=f) for f in FAULT_FAMILIES}
 
 
 def main() -> None:
@@ -55,12 +62,16 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--sweep", action="store_true")
     ap.add_argument("--sweep-n", type=int, default=300)
+    ap.add_argument("--families", action="store_true", help="sweep each fault family alone")
+    ap.add_argument("--faults", type=float, default=0.0, help="fault severity of the main run")
+    ap.add_argument("--start", choices=["ring", "close"], default="ring")
     ap.add_argument("--traces", type=int, default=0)
     ap.add_argument("--out", type=Path, default=Path("runs/park_eval"))
     args = ap.parse_args()
     params = load_params(args.params) if args.params else ParkParams()
     args.out.mkdir(parents=True, exist_ok=True)
-    main_r = evaluate(params, n=args.n, seed=args.seed)
+    main_cond = Conditions(faults=args.faults, start=args.start)
+    main_r = evaluate(params, n=args.n, seed=args.seed, cond=main_cond)
     print(
         f"full {main_r['success']}/{args.n} wilson95 {main_r['wilson95']} {main_r['outcomes']}",
         flush=True,
@@ -71,8 +82,9 @@ def main() -> None:
         "main": main_r,
         "sweep": {},
     }
-    if args.sweep:
-        for label, cond in SWEEP.items():
+    sweep = (SWEEP if args.sweep else {}) | (FAMILIES if args.families else {})
+    if sweep:
+        for label, cond in sweep.items():
             if label == "full":
                 continue
             r = evaluate(params, n=args.sweep_n, seed=args.seed + 1, cond=cond)
@@ -84,10 +96,16 @@ def main() -> None:
         traces = []
         for i in range(args.traces):
             s = args.seed * 100003 + i
-            sc = Scenario.sample(np.random.default_rng(s), 1.0)
+            sc = Scenario.sample(np.random.default_rng(s), 1.0, None, args.faults, None, args.start)
             r = run(sc, params, seed=s, keep_trace=True)
             traces.append(
-                {"episode": i, "outcome": r.outcome, "final_error": r.final_error, "trace": r.trace}
+                {
+                    "episode": i,
+                    "outcome": r.outcome,
+                    "final_error": r.final_error,
+                    "faults": r.faults,
+                    "trace": r.trace,
+                }
             )
         (args.out / f"{args.name}_traces.json").write_text(json.dumps(traces))
     print(f"wrote {args.out / (args.name + '.json')}")

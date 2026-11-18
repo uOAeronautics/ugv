@@ -16,8 +16,12 @@ The controller never sees these values: it uses `NOMINAL`.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from ugv.park.faults import FaultState
 
 DUTY_CAP = 1800 / 4095
 
@@ -75,6 +79,7 @@ class Plant:
     pose: np.ndarray  # (x, y, yaw) world
     rng: np.random.Generator
     vel: np.ndarray | None = None  # body (vx, vy, w)
+    faults: FaultState | None = None  # see faults.py; None = a healthy car
 
     def __post_init__(self) -> None:
         self.vel = np.zeros(3) if self.vel is None else self.vel
@@ -82,20 +87,25 @@ class Plant:
     def step(self, duty: np.ndarray, dt: float) -> tuple[np.ndarray, float]:
         """Advance; returns (true body velocity, measured gyro rate)."""
         p = self.params
+        if self.faults is not None:
+            duty = self.faults.command(duty, dt)
         target = duty_to_velocity(np.clip(duty, -DUTY_CAP, DUTY_CAP), p)
         target = target * (1 + p.speed_noise * self.rng.normal(size=3))
         alpha = 1 - np.exp(-dt / np.array(p.tau))
         self.vel = self.vel + alpha * (target - self.vel)
-        w = self.vel[2] + p.strafe_yaw * self.vel[1]
+        v = self.vel if self.faults is None else self.faults.wheels(self.vel, dt)
+        w = v[2] + p.strafe_yaw * v[1]
         c, s = np.cos(self.pose[2]), np.sin(self.pose[2])
         self.pose = np.array(
             [
-                self.pose[0] + (c * self.vel[0] - s * self.vel[1]) * dt,
-                self.pose[1] + (s * self.vel[0] + c * self.vel[1]) * dt,
+                self.pose[0] + (c * v[0] - s * v[1]) * dt,
+                self.pose[1] + (s * v[0] + c * v[1]) * dt,
                 (self.pose[2] + w * dt + np.pi) % (2 * np.pi) - np.pi,
             ]
         )
         # Vibration noise comes from the motors: it scales with the duty; a still car's gyro is quiet.
         shake = float(np.max(np.abs(duty))) / DUTY_CAP
         gyro = w + p.gyro_bias + (0.004 + p.gyro_std * shake) * self.rng.normal()
-        return np.array([self.vel[0], self.vel[1], w]), float(gyro)
+        if self.faults is not None:
+            gyro = self.faults.gyro(gyro, dt)
+        return np.array([v[0], v[1], w]), float(gyro)

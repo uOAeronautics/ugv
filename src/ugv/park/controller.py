@@ -80,6 +80,10 @@ class ParkParams:
     lookahead_s: float = 0.4
     max_retries: int = 3
     timeout_s: float = 120.0
+    k_hold: float = (
+        0.0  # ENTER moves: hold the heading the move started with, by the gyro (0 = off)
+    )
+    shield_backoff: bool = False  # also shield the reverse out of the bay
 
 
 def _body(v_air: np.ndarray, yaw: float) -> np.ndarray:
@@ -193,7 +197,11 @@ class ParkController:
                     self._go("APPROACH", "backed off, retry")
                 return np.zeros(3)
             v_air = np.array([-p.approach_v, float(np.clip(-p.k_lat * y, -0.05, 0.05))])
-            return np.array([*_body(v_air, yaw), p.k_head * wrap(-yaw)])
+            cmd = np.array([*_body(v_air, yaw), p.k_head * wrap(-yaw)])
+            if p.shield_backoff and self._would_hit(q, cmd):
+                self.shield_hits += 1
+                return np.array([0.0, 0.0, cmd[2]])  # turn in place to straighten, no translation
+            return cmd
         raise AssertionError(s)
 
     def _enter(self, t: float, est: Estimator, q: np.ndarray) -> np.ndarray:
@@ -202,8 +210,11 @@ class ParkController:
             self._step = ("measure", t, est.samples)
         kind = self._step[0]
         if kind == "move":
-            _, t_end, axis, cmd = self._step[:4]
+            _, t_end, axis, cmd, hold = self._step
             if t < t_end:
+                if p.k_hold > 0:
+                    cmd = cmd.copy()
+                    cmd[2] = float(np.clip(p.k_hold * wrap(hold - est.odom[2]), -0.3, 0.3))
                 return cmd
             self._step = ("measure", t, est.samples)
             return np.zeros(3)
@@ -237,7 +248,7 @@ class ParkController:
             self.steps += 1
             return np.zeros(3)
         if abs(y) > p.lat_tol_m and seen:
-            return self._move(t, 1, -y, q)
+            return self._move(t, 1, -y, q, est)
         if remaining < p.stop_tol_m:
             self._step = None
             self._go("PARKED", "at the target" if seen else "at the target (dead reckoned)")
@@ -245,9 +256,9 @@ class ParkController:
         dist = remaining if not seen else min(p.max_step_m, max(0.01, p.step_frac * remaining))
         if not seen or remaining < 0.02:
             dist = remaining
-        return self._move(t, 0, dist, q)
+        return self._move(t, 0, dist, q, est)
 
-    def _move(self, t: float, axis: int, dist: float, q: np.ndarray) -> np.ndarray:
+    def _move(self, t: float, axis: int, dist: float, q: np.ndarray, est: Estimator) -> np.ndarray:
         p = self.params
         v = p.step_v
         cmd = np.zeros(3)
@@ -259,7 +270,7 @@ class ParkController:
             self.shield_hits += 1
             self._step = None
             return self._backoff("shield")
-        self._step = ("move", t + duration, axis, cmd)
+        self._step = ("move", t + duration, axis, cmd, float(est.odom[2]))
         self._last_move = (axis, dist, q.copy())
         self.steps += 1
         return cmd
@@ -272,14 +283,18 @@ class ParkController:
             self._go("BACKOFF", why)
         return np.zeros(3)
 
-    def _shielded(self, q: np.ndarray, cmd: np.ndarray) -> np.ndarray:
-        """Stop translation if the estimated footprint would touch the airframe soon."""
+    def _would_hit(self, q: np.ndarray, cmd: np.ndarray) -> bool:
+        """Would the estimated footprint touch the airframe within the lookahead?"""
         p = self.params
         c, s = np.cos(q[2]), np.sin(q[2])
         dx = (c * cmd[0] - s * cmd[1]) * p.lookahead_s
         dy = (s * cmd[0] + c * cmd[1]) * p.lookahead_s
         pred = np.array([q[0] + dx, q[1] + dy, wrap(q[2] + cmd[2] * p.lookahead_s)])
-        if self.bay.collides(pred, p.shield_inflate_m):
+        return bool(self.bay.collides(pred, p.shield_inflate_m))
+
+    def _shielded(self, q: np.ndarray, cmd: np.ndarray) -> np.ndarray:
+        """Stop translation if the estimated footprint would touch the airframe soon."""
+        if self._would_hit(q, cmd):
             self.shield_hits += 1
             if self.fsm.state in ("APPROACH", "ENTER"):
                 return self._backoff("shield")

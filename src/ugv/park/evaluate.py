@@ -22,10 +22,15 @@ from ugv.park.perception import DetectorModel
 
 @dataclass(frozen=True)
 class Conditions:
-    """What the world throws at the controller. `plant_scale` 0 = the nominal car."""
+    """What the world throws at the controller. `plant_scale` 0 = the nominal car; `faults` is the
+    severity of per-episode car and sensor faults (faults.py), `only` one fault family; `start`
+    "ring" (1.3-3 m away) or "close" (0.4-1.3 m, any side)."""
 
     plant_scale: float = 1.0
     detector: DetectorModel = DetectorModel()
+    faults: float = 0.0
+    only: str | None = None
+    start: str = "ring"
 
 
 def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
@@ -42,7 +47,7 @@ def _one(args: tuple) -> dict:
     i, seed, params, cond = args
     s = seed * 100003 + i
     rng = np.random.default_rng(s)
-    sc = Scenario.sample(rng, cond.plant_scale, cond.detector)
+    sc = Scenario.sample(rng, cond.plant_scale, cond.detector, cond.faults, cond.only, cond.start)
     return as_dict(run(sc, params, seed=s))
 
 
@@ -80,7 +85,7 @@ def summarize(rows: list[dict], params: ParkParams, n: int, seed: int, cond: Con
         "median_time_s": float(np.median([r["time_s"] for r in ok])) if ok else None,
         "mean_retries": float(np.mean([r["retries"] for r in rows])),
         "params": asdict(params),
-        "conditions": {"plant_scale": cond.plant_scale, "detector": asdict(cond.detector)},
+        "conditions": {**asdict(cond), "detector": asdict(cond.detector)},
         "episodes": rows,
     }
 

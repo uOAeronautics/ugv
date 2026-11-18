@@ -263,27 +263,36 @@ th.num { font: 600 12px/1 var(--cond); }
 .tele b.fix { color: var(--good); } .tele b.nofix { color: var(--ink-3); }
 .tele .sub { grid-column: 1 / -1; display: flex; justify-content: space-between; border-top: 1px solid var(--rule); padding-top: 8px; }
 .tele .sub span { font: 400 11px var(--mono); letter-spacing: 0; color: var(--ink-2); }
-.mini canvas { width: 240px; height: 240px; display: block; }
-.mini .mini-off { display: none; }
-.mini.off canvas { visibility: hidden; }
-.mini.off .mini-off { display: grid; place-items: center; position: absolute; inset: 0; font: 600 12px var(--cond); letter-spacing: .1em; color: var(--ink-3); }
-.input .caps { display: grid; grid-template-columns: repeat(3, 46px); gap: 4px; justify-content: end; }
-.caps span { display: grid; place-items: center; height: 40px; border: 1px solid var(--rule-2); line-height: 1; }
-.caps b { font: 700 16px var(--cond); } .caps small { font: 400 9px var(--mono); color: var(--ink-3); }
-.caps span.on { background: var(--signal); border-color: var(--signal); color: var(--signal-ink); }
-.caps span.on small { color: inherit; }
-.wd { display: flex; align-items: center; gap: 10px; margin-top: 10px; font: 600 11px var(--cond); letter-spacing: .1em; color: var(--ink-3); }
-.wd i { flex: 1; height: 4px; background: var(--rule); position: relative; min-width: 90px; }
-.wd i b { position: absolute; inset: 0 auto 0 0; background: var(--good); width: 0; }
-.input.trip .wd { color: var(--bad); } .input.trip .wd i { background: var(--bad); }
-.hint { margin-top: 10px; font: 400 11px/1.9 var(--mono); color: var(--ink-3); max-width: 320px; text-align: right; }
-kbd { font: 500 10px/1 var(--mono); border: 1px solid var(--rule-2); padding: 2px 4px; color: var(--ink-2); }
+.mini canvas { width: 240px; height: 240px; display: block; cursor: crosshair; }
+.mini-k { font: 600 10.5px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); padding: 7px 10px; border-top: 1px solid var(--rule); }
+.pip { padding: 0; width: 360px; }
+.pip canvas { display: block; width: 360px; height: 202px; }
+.pip #ch-pip-ov { position: absolute; left: 0; top: 0; pointer-events: none; }
+.stage.fpv .pip { display: none; }
+.stage #ch-3d { cursor: grab; touch-action: none; }
+.stage #ch-3d:active { cursor: grabbing; }
+.tele .truth { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding-top: 8px; }
+.tele .truth b { font-size: 18px; }
+ul.faults { margin: 8px 0 0; padding: 0; list-style: none; font: 400 12.5px/1.6 var(--sans); color: var(--ink-2); }
+ul.faults li::before { content: "▪ "; color: var(--warn); }
+.banner ul.faults { display: inline-block; text-align: left; margin-top: 12px; }
 .dock { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; height: 56px; display: flex; gap: 10px; align-items: center; justify-content: center; padding: 0 20px;
   background: color-mix(in srgb, var(--stage) 86%, transparent); border-top: 1px solid var(--rule); }
+kbd { font: 500 10px/1 var(--mono); border: 1px solid var(--rule-2); padding: 2px 4px; color: var(--ink-2); }
+.dock .caps { display: inline-flex; gap: 3px; margin-left: 8px; }
+.dock .caps span { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--rule-2); font: 700 13px var(--cond); color: var(--ink-2); }
+.dock .caps span.on { background: var(--signal); border-color: var(--signal); color: var(--signal-ink); }
+.dock .wd i { display: block; width: 70px; height: 4px; background: var(--rule); position: relative; }
+.dock .wd i b { position: absolute; inset: 0 auto 0 0; background: var(--good); width: 0; }
+.dock .wd.trip i { background: var(--bad); }
+.dock .hint { font: 400 12.5px var(--sans); color: var(--ink-2); margin-left: 8px; }
+.dock button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.dock kbd { margin-left: 4px; }
+.dock .go kbd { color: inherit; border-color: currentColor; }
 .banner { position: absolute; z-index: 5; inset: 0 0 56px; display: grid; place-items: center; text-align: center; background: color-mix(in srgb, var(--stage) 55%, transparent); }
-.banner > div { max-width: 640px; padding: 0 20px; }
+.banner > div { max-width: min(900px, 100%); padding: 0 24px; }
 .banner .b-k { font: 600 13px var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
-.banner .b-v { font: 700 clamp(44px, 6vw, 76px)/1 var(--cond); text-transform: uppercase; letter-spacing: .01em; margin: 8px 0 14px; }
+.banner .b-v { font: 700 clamp(32px, 4.6vw, 64px)/1.02 var(--cond); overflow-wrap: anywhere; text-transform: uppercase; letter-spacing: .01em; margin: 8px 0 14px; }
 .banner p { color: var(--ink-2); margin: 0; }
 .banner.ready { z-index: 2; inset: auto 0 56px; padding: 120px 0 28px; background: linear-gradient(to top, var(--stage) 35%, transparent); }
 .banner.ready .b-v { font-size: clamp(36px, 4vw, 52px); margin: 6px 0 8px; }
@@ -292,12 +301,12 @@ kbd { font: 500 10px/1 var(--mono); border: 1px solid var(--rule-2); padding: 2p
 @media (pointer: coarse), (max-width: 900px) { .drive-btn { display: inline-block; } .w-hint { display: none; } }
 @media (pointer: coarse), (max-width: 900px) {
   .stage { height: calc(100svh - var(--bar) - 58px); }
-  .plate.br, .fsm, .plate.bl { display: none; }
+  .fsm, .plate.bl, .dock .caps, .dock .wd, .dock .hint { display: none; }
+  .pip, .pip canvas { width: 168px; } .pip canvas { height: 95px; } .plate.br { bottom: 64px; right: auto; left: 12px; }
   .plate.tl { padding: 8px 10px; } .hud-mode { margin: 0; font-size: 16px; }
   .tele { grid-template-columns: repeat(2, 92px); gap: 6px 10px; } .tele b { font-size: 17px; }
   .plate.tr { top: 12px; right: 12px; padding: 8px 10px; } .plate.tl { top: 12px; left: 12px; }
   .dock { height: auto; flex-wrap: wrap; padding: 8px; gap: 6px; justify-content: flex-start; }
-  .dock #ch-view, .dock #ch-new { display: none; }
   .pad { display: grid; position: absolute; z-index: 4; right: 12px; bottom: 112px; grid-template-columns: repeat(3, 56px); gap: 6px; }
   .pad button { height: 52px; background: color-mix(in srgb, var(--stage) 70%, transparent); font-size: 18px; touch-action: none; }
   .pad .wide { grid-column: 1 / -1; }
