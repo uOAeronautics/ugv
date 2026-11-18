@@ -81,7 +81,7 @@ export function lineChart(container, series, opts = {}) {
   series.forEach((s, i) => {
     const color = s.color || SERIES[i % SERIES.length];
     const d = s.points.map((p, j) => `${j ? 'L' : 'M'}${f.sx(p[0]).toFixed(1)},${f.sy(p[1]).toFixed(1)}`).join('');
-    el('path', { d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dashed ? '5 4' : '' }, f.svg);
+    el('path', { d, fill: 'none', stroke: color, 'stroke-width': 1.75, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dashed ? '5 4' : '' }, f.svg);
   });
   // crosshair + tooltip
   const cross = el('line', { y1: f.m.t, y2: f.m.t + f.ih, stroke: 'var(--ink-3)', 'stroke-width': 1, visibility: 'hidden' }, f.svg);
@@ -94,9 +94,9 @@ export function lineChart(container, series, opts = {}) {
     cross.setAttribute('x1', f.sx(x)); cross.setAttribute('x2', f.sx(x)); cross.setAttribute('visibility', 'visible');
     const rows = series.map((s, i) => {
       const p = s.points.find((q) => q[0] === x);
-      return p ? `<div><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${s.color || SERIES[i]}"></i> ${s.name}: <b>${(opts.yFmt || fmt)(p[1])}</b></div>` : '';
+      return p ? `<div><i style="display:inline-block;width:8px;height:8px;background:${s.color || SERIES[i]}"></i> ${s.name}: <b>${(opts.yFmt || fmt)(p[1])}</b></div>` : '';
     }).join('');
-    showTip(evt, `<div class="muted">${opts.xLabel || 'x'} ${(opts.xFmt || fmt)(x)}</div>${rows}`);
+    showTip(evt, `<div class="dim">${opts.xLabel || 'x'} ${(opts.xFmt || fmt)(x)}</div>${rows}`);
   });
   hit.addEventListener('mouseleave', () => { cross.setAttribute('visibility', 'hidden'); hideTip(); });
   legend(container, series.map((s, i) => [s.name, s.color || SERIES[i]]));
@@ -107,7 +107,7 @@ export function barChart(container, bars, opts = {}) {
   container.innerHTML = '';
   if (!bars.length) { container.innerHTML = '<div class="empty">no data yet</div>'; return; }
   const max = opts.max ?? Math.max(...bars.map((b) => b.value), 1e-9);
-  const rowH = 26, labelW = opts.labelWidth || 130;
+  const rowH = opts.rowH || 24, labelW = opts.labelWidth || 130;
   const width = Math.max(280, container.clientWidth || 480);
   const height = bars.length * rowH + 6;
   const svg = el('svg', { class: 'chart', viewBox: `0 0 ${width} ${height}`, height }, container);
@@ -115,9 +115,9 @@ export function barChart(container, bars, opts = {}) {
   bars.forEach((b, i) => {
     const y = i * rowH + 4;
     el('text', { x: labelW - 8, y: y + 13, 'text-anchor': 'end' }, svg).textContent = b.label;
-    el('rect', { x: labelW, y: y + 2, width: iw, height: rowH - 10, rx: 4, fill: 'var(--grid)' }, svg);
+    el('rect', { x: labelW, y: y + 5, width: iw, height: opts.barH || 8, fill: 'var(--sunk)' }, svg);
     const w = Math.max(2, (b.value / max) * iw);
-    const r = el('rect', { x: labelW, y: y + 2, width: w, height: rowH - 10, rx: 4, fill: b.color || SERIES[0] }, svg);
+    const r = el('rect', { x: labelW, y: y + 5, width: w, height: opts.barH || 8, fill: b.color || SERIES[0] }, svg);
     const t = el('text', { x: labelW + w + 6, y: y + 13 }, svg);
     t.textContent = opts.fmt ? opts.fmt(b.value, b) : fmt(b.value);
     t.style.fill = 'var(--ink-2)';
@@ -139,10 +139,10 @@ export function scatter(container, points, opts = {}) {
     el('rect', { x: f.sx(x0), y: f.sy(y1), width: f.sx(x1) - f.sx(x0), height: f.sy(y0) - f.sy(y1), fill: 'none', stroke: 'var(--good)', 'stroke-dasharray': '4 3', 'stroke-width': 1.5 }, f.svg);
   }
   for (const e of opts.edges || []) {
-    el('line', { x1: f.sx(e[0].x), y1: f.sy(e[0].y), x2: f.sx(e[1].x), y2: f.sy(e[1].y), stroke: 'var(--line)', 'stroke-width': 1.2 }, f.svg);
+    el('line', { x1: f.sx(e[0].x), y1: f.sy(e[0].y), x2: f.sx(e[1].x), y2: f.sy(e[1].y), stroke: 'var(--rule-2)', 'stroke-width': 1.2 }, f.svg);
   }
   for (const p of points) {
-    const c = el('circle', { cx: f.sx(p.x), cy: f.sy(p.y), r: p.r || 4, fill: p.color || SERIES[0], stroke: 'var(--surface)', 'stroke-width': 2 }, f.svg);
+    const c = el('circle', { cx: f.sx(p.x), cy: f.sy(p.y), r: p.r || 4, fill: p.color || SERIES[0], stroke: p.stroke || 'var(--bg)', 'stroke-width': p.stroke ? 1.5 : 1 }, f.svg);
     c.addEventListener('mousemove', (evt) => showTip(evt, p.tip || `${fmt(p.x)}, ${fmt(p.y)}`));
     c.addEventListener('mouseleave', hideTip);
     if (p.onclick) { c.style.cursor = 'pointer'; c.addEventListener('click', p.onclick); }
@@ -159,8 +159,41 @@ export function histogram(container, values, opts = {}) {
   const f = frame(container, { ...opts, xDomain: [lo, hi], yDomain: [0, Math.max(...counts) * 1.1] });
   counts.forEach((c, i) => {
     const x0 = f.sx(lo + i * w) + 1, x1 = f.sx(lo + (i + 1) * w) - 1;
-    const r = el('rect', { x: x0, y: f.sy(c), width: Math.max(1, x1 - x0), height: f.sy(0) - f.sy(c), rx: 2, fill: opts.color || SERIES[0] }, f.svg);
+    const r = el('rect', { x: x0, y: f.sy(c), width: Math.max(1, x1 - x0), height: f.sy(0) - f.sy(c), fill: opts.color || SERIES[0] }, f.svg);
     r.addEventListener('mousemove', (evt) => showTip(evt, `${fmt(lo + i * w)}–${fmt(lo + (i + 1) * w)} ${opts.unit || ''}: <b>${c}</b>`));
     r.addEventListener('mouseleave', hideTip);
+  });
+}
+
+/** rows: [{label, value, color?, text?, tip?}] as label | bar | value; `ref` draws a signal tick. */
+export function meters(container, rows, { max = 1, ref = null, fmt = (v) => v } = {}) {
+  container.innerHTML = `<div class="meters">${rows.map((r) => `
+    <span class="m"${r.tip ? ` data-tip="${r.tip.replace(/"/g, '&quot;')}"` : ''}>${r.label}</span>
+    <span class="bar"><i style="width:${Math.max(0.4, (100 * r.value) / max)}%;--c:${r.color || 'var(--ink)'}"></i>${ref != null ? `<b style="left:${(100 * ref) / max}%"></b>` : ''}</span>
+    <span class="val">${r.text ?? fmt(r.value)}</span>`).join('')}</div>`;
+  container.querySelectorAll('[data-tip]').forEach((n) => {
+    n.addEventListener('mousemove', (e) => showTip(e, n.dataset.tip));
+    n.addEventListener('mouseleave', hideTip);
+  });
+}
+
+/** One tick per episode, coloured by outcome, grouped by outcome; plus a key with counts. */
+export function outcomeTicks(container, outcomes, colorOf, labelOf) {
+  const counts = {};
+  for (const o of outcomes) counts[o] = (counts[o] || 0) + 1;
+  const keys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  container.innerHTML = `<div class="ticks">${keys.map((k) => `<i style="flex:${counts[k]};background:${colorOf(k)}" data-k="${k}"></i>`).join('')}</div>
+    <div class="keys">${keys.map((k) => `<span style="--c:${colorOf(k)}">${labelOf(k)} <b>${counts[k]}</b></span>`).join('')}</div>`;
+  container.querySelectorAll('.ticks i').forEach((n) => {
+    n.addEventListener('mousemove', (e) => showTip(e, `${labelOf(n.dataset.k)}: <b>${counts[n.dataset.k]}</b> of ${outcomes.length}`));
+    n.addEventListener('mouseleave', hideTip);
+  });
+}
+
+/** Wire hover tips on any [data-tip] inside `root`. */
+export function tips(root) {
+  root.querySelectorAll('[data-tip]').forEach((n) => {
+    n.addEventListener('mousemove', (e) => showTip(e, n.dataset.tip));
+    n.addEventListener('mouseleave', hideTip);
   });
 }

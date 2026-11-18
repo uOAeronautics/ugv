@@ -79,6 +79,7 @@ def run(
     states: dict[str, float] = {}
     trace = [] if keep_trace else None
     fixes, outcome = 0, ""
+    seen: list | None = [] if keep_trace else None
     max_t = ctl.params.timeout_s + 1
     for k in range(int(max_t / DT)):
         t = k * DT
@@ -91,7 +92,7 @@ def run(
             break
         if k % CAMERA_PERIOD == 0:
             prior = est.predicted_airframe_in_car()
-            m = measure(compose(inverse(plant.pose), A), rng, scenario.detector, cam, prior)
+            m = measure(compose(inverse(plant.pose), A), rng, scenario.detector, cam, prior, seen)
             if m is not None:
                 pending.append((k + LATENCY_TICKS, t, m))
         jumped = False
@@ -117,6 +118,7 @@ def run(
                     "est": None if q is None else [round(float(v), 4) for v in q],
                     "state": ctl.state,
                     "fix": bool(t - est.last_fix_t < 0.15),
+                    "kp": detections(seen[-1] if seen else None),
                 }
             )
     else:
@@ -138,6 +140,17 @@ def run(
         states={s: round(v, 2) for s, v in states.items()},
         trace=trace,
     )
+
+
+def detections(o) -> list:
+    """Detector output of the frame captured at this tick: [[keypoint index, u, v], ...]."""
+    if o is None:
+        return []
+    keep, obs = o
+    return [
+        [int(i), round(float(u), 1), round(float(v), 1)]
+        for i, (u, v) in zip(np.flatnonzero(keep), obs, strict=True)
+    ]
 
 
 def as_dict(r: Result) -> dict:

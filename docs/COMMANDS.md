@@ -19,8 +19,9 @@ Canonical commands verified against existing scripts and docs. For Pi SSH/URL de
 | Pose smoke test (synthetic, CPU) | `uv run python tools/pose/smoke.py [--views car] --out runs/pose_smoke` | Renders the airframe, PnP from keypoints, SIFT bank; see `docs/POSE.md` |
 | Parking simulation: score | `uv run python tools/park/eval.py --name <name> [--params <json>] --sweep --traces 16` | 1000 episodes, seed 11; writes `runs/park_eval/<name>.json`; see `docs/PARK_SIM.md` |
 | Parking simulation: tune | `uv run python tools/park/search.py --out runs/park_search/<name>` | Failure-guided search; `tree.jsonl` keeps every candidate |
-| Lab dashboard | `uv run ugv-lab` | Port 8768: overview, parking, search tree, 3D challenge, pose, ledger. Read-only |
+| Lab dashboard | `uv run ugv-lab` | Port 8768, keys 1-4: Park (sim results, replay, tuning), Challenge (drive the sim car, or watch the tuned controller from the same start), Pose (detector views with skeleton and mesh), Ledger (roadmap, tasks, attempts). Simulation only; never talks to the car |
 | Pose training data | `uv run python tools/pose/make_dataset.py --out runs/pose_data/<name> --n 24000` | Airframe composited over real car-camera frames |
+| Pose detector preview (CPU) | `cd train && uv run python preview.py --run ../runs/pose_train/<name>` | Runs the ONNX model on 48 held-out views for the Lab's Pose page (`preview/`) |
 | Pose detector training (GPU) | `cd train && uv run python pose_kp.py --data ../runs/pose_data/<name> --out ../runs/pose_train/<name>` | Separate CUDA env (`train/pyproject.toml`); exports ONNX |
 
 ## Pi CLI & bounded hardware diagnostics
@@ -60,7 +61,7 @@ uv run ugv-dashboard                        # local FastAPI/WS server on :8765
 
 ### 3D model
 
-One canonical airframe: `simulation/gazebo/strl_001/` (9,956 triangles, `tags.json` holds ArUco 14/6/3). `uv run python tools/build_strl_assets.py` regenerates the Lab dashboard assets from it. Full-resolution originals and earlier experiments were moved out of the repo to `~/ugv_archive_2026-11-16/`.
+One canonical airframe: `simulation/gazebo/strl_001/` (9,956 triangles, `tags.json` holds ArUco 14/6/3). `uv run python tools/build_strl_assets.py` regenerates the Lab dashboard assets from it; `uv run python tools/build_car_assets.py` does the same for the Freenove car from `simulation/gazebo/assembly.py`. Full-resolution originals and earlier experiments were moved out of the repo to `~/ugv_archive_2026-11-16/`.
 
 ### Mesh optimisation (`tools/mesh_opt/`)
 
@@ -113,7 +114,7 @@ All run with `uv run --no-project --python 3.12 --with trimesh --with numpy --wi
 
 | Command | Description |
 |---|---|
-| `uv run ugv-lab` | Lab dashboard: research ledger, experiments, pose, parking challenge (port 8768) |
+| `uv run ugv-lab` | Lab dashboard: park results, parking challenge, pose, ledger (port 8768) |
 
 | Purpose | Script |
 |---|---|

@@ -58,7 +58,7 @@ environment (`cd train && uv sync`); it imports `ugv`, never the other way round
 | `src/ugv/` | Pi runtime: dashboard (`web.py`), vision, heading, parking, state machines (`fsm.py`) |
 | `src/ugv/pose/` | Airframe mesh, keypoint skeleton, synthetic renderer, PnP and SIFT pose |
 | `src/ugv/park/` | Parking simulator and controller: bay from the mesh, plant, perception, estimator, state machine, search (`docs/PARK_SIM.md`) |
-| `src/ugv/lab/` | Lab dashboard (`uv run ugv-lab`), read-only over `runs/` and `research/` |
+| `src/ugv/lab/` | Lab dashboard (`uv run ugv-lab`), read-only over `runs/` and `research/`; runs the parking simulator for its challenge, never talks to the car |
 | `train/` | Separate CUDA environment for detector training; never imported by `src/ugv` |
 | `src/ugv/research/`, `research/` | Ledger schema and checks; the decision, attempt and task files |
 | `tools/pose/`, `tools/research/` | Pose smoke test; `ledger.py` |
@@ -109,6 +109,7 @@ Project skills live in `.agents/skills/` (`.claude/skills` and `.opencode/skills
 - `mastermind`: delegating to subagents and gating their output.
 - `orchestrate-and-gate`: log-first diagnosis and sim-to-real release gates.
 - `mesh-optimization`: simplify heavy meshes into game-ready ones behind a camera-truth gate.
+- `ui-taste`: build and review web UI without AI-slop tells; screenshot-and-verify loop with reviewer subagents.
 
 Skills follow the Agent Skills spec (agentskills.io): a directory with `SKILL.md`, `name`
 matching the directory, and a `description` that says when to use it. Keep them under

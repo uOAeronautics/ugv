@@ -2,7 +2,7 @@
 
 `src/ugv/park/` simulates the whole task, find the airframe and park under it, with every
 piece that decides success on the real car taken from measurement or from the 3D model. CPU
-only, S0. Results: `uv run ugv-lab` (Parking and Search tree pages); history: the attempt
+only, S0. Results: `uv run ugv-lab` (Park page: results, replay, tuning); history: the attempt
 tree under `research/attempts/2026-11-17-track-3d-parking.md`.
 
 ## What is modelled, and from where

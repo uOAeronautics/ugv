@@ -97,14 +97,33 @@ def measure(
     det: DetectorModel,
     cam: CameraError | None = None,
     prior: np.ndarray | None = None,
+    seen: list | None = None,
 ) -> np.ndarray | None:
     """One noisy planar measurement (x, y, yaw, camera pitch) of the airframe pose in the car frame, or None.
 
     The image is formed by the true camera (`cam` errors included); the pose is solved with the
     nominal camera, as on the car. `prior` is the car's predicted airframe pose in the car frame
     plus its camera-pitch estimate (from its estimator); it lets the floor-constrained solve run
-    with only 2 keypoints.
+    with only 2 keypoints. `seen`, if given, receives the detector output (or None).
     """
+    o = observe(rel_true, rng, det, cam)
+    if seen is not None:
+        seen.append(o)
+    if o is None:
+        return None
+    keep, obs = o
+    _, model = _model_points()
+    return solve(model[keep], obs, det, prior)
+
+
+def observe(
+    rel_true: np.ndarray,
+    rng: np.random.Generator,
+    det: DetectorModel,
+    cam: CameraError | None = None,
+) -> tuple[np.ndarray, np.ndarray] | None:
+    """What the keypoint detector reports: (mask of detected keypoints, their pixels with noise
+    and outliers), or None when the airframe is out of range, out of view or too small."""
     if np.hypot(rel_true[0], rel_true[1]) > det.max_range_m:
         return None
     uv, front = _true_projection(camera_points(rel_true), cam or CameraError())
@@ -117,8 +136,7 @@ def measure(
     obs = uv[keep] + rng.normal(0, det.pixel_std, (keep.sum(), 2))
     bad = rng.random(len(obs)) < det.outlier_rate
     obs[bad] += rng.uniform(20, 80, (bad.sum(), 1)) * rng.choice([-1, 1], (bad.sum(), 2))
-    _, model = _model_points()
-    return solve(model[keep], obs, det, prior)
+    return keep, obs
 
 
 def project_planar(model: np.ndarray, q: np.ndarray) -> np.ndarray:

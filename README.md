@@ -41,7 +41,7 @@ Open work and its order: `uv run python tools/research/ledger.py roadmap`.
 | `src/ugv/` | Torch-free Pi runtime: FastAPI/WS dashboard (`web.py`), ArUco + KLT vision, BMI270 IMU heading, `swept_clear` shield, state machines (`fsm.py`) |
 | `src/ugv/pose/` | Airframe mesh and keypoint skeleton, synthetic renderer, PnP and SIFT pose |
 | `src/ugv/park/` | Parking simulator and the state-machine controller |
-| `src/ugv/lab/` | Lab dashboard: experiments, search tree, 3D parking challenge, ledger (`uv run ugv-lab`) |
+| `src/ugv/lab/` | Lab dashboard: park results and tuning, 3D parking challenge with the live controller, pose views, ledger (`uv run ugv-lab`) |
 | `train/` | GPU training of the keypoint detector (own environment) |
 | `src/ugv/research/`, `research/`, `tools/research/` | Decisions, attempts and tasks (one Markdown file each) and the `ledger.py` CLI |
 | `simulation/gazebo/` | Gazebo 3D car/drone/lab worlds, native `ugv::TTMotorSystem` plugin, camera/IMU models, and browser drive console |

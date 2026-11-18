@@ -11,15 +11,37 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
-from ugv.lab import data
+from ugv.lab import data, sim
 
 STATIC = Path(__file__).resolve().parent / "static"
+
+
+class Drive(BaseModel):
+    seed: int
+    level: str
+    start: list[float]
+
+
+class Frame(BaseModel):
+    seed: int
+    level: str
+    car: list[float]
+    tick: int
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="ugv lab")
     app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+    @app.middleware("http")
+    async def revalidate(request, call_next):
+        # The lab is edited while it runs: make browsers revalidate modules instead of mixing versions.
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith(("/static/", "/runs/")):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
     @app.get("/")
     def index() -> FileResponse:
@@ -48,6 +70,29 @@ def create_app() -> FastAPI:
     def park_world() -> dict:
         return {"bay": data.bay(), "plant": data.plant()}
 
+    @app.get("/api/park/plan")
+    def park_plan() -> dict:
+        return {**data.plan(), "skeleton": sim.skeleton()}
+
+    @app.get("/api/park/round")
+    def park_round(seed: int, level: str = "nominal") -> dict:
+        _level(level)
+        return sim.new_round(seed, level)
+
+    @app.post("/api/park/autopilot")
+    def park_autopilot(d: Drive) -> dict:
+        _level(d.level)
+        return sim.autopilot(d.seed, d.level, d.start)
+
+    @app.post("/api/park/perceive")
+    def park_perceive(f: Frame) -> dict:
+        _level(f.level)
+        return sim.perceive(f.seed, f.level, f.car, f.tick)
+
+    @app.get("/api/pose/mesh")
+    def pose_mesh() -> list:
+        return data.mesh()
+
     @app.get("/api/pose")
     def pose() -> dict:
         return data.pose_runs()
@@ -60,6 +105,11 @@ def create_app() -> FastAPI:
         return FileResponse(p)
 
     return app
+
+
+def _level(level: str) -> None:
+    if level not in sim.LEVELS:
+        raise HTTPException(400, f"level must be one of {sorted(sim.LEVELS)}")
 
 
 def main() -> None:

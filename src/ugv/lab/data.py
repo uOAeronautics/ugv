@@ -96,11 +96,8 @@ def bay() -> dict:
     b = g.bay()
     obstacles = np.unique(np.round(b.obstacles, 2), axis=0)
     tall = np.unique(np.round(b.tall, 2), axis=0)
-    from ugv.pose.mesh import load_airframe
 
-    shadow = np.unique(np.round(load_airframe().tris.reshape(-1, 3)[:, :2] / 0.015) * 0.015, axis=0)
     return {
-        "shadow": np.round(shadow, 3).tolist(),
         "obstacles": obstacles.tolist(),
         "tall": tall.tolist(),
         "target": [float(v) for v in b.target],
@@ -115,6 +112,37 @@ def bay() -> dict:
         },
         "tolerance": {"x": 0.02, "y": 0.02, "yaw_deg": 5.0},
     }
+
+
+@lru_cache(maxsize=1)
+def plan() -> dict:
+    """The airframe seen from above, for drawing: every triangle's (x, y) corners and its lowest
+    and highest point above the floor, all in mm. Highest first, so the low parts the car can hit
+    paint over the overhead structure it drives under. Plus the two heights that matter: the car
+    body top (anything lower is hit by the whole car) and the camera stand top."""
+    from ugv.park import geometry as g
+    from ugv.pose.mesh import load_airframe
+
+    tris = load_airframe().tris
+    z = tris[:, :, 2] - tris[:, :, 2].min()
+    low = z.min(axis=1)
+    order = np.argsort(-low)
+    xy = np.round(tris[order, :, :2] * 1000).astype(int).reshape(len(order), 6)
+    zz = np.round(z.max(axis=1)[order] * 1000).astype(int)
+    lo = np.round(low[order] * 1000).astype(int)
+    return {
+        "tris": np.column_stack([xy, lo, zz]).tolist(),
+        "body_top_mm": round(g.CAR_BODY_TOP_M * 1000),
+        "car_top_mm": round(g.CAR_TOP_M * 1000),
+    }
+
+
+@lru_cache(maxsize=1)
+def mesh() -> list:
+    """The airframe mesh in its model frame (the frame PnP solves in), triangles in mm."""
+    from ugv.pose.mesh import load_airframe
+
+    return np.round(load_airframe().tris.reshape(-1, 9) * 1000).astype(int).tolist()
 
 
 def plant() -> dict:
@@ -144,7 +172,10 @@ def pose_runs() -> dict:
             except json.JSONDecodeError:
                 pass
         summary = _read(path.parent / "summary.json")
-        training.append({"name": path.parent.name, "metrics": rows, "summary": summary})
+        preview = _read(path.parent / "preview" / "preview.json")
+        training.append(
+            {"name": path.parent.name, "metrics": rows, "summary": summary, "preview": preview}
+        )
     return {"smoke": smoke, "training": training}
 
 
