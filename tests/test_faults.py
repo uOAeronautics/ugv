@@ -86,3 +86,31 @@ def test_pitch_refit_recovers_a_knocked_camera_from_five_points():
     assert abs(m[0] - rel[0]) < 0.02
     old = solve(model[idx], uv[idx], DetectorModel(pixel_std=0.0, refit_pitch=False), prior)
     assert old is None or abs(old[0] - rel[0]) > abs(m[0] - rel[0])  # without it: lost or worse
+
+
+def test_a_flatlined_gyro_is_replaced_by_the_motor_model():
+    from ugv.park.estimator import Estimator
+
+    est = Estimator(gyro_check=True)
+    for k in range(30):
+        est.predict(k * 0.02, np.array([0.0, 0.0, 0.2]), 0.0, 0.02)  # turning, gyro reads 0
+    assert est.gyro_dead and est.odom[2] > 0.0  # heading still advances, from the model
+
+
+def test_a_dead_camera_ends_in_a_safe_abort():
+    from dataclasses import replace
+
+    from ugv.park.controller import ParkParams
+
+    sc = Scenario(
+        (0, 0, 0), (-1.4, 0.0, 0.0), 1.0, overrides=(("broken", "camera"), ("broken_at_s", 0.0))
+    )
+    params = replace(ParkParams(), camera_silent_s=3.0)
+    r = run(sc, params, seed=3)
+    assert r.outcome == "abort:camera silent" and r.time_s < 5
+
+
+def test_environment_overrides_reach_the_faults():
+    sc = Scenario((0, 0, 0), (-1.4, 0.0, 0.0), 1.0, overrides=(("phantom_rate", 0.04),))
+    ep = Episode(sc, seed=1)
+    assert ep.faults is not None and ep.faults.f.phantom_rate == 0.04

@@ -43,6 +43,7 @@ class Scenario:
     detector: DetectorModel = field(default_factory=DetectorModel)
     faults: float = 0.0  # severity; 0 = a healthy car
     only: str | None = None  # a single fault family (faults.FAMILIES)
+    overrides: tuple = ()  # (field, value) pairs forced on the faults (an environment's effects)
 
     @staticmethod
     def sample(
@@ -113,10 +114,13 @@ class Episode:
         self.A = np.array(scenario.airframe)
         self.plant = Plant(plant_p, np.array(scenario.car, dtype=float), rng)
         self.faults = None
-        if scenario.faults > 0 or scenario.only:
-            f = Faults.sample(
-                np.random.default_rng([seed, 7]), scenario.faults or 1.0, scenario.only
-            )
+        if scenario.faults > 0 or scenario.only or scenario.overrides:
+            f = Faults()
+            if scenario.faults > 0 or scenario.only:
+                rng_f = np.random.default_rng([seed, 7])
+                f = Faults.sample(rng_f, scenario.faults or 1.0, scenario.only)
+            if scenario.overrides:
+                f = replace(f, **dict(scenario.overrides))
             self.faults = FaultState(f, np.random.default_rng([seed, 8]))
             self.plant.faults = self.faults
             if f.lens:
@@ -127,7 +131,9 @@ class Episode:
                 )
         self.params = params or ParkParams()
         self.est = Estimator(
-            calib_min_points=self.params.calib_min_points, still_gain=self.params.still_gain
+            calib_min_points=self.params.calib_min_points,
+            still_gain=self.params.still_gain,
+            gyro_check=self.params.gyro_check,
         )
         self.ctl = ParkController(self.b, self.params) if engaged else None
         self.pending: list[tuple[int, float, np.ndarray]] = []
@@ -211,6 +217,7 @@ class Episode:
         if self.faults is not None and self.faults.frame_lost():
             self.last_kp = []
             return
+        self.est.last_frame_t = t
         prior = self.est.predicted_airframe_in_car()
         seen: list = []
         det, cam, occ = self.scenario.detector, self.cam, None

@@ -1,8 +1,10 @@
 // The challenge HUD: markup and the per-frame readouts. It shows what the car knows (its own
 // estimate, the camera); the truth, and this car's faults, only when asked (T) or at the end.
 import { esc, STATE_COLOR, STATES } from './app.js';
+import { ENVIRONMENTS } from './env3d.js';
 
 const KEYCAPS = [['KeyQ', 'Q'], ['KeyW', 'W'], ['KeyE', 'E'], ['KeyA', 'A'], ['KeyS', 'S'], ['KeyD', 'D']];
+export const QUALITY = { healthy: 'Healthy sensors', noisy: 'Noisy sensors', bad: 'Bad sensors', broken: 'A sensor breaks' };
 export const START_NAME = {
   random: 'Random start', tail: 'Behind the tail', 'nose-on': 'Nose-on', 'nose-oblique': 'Nose, oblique',
   'beside-nose-gear': 'Beside the nose wheel', 'under-wingtip': 'Under a wingtip', side: 'Abeam',
@@ -21,6 +23,8 @@ function markup() {
     <div class="plate bl mini" title="Click to place the car, drag to aim it"><canvas id="ch-map"></canvas><div class="mini-k">What the car believes · click to place</div></div>
     <div class="plate br pip" id="ch-pip-box"><canvas id="ch-pip"></canvas><canvas id="ch-pip-ov"></canvas><div class="mini-k">Car camera · mono · 10 Hz</div></div>
     <div class="dock">
+      <select id="ch-env" aria-label="Environment">${Object.entries(ENVIRONMENTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+      <select id="ch-quality" aria-label="Sensors">${Object.entries(QUALITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
       <select id="ch-start" aria-label="Start">${Object.entries(START_NAME).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}<option value="placed" hidden>Placed on the map</option></select>
       <button type="button" id="ch-auto" aria-pressed="false"><span>Autopilot</span> <kbd>P</kbd></button>
       <button type="button" id="ch-new">New round <kbd>R</kbd></button>
@@ -43,6 +47,8 @@ function bind(main) {
   try { rounds = JSON.parse(localStorage.getItem('ugv-lab-rounds') || '[]'); } catch { /* per-browser only */ }
 
   $('#ch-start').addEventListener('change', (e) => { handlers.start?.(e.target.value); e.target.blur(); });
+  $('#ch-env').addEventListener('change', (e) => { handlers.env?.(e.target.value); e.target.blur(); });
+  $('#ch-quality').addEventListener('change', (e) => { handlers.quality?.(e.target.value); e.target.blur(); });
   $('#ch-auto').addEventListener('click', (e) => { handlers.auto?.(); e.currentTarget.blur(); });
   $('#ch-new').addEventListener('click', (e) => { handlers.fresh?.(); e.currentTarget.blur(); });
   $('#ch-truth').addEventListener('click', (e) => { handlers.truth?.(); e.currentTarget.blur(); });
@@ -54,6 +60,7 @@ function bind(main) {
   return {
     on(h) { handlers = h; },
     start(v) { $('#ch-start').value = v; },
+    setup(env, quality) { $('#ch-env').value = env; $('#ch-quality').value = quality; },
     auto(on) {
       const b = $('#ch-auto');
       b.classList.toggle('go', on);

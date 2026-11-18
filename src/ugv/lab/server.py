@@ -22,6 +22,8 @@ class NewSession(BaseModel):
     seed: int
     start: list[float] | None = None
     preset: str | None = None
+    quality: str = "bad"
+    env: str = "lab"
 
 
 class Step(BaseModel):
@@ -77,8 +79,12 @@ def create_app() -> FastAPI:
     def park_session(n: NewSession) -> dict:
         if n.preset and n.preset not in sim.PRESETS:
             raise HTTPException(400, f"preset must be one of {sorted(sim.PRESETS)}")
+        if n.quality not in sim.QUALITY or n.env not in sim.ENVIRONMENTS:
+            raise HTTPException(
+                400, f"quality in {list(sim.QUALITY)}, env in {list(sim.ENVIRONMENTS)}"
+            )
         try:
-            return sim.SESSIONS.create(n.seed, n.start, n.preset)
+            return sim.SESSIONS.create(n.seed, n.start, n.preset, n.quality, n.env)
         except ValueError as e:
             raise HTTPException(400, str(e)) from e
 

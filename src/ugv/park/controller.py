@@ -89,6 +89,10 @@ class ParkParams:
     blind_waits: int = 3  # ENTER: empty measure windows to wait out before backing off
     misalign_confirm: int = 1  # ENTER: consecutive misaligned windows before backing off
     still_gain: float = 0.0  # estimator: sample weight while still (0 = its default 0.3)
+    # Health (0/False = off): stop safely when a sensor or the drive cannot be trusted.
+    gyro_check: bool = False  # estimator replaces a flat-lined gyro by the motor model
+    camera_silent_s: float = 0.0  # abort when no camera frame has arrived for this long
+    health_innov_m: float = 0.0  # abort when fixes land this far from odometry (EMA, metres)
 
 
 def _body(v_air: np.ndarray, yaw: float) -> np.ndarray:
@@ -133,6 +137,16 @@ class ParkController:
             return np.zeros(3)
         if t > p.timeout_s:
             self._go("ABORT", "timeout")
+            return np.zeros(3)
+        if p.camera_silent_s and t - est.last_frame_t > p.camera_silent_s:
+            self._go("ABORT", "camera silent")
+            return np.zeros(3)
+        if (
+            p.health_innov_m
+            and est.innov > p.health_innov_m
+            and s in ("APPROACH", "ENTER", "BACKOFF")
+        ):
+            self._go("ABORT", "odometry disagrees with the camera")
             return np.zeros(3)
         fresh = t - est.last_fix_t < p.lost_s
         q = est.car_in_airframe()

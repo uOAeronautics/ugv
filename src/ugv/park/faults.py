@@ -26,6 +26,8 @@ their own random stream (so a fault-free run is unchanged):
   sharp near that distance and blurred nearer or farther (thin-lens circle of confusion, in px,
   grows with |1/range - 1/focus|), so the detector's pixel error depends on range.
 - Shake and knocks also smear the frame: motion blur in proportion to the mount's angular jump.
+- `broken`: a sensor or actuator stops working mid-run: the camera goes dark, the gyro sticks
+  at its last value or reads zero, or a wheel dies. The car must notice and end safely.
 - `lens`: the real lens is not the calibrated one: focal ±6%, principal point off by up to
   25 px, barrel or pincushion distortion (k1 -0.2..0.1, k2). Permanent for the car.
 
@@ -86,6 +88,8 @@ class Faults:
     bump_deg: float = 0.0
     bump_at_s: float = 0.0
     lens: tuple[float, float, float, float, float] | None = None  # focal scale, cx, cy, k1, k2
+    broken: str = ""  # "", "camera", "gyro-stuck", "gyro-zero" or "wheel"
+    broken_at_s: float = 0.0
     focus_m: float = 0.0  # 0 = always sharp
     blur_coc: float = 0.0  # px of blur per (1/m) of defocus
 
@@ -139,6 +143,9 @@ class Faults:
         if on("focus"):
             f["focus_m"] = float(np.exp(rng.uniform(np.log(0.3), np.log(3.0))))  # near, mid or far
             f["blur_coc"] = float(rng.uniform(2, 8) * s)
+        if on("broken"):
+            f["broken"] = str(rng.choice(["camera", "gyro-stuck", "gyro-zero", "wheel"]))
+            f["broken_at_s"] = float(rng.uniform(2, 40))
         if on("lens"):
             f["lens"] = (
                 float(1 + rng.uniform(-0.06, 0.06) * s),
@@ -182,6 +189,14 @@ class Faults:
             out.append(f"camera shake {self.shake_deg:.1f}°")
         if self.bump_deg:
             out.append(f"camera knocked {self.bump_deg:.1f}° at {self.bump_at_s:.0f} s")
+        if self.broken:
+            what = {
+                "camera": "camera goes dark",
+                "gyro-stuck": "gyro sticks",
+                "gyro-zero": "gyro reads zero",
+                "wheel": "a wheel dies",
+            }
+            out.append(f"{what[self.broken]} at {self.broken_at_s:.0f} s")
         if self.focus_m:
             out.append(
                 f"fixed focus at {self.focus_m:.1f} m, blur {self.blur_coc:.0f} px per dioptre"
@@ -206,6 +221,7 @@ class FaultState:
     bias: float = 0.0
     exposure_left: float = 0.0
     knocked: bool = False
+    stuck: float | None = None
     exposure_sign: float = 1.0
     _queue: deque = field(default_factory=deque)
 
@@ -225,15 +241,24 @@ class FaultState:
             if self.stall_left > 0:
                 self.stall_left -= dt
                 g[self.f.stall_wheel] *= 0.1
+        if self.f.broken == "wheel" and self.t >= self.f.broken_at_s:
+            g[0] = 0.0
         if self.f.slip_std:
             g = g * np.clip(1 - np.abs(self.rng.normal(0, self.f.slip_std, 4)), 0, 1)
         return J_PINV @ (g * (J @ v))
 
     def gyro(self, rate: float, dt: float) -> float:
         self.bias += self.f.gyro_walk * np.sqrt(dt) * self.rng.normal()
-        return rate * self.f.gyro_scale + self.bias
+        out = rate * self.f.gyro_scale + self.bias
+        if self.f.broken.startswith("gyro") and self.t >= self.f.broken_at_s:
+            if self.stuck is None:
+                self.stuck = out
+            return 0.0 if self.f.broken == "gyro-zero" else self.stuck
+        return out
 
     def frame_lost(self) -> bool:
+        if self.f.broken == "camera" and self.t >= self.f.broken_at_s:
+            return True
         if self.dropping:
             self.dropping = self.rng.random() < self.f.burst
             return True

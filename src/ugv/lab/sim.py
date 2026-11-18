@@ -23,7 +23,28 @@ from ugv.park.geometry import bay
 from ugv.park.perception import _model_points
 
 PARAMS = Path(__file__).resolve().parents[3] / "config" / "park_params.json"
-FAULTS = 1.0  # fault severity of every challenge car
+# Sensor quality: fault severity and family. "broken" = one sensor or wheel dies mid-run.
+QUALITY = {
+    "healthy": (0.0, None),
+    "noisy": (0.5, None),
+    "bad": (1.0, None),
+    "broken": (1.0, "broken"),
+}
+# What each playground environment does to the sensors, on top of the car's own faults.
+ENVIRONMENTS = {
+    "studio": (),
+    "lab": (),
+    "hangar": (("exposure_rate", 0.25),),  # skylights and glare
+    "workshop": (
+        ("phantom_rate", 0.04),
+        ("occluder", (420.0, 470.0, 760.0, 720.0)),
+    ),  # clutter, a cable
+    "night": (
+        ("noise_px", 2.0),
+        ("exposure_rate", 0.2),
+        ("blur_px", 6.0),
+    ),  # dark: gain noise, long exposure
+}
 MAX_SESSIONS = 8
 MAX_TICKS = 25  # per request: 0.5 s of simulation
 
@@ -69,10 +90,17 @@ class Sessions:
         self._lock = threading.Lock()
 
     def create(
-        self, seed: int, start: list[float] | None = None, preset: str | None = None
+        self,
+        seed: int,
+        start: list[float] | None = None,
+        preset: str | None = None,
+        quality: str = "bad",
+        env: str = "lab",
     ) -> dict:
         q = start_pose(seed, start, preset)
-        sc = Scenario((0.0, 0.0, 0.0), tuple(float(v) for v in q), 1.0, faults=FAULTS)
+        sev, only = QUALITY[quality]
+        car = tuple(float(v) for v in q)
+        sc = Scenario((0.0, 0.0, 0.0), car, 1.0, faults=sev, only=only, overrides=ENVIRONMENTS[env])
         ep = Episode(sc, _params(), seed=seed, engaged=False)
         sid = f"{seed}-{time.monotonic_ns()}"
         with self._lock:

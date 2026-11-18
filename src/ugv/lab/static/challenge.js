@@ -35,13 +35,14 @@ export async function render(main) {
 
   let sess = null, snap = null, prev = null, recvAt = 0, interval = 100, lastPump = 0, inflight = false;
   let auto = false, truth = false, started = false, done = null, startName = 'random', raf = 0;
+  let envName = 'lab', quality = 'bad';
   let paths = { est: [], true: [] };
   const input = makeInput({ onAction: (k) => ({ Space: declare, KeyR: () => newRound(), KeyV: () => orbit.toggle(), KeyP: toggleAuto, KeyT: toggleTruth })[k]?.() });
   input.pad($('#ch-pad'));
 
   // --- rounds
   const newRound = async ({ seed = Math.floor(Math.random() * 1e6), start = null } = {}) => {
-    const body = { seed };
+    const body = { seed, env: envName, quality };
     if (start) body.start = start;
     else if (startName !== 'random' && startName !== 'placed') body.preset = startName;
     try {
@@ -213,11 +214,15 @@ export async function render(main) {
 
   H.on({
     start: (v) => { startName = v; newRound(); },
+    env: (v) => { envName = v; W.setEnv(v); newRound(); },
+    quality: (v) => { quality = v; newRound(); },
     auto: toggleAuto, truth: toggleTruth, fresh: () => newRound(),
     retry: () => newRound({ seed: sess.seed, start: sess.start }),
     drive: () => { started = true; H.banner(null); },
   });
   rethemeFn = () => { W.theme(); mini.layer = null; };
+  W.setEnv(envName);
+  H.setup(envName, quality);
   const onResize = () => { mini = makeView(mapCanvas, 2.0, [-0.3, 0]); };
   addEventListener('resize', onResize);
   await newRound();

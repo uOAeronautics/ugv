@@ -56,6 +56,7 @@ SPACE = {
     "blind_waits": (1, 8),
     "misalign_confirm": (1, 5),
     "still_gain": (0.0, 0.3),
+    "health_innov_m": (0.0, 0.15),
 }
 
 # Which parameters plausibly drive each failure outcome.

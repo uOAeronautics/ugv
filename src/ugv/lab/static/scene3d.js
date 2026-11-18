@@ -4,6 +4,7 @@
 // map to three.js as (x, z, -y).
 import * as THREE from '/static/vendor/three.module.min.js';
 import { css } from './app.js';
+import { buildEnv } from './env3d.js';
 import { loadStrlModel } from './stl.js';
 
 export const P = (x, y, z = 0) => new THREE.Vector3(x, z, -y);
@@ -98,19 +99,22 @@ export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
     return root;
   }).catch(() => null);
 
+  let env = buildEnv('studio', airframe);
   const theme = () => {
-    const bg = new THREE.Color(css('--stage'));
+    const bg = new THREE.Color(env.bg ?? css('--stage'));
     scene.background = bg;
-    scene.fog = new THREE.Fog(bg, 4, 14);
+    scene.fog = new THREE.Fog(bg, ...env.fog);
+    floor.material = env.floor || floorMat;
     floorMat.color.set(css('--stage-floor'));
     const night = document.documentElement.dataset.mode === 'night';
-    hemi.intensity = night ? 0.7 : 1.25;
-    sun.intensity = night ? 1.8 : 2.4;
+    hemi.intensity = (night ? 0.7 : 1.25) * env.light;
+    sun.intensity = (night ? 1.8 : 2.4) * env.light;
     if (grid) scene.remove(grid);
     grid = new THREE.GridHelper(20, 80, new THREE.Color(css('--stage-grid')), new THREE.Color(css('--stage-grid')));
     grid.position.y = 0.0015;
     grid.material.transparent = true;
     grid.material.opacity = night ? 0.9 : 0.7;
+    grid.visible = env.grid;
     scene.add(grid);
     bayLines.material.color.set(css('--good'));
     skMat.color.set(css('--signal'));
@@ -121,6 +125,13 @@ export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
   let spin = 0, sized = '';
   return {
     renderer, scene, cam, carCam, airframe, theme,
+    /** Swap the surroundings (env3d.ENVIRONMENTS). */
+    setEnv(name) {
+      scene.remove(env.group);
+      env = buildEnv(name, airframe);
+      scene.add(env.group);
+      theme();
+    },
     /** Place the car (airframe frame pose) and spin its wheels by the body velocity. */
     setCar(q, vel, dt) {
       car.position.copy(P(q[0], q[1], 0));

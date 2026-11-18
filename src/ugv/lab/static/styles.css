@@ -372,3 +372,4 @@ img.frame { width: 100%; display: block; }
 [hidden] { display: none !important; }
 tr.dim td, tr.dim td * { color: var(--ink-3); }
 @media (max-width: 900px) { .wide-only { display: none; } }
+@media (max-width: 1750px) { .dock .hint { display: none; } }

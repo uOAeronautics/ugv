@@ -49,11 +49,18 @@ class Estimator:
         0  # fixes with fewer keypoints do not calibrate motor gains or gyro bias
     )
     still_gain: float = 0.0  # weight of a new sample while the car stands still (0 = `gain`)
+    # Health: a flat-lined gyro (dead or stuck: a live MEMS gyro always has noise) is replaced
+    # by the identified motor model; `innov` tracks how far camera fixes land from odometry.
+    gyro_check: bool = False
+    gyro_dead: bool = False
+    innov: float = 0.0
+    last_frame_t: float = 0.0
     tau: tuple[float, float] = (0.12, 0.2)  # nominal motor lag (plant.NOMINAL.tau), s
     _v: np.ndarray = field(default_factory=lambda: np.zeros(2))
     _anchor: tuple | None = None  # (t, odom at t, car-in-airframe measured at t)
     _history: deque = field(default_factory=lambda: deque(maxlen=400))  # (t, odom, duty)
     _yaw_win: list = field(default_factory=list)  # (duty_w, gyro) over the current window
+    _gyro_win: deque = field(default_factory=lambda: deque(maxlen=25))
 
     def predict(self, t: float, duty: np.ndarray, gyro: float, dt: float) -> None:
         """Advance odometry by one tick in which `duty` was applied and `gyro` was measured.
@@ -61,7 +68,13 @@ class Estimator:
         alpha = 1 - np.exp(-dt / np.array(self.tau))
         self._v = self._v + alpha * (self.actuator.velocity(duty)[:2] - self._v)
         v_body = self._v
-        if self.adapt:
+        if self.gyro_check:
+            self._gyro_win.append(gyro)
+            if len(self._gyro_win) == 25 and np.ptp(self._gyro_win) < 1e-7:
+                self.gyro_dead = True
+        if self.gyro_dead:
+            gyro = float(self.actuator.velocity(duty)[2]) + self.gyro_bias  # heading from the model
+        elif self.adapt:
             self._observe_yaw(float(duty[2]), gyro)
         gyro = gyro - self.gyro_bias
         c, s = np.cos(self.odom[2]), np.sin(self.odom[2])
@@ -120,6 +133,7 @@ class Estimator:
             return "init"
         d = sample - self.airframe
         d[2] = wrap(d[2])
+        self.innov = 0.9 * self.innov + 0.1 * min(float(np.hypot(d[0], d[1])), 0.5)
         if np.hypot(d[0], d[1]) > self.gate_m or abs(d[2]) > self.gate_rad:
             self.rejected_run += 1
             if self.rejected_run >= self.reinit_after:
