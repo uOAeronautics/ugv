@@ -5,6 +5,7 @@
 import * as THREE from '/static/vendor/three.module.min.js';
 import { css } from './app.js';
 import { buildEnv } from './env3d.js';
+import { loadHdr } from './hdr.js';
 import { loadStrlModel } from './stl.js';
 
 export const P = (x, y, z = 0) => new THREE.Vector3(x, z, -y);
@@ -44,6 +45,8 @@ async function buildCar() {
 export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   const pip = new THREE.WebGLRenderer({ canvas: pipCanvas, antialias: true });
+  renderer.setClearColor(0x000000, 1); // letterbox bars around the sensor frame
+  pip.setClearColor(0x000000, 1);
   pip.setPixelRatio(Math.min(2, devicePixelRatio || 1));
   renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
@@ -59,6 +62,9 @@ export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
   sun.shadow.bias = -0.0004;
   scene.add(sun);
   const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.92 });
+  // With a real panorama there is no invented floor: the photograph shows through and only the
+  // shadows land on a transparent catcher, so the car is grounded without a fake surface.
+  const shadowMat = new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.34 });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
@@ -100,21 +106,26 @@ export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
   }).catch(() => null);
 
   let env = buildEnv('studio', airframe);
+  let hdriOn = false;
+  let pmrem = null;
+  const hdriCache = new Map(); // id -> { texture, environment }, last few only
   const theme = () => {
     const bg = new THREE.Color(env.bg ?? css('--stage'));
-    scene.background = bg;
-    scene.fog = new THREE.Fog(bg, ...env.fog);
-    floor.material = env.floor || floorMat;
+    if (!hdriOn) {
+      scene.background = bg;
+      scene.fog = new THREE.Fog(bg, ...env.fog);
+    }
+    floor.material = hdriOn ? shadowMat : env.floor || floorMat;
     floorMat.color.set(css('--stage-floor'));
     const night = document.documentElement.dataset.mode === 'night';
-    hemi.intensity = (night ? 0.7 : 1.25) * env.light;
-    sun.intensity = (night ? 1.8 : 2.4) * env.light;
+    hemi.intensity = hdriOn ? 0.06 : (night ? 0.7 : 1.25) * env.light;
+    sun.intensity = hdriOn ? 0.75 : (night ? 1.8 : 2.4) * env.light;
     if (grid) scene.remove(grid);
     grid = new THREE.GridHelper(20, 80, new THREE.Color(css('--stage-grid')), new THREE.Color(css('--stage-grid')));
     grid.position.y = 0.0015;
     grid.material.transparent = true;
     grid.material.opacity = night ? 0.9 : 0.7;
-    grid.visible = env.grid;
+    grid.visible = !hdriOn && env.grid;
     scene.add(grid);
     bayLines.material.color.set(css('--good'));
     skMat.color.set(css('--signal'));
@@ -122,15 +133,51 @@ export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
   };
   theme();
 
+  const useHdri = ({ texture, environment }) => {
+    hdriOn = true;
+    scene.environment = environment;
+    scene.environmentIntensity = 0.9;
+    scene.background = texture;
+    scene.backgroundIntensity = 0.8;
+    scene.fog = null;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.95;
+    scene.remove(env.group);
+    env = { group: new THREE.Group(), light: 1, floor: null, grid: false, bg: null, fog: [8, 30] };
+    scene.add(env.group);
+    theme();
+  };
+
   let spin = 0, sized = '';
   return {
     renderer, scene, cam, carCam, airframe, theme,
     /** Swap the surroundings (env3d.ENVIRONMENTS). */
     setEnv(name) {
+      hdriOn = false;
+      scene.environment = null;
+      scene.backgroundIntensity = 1;
+      scene.environmentIntensity = 1;
+      renderer.toneMapping = THREE.NoToneMapping;
       scene.remove(env.group);
       env = buildEnv(name, airframe);
       scene.add(env.group);
       theme();
+    },
+    /** A real panorama (Poly Haven): equirect background plus image-based lighting. */
+    async setHdri(id) {
+      let entry = hdriCache.get(id);
+      if (!entry) {
+        pmrem ||= new THREE.PMREMGenerator(renderer);
+        const texture = await loadHdr(`/api/park/hdri/${id}.hdr`);
+        entry = { texture, environment: pmrem.fromEquirectangular(texture).texture };
+        hdriCache.set(id, entry);
+        while (hdriCache.size > 3) {
+          const [old, e] = hdriCache.entries().next().value;
+          e.texture.dispose(); e.environment.dispose();
+          hdriCache.delete(old);
+        }
+      }
+      useHdri(entry);
     },
     /** Place the car (airframe frame pose) and spin its wheels by the body velocity. */
     setCar(q, vel, dt) {
@@ -174,11 +221,39 @@ export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
       renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
       if (pw) pip.setSize(pw, ph, false);
     },
-    /** Main view from `cam` (car shown unless `fpv`), and the car camera into the inset. */
-    render(fpv, inset) {
+    /**
+     * Main view from `cam` (car shown unless `fpv`), and the car camera into the inset.
+     * `rect`/`pipRect` are the sensor frames in CSS pixels from the top-left; whatever lies
+     * outside them is cleared black, so the picture has the camera's 16:9 field of view on
+     * any window shape instead of a wider one.
+     */
+    render(fpv, inset, rect = null, pipRect = null) {
       car.visible = !fpv;
-      renderer.render(scene, fpv ? carCam : cam);
-      if (inset) { car.visible = false; pip.render(scene, carCam); car.visible = true; }
+      const cw = renderer.domElement.clientWidth, ch = renderer.domElement.clientHeight;
+      const draw = (r, camera) => {
+        const x = r?.x ?? 0, y = r?.y ?? 0, w = r?.w ?? cw, h = r?.h ?? ch;
+        renderer.setScissorTest(false);
+        renderer.setViewport(0, 0, cw, ch);
+        if (r) renderer.clear(); // the bars: the sensor frame does not cover the window
+        renderer.setViewport(x, ch - y - h, w, h);
+        renderer.setScissor(x, ch - y - h, w, h);
+        renderer.setScissorTest(true);
+        renderer.render(scene, camera);
+      };
+      draw(rect, fpv ? carCam : cam);
+      if (inset) {
+        car.visible = false;
+        const pw = pip.domElement.clientWidth, ph = pip.domElement.clientHeight;
+        const px = pipRect?.x ?? 0, py = pipRect?.y ?? 0, pwo = pipRect?.w ?? pw, pho = pipRect?.h ?? ph;
+        pip.setScissorTest(false);
+        pip.setViewport(0, 0, pw, ph);
+        if (pipRect) pip.clear();
+        pip.setViewport(px, ph - py - pho, pwo, pho);
+        pip.setScissor(px, ph - py - pho, pwo, pho);
+        pip.setScissorTest(true);
+        pip.render(scene, carCam);
+        car.visible = true;
+      }
     },
     dispose() { renderer.dispose(); pip.dispose(); },
   };

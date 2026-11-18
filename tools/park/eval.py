@@ -50,6 +50,8 @@ SWEEP = {
     "close-start": Conditions(start="close"),
     "faults": Conditions(faults=1.0),
     "close+faults": Conditions(faults=1.0, start="close"),
+    "slippery": Conditions(floor=1.0),
+    "slippery+faults": Conditions(faults=1.0, floor=1.0),
 }
 FAMILIES = {f"fault:{f}": Conditions(only=f) for f in FAULT_FAMILIES}
 
@@ -64,13 +66,16 @@ def main() -> None:
     ap.add_argument("--sweep-n", type=int, default=300)
     ap.add_argument("--families", action="store_true", help="sweep each fault family alone")
     ap.add_argument("--faults", type=float, default=0.0, help="fault severity of the main run")
+    ap.add_argument(
+        "--floor", type=float, default=0.0, help="floor traction severity of the main run"
+    )
     ap.add_argument("--start", choices=["ring", "close"], default="ring")
     ap.add_argument("--traces", type=int, default=0)
     ap.add_argument("--out", type=Path, default=Path("runs/park_eval"))
     args = ap.parse_args()
     params = load_params(args.params) if args.params else ParkParams()
     args.out.mkdir(parents=True, exist_ok=True)
-    main_cond = Conditions(faults=args.faults, start=args.start)
+    main_cond = Conditions(faults=args.faults, start=args.start, floor=args.floor)
     main_r = evaluate(params, n=args.n, seed=args.seed, cond=main_cond)
     print(
         f"full {main_r['success']}/{args.n} wilson95 {main_r['wilson95']} {main_r['outcomes']}",
@@ -96,7 +101,9 @@ def main() -> None:
         traces = []
         for i in range(args.traces):
             s = args.seed * 100003 + i
-            sc = Scenario.sample(np.random.default_rng(s), 1.0, None, args.faults, None, args.start)
+            sc = Scenario.sample(
+                np.random.default_rng(s), 1.0, None, args.faults, None, args.start, args.floor
+            )
             r = run(sc, params, seed=s, keep_trace=True)
             traces.append(
                 {

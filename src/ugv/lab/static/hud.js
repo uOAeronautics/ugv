@@ -10,7 +10,23 @@ export const START_NAME = {
   'beside-nose-gear': 'Beside the nose wheel', 'under-wingtip': 'Under a wingtip', side: 'Abeam',
 };
 
-function markup() {
+function envMenu(hdri) {
+  const groups = new Map();
+  const add = (group, value, label, sub = '') => {
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(
+      `<button type="button" class="envitem" data-env="${esc(value)}" data-name="${esc(`${label} ${sub} ${group}`.toLowerCase())}" role="option" aria-selected="false"><span>${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</button>`,
+    );
+  };
+  for (const [k, label] of Object.entries(ENVIRONMENTS)) add('Simulated sets', k, label);
+  for (const a of hdri) {
+    const where = `${a.env === 'indoor' ? 'Indoor' : a.env === 'outdoor' ? 'Outdoor' : 'Other'} · ${a.cat}`;
+    add(where, `hdri:${a.id}`, a.name);
+  }
+  return [...groups].map(([g, items]) => `<div class="envsection"><div class="envgroup">${esc(g)}</div>${items.join('')}</div>`).join('');
+}
+
+function markup(hdri = []) {
   return `
   <div class="stage" id="ch-stage">
     <canvas id="ch-3d"></canvas><canvas id="ch-ov"></canvas>
@@ -21,9 +37,17 @@ function markup() {
     </div>
     <div class="plate tr tele" id="ch-tele"></div>
     <div class="plate bl mini" title="Click to place the car, drag to aim it"><canvas id="ch-map"></canvas><div class="mini-k">What the car believes · click to place</div></div>
-    <div class="plate br pip" id="ch-pip-box"><canvas id="ch-pip"></canvas><canvas id="ch-pip-ov"></canvas><div class="mini-k">Car camera · mono · 10 Hz</div></div>
+    <div class="plate br pip" id="ch-pip-box"><canvas id="ch-pip"></canvas><canvas id="ch-pip-ov"></canvas><div class="mini-k">Car camera · 1280×720 · mono · 10 Hz</div></div>
     <div class="dock">
-      <select id="ch-env" aria-label="Environment">${Object.entries(ENVIRONMENTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+      <div class="envpick">
+        <button type="button" id="ch-env" class="envbtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Environment"><span id="ch-env-label">Lab room</span><i></i></button>
+        <div class="envmenu" id="ch-env-menu" hidden>
+          <div class="envmenu-head"><span>Environment</span><kbd>ESC</kbd></div>
+          <input id="ch-env-q" type="search" placeholder="Search ${hdri.length} panoramas" autocomplete="off" aria-label="Search environments">
+          <div class="envlist" id="ch-env-list" role="listbox" aria-label="Environments">${envMenu(hdri)}</div>
+          <div class="envmenu-foot">Real panoramas: Poly Haven · CC0</div>
+        </div>
+      </div>
       <select id="ch-quality" aria-label="Sensors">${Object.entries(QUALITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
       <select id="ch-start" aria-label="Start">${Object.entries(START_NAME).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}<option value="placed" hidden>Placed on the map</option></select>
       <button type="button" id="ch-auto" aria-pressed="false"><span>Autopilot</span> <kbd>P</kbd></button>
@@ -47,8 +71,49 @@ function bind(main) {
   try { rounds = JSON.parse(localStorage.getItem('ugv-lab-rounds') || '[]'); } catch { /* per-browser only */ }
 
   $('#ch-start').addEventListener('change', (e) => { handlers.start?.(e.target.value); e.target.blur(); });
-  $('#ch-env').addEventListener('change', (e) => { handlers.env?.(e.target.value); e.target.blur(); });
   $('#ch-quality').addEventListener('change', (e) => { handlers.quality?.(e.target.value); e.target.blur(); });
+  const envBtn = $('#ch-env'), envMenu = $('#ch-env-menu'), envQ = $('#ch-env-q'), envList = $('#ch-env-list'), envLabel = $('#ch-env-label');
+  const filterEnv = (q) => {
+    const s = q.trim().toLowerCase();
+    for (const sec of envList.querySelectorAll('.envsection')) {
+      let any = false;
+      for (const b of sec.querySelectorAll('.envitem')) {
+        const on = !s || b.dataset.name.includes(s);
+        b.hidden = !on;
+        any ||= on;
+      }
+      sec.hidden = !any;
+    }
+  };
+  const closeEnv = () => { envMenu.hidden = true; envBtn.setAttribute('aria-expanded', 'false'); };
+  const setEnvLabel = (v) => {
+    const b = envList.querySelector(`.envitem[data-env="${CSS.escape(v)}"]`);
+    if (!b) return;
+    envLabel.textContent = b.querySelector('span').textContent;
+    envList.querySelectorAll('.envitem').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+  };
+  const openEnv = () => {
+    envMenu.hidden = false;
+    envBtn.setAttribute('aria-expanded', 'true');
+    envQ.value = '';
+    filterEnv('');
+    envQ.focus();
+  };
+  envBtn.addEventListener('click', () => { if (envMenu.hidden) openEnv(); else closeEnv(); });
+  envQ.addEventListener('input', () => filterEnv(envQ.value));
+  envQ.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeEnv(); envBtn.focus(); } });
+  envList.addEventListener('click', (e) => {
+    const b = e.target.closest('.envitem');
+    if (!b) return;
+    setEnvLabel(b.dataset.env);
+    closeEnv();
+    handlers.env?.(b.dataset.env);
+    envBtn.blur();
+  });
+  const onDocDown = (e) => { if (!envMenu.hidden && !e.target.closest('.envpick')) closeEnv(); };
+  const onDocKey = (e) => { if (e.key === 'Escape' && !envMenu.hidden) closeEnv(); };
+  document.addEventListener('pointerdown', onDocDown);
+  document.addEventListener('keydown', onDocKey);
   $('#ch-auto').addEventListener('click', (e) => { handlers.auto?.(); e.currentTarget.blur(); });
   $('#ch-new').addEventListener('click', (e) => { handlers.fresh?.(); e.currentTarget.blur(); });
   $('#ch-truth').addEventListener('click', (e) => { handlers.truth?.(); e.currentTarget.blur(); });
@@ -60,7 +125,7 @@ function bind(main) {
   return {
     on(h) { handlers = h; },
     start(v) { $('#ch-start').value = v; },
-    setup(env, quality) { $('#ch-env').value = env; $('#ch-quality').value = quality; },
+    setup(env, quality) { setEnvLabel(env); $('#ch-quality').value = quality; },
     auto(on) {
       const b = $('#ch-auto');
       b.classList.toggle('go', on);
@@ -100,6 +165,7 @@ function bind(main) {
       wd.closest('.wd').classList.toggle('trip', !!input.tripped());
       const v = snap ? Math.hypot(snap.vel[0], snap.vel[1]) : 0;
       const dist = e ? Math.hypot(e[0], e[1]) : null;
+      const camLost = !!snap?.cam_fx?.lost;
       tele.innerHTML = `
         <div><span>T</span><b>${(snap?.t ?? 0).toFixed(1)}<small>s</small></b></div>
         <div><span>SPEED</span><b>${v.toFixed(2)}<small>m/s</small></b></div>
@@ -107,8 +173,13 @@ function bind(main) {
         <div><span>YAW ERR, EST</span><b>${e ? deg(e[2]) : '—'}<small>°</small></b></div>
         <div><span>KEYPOINTS</span><b>${snap?.kp?.length ?? 0}<small>/12</small></b></div>
         <div><span>POSE FIX</span><b class="${snap?.fix ? 'fix' : 'nofix'}">${snap?.fix ? 'YES' : est ? 'OLD' : 'NO'}</b></div>
-        ${truth ? `<div class="truth"><span>TRUE ERROR</span><b>${cm(eTrue[0])} / ${cm(eTrue[1])}<small>cm</small> ${deg(eTrue[2])}<small>°</small></b><ul class="faults">${faultList(faults)}</ul></div>` : ''}
+        <div><span>CAMERA</span><b class="${camLost ? 'nofix' : 'fix'}">${camLost ? 'LOST' : 'LIVE'}</b></div>
+        ${truth ? `<div class="truth"><span>TRUE ERROR</span><b>${cm(eTrue[0])} / ${cm(eTrue[1])}<small>cm</small> ${deg(eTrue[2])}<small>°</small></b><ul class="faults">${faultList(faults)}${snap?.floor && snap.floor[1] > 0.05 ? `<li>floor grip ${snap.floor[0].toFixed(2)} · skid ${snap.floor[1].toFixed(2)} · patchy ${snap.floor[2].toFixed(2)}</li>` : ''}</ul></div>` : ''}
         <div class="sub"><span>${auto ? 'TUNED CONTROLLER' : input.fine() ? 'FINE CONTROL' : 'FULL CONTROL'}</span><span>${rounds.filter((x) => x.ok).length}/${rounds.length} parked by you</span></div>`;
+    },
+    dispose() {
+      document.removeEventListener('pointerdown', onDocDown);
+      document.removeEventListener('keydown', onDocKey);
     },
   };
 }

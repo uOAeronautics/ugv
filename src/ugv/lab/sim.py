@@ -30,19 +30,20 @@ QUALITY = {
     "bad": (1.0, None),
     "broken": (1.0, "broken"),
 }
-# What each playground environment does to the sensors, on top of the car's own faults.
+# What each playground environment does to the sensors and the floor, on top of the car's own
+# faults. Floor severity: 0 clean, 1 = polished concrete or a wet bay (grip, skid, patches).
 ENVIRONMENTS = {
-    "studio": (),
-    "lab": (),
-    "hangar": (("exposure_rate", 0.25),),  # skylights and glare
+    "studio": ((), 0.0),
+    "lab": ((), 0.15),
+    "hangar": ((("exposure_rate", 0.25),), 0.55),  # skylights, polished concrete
     "workshop": (
-        ("phantom_rate", 0.04),
-        ("occluder", (420.0, 470.0, 760.0, 720.0)),
-    ),  # clutter, a cable
+        (("phantom_rate", 0.04), ("occluder", (420.0, 470.0, 760.0, 720.0))),
+        0.35,
+    ),  # clutter, a cable, dust
+    "wet": ((("noise_px", 1.0),), 1.0),  # a wet loading bay: the tyres let go
     "night": (
-        ("noise_px", 2.0),
-        ("exposure_rate", 0.2),
-        ("blur_px", 6.0),
+        (("noise_px", 2.0), ("exposure_rate", 0.2), ("blur_px", 6.0)),
+        0.2,
     ),  # dark: gain noise, long exposure
 }
 MAX_SESSIONS = 8
@@ -100,7 +101,16 @@ class Sessions:
         q = start_pose(seed, start, preset)
         sev, only = QUALITY[quality]
         car = tuple(float(v) for v in q)
-        sc = Scenario((0.0, 0.0, 0.0), car, 1.0, faults=sev, only=only, overrides=ENVIRONMENTS[env])
+        overrides, floor = ENVIRONMENTS.get(env, ((), 0.25))  # a real panorama: neutral effects
+        sc = Scenario(
+            (0.0, 0.0, 0.0),
+            car,
+            1.0,
+            faults=sev,
+            only=only,
+            overrides=overrides,
+            floor=floor,
+        )
         ep = Episode(sc, _params(), seed=seed, engaged=False)
         sid = f"{seed}-{time.monotonic_ns()}"
         with self._lock:
@@ -147,6 +157,7 @@ def snapshot(ep: Episode) -> dict:
         "kp": ep.last_kp,
         "outcome": ep.outcome,
         "cam_fx": ep.cam_fx,
+        "floor": [round(ep.floor.grip, 2), round(ep.floor.slip, 2), round(ep.floor.patch, 2)],
     }
     if ep.outcome:
         res = ep.result()

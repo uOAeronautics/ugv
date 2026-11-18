@@ -266,8 +266,9 @@ th.num { font: 600 12px/1 var(--cond); }
 .mini canvas { width: 240px; height: 240px; display: block; cursor: crosshair; }
 .mini-k { font: 600 10.5px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); padding: 7px 10px; border-top: 1px solid var(--rule); }
 .pip { padding: 0; width: 360px; }
-.pip canvas { display: block; width: 360px; height: 202px; }
+.pip canvas { display: block; width: 360px; height: 202.5px; }
 .pip #ch-pip-ov { position: absolute; left: 0; top: 0; pointer-events: none; }
+.stage.fpv { background: #050505; }
 .stage.fpv .pip { display: none; }
 .stage #ch-3d { cursor: grab; touch-action: none; }
 .stage #ch-3d:active { cursor: grabbing; }
@@ -287,6 +288,25 @@ kbd { font: 500 10px/1 var(--mono); border: 1px solid var(--rule-2); padding: 2p
 .dock .wd.trip i { background: var(--bad); }
 .dock .hint { font: 400 12.5px var(--sans); color: var(--ink-2); margin-left: 8px; }
 .dock button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.envpick { position: relative; display: flex; }
+.envbtn { display: flex; align-items: center; gap: 10px; min-width: 190px; max-width: 260px; padding-right: 10px; }
+.envbtn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; letter-spacing: 0; font: 500 13px var(--sans); }
+.envbtn i { margin-left: auto; width: 6px; height: 6px; border-right: 1px solid var(--ink-2); border-bottom: 1px solid var(--ink-2); transform: rotate(45deg) translateY(-2px); }
+.envmenu { position: absolute; z-index: 12; bottom: calc(100% + 8px); left: 0; width: min(440px, calc(100vw - 24px)); max-height: min(62vh, 560px); display: flex; flex-direction: column; background: var(--raise); border: 1px solid var(--rule-2); box-shadow: 0 14px 36px rgba(0, 0, 0, .28); }
+.envmenu[hidden] { display: none; }
+.envmenu-head, .envmenu-foot { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; font: 600 10.5px var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.envmenu-head { border-bottom: 1px solid var(--rule); }
+.envmenu-foot { border-top: 1px solid var(--rule); color: var(--ink-3); font-size: 9.5px; }
+.envmenu input { margin: 8px; height: 30px; background: var(--sunk); border: 1px solid var(--rule); flex: none; }
+.envlist { overflow-y: auto; flex: 1; min-height: 0; }
+.envsection[hidden] { display: none; }
+.envgroup { position: sticky; top: 0; z-index: 1; background: var(--raise); font: 600 9.5px var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); padding: 7px 10px 5px; border-top: 1px solid var(--rule); }
+.envsection:first-child .envgroup { border-top: 0; }
+.envitem { display: flex; width: 100%; align-items: baseline; justify-content: space-between; gap: 12px; height: auto; min-height: 30px; padding: 6px 10px; border: 0; border-bottom: 1px solid var(--rule); background: transparent; text-align: left; font: 500 13px var(--sans); letter-spacing: 0; text-transform: none; }
+.envitem:hover { background: var(--sunk); }
+.envitem[hidden] { display: none; }
+.envitem[aria-selected="true"] { color: var(--signal); }
+.envitem small { font: 500 9.5px var(--mono); letter-spacing: .04em; color: var(--ink-3); text-transform: uppercase; white-space: nowrap; }
 .dock kbd { margin-left: 4px; }
 .dock .go kbd { color: inherit; border-color: currentColor; }
 .banner { position: absolute; z-index: 5; inset: 0 0 56px; display: grid; place-items: center; text-align: center; background: color-mix(in srgb, var(--stage) 55%, transparent); }
@@ -302,11 +322,12 @@ kbd { font: 500 10px/1 var(--mono); border: 1px solid var(--rule-2); padding: 2p
 @media (pointer: coarse), (max-width: 900px) {
   .stage { height: calc(100svh - var(--bar) - 58px); }
   .fsm, .plate.bl, .dock .caps, .dock .wd, .dock .hint { display: none; }
-  .pip, .pip canvas { width: 168px; } .pip canvas { height: 95px; } .plate.br { bottom: 64px; right: auto; left: 12px; }
+  .pip, .pip canvas { width: 168px; } .pip canvas { height: 94.5px; } .plate.br { bottom: 64px; right: auto; left: 12px; }
   .plate.tl { padding: 8px 10px; } .hud-mode { margin: 0; font-size: 16px; }
   .tele { grid-template-columns: repeat(2, 92px); gap: 6px 10px; } .tele b { font-size: 17px; }
   .plate.tr { top: 12px; right: 12px; padding: 8px 10px; } .plate.tl { top: 12px; left: 12px; }
   .dock { height: auto; flex-wrap: wrap; padding: 8px; gap: 6px; justify-content: flex-start; }
+  .envbtn { min-width: 0; max-width: 46vw; } .envmenu { position: fixed; left: 12px; right: 12px; width: auto; bottom: 104px; max-height: 50vh; }
   .pad { display: grid; position: absolute; z-index: 4; right: 12px; bottom: 112px; grid-template-columns: repeat(3, 56px); gap: 6px; }
   .pad button { height: 52px; background: color-mix(in srgb, var(--stage) 70%, transparent); font-size: 18px; touch-action: none; }
   .pad .wide { grid-column: 1 / -1; }

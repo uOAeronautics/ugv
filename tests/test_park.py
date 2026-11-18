@@ -6,9 +6,10 @@ import numpy as np
 
 from ugv.park.actuator import Axis
 from ugv.park.controller import TABLE
-from ugv.park.episode import Scenario, run
+from ugv.park.episode import Episode, Scenario, run
 from ugv.park.geometry import bay, compose, inverse
 from ugv.park.perception import DetectorModel, _model_points, project_planar, solve, solve_planar
+from ugv.park.plant import Floor, Plant, PlantParams
 
 
 def test_bay_is_a_tail_entry_between_the_gears() -> None:
@@ -23,6 +24,36 @@ def test_bay_is_a_tail_entry_between_the_gears() -> None:
 def test_compose_inverse_round_trip() -> None:
     a, c = np.array([0.3, -1.2, 2.0]), np.array([-0.5, 0.4, -1.0])
     assert np.allclose(compose(inverse(a), compose(a, c)), c)
+
+
+def test_clean_floor_moves_exactly_as_commanded() -> None:
+    p = Plant(PlantParams(), np.zeros(3), np.random.default_rng(0))
+    p.step(np.array([0.3, 0.0, 0.0]), 0.02)
+    assert np.allclose(p.ground_v, p.vel[:2], atol=1e-12)
+
+
+def test_slippery_floor_slides_sideways_in_a_turn() -> None:
+    p = Plant(
+        PlantParams(),
+        np.zeros(3),
+        np.random.default_rng(0),
+        floor=Floor(grip=0.7, slip=1.0, patch=0.0),
+    )
+    for _ in range(30):  # 0.6 s of forward and yaw: the car cannot hold the corner
+        _, gyro = p.step(np.array([0.2, 0.0, 0.4]), 0.02)
+    assert abs(p.pose[2]) > 0.5, "it still turns, just less than commanded"
+    assert abs(gyro) > 0.5
+    body = [
+        np.cos(p.pose[2]) * p.ground_v[0] + np.sin(p.pose[2]) * p.ground_v[1],
+        -np.sin(p.pose[2]) * p.ground_v[0] + np.cos(p.pose[2]) * p.ground_v[1],
+    ]
+    assert abs(body[1]) > 0.01, "the ground velocity lags the heading: it skids"
+
+
+def test_floor_grip_changes_from_patch_to_patch() -> None:
+    f = Floor(grip=0.95, slip=0.2, patch=0.5, phase=(0.3, 1.1))
+    grips = [f.grip_at(x, y) for x in np.linspace(-1.8, 1.8, 7) for y in np.linspace(-1.8, 1.8, 7)]
+    assert max(grips) - min(grips) > 0.15
 
 
 def test_planar_solve_recovers_pose_and_pitch() -> None:
@@ -55,6 +86,19 @@ def test_every_state_is_declared() -> None:
     assert states == set(TABLE)
 
 
+def test_lost_frame_is_reported_without_the_previous_faults() -> None:
+    sc = Scenario(
+        (0.0, 0.0, 0.0),
+        (1.2, 0.0, 0.0),
+        faults=1.0,
+        overrides=(("drop_rate", 1.0),),
+    )
+    ep = Episode(sc, seed=5, engaged=False)
+    ep.tick(np.zeros(3))
+    assert ep.cam_fx == {"lost": True}
+    assert ep.last_kp == []
+
+
 def test_ideal_episode_parks() -> None:
     det = DetectorModel(
         pixel_std=0.3,
@@ -85,8 +129,15 @@ def test_lab_api_serves_every_view() -> None:
     ):
         assert c.get(path).status_code == 200, path
     assert c.get("/runs/../pyproject.toml").status_code == 404
+    assert c.get("/static/hdri.json").status_code == 200
+    assert c.get("/api/park/hdri/not%20an%20id.hdr").status_code == 404
     world = c.get("/api/park/world").json()
     assert len(world["bay"]["obstacles"]) > 10 and world["bay"]["target"][2] == 0.0
+    s = c.post(
+        "/api/park/session",
+        json={"seed": 2, "quality": "healthy", "env": "hdri:industrial_workshop_foundry"},
+    )
+    assert s.status_code == 200 and len(s.json()["floor"]) == 3
 
 
 def test_mutation_follows_failure_levers() -> None:

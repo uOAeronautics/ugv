@@ -6,8 +6,9 @@ import { P } from './scene3d.js';
 export const ENVIRONMENTS = {
   studio: 'Studio',
   lab: 'Lab room',
-  hangar: 'Hangar',
+  hangar: 'Polished hangar',
   workshop: 'Cluttered workshop',
+  wet: 'Wet loading bay',
   night: 'Night',
 };
 
@@ -27,7 +28,7 @@ function cyl(g, [x, y, z], r, h, m) {
   g.add(c);
   return c;
 }
-function noiseTexture(base, spread, size = 256) {
+export function noiseTexture(base, spread, size = 256) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const g = c.getContext('2d');
@@ -126,6 +127,17 @@ export function buildEnv(name, airframe) {
     for (const dy of [-0.12, 0.12]) { cyl(g, [-1.0, -1.6 + dy, 0.08], 0.06, 0.8, jeans); box(g, [-0.95, -1.6 + dy, 0], [0.28, 0.1, 0.08], shoe); }
     out.floor = mat(0x6f6a62, { map: noiseTexture(120, 14) });
     out.bg = 0x4a4741; out.fog = [5, 16]; out.light = 0.95;
+  } else if (name === 'wet') {
+    // A loading bay after rain: roller door, sodium lamps, standing water on sealed concrete.
+    walls(g, -7, 9, -10, 13, 5.2, mat(0x777c82, { roughness: 0.8 }));
+    box(g, [9, 1.5, 0], [0.12, 6, 4.4], mat(0x3c4146, { metalness: 0.5, roughness: 0.45 }));
+    for (const x of [-4, 0, 4]) {
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0xffe3b0, emissive: 0xffd28a, emissiveIntensity: 2.2 }));
+      lamp.position.copy(P(x, 0, 4.8));
+      g.add(lamp);
+    }
+    out.floor = mat(0x5c6167, { roughness: 0.34, metalness: 0.18 });
+    out.bg = 0x62686e; out.fog = [6, 22]; out.light = 1.2;
   } else if (name === 'night') {
     out.light = 0.22; out.bg = 0x050506; out.fog = [2.5, 9];
   }

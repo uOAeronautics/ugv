@@ -10,7 +10,8 @@ sample at full duty, scaled by the duty (motor vibration), and 0.004 rad/s when 
 
 `PlantParams.sample` draws a different car per episode (gains, deadzones, lags, strafe-to-yaw
 coupling, gyro noise) so a controller is scored on the spread of plausible cars, not on one.
-The controller never sees these values: it uses `NOMINAL`.
+The controller never sees these values: it uses `NOMINAL`. `Floor` adds the surface: a clean
+floor is exact, a slippery one loses authority and lets the ground velocity lag the body.
 """
 
 from __future__ import annotations
@@ -57,6 +58,46 @@ class PlantParams:
 NOMINAL = PlantParams()
 
 
+@dataclass(frozen=True)
+class Floor:
+    """Traction. A clean floor is the nominal case; a slippery one loses strafe and yaw
+    authority, lets the ground velocity lag the body through turns (the car skids sideways),
+    and changes grip from patch to patch so no single calibration holds everywhere.
+
+    `slip` is the lag at walking speed, s; `patch` the fractional grip variation over ~1 m.
+    The controller never sees these numbers: it sees the gyro and the camera.
+    """
+
+    grip: float = 1.0
+    slip: float = 0.0
+    patch: float = 0.0
+    phase: tuple[float, float] = (0.0, 0.0)
+
+    @staticmethod
+    def sample(rng: np.random.Generator, scale: float = 0.0) -> Floor:
+        if scale <= 0:
+            return Floor()
+        return Floor(
+            grip=float(1 - scale * rng.uniform(0.05, 0.4)),
+            slip=float(scale * rng.uniform(0.2, 1.0)),
+            patch=float(scale * rng.uniform(0.0, 0.5)),
+            phase=(float(rng.uniform(0, 2 * np.pi)), float(rng.uniform(0, 2 * np.pi))),
+        )
+
+    def grip_at(self, x: float, y: float) -> float:
+        """Local grip: the sampled floor plus a smooth field, 1-2 patches across the room."""
+        if not self.patch:
+            return self.grip
+        a, b = self.phase
+        field = (
+            np.sin(1.9 * x + a) * np.cos(1.4 * y + b) + 0.5 * np.sin(3.3 * x - 2.1 * y + a + b)
+        ) / 1.5
+        return float(np.clip(self.grip * (1 + self.patch * field), 0.15, 1.0))
+
+
+NOMINAL_FLOOR = Floor()
+
+
 def velocity_to_duty(v: np.ndarray, p: PlantParams = NOMINAL) -> np.ndarray:
     """Body velocity (vx, vy, w) -> duty, inverting the nominal deadzone model. Capped."""
     out = np.zeros(3)
@@ -80,9 +121,12 @@ class Plant:
     rng: np.random.Generator
     vel: np.ndarray | None = None  # body (vx, vy, w)
     faults: FaultState | None = None  # see faults.py; None = a healthy car
+    floor: Floor = NOMINAL_FLOOR
+    ground_v: np.ndarray | None = None  # world (vx, vy) the tyres actually hold
 
     def __post_init__(self) -> None:
         self.vel = np.zeros(3) if self.vel is None else self.vel
+        self.ground_v = np.zeros(2) if self.ground_v is None else self.ground_v
 
     def step(self, duty: np.ndarray, dt: float) -> tuple[np.ndarray, float]:
         """Advance; returns (true body velocity, measured gyro rate)."""
@@ -94,12 +138,25 @@ class Plant:
         alpha = 1 - np.exp(-dt / np.array(p.tau))
         self.vel = self.vel + alpha * (target - self.vel)
         v = self.vel if self.faults is None else self.faults.wheels(self.vel, dt)
-        w = v[2] + p.strafe_yaw * v[1]
+        g = self.floor.grip_at(float(self.pose[0]), float(self.pose[1]))
+        v = v * np.array([1.0, g, g])
         c, s = np.cos(self.pose[2]), np.sin(self.pose[2])
+        # The tyres can hold only so much of the commanded motion: on a low-grip patch the ground
+        # velocity lags the body, so a spin slides the car sideways instead of rotating it on the
+        # spot. `slip` grows with speed; a clean floor has no lag and integrates exactly.
+        world = np.array([c * v[0] - s * v[1], s * v[0] + c * v[1]])
+        speed = float(np.hypot(*world))
+        tau = self.floor.slip * (0.15 + 0.35 * min(speed, 1.0))
+        if tau > 1e-6:
+            beta = 1 - np.exp(-dt / tau)
+            self.ground_v = self.ground_v + beta * (world - self.ground_v)
+        else:
+            self.ground_v = world
+        w = v[2] + p.strafe_yaw * v[1]
         self.pose = np.array(
             [
-                self.pose[0] + (c * v[0] - s * v[1]) * dt,
-                self.pose[1] + (s * v[0] + c * v[1]) * dt,
+                self.pose[0] + self.ground_v[0] * dt,
+                self.pose[1] + self.ground_v[1] * dt,
                 (self.pose[2] + w * dt + np.pi) % (2 * np.pi) - np.pi,
             ]
         )
@@ -108,4 +165,11 @@ class Plant:
         gyro = w + p.gyro_bias + (0.004 + p.gyro_std * shake) * self.rng.normal()
         if self.faults is not None:
             gyro = self.faults.gyro(gyro, dt)
-        return np.array([v[0], v[1], w]), float(gyro)
+        true_body = np.array(
+            [
+                c * self.ground_v[0] + s * self.ground_v[1],
+                -s * self.ground_v[0] + c * self.ground_v[1],
+                w,
+            ]
+        )
+        return true_body, float(gyro)

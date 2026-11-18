@@ -1,5 +1,5 @@
 {
- "node": "n39",
+ "node": "s2+blind-gate",
  "params": {
   "search_w": 0.9,
   "acquire_s": 0.6,
@@ -30,6 +30,8 @@
   "shield_inflate_m": 0.008,
   "lookahead_s": 0.4,
   "max_retries": 4,
-  "timeout_s": 120.0
+  "timeout_s": 120.0,
+  "blind_max_m": 0.04,
+  "blind_waits": 3
  }
 }

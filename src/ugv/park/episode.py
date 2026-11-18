@@ -6,7 +6,8 @@ A scenario places the airframe somewhere in a 4 m x 4 m room at a random heading
 controller at 50 Hz; the camera produces a measurement at 10 Hz that arrives 0.1 s late. Each
 episode draws its own car (`PlantParams.sample`) and camera calibration error, and with
 `faults` > 0 its own faults (`faults.py`: weak wheels, battery, stalls, lost frames, false
-detections ...).
+detections ...). `floor` > 0 draws a slippery surface (`plant.Floor`): less strafe and yaw
+authority, a ground velocity that lags the body, and grip that changes from patch to patch.
 
 `Episode` advances one 20 ms tick at a time, so a person can drive (`tick(duty)`) and hand over
 to the controller (`engage()`) mid-run; `run` is the batch loop.
@@ -26,7 +27,7 @@ from ugv.park.estimator import Estimator
 from ugv.park.faults import Faults, FaultState
 from ugv.park.geometry import bay, compose, inverse, wrap
 from ugv.park.perception import CameraError, DetectorModel, measure
-from ugv.park.plant import Plant, PlantParams
+from ugv.park.plant import Floor, Plant, PlantParams
 
 DT = 0.02
 CAMERA_PERIOD = 5  # ticks: 10 Hz
@@ -44,6 +45,7 @@ class Scenario:
     faults: float = 0.0  # severity; 0 = a healthy car
     only: str | None = None  # a single fault family (faults.FAMILIES)
     overrides: tuple = ()  # (field, value) pairs forced on the faults (an environment's effects)
+    floor: float = 0.0  # traction severity; 0 = a clean floor
 
     @staticmethod
     def sample(
@@ -53,6 +55,7 @@ class Scenario:
         faults: float = 0.0,
         only: str | None = None,
         start: str = "ring",
+        floor: float = 0.0,
     ) -> Scenario:
         a = (rng.uniform(-0.8, 0.8), rng.uniform(-0.8, 0.8), rng.uniform(-np.pi, np.pi))
         b = bay() if start == "close" else None
@@ -73,7 +76,9 @@ class Scenario:
                     continue
                 c = tuple(float(v) for v in compose(np.array(a), rel))
             if abs(c[0]) < ROOM - 0.2 and abs(c[1]) < ROOM - 0.2:
-                return Scenario(a, c, plant_scale, det or DetectorModel(), faults, only)
+                return Scenario(
+                    a, c, plant_scale, det or DetectorModel(), faults, only, floor=floor
+                )
 
 
 @dataclass
@@ -112,7 +117,8 @@ class Episode:
             else CameraError()
         )
         self.A = np.array(scenario.airframe)
-        self.plant = Plant(plant_p, np.array(scenario.car, dtype=float), rng)
+        self.floor = Floor.sample(rng, scenario.floor)
+        self.plant = Plant(plant_p, np.array(scenario.car, dtype=float), rng, floor=self.floor)
         self.faults = None
         if scenario.faults > 0 or scenario.only or scenario.overrides:
             f = Faults()
@@ -216,6 +222,7 @@ class Episode:
     def _camera(self, t: float, k: int) -> None:
         if self.faults is not None and self.faults.frame_lost():
             self.last_kp = []
+            self.cam_fx = {"lost": True}  # no frame: drop the previous frame's faults
             return
         self.est.last_frame_t = t
         prior = self.est.predicted_airframe_in_car()

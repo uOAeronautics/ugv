@@ -1,4 +1,5 @@
-"""FastAPI app for the Lab dashboard. Read-only over the repo; it never talks to the car.
+"""FastAPI app for the Lab dashboard. Read-only over the repo except the HDRI cache under
+`runs/cache/`; it never talks to the car.
 
 uv run ugv-lab            # http://127.0.0.1:8768
 """
@@ -6,6 +7,10 @@ uv run ugv-lab            # http://127.0.0.1:8768
 from __future__ import annotations
 
 import argparse
+import re
+import shutil
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -16,6 +21,9 @@ from pydantic import BaseModel
 from ugv.lab import data, sim
 
 STATIC = Path(__file__).resolve().parent / "static"
+HDRI_CACHE = Path(__file__).resolve().parents[3] / "runs" / "cache" / "hdri"
+HDRI_ID = re.compile(r"^[a-z0-9_]+$")
+HDRI_URL = "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/{id}_1k.hdr"
 
 
 class NewSession(BaseModel):
@@ -75,13 +83,34 @@ def create_app() -> FastAPI:
     def park_plan() -> dict:
         return {**data.plan(), "skeleton": sim.skeleton()}
 
+    @app.get("/api/park/hdri/{hid}.hdr")
+    def park_hdri(hid: str) -> FileResponse:
+        """Poly Haven's CC0 panoramas, fetched once and cached under runs/ (never committed)."""
+        if not HDRI_ID.match(hid):
+            raise HTTPException(404, "unknown HDRI")
+        path = HDRI_CACHE / f"{hid}_1k.hdr"
+        if not path.exists():
+            HDRI_CACHE.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp")
+            try:
+                with urllib.request.urlopen(HDRI_URL.format(id=hid), timeout=60) as r:
+                    with tmp.open("wb") as f:
+                        shutil.copyfileobj(r, f)
+                tmp.replace(path)
+            except (urllib.error.URLError, TimeoutError) as e:
+                tmp.unlink(missing_ok=True)
+                raise HTTPException(502, f"could not fetch {hid}: {e}") from e
+        return FileResponse(path, media_type="image/vnd.radiance")
+
     @app.post("/api/park/session")
     def park_session(n: NewSession) -> dict:
         if n.preset and n.preset not in sim.PRESETS:
             raise HTTPException(400, f"preset must be one of {sorted(sim.PRESETS)}")
-        if n.quality not in sim.QUALITY or n.env not in sim.ENVIRONMENTS:
+        if n.quality not in sim.QUALITY or (
+            n.env not in sim.ENVIRONMENTS and not n.env.startswith("hdri:")
+        ):
             raise HTTPException(
-                400, f"quality in {list(sim.QUALITY)}, env in {list(sim.ENVIRONMENTS)}"
+                400, f"quality in {list(sim.QUALITY)}, env in {list(sim.ENVIRONMENTS)} or hdri:<id>"
             )
         try:
             return sim.SESSIONS.create(n.seed, n.start, n.preset, n.quality, n.env)

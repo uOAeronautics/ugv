@@ -28,6 +28,7 @@ def main() -> None:
     ap.add_argument("--start", type=Path, help="params JSON to start from")
     ap.add_argument("--set", nargs="*", default=[], help="name=value overrides of the start")
     ap.add_argument("--faults", type=float, default=0.0, help="also score on faulty cars")
+    ap.add_argument("--floor", type=float, default=0.0, help="also score on slippery floors")
     ap.add_argument("--close", action="store_true", help="also score on close starts")
     args = ap.parse_args()
     start = load_params(args.start) if args.start else ParkParams()
@@ -37,6 +38,10 @@ def main() -> None:
     conds = [Conditions()]
     if args.faults:
         conds.append(Conditions(faults=args.faults))
+    if args.floor:
+        conds.append(Conditions(floor=args.floor))
+    if args.faults and args.floor:
+        conds.append(Conditions(faults=args.faults, floor=args.floor))
     if args.close:
         conds.append(Conditions(faults=args.faults, start="close"))
     search(

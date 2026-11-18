@@ -11,6 +11,7 @@ tree under `research/attempts/2026-11-17-track-3d-parking.md`.
 |---|---|---|
 | Bay, obstacles, target | `geometry.py` | the STRL-001 mesh: every surface point lower than the car (body 0.044 m, camera stand 0.084 m) is an obstacle; the target is the deepest pose between the main-gear axle and the nose wheel whose straight tail entry clears by the most (3.5 cm per side) |
 | Car | `plant.py` | measured gains, deadzones and onsets (`docs/L7_FIELD_NOTES.md`), duty cap 0.44; each episode draws a different car: gains ±25%, deadzones ±40%, lags ±50%, strafe-to-yaw slip, gyro vibration noise |
+| Floor | `plant.Floor` | traction: strafe and yaw authority lost to the surface, ground velocity lagging the body through turns, and grip that changes from patch to patch; a model, not a measurement |
 | Camera and detector | `perception.py` | the 12 skeleton keypoints projected through the car camera (1280x720, fx 968, 6.4 cm off the floor); 2 px noise, 10% misses, 3% gross outliers; per-episode focal (2%), mount yaw (1 deg) and pitch (1.5 deg) errors; 10 Hz, 0.1 s late |
 | Pose solver | `perception.solve` | 6-DoF PnP when 6+ points are seen, then a floor-constrained solve of x, y, yaw (and camera pitch with 6+ points); with 2-5 points, from the estimator's prior |
 | Estimator | `estimator.py` | the airframe as a static landmark in an odometry frame; gated fusion; odometry through the identified motor model and lag |
@@ -50,6 +51,47 @@ included). The challenge page drives the same faulty cars live, and named awkwar
 Attempts: `research/attempts/2026-11-18-park-*`. Magnitudes are guesses until measured on
 the car; the per-family sweep (`eval.py --families`) says which ones matter.
 
+## Floor traction
+
+`plant.Floor` is the surface, separate from the car's own faults. Severity `f` (0 clean, 1
+polished concrete or a wet bay) draws a grip loss of 5-40% on strafing and yaw, a ground
+velocity that lags the body by up to 0.5 s at walking speed (the car keeps sliding when it
+stops commanding), and a smooth grip field that varies by up to ±50% over about a metre. A
+clean floor integrates the commanded velocity exactly, so `floor=0` leaves every earlier
+result unchanged. The controller sees only the gyro and the camera; it has to learn the
+surface through its own motion.
+
+`eval.py --floor 1` scores the main run on the wet-floor draw; `--sweep` includes
+`slippery` and `slippery+faults`. The challenge exposes it through the environment selector:
+the lab is almost clean, the polished hangar is 0.55, the wet loading bay is 1.0, and a real
+Poly Haven panorama gets 0.25. With `config/park_params.json`, 300 episodes, seed 11:
+
+| Condition | Parked | Collisions |
+|---|---|---|
+| clean | 297/300 | 0 |
+| slippery | 285/300 | 5 |
+| faulty | 60/300 | 55 |
+| faulty + slippery | 55/300 | 51 |
+
+Traction is not the main fault cost: a bad car already collides often, and the floor adds
+little to that. Severity 1 is a stress test that can draw several fault families at once; it
+is not a typical car. Both numbers are simulation; the real floor is unmeasured.
+
+## Camera, faults and panoramas in the challenge
+
+The car camera is 1280×720 at fx 968, and the page draws exactly that sensor frame: the
+full-screen ride and the inset both render the same 16:9 rectangle with the same letterbox,
+the same exposure and motion blur at the same visual scale, and the same blocked region. A
+dropped frame paints the frame black and says NO SIGNAL instead of leaving the previous image
+up. The orbit view is an observer, not the sensor: it never receives the camera's faults.
+
+The environment selector has six procedural sets plus Poly Haven's 998 CC0 panoramas
+(indoor and outdoor, indexed in `src/ugv/lab/static/hdri.json`). The lab server fetches a
+1k `.hdr` on first use and caches it under `runs/cache/hdri/`, so the repository carries no
+panorama data. The panorama is both the background and the image-based light; the floor is a
+transparent shadow catcher, so no invented surface or texture covers the photograph, and the
+car and airframe still cast their shadows onto it.
+
 ## Results (seed 11, 1000 episodes, full noise)
 
 | Version | Parked | 95% CI | Collisions | Record |
@@ -57,11 +99,15 @@ the car; the per-family sweep (`eval.py --families`) says which ones matter.
 | v6, default parameters | 872/1000 | 85.0-89.1% | 15 | `runs/park_eval/default.json` |
 | v7 (3-5 point fixes update yaw), default parameters | 882/1000 | 86.1-90.1% | 7 | `runs/park_eval/v7-default.json` |
 | v7, parameters from search s1 | 899/1000 | 87.9-91.6% | 13 | `runs/park_eval/s1-best.json` |
-| **v7, parameters from search s2 (`config/park_params.json`)** | **909/1000** | **89.0-92.5%** | **7** | `runs/park_eval/s2-best.json` |
+| v7, search s2 parameters before the blind gate | 909/1000 | 89.0-92.5% | 7 | `runs/park_eval/s2-best.json` |
+| **v7, current config (s2 + blind gate)** | **979/1000** | **96.8-98.6%** | **1** | `runs/park_eval/s2-blind.json` |
 
-All four are the same 1000 episodes. Search s1 scored a collision like any other failure and
-bought success with collisions; s2 rejects any candidate that collides more than its parent and
-beats both. Use `--params config/park_params.json`.
+The first four are the same 1000 episodes. Search s1 scored a collision like any other failure
+and bought success with collisions; s2 rejects any candidate that collides more than its parent
+and beats both. The current config adds the blind gate that a later attempt recorded as kept
+(`research/attempts/2026-11-18-park-blind-config.md`); the 979 row is a fresh run on the current
+code and config, so it is not a paired comparison with the 909 row. Use
+`--params config/park_params.json`.
 
 Robustness sweep of v6 `default` (300 episodes each): ideal world 100%, detector noise only 99%,
 car spread only 95%, worse detector (4 px, 20% misses, 8% outliers) 77%, worse calibration
@@ -73,6 +119,7 @@ mostly final heading just over 5 deg; with a nominal car the 90th-percentile hea
 
 ```sh
 uv run python tools/park/eval.py --name <name> [--params <json>] --sweep --traces 16
+uv run python tools/park/eval.py --name wet --params config/park_params.json --floor 1
 uv run python tools/park/search.py --out runs/park_search/<name>     # failure-guided tuning
 uv run ugv-lab                                                       # dashboard, port 8768
 ```
