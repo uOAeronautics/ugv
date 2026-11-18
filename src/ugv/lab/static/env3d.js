@@ -137,6 +137,16 @@ export function buildEnv(name, airframe) {
       g.add(lamp);
     }
     out.floor = mat(0x5c6167, { roughness: 0.34, metalness: 0.18 });
+    // Cargo and floor markings give the bay a scale; empty grey reads as a void.
+    const crate = mat(0x8a6f4d), steel = mat(0x4b5055);
+    for (const [x, y, s, yaw] of [[2.4, -1.8, 0.9, 0.2], [-2.8, 2.4, 1.1, -0.3], [3.8, 2.8, 0.7, 0.8], [-3.6, -2.5, 0.65, 0.4]]) {
+      box(g, [x, y, 0], [s, s, s * 0.65], crate, yaw);
+      box(g, [x, y, s * 0.65], [s * 0.9, s * 0.9, s * 0.25], crate, yaw + 0.3);
+    }
+    for (const [x, y] of [[1.2, 3.6], [-1.6, -3.8]]) box(g, [x, y, 0], [1.4, 0.9, 0.12], steel, 0.1);
+    const rust = mat(0x8a4a2a, { metalness: 0.25, roughness: 0.6 });
+    for (const [x, y] of [[2.2, 0.9], [-2.4, 1.2], [1.7, -2.1], [-2.0, -1.7]]) cyl(g, [x, y, 0], 0.22, 0.85, rust);
+    box(g, [0, -2.8, 0.001], [9, 0.07, 0.003], mat(0xd8b22a), 0);
     out.bg = 0x62686e; out.fog = [6, 22]; out.light = 1.2;
   } else if (name === 'night') {
     out.light = 0.22; out.bg = 0x050506; out.fog = [2.5, 9];
