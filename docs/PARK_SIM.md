@@ -18,15 +18,19 @@ challenge shows cannot flatter the car:
    are applied to the pixels (isotropic kernel, as a simplification of directional streak),
    never as a CSS filter on the display.
 2. That exact 1280x720 frame is drawn for the human and sent, as mono bytes, to the server,
-   where the trained keypoint network reads it (`ugv.pose.detector`: `kp-v2` on the whole
-   frame, then `kp-crop-v2` on a crop around what it found; ONNX on the CPU). Nothing on this
-   path knows the true pose. Without `runs/pose_train/{kp-v2,kp-crop-v2}/model.onnx` the page
-   says so and the car gets no camera. How well it reads these frames:
-   `research/attempts/2026-11-24-pose-network-in-challenge-loop.md`.
-3. The network's keypoints (the 12-point skeleton; it has no near-field tyre points) go to PnP
-   with the nominal camera, exactly as the car would, and the estimator fuses them. A frame
-   that arrives while the previous one is still being read is dropped, as on the car.
-   `Keypoints x/12` and `Network ms` in the HUD come from this path.
+   where the trained keypoint network reads it (`ugv.pose.detector`: `kp-v3c` on the whole
+   frame, then `kp-crop-v3c` on a crop around what it found plus a tight nose-wheel refinement
+   crop when the main crop exceeds 400 px; ONNX on the CPU). Nothing on this path knows the true
+   pose. Without `runs/pose_train/{kp-v3c,kp-crop-v3c}/model.onnx` the page says so and the car
+   gets no camera. How well it reads these frames and parks:
+   `research/attempts/2026-11-24-pose-detector-v3c-rolling-pool.md` and
+   `research/attempts/2026-11-24-pose-detector-v3c-autopilot-gate.md`.
+3. The network's 15 keypoints (12 skeleton + 3 nose-tyre points) go to `perception.solve` with
+   the nominal camera, exactly as the car would, and the estimator fuses them (`solve_planar`
+   requires a horizontal 3D keypoint span >= 0.65 m before freeing yaw, holding yaw from the
+   gyro/prior on tight nose-wheel clusters). A frame that arrives while the previous one is still
+   being read is dropped, as on the car. `Keypoints` and `Network ms` in the HUD come from this
+   path.
 
 Still approximated, on purpose: frame drops are drawn browser-side from the round seed; motion
 blur is isotropic, not a directional streak; exposure spells layer on top of the fixed setting;
@@ -34,8 +38,6 @@ the render adds no sensor noise. The phantom family (a drone-looking impostor in
 fired in the challenge — the picture never contains an impostor. The batch simulator below
 still samples a detector model instead of running the network; under the no-stand-ins rule
 (`AGENTS.md`) its numbers are not reported or tuned against until it does.
-
-## What is modelled, and from where
 
 ## What is modelled, and from where
 

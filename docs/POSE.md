@@ -15,9 +15,11 @@ Live work and its order: `uv run python tools/research/ledger.py roadmap`.
 - **Output the parking needs**: the airframe's position and heading in the car frame (x, y,
   yaw on the floor) at 10 Hz or more, with an error budget set by the bay: about 2 cm and 2 deg
   in the last 0.4 m (`docs/PARKING.md`), looser further out.
-- **Skeleton**: 12 named keypoints from mesh extremes (`src/ugv/pose/mesh.py`): nose, tail,
-  wingtips, three rotor hubs, two V-tail tips, nose wheel, two main wheels. The wheels sit on
-  the floor, which adds the ground-plane constraint (z = 0 at the contacts) for free.
+- **Skeleton**: 15 named keypoints from mesh extremes (`src/ugv/pose/mesh.py`, `keypoints(..., near=True)`):
+  12 airframe points (nose, tail, wingtips, three rotor hubs, two V-tail tips, nose wheel, two main
+  wheels) plus 3 near-field nose-tyre points (`tyre_left`, `tyre_right`, `tyre_top`, indices 12-14)
+  that stay in view inside the bay when the rest of the airframe is cut off. The wheels sit on the
+  floor, which adds the ground-plane constraint (z = 0 at the contacts) for free.
 
 ## How model-based pose estimation works, and what we use
 
@@ -37,30 +39,48 @@ Two facts of this task make it easier still, and the code uses both
 (`src/ugv/park/perception.py`):
 
 1. **Both bodies stand on the floor.** The relative pose has 3 unknowns (x, y, yaw), not 6.
-   Two keypoints already fix x and y; three fix yaw. That is why the car keeps measuring deep
-   into the bay where only the nose and nose wheel are in view.
-2. **The camera mount is constant.** Its pitch is solved as a 4th unknown whenever 6+ points
-   are visible and then held, so the car calibrates its own mount as it drives.
+   Two keypoints already fix x and y; three or more spanning at least 0.65 m horizontally fix yaw
+   (on a tight cluster such as the 5 cm nose wheel plus at most one hub, yaw stays at the
+   gyro/prior). That is why the car keeps measuring deep into the bay where only the nose wheel
+   and tyre points are in view.
+2. **The camera mount is constant.** Its pitch is solved as a 4th unknown whenever 6+ well-spanned
+   points are visible and then held, so the car calibrates its own mount as it drives.
 
 ### Robustness: size, lighting, background, "fake but realistic", angles
 
 | Threat | Training-side answer | Run-time answer |
 |---|---|---|
-| Size (distance) | sample 0.4-4 m; heatmaps at stride 4 with soft-argmax for sub-pixel points | two-stage crop-and-zoom when the airframe is small; the planar solve needs only 2-3 points up close |
+| Size (distance) | log-uniform 0.25-3.5 m plus 20% bay-range views; heatmaps at stride 4 with soft-argmax and spatial per-keypoint visibility | two-stage crop-and-zoom plus a tight 256x256 nose-wheel refinement crop when the main crop exceeds 400 px |
 | Lighting | random light direction and gain, gamma, blur, sensor noise | auto-exposure off, fixed shutter (4 ms worked on the car) |
-| Background | composite the render over **real car-camera frames** of the lab (9,045 in `calibration/runs`) and noise fields | the RANSAC / residual gate in the solver rejects stray points |
-| Texture of the real airframe | random procedural textures, plain paint and the fixed texture | the detector learns shape, not paint |
-| Synthetic-to-real gap | domain randomisation (`tools/pose/make_dataset.py`), then fine-tune on real frames labelled by the tags | evaluate only on the real set |
-| Viewing angle | 60% car-height views, 40% anywhere on the sphere | the orbit keeps the airframe in view from the side and the tail |
+| Background | composite the render over **real car-camera frames** of the lab (9,045 in `calibration/runs`), noise fields and flat-shaded rooms | the residual gate in the solver rejects stray points |
+| Texture of the real airframe | random procedural textures, plain paint and the fixed texture (per-part rotor/tyre contrast planned for v4) | the detector learns shape, not paint |
+| Synthetic-to-real gap | domain randomisation (`ugv.pose.dataset.RollingPool`), then fine-tune on real frames labelled by the tags | evaluate only on held-out / real sets (`research/decisions/2026-11-24-offline-pose-eval-and-reliability-gate.md`) |
+| Viewing angle | 55% level car-camera views (including empty away-facing views), 20% bay run-in, 25% sphere/low aimed | the orbit keeps the airframe in view from the side and the tail |
 
-A large synthetic set is cheap (24k views render in a few minutes on 16 cores) and is what the
-detector trains on; the decisive data is small and real: the 50-100 frame evaluation set and,
-later, a few thousand real frames labelled for free by the tags during ordinary drives.
+Training uses a rolling generated pool (`train/pose_kp.py --pool`, `ugv.pose.dataset.RollingPool`,
+~95k unique generated views per run against fixed `val-v3` / `val-crop-v3`) rather than a fixed
+24k dataset on disk. The decisive data remains small and real: the 50-100 frame evaluation set
+(`2026-11-17-real-pose-eval-set`) and, later, real frames labelled by the tags during drives.
+
+### Current detector state (2026-11-24, training paused)
+
+- **Active default**: `runs/pose_train/{kp-v3c,kp-crop-v3c}` (`DEFAULT` in `src/ugv/pose/detector.py`);
+  older checkpoints (`v1`, `v2`, `v3a`, `v3b`) and fixed 24k sets are removed from `runs/` with
+  their results and failure modes preserved in `research/attempts/`.
+- **Measured on frozen held-out Challenge sets** (`2026-11-24-pose-detector-v3c-rolling-pool`,
+  `2026-11-24-pose-detector-v3c-autopilot-gate`): healthy `v3h` (1,261 frames) precision 0.888,
+  median 4.5 px, 6+ correct on 56.1% of under-1m frames (68.6% with 6+ in view), 0.11 false
+  pts/empty; bad-sensor `v3a` (2,683 frames) under-1m with 6+ in view 53.7%; `diag1` (12-pt)
+  0.02 false pts/empty, precision 0.881, cut-off 7.4%.
+- **Next handoff** (training paused until offline gates exist):
+  `research/tasks/2026-11-24-pose-detector-v4-reliability.md` and
+  `research/decisions/2026-11-24-offline-pose-eval-and-reliability-gate.md`.
 
 ### Execution on a Raspberry Pi 4
 
-The trained detector (`train/pose_kp.py`) is MobileNetV3-small with a light heatmap head:
-1.18 M parameters, 320x180 mono input, **10.5 ms on one desktop CPU thread** with ONNX Runtime.
+The trained detector (`train/pose_kp.py`) is MobileNetV3-small with a stride-4 heatmap head and
+per-keypoint attention-pooled visibility: 1.22 M parameters, 320x180 mono stage 1 + 256x256
+stage 2, **~8.9 ms + ~9.5 ms on one desktop CPU thread** with ONNX Runtime.
 A Pi 4's Cortex-A72 is several times slower: expect roughly 40-80 ms per frame (int8
 quantisation roughly halves it). Measuring this on the Pi is a task. That is fast enough
 because the estimator fuses fixes at whatever rate arrives (the simulator assumes 10 Hz with
