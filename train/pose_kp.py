@@ -55,9 +55,14 @@ class KeypointNet(nn.Module):
             nn.ConvTranspose2d(96, 64, 4, stride=2, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, nk, 1),
         )
-        self.vis = nn.Linear(576, nk)
+        self.hm_out = nn.Conv2d(64, nk, 1)
+        self.glob_vis = nn.Linear(576, 64)
+        self.vis_head = nn.Sequential(
+            nn.Linear(64 + 64 + 1, 64),
+            nn.ReLU(inplace=True),
+            nn.Linear(64, 1),
+        )
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """x: (B, 1, H, W) in [0, 1]. Returns keypoints (B, nk, 2) in input pixels, visibility
@@ -73,14 +78,19 @@ class KeypointNet(nn.Module):
         p = F.interpolate(p, size=s8.shape[-2:], mode="bilinear", align_corners=False) + self.lat8(
             s8
         )
-        hm = self.head(p)
+        feat = self.head(p)
+        hm = self.hm_out(feat)
         b, k, h, w = hm.shape
-        prob = F.softmax(hm.flatten(2) * 1.0, dim=-1).view(b, k, h, w)
+        prob_flat = F.softmax(hm.flatten(2) * 1.0, dim=-1)
+        prob = prob_flat.view(b, k, h, w)
         xs = (torch.arange(w, device=x.device, dtype=prob.dtype) + 0.5) * (x.shape[-1] / w)
         ys = (torch.arange(h, device=x.device, dtype=prob.dtype) + 0.5) * (x.shape[-2] / h)
         kx = (prob.sum(2) * xs).sum(-1)
         ky = (prob.sum(3) * ys).sum(-1)
-        vis = self.vis(s32.mean((2, 3)))
+        local = torch.bmm(prob_flat, feat.flatten(2).transpose(1, 2))
+        peak = hm.flatten(2).max(dim=-1, keepdim=True).values
+        glob = self.glob_vis(s32.mean((2, 3))).unsqueeze(1).expand(-1, k, -1)
+        vis = self.vis_head(torch.cat([local, glob, peak], dim=-1)).squeeze(-1)
         return torch.stack([kx, ky], -1), vis, hm
 
 

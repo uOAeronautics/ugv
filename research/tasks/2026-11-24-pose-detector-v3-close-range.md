@@ -3,13 +3,14 @@ id: 2026-11-24-pose-detector-v3-close-range
 date: 2026-11-24
 author: fer-claude
 owner: fer-claude
-state: claimed
+state: done
 updated: 2026-11-24
 due: none
 after: []
 check: none
 refs: [research/attempts/2026-11-24-pose-network-in-challenge-loop.md, research/tasks/2026-11-18-pose-near-field-keypoints.md]
 tags: [pose, detector, challenge, learning]
+result: [2026-11-24-pose-detector-v3c-autopilot-gate]
 ---
 
 ## Goal
@@ -61,3 +62,4 @@ starts in a real browser, each with an attempt record and run ids.
 
 ## Log
 - 2026-11-24 fer-claude: claim
+- 2026-11-24 fer-claude: done

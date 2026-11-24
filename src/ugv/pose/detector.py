@@ -6,9 +6,10 @@ Two stages, as trained (`train/pose_kp.py`, `tools/pose/make_dataset.py`):
 2. a square crop around what stage 1 found (1.35x its keypoint extent, 64-1400 px, reflected at
    the image edges like the training crops) goes to the crop model (256x256) for precise points.
 
-Both models output the 12 skeleton keypoints (`ugv.pose.mesh.keypoints` order) in input pixels
-and a visibility logit each. A point is reported when its visibility probability exceeds
-`threshold`; its pixel is mapped back to the full frame. Nothing here knows the true pose.
+Both models output the 15 keypoints (`ugv.pose.mesh.keypoints(..., near=True)` order: 12 skeleton
+plus 3 nose-tyre points) in input pixels and a visibility logit each. A point is reported when its
+visibility probability exceeds `threshold`; its pixel is mapped back to the full frame. Nothing
+here knows the true pose.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ CROP_MARGIN = 1.35  # middle of the 1.1-1.6x the crop model was trained on
 CROP_MIN, CROP_MAX = 64.0, 1400.0
 REPO = Path(__file__).resolve().parents[3]
 TRAIN_DIR = REPO / "runs/pose_train"
-DEFAULT = ("kp-v2", "kp-crop-v2")  # (whole frame, crop) run names
+DEFAULT = ("kp-v3c", "kp-crop-v3c")  # (whole frame, crop) run names
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,30 @@ class KeypointDetector:
             & (kp[:, 1] >= 0)
             & (kp[:, 1] <= H)
         )
+        # When the main crop is wide (> 400 px), the 5 cm nose wheel is tiny inside the 256x256
+        # patch; a tight crop around its detected points (indices 9, 12-14) sharpens bay-range
+        # localization from ~7 px to ~3 px.
+        if self.crop is not None and box is not None and box[2] > 400.0 and len(kp) >= 15:
+            nose_ids = [i for i in (9, 12, 13, 14) if keep[i]]
+            if len(nose_ids) >= 2:
+                npts = kp[nose_ids]
+                nlo, nhi = npts.min(0), npts.max(0)
+                nsize = float(np.clip(max(nhi - nlo) * 2.5, 96.0, 320.0))
+                nx0, ny0 = (nlo + nhi) / 2 - nsize / 2
+                ns = self.crop.w / nsize
+                nM = np.array([[ns, 0, -nx0 * ns], [0, ns, -ny0 * ns]])
+                npatch = cv2.warpAffine(
+                    frame,
+                    nM,
+                    (self.crop.w, self.crop.h),
+                    flags=cv2.INTER_AREA,
+                    borderMode=cv2.BORDER_REFLECT,
+                )
+                nkp, nprob = self.crop(npatch)
+                nkp = nkp / ns + [nx0, ny0]
+                for i in (9, 12, 13, 14):
+                    if nprob[i] > self.threshold and 0 <= nkp[i, 0] <= W and 0 <= nkp[i, 1] <= H:
+                        kp[i], prob[i], keep[i] = nkp[i], nprob[i], True
         pts = [
             [int(i), round(float(kp[i, 0]), 1), round(float(kp[i, 1]), 1)]
             for i in np.flatnonzero(keep)

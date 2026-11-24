@@ -132,7 +132,7 @@ def sample_car_level_pose(
     rng: np.random.Generator, spec: CarLevelSpec
 ) -> tuple[np.ndarray, np.ndarray, bool]:
     """Returns (R, t, away): model -> camera, and whether the car faces away from the airframe."""
-    d = rng.uniform(*spec.distance_m)
+    d = float(np.exp(rng.uniform(np.log(spec.distance_m[0]), np.log(spec.distance_m[1]))))
     az = rng.uniform(-np.pi, np.pi)
     eye = np.array([d * np.cos(az), d * np.sin(az), spec.floor_z + spec.cam_z_m])
     u = rng.random()
