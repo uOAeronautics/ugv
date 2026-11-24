@@ -179,9 +179,10 @@ function bind(main) {
         <div><span>Speed</span><b>${v.toFixed(2)}<small>m/s</small></b></div>
         <div><span>To bay</span><b>${dist == null ? '—' : (dist * 100).toFixed(dist < 0.1 ? 1 : 0)}<small>cm</small></b></div>
         <div><span>Heading off</span><b>${e ? deg(e[2]) : '—'}<small>°</small></b></div>
-        <div><span>Keypoints</span><b>${snap?.kp?.length ?? 0}<small>/15</small></b></div>
+        <div><span>Keypoints</span><b>${snap?.kp?.length ?? 0}<small>/12</small></b></div>
         <div><span>Pose fix</span><b class="${snap?.fix ? 'fix' : 'nofix'}">${snap?.fix ? 'Yes' : est ? 'Old' : 'No'}</b></div>
         <div><span>Camera</span><b class="${camLost ? 'nofix' : 'fix'}">${camLost ? 'Lost' : 'Live'}</b></div>
+        <div title="Trained keypoint network (runs/pose_train kp-v1 then kp-crop-v1), server CPU"><span>Network</span><b>${snap?.cam_fx?.ms != null ? Math.round(snap.cam_fx.ms) : '—'}<small>ms</small></b></div>
         ${truth ? `<div class="truth"><span>True error</span><b>${cm(eTrue[0])} / ${cm(eTrue[1])}<small>cm</small> ${deg(eTrue[2])}<small>°</small></b><ul class="faults">${faultList(faults)}${snap?.floor && snap.floor[1] > 0.05 ? `<li>floor grip ${snap.floor[0].toFixed(2)} · skid ${snap.floor[1].toFixed(2)} · patchy ${snap.floor[2].toFixed(2)}</li>` : ''}</ul></div>` : ''}
         <div class="sub"><span>${auto ? 'Tuned controller' : input.fine() ? 'Fine control' : 'Full control'}</span><span>${rounds.filter((x) => x.ok).length}/${rounds.length} parked by you</span></div>`;
     },

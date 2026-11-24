@@ -13,7 +13,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+import numpy as np
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -23,6 +25,7 @@ from ugv.lab import data, sim
 STATIC = Path(__file__).resolve().parent / "static"
 HDRI_CACHE = Path(__file__).resolve().parents[3] / "runs" / "cache" / "hdri"
 HDRI_V2_CACHE = Path(__file__).resolve().parents[3] / "runs" / "cache" / "hdri_v2"
+FRAME_BYTES = 1280 * 720
 HDRI_ID = re.compile(r"^[a-z0-9_-]+$")
 HDRI_URL = "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/{id}_1k.hdr"
 
@@ -44,12 +47,6 @@ class Step(BaseModel):
 
 class Exposure(BaseModel):
     stops: float  # fixed stops over correct exposure; 0 = auto
-
-
-class CameraFrame(BaseModel):
-    detections: list[list[float]] | None = None  # [[keypoint index, u, v], ...] or None when lost
-    lost: bool = False
-    fx: dict | None = None  # how the browser rendered it (exposure, blur, ...), for the HUD
 
 
 def create_app() -> FastAPI:
@@ -164,28 +161,27 @@ def create_app() -> FastAPI:
         except KeyError as e:
             raise HTTPException(404, "session expired; start a new round") from e
 
-    @app.post("/api/park/session/{sid}/camera")
-    def park_camera(sid: str, c: CameraFrame) -> dict:
-        """One camera frame measured from the actual rendered pixels; the estimator fuses it."""
-        if c.detections is not None:
-            if len(c.detections) > 15:
-                raise HTTPException(400, "at most 15 keypoints")
-            for d in c.detections:
-                if len(d) != 3:
-                    raise HTTPException(400, "each detection is [keypoint_index, u, v]")
-                i, u, v = d
-                if (
-                    int(i) != i
-                    or not 0 <= int(i) < 15
-                    or not 0.0 <= u <= 1280
-                    or not 0.0 <= v <= 720
-                ):
-                    raise HTTPException(400, f"bad keypoint index {i} or pixel ({u}, {v})")
-            c.detections = [[int(d[0]), float(d[1]), float(d[2])] for d in c.detections]
+    @app.post("/api/park/session/{sid}/frame")
+    async def park_frame(
+        sid: str, request: Request, lost: bool = False, exposure: float = 0.0
+    ) -> dict:
+        """One car-camera frame as rendered by the browser: 1280x720 mono bytes, row-major. The
+        trained keypoint detector reads it and the estimator fuses what it finds, as on the car.
+        `lost` marks a frame that never arrived (no pixels)."""
+        fx = {"exposure": exposure}
+        if lost:
+            frame = None
+        else:
+            body = await request.body()
+            if len(body) != FRAME_BYTES:
+                raise HTTPException(400, f"a frame is {FRAME_BYTES} bytes (1280x720 mono)")
+            frame = np.frombuffer(body, np.uint8).reshape(720, 1280)
         try:
-            return sim.SESSIONS.camera_frame(sid, c.detections, c.lost, c.fx)
+            return await run_in_threadpool(sim.SESSIONS.camera_image, sid, frame, fx)
         except KeyError as e:
             raise HTTPException(404, "session expired; start a new round") from e
+        except FileNotFoundError as e:
+            raise HTTPException(503, f"keypoint detector not available: {e}") from e
 
     @app.get("/api/pose/mesh")
     def pose_mesh() -> list:

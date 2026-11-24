@@ -7,7 +7,7 @@ import { makeInput } from './drive.js';
 import { hud, START_NAME } from './hud.js';
 import { makeOrbit } from './orbit.js';
 import { makeWorld, P } from './scene3d.js';
-import { makeDetector } from './camdetect.js';
+import { makeSensor } from './sensor.js';
 import { drawWorld, loadPlan, makeView } from './world2d.js';
 
 const W0 = 1280, H0 = 720, F0 = 968, TICK = 20;
@@ -85,7 +85,7 @@ export async function render(main) {
     cal = { f0: F0, focalScale: cs.mount.focal_scale, cx: F0ImageCenter + cs.fx.cx_px, cy: H0ImageCenter + cs.fx.cy_px, k1: cs.fx.k1, k2: cs.fx.k2, camX: bay.car.camera_x, camZ: bay.car.camera_z };
     mountBase = { yaw: cs.mount.yaw, pitch: cs.mount.pitch };
     occluderLocal = cs.occluder || null;
-    detector = makeDetector({ seed: sess.seed, sim: cs, cal, points: plan.skeleton.points });
+    detector = makeSensor({ seed: sess.seed, sim: cs });
     fxLocal = null; detsLocal = []; lastCam = 0;
     snap = prev = sess;
     auto = false; started = false; done = null; paths = { est: [], true: [] };
@@ -214,6 +214,22 @@ export async function render(main) {
     for (const [, u, v] of kp || []) { g.fillRect(X(u) - s, Y(v) - s, 2 * s, 2 * s); g.strokeRect(X(u) - s - 0.5, Y(v) - s - 0.5, 2 * s + 1, 2 * s + 1); }
   };
 
+  // --- camera frames to the keypoint detector (ugv.pose.detector), one in flight
+  let camBusy = false;
+  const sendFrame = async (sid, pixels, exp) => {
+    camBusy = true;
+    try {
+      const r = await fetch(`/api/park/session/${sid}/frame?exposure=${exp}${pixels ? '' : '&lost=true'}`, {
+        method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: pixels || new Uint8Array(0),
+      });
+      if (r.status === 503) { H.flash((await r.json()).detail); return; }
+      if (!r.ok || !sess || sess.id !== sid) return;
+      const out = await r.json();
+      detsLocal = out.det?.points || [];
+      if (typeof out.t === 'number') snap = { ...snap, ...out };
+    } catch { /* the next frame retries */ } finally { camBusy = false; }
+  };
+
   // --- loop
   let last = 0;
   const frame = (now) => {
@@ -247,21 +263,15 @@ export async function render(main) {
     const exposureDraw = fxLocal ? fxLocal.exposure : exposure;
     const sensor = { f0: cal?.f0 ?? F0, focalScale: cal?.focalScale ?? 1, cx: cal?.cx ?? F0ImageCenter, cy: cal?.cy ?? H0ImageCenter, k1: cal?.k1 ?? 0, k2: cal?.k2 ?? 0, res: [W0, H0], exposure: exposureDraw, blurPx: fxLocal?.blurPx ?? 0 };
     W.render(fpv, !fpv, fpv ? rect : null, pipRect, sensor);
-    // the detector reads the exact pixels we just drew, and posts them
+    // the exact pixels we just drew go to the trained detector on the server; while it is busy
+    // with the previous frame, this one is dropped, as on the car
     if (camDue) {
       lastCam = now;
       if (fxLocal.lost) {
         detsLocal = [];
-        snap.kp = [];
-        snap.cam_fx = { lost: true };
-        api(`/api/park/session/${sess.id}/camera`, { body: { detections: [], lost: true, fx: { exposure: exposureDraw } } }).catch(() => {});
-      } else {
-        detsLocal = detector.detect(fpv ? mainImg : pipImg, fpv ? rect : pipRect, fxLocal, q);
-        snap.kp = detsLocal;
-        snap.cam_fx = { exposure: exposureDraw, blur: 0 };
-        api(`/api/park/session/${sess.id}/camera`, { body: { detections: detsLocal, fx: snap.cam_fx } })
-          .then((r) => { if (r && typeof r.t === 'number') snap = { ...snap, ...r }; })
-          .catch(() => {});
+        sendFrame(sess.id, null, exposureDraw);
+      } else if (!camBusy) {
+        sendFrame(sess.id, detector.capture(fpv ? mainImg : pipImg, fpv ? rect : pipRect), exposureDraw);
       }
     }
     const lost = !!fxLocal?.lost;

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from ugv.lab import sim
 from ugv.lab.server import create_app
 from ugv.park.geometry import bay
+from ugv.pose.detector import DEFAULT_RUNS
 
 
 def test_presets_are_clear_of_the_airframe():
@@ -103,24 +104,11 @@ def test_api():
     assert c.post(f"/api/park/session/{live['id']}/exposure", json={"stops": 9}).status_code == 400
     assert c.post("/api/park/session/nope/exposure", json={"stops": 1}).status_code == 404
     assert c.post(f"/api/park/session/{live['id']}/exposure", json={"stops": 2}).status_code == 200
-    assert (
-        c.post(
-            f"/api/park/session/{live['id']}/camera", json={"detections": [[0, 1e9, 10]]}
-        ).status_code
-        == 400
-    )
-    assert (
-        c.post(
-            f"/api/park/session/{live['id']}/camera", json={"detections": [[15, 640, 360]]}
-        ).status_code
-        == 400
-    )
-    assert c.post("/api/park/session/nope/camera", json={"lost": True}).status_code == 404
-    good = c.post(
-        f"/api/park/session/{live['id']}/camera",
-        json={"detections": [[0, 640, 360], [1, 700, 360]], "fx": {"exposure": 2.0}},
-    ).json()
-    assert good["kp"][0][0] == 0 and good["cam_fx"]["exposure"] == 2.0
+    frame = f"/api/park/session/{live['id']}/frame"
+    assert c.post(frame, content=b"\0" * 100).status_code == 400  # not a 1280x720 mono frame
+    assert c.post("/api/park/session/nope/frame?lost=true").status_code == 404
+    lost = c.post(f"{frame}?lost=true&exposure=2").json()
+    assert lost["kp"] == [] and lost["cam_fx"]["lost"]
     r = c.post("/api/park/session", json={"seed": 1, "preset": "nose-on"}).json()
     step = c.post(f"/api/park/session/{r['id']}/step", json={"ticks": 5, "auto": True})
     assert step.status_code == 200 and {"car", "est", "state", "kp"} <= set(step.json())
@@ -133,3 +121,19 @@ def test_api():
     )
     assert c.get("/static/app.js").headers["cache-control"] == "no-cache"
     assert c.get("/runs/../pyproject.toml").status_code == 404
+
+
+@pytest.mark.skipif(
+    not all((p / "model.onnx").exists() for p in DEFAULT_RUNS),
+    reason="trained detector not on this machine (runs/pose_train, not in Git)",
+)
+def test_frames_go_through_the_trained_detector():
+    """A rendered frame is read by the network, never by anything that knows the pose."""
+    c = TestClient(create_app())
+    live = c.post("/api/park/session", json={"seed": 3, "preset": "tail"}).json()
+    out = c.post(
+        f"/api/park/session/{live['id']}/frame", content=np.zeros(1280 * 720, np.uint8).tobytes()
+    )
+    assert out.status_code == 200
+    det = out.json()["det"]
+    assert det["ms"] > 0 and all(0 <= int(i) < 12 for i, _, _ in det["points"])

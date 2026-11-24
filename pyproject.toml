@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.116",
+    "onnxruntime>=1.20",
     "opencv-contrib-python-headless>=4.13",
     "pyserial>=3.5",
     "rpi-ws281x>=5.0; sys_platform == 'linux'",

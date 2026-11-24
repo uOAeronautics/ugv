@@ -17,22 +17,22 @@ challenge shows cannot flatter the car:
    saturation) → mono luma gained in stops → 8-bit quantization. Lens defocus and motion blur
    are applied to the pixels (isotropic kernel, as a simplification of directional streak),
    never as a CSS filter on the display.
-2. That exact 1280x720 frame is drawn for the human and analysed for the machine: the 15
-   keypoints (the 12-point skeleton plus the 3 near-field nose-tyre points) are projected
-   with the same intrinsics; each keypoint's patch is measured (saturation, crush, local
-   contrast); detection is decided from those pixels with a noise model — never from the true
-   pose. A blown frame reads as blind, a black occluder is invisible, untextured white-on-white
-   struggles.
-3. The detections (not the pose) are posted to the server; it solves PnP on them with the
-   nominal camera, exactly as the car would, and the existing estimator fuses them. The
-   server samples nothing. `KEYPOINTS x/15` in the HUD is the count through this path.
+2. That exact 1280x720 frame is drawn for the human and sent, as mono bytes, to the server,
+   where the trained keypoint network reads it (`ugv.pose.detector`: `kp-v1` on the whole
+   frame, then `kp-crop-v1` on a crop around what it found; ONNX on the CPU). Nothing on this
+   path knows the true pose. Without `runs/pose_train/{kp-v1,kp-crop-v1}/model.onnx` the page
+   says so and the car gets no camera.
+3. The network's keypoints (the 12-point skeleton; it has no near-field tyre points) go to PnP
+   with the nominal camera, exactly as the car would, and the estimator fuses them. A frame
+   that arrives while the previous one is still being read is dropped, as on the car.
+   `Keypoints x/12` and `Network ms` in the HUD come from this path.
 
-Still approximated, on purpose: occlusion by other body parts is not depth-tested (a keypoint
-hidden behind the nose gear stays detectable); frame drops are drawn browser-side from the
-round seed; motion blur is isotropic, not a directional streak; exposure spells layer on top
-of the fixed setting. The phantom family (a drone-looking impostor in view) is not fired in
-the challenge — the picture never contains an impostor to detect. The batch surrogate remains
-for robustness statistics, not evidence.
+Still approximated, on purpose: frame drops are drawn browser-side from the round seed; motion
+blur is isotropic, not a directional streak; exposure spells layer on top of the fixed setting;
+the render adds no sensor noise. The phantom family (a drone-looking impostor in view) is not
+fired in the challenge — the picture never contains an impostor. The batch simulator below
+still samples a detector model instead of running the network; under the no-stand-ins rule
+(`AGENTS.md`) its numbers are not reported or tuned against until it does.
 
 ## What is modelled, and from where
 

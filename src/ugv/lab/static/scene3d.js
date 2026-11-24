@@ -499,7 +499,9 @@ export async function makeWorld(canvas, pipCanvas, bay, skeleton) {
       if (key === sized) return;
       sized = key;
       renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-      if (pw) pip.setSize(pw, ph, false);
+      // the car camera renders at the real sensor's 1280 px width whatever the inset's size: the
+      // keypoint detector reads these pixels
+      if (pw) { pip.setPixelRatio(1280 / pw); pip.setSize(pw, ph, false); }
     },
     /**
      * Main view from `cam` (car shown unless `fpv`), and the car camera into the inset.

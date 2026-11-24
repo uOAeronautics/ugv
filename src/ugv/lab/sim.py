@@ -188,6 +188,17 @@ class Sessions:
             ep.add_camera_frame(detections, fx, lost)
         return snapshot(ep)
 
+    def camera_image(self, sid: str, frame: np.ndarray | None, fx: dict) -> dict:
+        """One rendered camera frame (720x1280 mono) through the trained keypoint detector, then
+        the estimator; `None` is a frame that never arrived. The detector reads pixels only."""
+        if sid not in self._s:
+            raise KeyError(sid)
+        if frame is None:
+            return self.camera_frame(sid, None, True, None)
+        det = detector()(frame)
+        out = self.camera_frame(sid, det.points, False, fx | {"ms": det.ms})
+        return out | {"det": {"points": det.points, "box": det.box, "ms": det.ms}}
+
     def step(self, sid: str, ticks: int, duty: list[float] | None, auto: bool) -> dict:
         with self._lock:
             if sid not in self._s:
@@ -223,6 +234,15 @@ def snapshot(ep: Episode) -> dict:
         res = ep.result()
         out |= {"result": res.outcome, "final_error": res.final_error}
     return out
+
+
+@cache
+def detector():
+    """The trained two-stage keypoint detector (runs/pose_train, ONNX). Raises
+    FileNotFoundError when the model files are not on this machine; a failure is not cached."""
+    from ugv.pose.detector import load_default
+
+    return load_default()
 
 
 @cache

@@ -87,6 +87,14 @@ one place and link to it from the others.
 
 ## Evidence rules
 
+- **No fabricated stand-ins, ever.** Never put a made-up component in place of a real one in
+  anything that is run, shown, trained, tuned or evaluated: no "detector" built from the true
+  pose plus noise, no sampled noise posing as a measurement, no invented or placeholder numbers.
+  A disclaimer does not make it acceptable. If the real component is missing, fail visibly and
+  say what is missing. Renders of the real 3D model used as training data are the method, not a
+  stand-in. The batch parking simulator's sampled `DetectorModel` (`ugv.park.perception`, the
+  Park page numbers) predates this rule: do not tune or report against it until it runs the
+  trained network.
 - Synthetic pose numbers debug the pipeline; only the real evaluation set
   (`research/tasks/2026-11-17-real-pose-eval-set.md`) is evidence about the method.
 - Simulation success is not hardware success. Before trusting a controller on the car, measure
