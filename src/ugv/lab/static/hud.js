@@ -31,13 +31,13 @@ function markup(hdri = []) {
   <div class="stage" id="ch-stage">
     <canvas id="ch-3d"></canvas><canvas id="ch-ov"></canvas>
     <div class="plate tl">
-      <div class="hud-mode" id="ch-mode">MANUAL</div>
+      <div class="hud-mode" id="ch-mode">Manual</div>
       <div class="fsm" id="ch-fsm">${['MANUAL', ...STATES].map((s) => `<span data-s="${s}" style="--c:${STATE_COLOR[s] || 'var(--ink)'}">${s}</span>`).join('')}</div>
       <div class="hud-flash" id="ch-flash"></div>
     </div>
     <div class="plate tr tele" id="ch-tele"></div>
     <div class="plate bl mini" title="Click to place the car, drag to aim it"><canvas id="ch-map"></canvas><div class="mini-k">What the car believes · click to place</div></div>
-    <div class="plate br pip" id="ch-pip-box"><canvas id="ch-pip"></canvas><canvas id="ch-pip-ov"></canvas><div class="mini-k">Car camera · 1280×720 · mono · 10 Hz</div></div>
+    <div class="plate br pip" id="ch-pip-box"><canvas id="ch-pip"></canvas><canvas id="ch-pip-ov"></canvas><div class="mini-k">Car camera · 10 Hz</div></div>
     <div class="dock">
       <div class="envpick">
         <button type="button" id="ch-env" class="envbtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Environment"><span id="ch-env-label">Lab room</span><i></i></button>
@@ -45,7 +45,7 @@ function markup(hdri = []) {
           <div class="envmenu-head"><span>Environment</span><kbd>ESC</kbd></div>
           <input id="ch-env-q" type="search" placeholder="Search ${hdri.length} panoramas" autocomplete="off" aria-label="Search environments">
           <div class="envlist" id="ch-env-list" role="listbox" aria-label="Environments">${envMenu(hdri)}</div>
-          <div class="envmenu-foot">Real panoramas: Poly Haven · CC0</div>
+          <div class="envmenu-foot">Real panoramas: OpenHDRI, ambientCG, Poly Haven · CC0</div>
         </div>
       </div>
       <select id="ch-quality" aria-label="Sensors">${Object.entries(QUALITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
@@ -153,15 +153,15 @@ function bind(main) {
       if (!kind) return;
       if (kind === 'ready') {
         banner.innerHTML = `<div><div class="b-k">${esc(info.start)} · round ${info.seed}</div><div class="b-v">Park under the belly</div>
-          <p>Enter from the tail, between the main gear and the nose wheel; 3.5 cm to spare per side. Every round is a different car with its own faults.</p>
-          <div class="row" style="justify-content:center;margin-top:18px"><span class="prov w-hint"><kbd>W</kbd> to drive</span><button type="button" class="drive-btn" data-act="drive">Drive</button><button type="button" class="go" data-act="auto">Autopilot from here</button></div></div>`;
+          <p>Enter from the tail · 3.5 cm to spare per side · new faults every round</p>
+          <div class="row" style="justify-content:center;margin-top:16px"><span class="prov w-hint"><kbd>W</kbd> drive · <kbd>Space</kbd> parked · drag to look</span><button type="button" class="drive-btn" data-act="drive">Drive</button><button type="button" class="go" data-act="auto">Autopilot from here</button></div></div>`;
         return;
       }
       const ok = kind === 'parked';
       banner.innerHTML = `<div><div class="b-k">${esc(info.who)} · ${info.t.toFixed(1)} s</div><div class="b-v" style="color:var(--${ok ? 'good' : 'bad'})">${esc(ok ? 'Parked' : info.why)}</div>
         <p class="mono">true error x ${cm(info.e[0])} cm · y ${cm(info.e[1])} cm · yaw ${deg(info.e[2])}°</p>
         <ul class="faults">${faultList(info.faults)}</ul>
-        <div class="row" style="justify-content:center;margin-top:20px"><button type="button" data-act="retry">Same start, same car</button><button type="button" class="go" data-act="fresh">New round</button></div></div>`;
+        <div class="row" style="justify-content:center;margin-top:20px"><button type="button" data-act="retry">Try again</button><button type="button" class="go" data-act="fresh">New round</button></div></div>`;
     },
     update({ snap, est, e, eTrue, input, truth, auto, faults }) {
       const st = snap?.state || 'MANUAL';
@@ -175,15 +175,15 @@ function bind(main) {
       const dist = e ? Math.hypot(e[0], e[1]) : null;
       const camLost = !!snap?.cam_fx?.lost;
       tele.innerHTML = `
-        <div><span>T</span><b>${(snap?.t ?? 0).toFixed(1)}<small>s</small></b></div>
-        <div><span>SPEED</span><b>${v.toFixed(2)}<small>m/s</small></b></div>
-        <div><span>TO BAY, EST</span><b>${dist == null ? '—' : (dist * 100).toFixed(dist < 0.1 ? 1 : 0)}<small>cm</small></b></div>
-        <div><span>YAW ERR, EST</span><b>${e ? deg(e[2]) : '—'}<small>°</small></b></div>
-        <div><span>KEYPOINTS</span><b>${snap?.kp?.length ?? 0}<small>/15</small></b></div>
-        <div><span>POSE FIX</span><b class="${snap?.fix ? 'fix' : 'nofix'}">${snap?.fix ? 'YES' : est ? 'OLD' : 'NO'}</b></div>
-        <div><span>CAMERA</span><b class="${camLost ? 'nofix' : 'fix'}">${camLost ? 'LOST' : 'LIVE'}</b></div>
-        ${truth ? `<div class="truth"><span>TRUE ERROR</span><b>${cm(eTrue[0])} / ${cm(eTrue[1])}<small>cm</small> ${deg(eTrue[2])}<small>°</small></b><ul class="faults">${faultList(faults)}${snap?.floor && snap.floor[1] > 0.05 ? `<li>floor grip ${snap.floor[0].toFixed(2)} · skid ${snap.floor[1].toFixed(2)} · patchy ${snap.floor[2].toFixed(2)}</li>` : ''}</ul></div>` : ''}
-        <div class="sub"><span>${auto ? 'TUNED CONTROLLER' : input.fine() ? 'FINE CONTROL' : 'FULL CONTROL'}</span><span>${rounds.filter((x) => x.ok).length}/${rounds.length} parked by you</span></div>`;
+        <div><span>Time</span><b>${(snap?.t ?? 0).toFixed(1)}<small>s</small></b></div>
+        <div><span>Speed</span><b>${v.toFixed(2)}<small>m/s</small></b></div>
+        <div><span>To bay</span><b>${dist == null ? '—' : (dist * 100).toFixed(dist < 0.1 ? 1 : 0)}<small>cm</small></b></div>
+        <div><span>Heading off</span><b>${e ? deg(e[2]) : '—'}<small>°</small></b></div>
+        <div><span>Keypoints</span><b>${snap?.kp?.length ?? 0}<small>/15</small></b></div>
+        <div><span>Pose fix</span><b class="${snap?.fix ? 'fix' : 'nofix'}">${snap?.fix ? 'Yes' : est ? 'Old' : 'No'}</b></div>
+        <div><span>Camera</span><b class="${camLost ? 'nofix' : 'fix'}">${camLost ? 'Lost' : 'Live'}</b></div>
+        ${truth ? `<div class="truth"><span>True error</span><b>${cm(eTrue[0])} / ${cm(eTrue[1])}<small>cm</small> ${deg(eTrue[2])}<small>°</small></b><ul class="faults">${faultList(faults)}${snap?.floor && snap.floor[1] > 0.05 ? `<li>floor grip ${snap.floor[0].toFixed(2)} · skid ${snap.floor[1].toFixed(2)} · patchy ${snap.floor[2].toFixed(2)}</li>` : ''}</ul></div>` : ''}
+        <div class="sub"><span>${auto ? 'Tuned controller' : input.fine() ? 'Fine control' : 'Full control'}</span><span>${rounds.filter((x) => x.ok).length}/${rounds.length} parked by you</span></div>`;
     },
     dispose() {
       document.removeEventListener('pointerdown', onDocDown);

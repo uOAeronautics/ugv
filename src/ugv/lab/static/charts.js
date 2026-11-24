@@ -132,6 +132,7 @@ export function barChart(container, bars, opts = {}) {
 export function scatter(container, points, opts = {}) {
   if (!points.length) { container.innerHTML = '<div class="empty">no data yet</div>'; return; }
   const xs = points.map((p) => p.x), ys = points.map((p) => p.y);
+  if (opts.box) { xs.push(opts.box[0], opts.box[1]); ys.push(opts.box[2], opts.box[3]); } // the tolerance box stays inside the plot
   const pad = (lo, hi) => { const d = (hi - lo) * 0.08 || 1; return [lo - d, hi + d]; };
   const f = frame(container, { ...opts, xDomain: opts.xDomain || pad(Math.min(...xs), Math.max(...xs)), yDomain: opts.yDomain || pad(Math.min(...ys), Math.max(...ys)) });
   if (opts.box) {

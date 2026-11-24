@@ -64,7 +64,7 @@ export async function render(main) {
     try {
       sess = await api('/api/park/session', { body });
     } catch {
-      H.flash('THAT START TOUCHES THE AIRFRAME OR LEAVES THE ROOM');
+      H.flash('That start touches the airframe or leaves the room');
       return;
     }
     const cs = sess.camera_sim;
@@ -107,7 +107,7 @@ export async function render(main) {
     const e = [snap.car[0] - bay.target[0], snap.car[1] - bay.target[1], wrap(snap.car[2] - bay.target[2])], tol = bay.tolerance;
     const ok = Math.abs(e[0]) <= tol.x && Math.abs(e[1]) <= tol.y && Math.abs(e[2]) <= (tol.yaw_deg * Math.PI) / 180;
     if (ok && Math.hypot(snap.vel[0], snap.vel[1]) < 0.01) finish(true);
-    else H.flash('NOT PARKED YET · open Truth (T) to see by how much');
+    else H.flash('Not parked yet · Truth (T) shows by how much');
   };
   const toggleAuto = () => {
     if (!sess || done) return;
@@ -115,7 +115,7 @@ export async function render(main) {
     started = true;
     H.auto(auto);
     H.banner(null);
-    H.flash(auto ? 'CONTROLLER HAS THE CAR · press a drive key to take over' : 'YOU HAVE THE CAR');
+    H.flash(auto ? 'Autopilot has the car · any drive key takes over' : 'You have the car');
   };
   const toggleTruth = () => { truth = !truth; H.truth(truth); };
 
@@ -124,7 +124,7 @@ export async function render(main) {
     if (!sess || inflight || done) return;
     const duty = input.duty();
     const driving = duty.some((d) => d);
-    if (auto && driving) { auto = false; H.auto(false); H.flash('YOU HAVE THE CAR'); }
+    if (auto && driving) { auto = false; H.auto(false); H.flash('You have the car'); }
     if (!auto && !started) {
       if (!driving) { lastPump = now; return; }
       started = true;
@@ -148,7 +148,7 @@ export async function render(main) {
       paths.true.push(r.car.slice(0, 2));
       if (r.outcome) finish(r.result === 'parked', OUTCOME[r.result] || (r.result.startsWith('abort') ? `Aborted: ${r.reason || r.result.slice(6)}` : r.result));
     } catch {
-      H.flash('SESSION EXPIRED · press R');
+      H.flash('Session expired · press R');
       done = { ok: false };
     } finally { inflight = false; }
   };
@@ -192,7 +192,7 @@ export async function render(main) {
       g.fillStyle = 'rgba(236,232,222,.55)';
       g.font = `500 ${big ? 13 : 9}px ${getComputedStyle(document.body).fontFamily}`;
       g.textAlign = 'center';
-      g.fillText('NO SIGNAL', r.x + r.w / 2, r.y + r.h / 2 - (big ? 8 : 4));
+      g.fillText('No signal', r.x + r.w / 2, r.y + r.h / 2 - (big ? 8 : 4));
       g.fillStyle = 'rgba(236,232,222,.3)';
       g.font = `400 ${big ? 10 : 7}px ${getComputedStyle(document.body).fontFamily}`;
       g.fillText('frame dropped', r.x + r.w / 2, r.y + r.h / 2 + (big ? 12 : 7));
@@ -272,12 +272,12 @@ export async function render(main) {
     drawWorld(mini, bay, plan, {
       paths: [{ pts: paths.est, color: 'var(--signal)', width: 1.25 }, ...(truth ? [{ pts: paths.true, color: 'var(--ink-2)', width: 1, dashed: true }] : [])],
       car: est || undefined, carEst: truth ? q : undefined, scaleBar: false,
-      label: est ? null : 'NO FIX YET',
+      label: est ? null : 'No fix yet',
     });
     const e = est ? [est[0] - bay.target[0], est[1] - bay.target[1], wrap(est[2] - bay.target[2])] : null;
     const eTrue = [q[0] - bay.target[0], q[1] - bay.target[1], wrap(q[2] - bay.target[2])];
     H.update({ snap, est, e, eTrue, input, truth, auto, faults: sess?.faults || [] });
-    H.mode(auto ? 'AUTOPILOT' : 'MANUAL');
+    H.mode(auto ? 'Autopilot' : 'Manual');
     raf = requestAnimationFrame(frame);
   };
 
@@ -293,10 +293,10 @@ export async function render(main) {
     env: (v) => {
       envName = v;
       if (v.startsWith('hdri:')) {
-        H.flash('LOADING PANORAMA');
+        H.flash('Loading panorama…');
         const id = v.slice(5);
         const horizon = horizons[id] ?? {};
-        W.setHdri(id, typeof horizon === 'number' ? { offset: horizon } : horizon).catch(() => H.flash('PANORAMA UNAVAILABLE · keeping the last set'));
+        W.setHdri(id, typeof horizon === 'number' ? { offset: horizon } : horizon).catch(() => H.flash('Panorama unavailable · keeping the last set'));
       } else W.setEnv(v);
       newRound();
     },
@@ -307,7 +307,7 @@ export async function render(main) {
       detector?.setStops(v);
       const s = sess;
       if (!s) return;
-      H.flash(v ? `EXPOSURE FIXED +${v} · LIVE` : 'EXPOSURE · AUTO');
+      H.flash(v ? `Exposure fixed +${v}` : 'Exposure auto');
       api(`/api/park/session/${s.id}/exposure`, { body: { stops: v } })
         .then(() => {
           // keep the fault list shown at the end in sync with the running defect
@@ -315,7 +315,7 @@ export async function render(main) {
           s.faults = (s.faults || []).filter((f) => !f.startsWith('exposure stuck'));
           if (v) s.faults.push(`exposure stuck at +${v.toFixed(1)} stops`);
         })
-        .catch(() => H.flash('SESSION EXPIRED · press R'));
+        .catch(() => H.flash('Session expired · press R'));
     },
     auto: toggleAuto, truth: toggleTruth, fresh: () => newRound(),
     retry: () => newRound({ seed: sess.seed, start: sess.start }),

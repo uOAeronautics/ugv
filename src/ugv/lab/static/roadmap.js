@@ -62,7 +62,7 @@ export function roadmap(container, tasks) {
     const name = el('text', { x: x + 24, y: y + 17, style: `font:600 13px var(--cond);letter-spacing:.02em;fill:${kind === 'done' ? 'var(--ink-3)' : 'var(--ink)'}` }, g);
     name.textContent = fit(t.id.slice(11), nw - 32, 6.2);
     const sub = el('text', { x: x + 24, y: y + 31, style: 'font:400 10.5px var(--mono);fill:var(--ink-3)' }, g);
-    sub.textContent = `${kind.toUpperCase()} · ${t.owner}`;
+    sub.textContent = `${kind} · ${t.owner}`;
     g.style.cursor = 'pointer';
     g.addEventListener('click', () => { location.hash = `ledger/${t.id}`; });
     g.addEventListener('keydown', (e) => { if (e.key === 'Enter') location.hash = `ledger/${t.id}`; });

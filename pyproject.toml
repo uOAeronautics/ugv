@@ -8,9 +8,9 @@ dependencies = [
     "fastapi>=0.116",
     "opencv-contrib-python-headless>=4.13",
     "pyserial>=3.5",
-    "rpi-ws281x>=5.0",
+    "rpi-ws281x>=5.0; sys_platform == 'linux'",
     "smbus2>=0.5",
-    "spidev>=3.8",
+    "spidev>=3.8; sys_platform == 'linux'",
     "uvicorn>=0.35",
     "websockets>=15",
 ]

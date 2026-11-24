@@ -118,7 +118,7 @@ export function drawWorld(view, bay, plan, { paths = [], car, carEst, label, gri
   if (car) drawCar(view, bay, car);
   if (label) {
     ctx.fillStyle = css('--ink');
-    ctx.font = '600 13px "Barlow Condensed", sans-serif';
+    ctx.font = '800 13px Nunito, sans-serif';
     ctx.fillText(label, 12, 20);
   }
   if (scaleBar) {

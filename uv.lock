@@ -406,9 +406,9 @@ dependencies = [
     { name = "fastapi" },
     { name = "opencv-contrib-python-headless" },
     { name = "pyserial" },
-    { name = "rpi-ws281x" },
+    { name = "rpi-ws281x", marker = "sys_platform == 'linux'" },
     { name = "smbus2" },
-    { name = "spidev" },
+    { name = "spidev", marker = "sys_platform == 'linux'" },
     { name = "uvicorn" },
     { name = "websockets" },
 ]
@@ -424,9 +424,9 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116" },
     { name = "opencv-contrib-python-headless", specifier = ">=4.13" },
     { name = "pyserial", specifier = ">=3.5" },
-    { name = "rpi-ws281x", specifier = ">=5.0" },
+    { name = "rpi-ws281x", marker = "sys_platform == 'linux'", specifier = ">=5.0" },
     { name = "smbus2", specifier = ">=0.5" },
-    { name = "spidev", specifier = ">=3.8" },
+    { name = "spidev", marker = "sys_platform == 'linux'", specifier = ">=3.8" },
     { name = "uvicorn", specifier = ">=0.35" },
     { name = "websockets", specifier = ">=15" },
 ]

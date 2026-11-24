@@ -7,8 +7,7 @@ export function tuning(root, searches) {
   const list = searches.slice().reverse();
   root.innerHTML = `
     <section class="ruled c12">
-      <div class="sp12 row" style="padding-block:14px"><span class="lbl" style="margin:0">Tuning</span>
-        <span class="note">Each candidate changes a few parameters, chosen among those that plausibly caused its parent's failures. It is kept only if it beats its parent beyond noise and collides no more.</span>
+      <div class="sp12 row" style="padding-block:14px"><span class="lbl" style="margin:0" data-tip="Each candidate changes a few parameters, chosen among those that plausibly caused its parent's failures. It is kept only if it beats its parent beyond noise and collides no more.">Tuning</span>
         <span class="grow"></span><div class="seg" id="tn-pick">${list.map((s, i) => `<button type="button" data-i="${i}">${esc(s.name)}</button>`).join('')}</div></div>
       <div class="sp8"><div class="lbl">Every candidate <small>● kept ○ rejected · lines join parent and child</small></div><div id="tn-c1"></div></div>
       <div class="sp4"><div class="lbl">Best kept so far</div><div id="tn-c2"></div></div>

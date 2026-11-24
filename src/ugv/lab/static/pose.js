@@ -51,8 +51,8 @@ async function body(root, run, smoke) {
         <div class="viewer" id="ps-view"><img id="ps-img" alt="held-out synthetic view"><canvas id="ps-ov"></canvas></div>
         <div style="padding:12px 24px;border-top:1px solid var(--rule)" class="row">
           <div class="seg" id="ps-layers"><button type="button" class="on" data-l="mesh">STRL mesh</button><button type="button" class="on" data-l="truth">Truth</button><button type="button" class="on" data-l="det">Detector</button><button type="button" class="on" data-l="pnp">PnP pose</button></div>
-          <span class="keys" style="margin:0"><span style="--c:var(--s5)">STRL-001 mesh at the true pose</span><span style="--c:var(--ink-3)">rendered truth</span><span style="--c:var(--signal)">detected, prob &gt; 0.5</span><span style="--c:var(--good)">model reprojected through the PnP pose</span></span>
           <span class="grow"></span><button type="button" id="ps-prev" aria-label="Previous view">←</button><button type="button" id="ps-next" aria-label="Next view">→</button>
+          <span class="keys" style="margin:4px 0 0;flex-basis:100%"><span style="--c:var(--s5)">STRL-001 mesh at the true pose</span><span style="--c:var(--ink-3)">rendered truth</span><span style="--c:var(--signal)">detected, prob &gt; 0.5</span><span style="--c:var(--good)">model reprojected through the PnP pose</span></span>
         </div>
         <div class="film" id="ps-film"></div>
       </div>
@@ -132,11 +132,10 @@ async function body(root, run, smoke) {
         <div class="ro"><div class="v" style="color:var(--${s.pnp ? (s.pnp.pos_cm < 10 ? 'ink' : 'warn') : 'bad'})">${s.pnp ? s.pnp.pos_cm.toFixed(1) : '—'}<small>cm</small></div><div class="d">position error</div></div>
       </div>
       ${s.pnp ? '' : '<p class="prov" style="color:var(--bad)">not solved: fewer than 6 confident keypoints, or no consistent pose</p>'}
-      <table style="margin-top:18px"><thead><tr><th>Keypoint</th><th class="num">Prob</th><th class="num">Error px</th></tr></thead><tbody>
+      <table style="margin-top:18px"><thead><tr><th>Keypoint</th><th class="num">Prob</th><th class="num" title="At 1280×720 against the rendered truth; greyed rows are hidden in this view">Error px</th></tr></thead><tbody>
       ${names.map((n, i) => `<tr${s.true_vis[i] ? '' : ' class="dim"'}><td><span class="st ${s.pred_prob[i] > 0.5 ? 'live' : 'open'}">${n.replace(/_/g, ' ')}</span></td>
         <td class="num">${s.pred_prob[i].toFixed(2)}</td><td class="num" style="color:var(--${err[i] == null ? 'ink-3' : err[i] > 15 ? 'bad' : err[i] > 5 ? 'warn' : 'ink'})">${err[i] == null ? '–' : err[i].toFixed(1)}</td></tr>`).join('')}
-      </tbody></table>
-      <p class="prov">Error in pixels at 1280×720 against the rendered truth. Greyed rows are hidden in this view. A filled square means the detector called the point visible.</p>`;
+      </tbody></table>`;
   };
   const st = { i: 0 };
   state = {
@@ -146,7 +145,8 @@ async function body(root, run, smoke) {
       st.i = (i + pv.samples.length) % pv.samples.length;
       img.src = `/runs/pose_train/${encodeURIComponent(run.name)}/${pv.samples[st.i].file}`;
       film.querySelectorAll('button').forEach((b) => b.classList.toggle('on', +b.dataset.i === st.i));
-      film.querySelector('button.on')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      const on = film.querySelector('button.on'); // scroll the strip only, never the page
+      if (on) film.scrollTo({ left: on.offsetLeft - film.clientWidth / 2 + on.offsetWidth / 2, behavior: 'smooth' });
     },
   };
   img.addEventListener('load', draw);
