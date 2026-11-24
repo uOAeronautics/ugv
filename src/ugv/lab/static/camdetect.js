@@ -173,7 +173,11 @@ export function makeDetector({ seed, sim, cal, points }) {
         const mag = 20 + rng() * 60;
         du = (rng() < 0.5 ? -1 : 1) * mag; dv = (rng() < 0.5 ? -1 : 1) * mag; // misfire
       }
-      dets.push([k, Math.round((u + du) * 10) / 10, Math.round((v + dv) * 10) / 10]);
+      const du0 = Math.round((u + du) * 10) / 10, dv0 = Math.round((v + dv) * 10) / 10;
+      // a detector only reports pixels inside its frame; one noisy point off the edge must
+      // not get the whole frame rejected by the server
+      if (du0 < 0 || du0 > W0 || dv0 < 0 || dv0 > H0) continue;
+      dets.push([k, du0, dv0]);
     }
     return dets;
   };

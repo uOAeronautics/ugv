@@ -168,8 +168,8 @@ def create_app() -> FastAPI:
     def park_camera(sid: str, c: CameraFrame) -> dict:
         """One camera frame measured from the actual rendered pixels; the estimator fuses it."""
         if c.detections is not None:
-            if len(c.detections) > 12:
-                raise HTTPException(400, "at most 12 keypoints")
+            if len(c.detections) > 15:
+                raise HTTPException(400, "at most 15 keypoints")
             for d in c.detections:
                 if len(d) != 3:
                     raise HTTPException(400, "each detection is [keypoint_index, u, v]")
