@@ -156,3 +156,31 @@ def test_mutation_follows_failure_levers() -> None:
             assert lo <= v <= hi and getattr(p, k) == v
             hits[k in LEVERS["collision"]] += 1
     assert hits[True] > hits[False], "failure levers are favoured"
+
+
+def test_solve_planar_holds_yaw_on_tight_nose_cluster() -> None:
+    """A 4-point nose-wheel cluster (5 cm span) must hold yaw from the prior instead of letting
+    5 px detector noise twist yaw and swing lateral position past the bay abort gate."""
+    from ugv.park.geometry import bay, inverse
+    from ugv.park.perception import DetectorModel, model_points, project_planar, solve_planar
+
+    b = bay()
+    pts = model_points(DetectorModel(near_field=True))
+    car = np.array([b.target[0] - 0.35, 0.0, 0.0])
+    q0 = np.append(inverse(car), 0.0)
+    uv = project_planar(pts, q0)
+
+    # Nose wheel only (0.03 m span) and one hub + nose wheel (0.29 m span): yaw stays at prior
+    rng = np.random.default_rng(7)
+    for subset in ([9, 12, 13, 14], [4, 9, 12, 13, 14]):
+        obs = uv[subset] + rng.normal(0, 5.0, (len(subset), 2))
+        q_tight, _ = solve_planar(pts[subset], obs, q0)
+        assert abs(q_tight[2] - q0[2]) < 1e-9, f"tight cluster {subset} must keep yaw at prior"
+        assert abs(inverse(q_tight[:3])[1] - car[1]) < 0.02, "lateral error stays under 2 cm"
+
+    # Wide 6-point span (both hubs + nose wheel): yaw IS solved freely from a perturbed prior
+    wide = [4, 5, 9, 12, 13, 14]
+    q_init = q0.copy()
+    q_init[2] += np.radians(5.0)
+    q_wide, _ = solve_planar(pts[wide], uv[wide], q_init)
+    assert abs(q_wide[2] - q0[2]) < np.radians(0.5), "wide 6-point geometry still recovers yaw"

@@ -39,8 +39,8 @@ Two facts of this task make it easier still, and the code uses both
 (`src/ugv/park/perception.py`):
 
 1. **Both bodies stand on the floor.** The relative pose has 3 unknowns (x, y, yaw), not 6.
-   Two keypoints already fix x and y; three or more spanning at least 0.65 m horizontally fix yaw
-   (on a tight cluster such as the 5 cm nose wheel plus at most one hub, yaw stays at the
+   Two keypoints already fix x and y; three or more spanning at least 0.35 m horizontally fix yaw
+   (on a tight cluster such as the nose wheel or one hub plus nose wheel, yaw stays at the
    gyro/prior). That is why the car keeps measuring deep into the bay where only the nose wheel
    and tyre points are in view.
 2. **The camera mount is constant.** Its pitch is solved as a 4th unknown whenever 6+ well-spanned

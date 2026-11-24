@@ -32,15 +32,14 @@ Take the trained 15-point keypoint detector from "can park" (`v3c`: 4/6 healthy,
   1. `+3.8 cm` x-overshoot collision into the nose wheel during `ENTER` (`beside-nose-gear`, healthy).
   2. `-11 to -13.5 px` systematic vertical bias on `hub_left`/`hub_right` in Challenge bay frames (`0 px` on `val-v3`) — likely pitch-black rotors/propellers vs uniform/sine albedo in `src/ugv/pose/render.py`.
   3. Bad-sensor recall drop (`0.375` on `v3a`) causing dropouts and collisions during `ENTER`/`BACKOFF`.
-  4. Missing regression test for the `0.65 m` horizontal-span yaw guard in `src/ugv/park/perception.py`.
+  4. Regression test for the `0.35 m` horizontal-span yaw guard in `src/ugv/park/perception.py` is now in `tests/test_park.py` (`test_solve_planar_holds_yaw_on_tight_nose_cluster`).
 
 ### Plan, in order (decision `2026-11-24-offline-pose-eval-and-reliability-gate`)
 
-1. **Regression test**: add a unit test in `tests/` asserting `solve_planar` fails/twists on a 4–5 point nose-wheel/single-hub cluster without the `0.65 m` span guard and stays accurate with it.
-2. **Fast offline closed-loop evaluator**: build a Python runner (`n >= 50` matched seeds, `ugv.pose.render` + real ONNX `KeypointDetector`, zero fabricated stand-ins, zero live Chromium) that reports parked/collision/abort/timeout rates with 95% binomial CI and renders PNG keypoint overlays of failed/colliding frames.
-3. **Decompose failures**: inspect the rendered failure frames from (2) plus the `-13 px` hub bias on `v3h` and bad-sensor misses on `v3a`.
-4. **Resume training (`v4`)**: add per-part albedo randomization (dark rotors/tyres vs light body) and stronger occluder/defocus/exposure augmentation in `ugv.pose.dataset` / `train/pose_kp.py`; A/B test PVNet per-pixel keypoint voting vs the heatmap head on `v3h` + `v3a` + the `n >= 50` offline closed-loop gate before promoting.
-5. **Final milestone check**: confirm on real frames (`2026-11-17-real-pose-eval-set`) once the Pi is off charge (`docs/STATE.md`), and run a final Challenge check only after offline gates pass.
+1. **Fast offline closed-loop evaluator**: build a Python runner (`n >= 50` matched seeds, `ugv.pose.render` + real ONNX `KeypointDetector`, zero fabricated stand-ins, zero live Chromium) that reports parked/collision/abort/timeout rates with 95% binomial CI and renders PNG keypoint overlays of failed/colliding frames.
+2. **Decompose failures**: inspect the rendered failure frames from (1) plus the `-13 px` hub bias on `v3h` and bad-sensor misses on `v3a`.
+3. **Resume training (`v4`)**: add per-part albedo randomization (dark rotors/tyres vs light body) and stronger occluder/defocus/exposure augmentation in `ugv.pose.dataset` / `train/pose_kp.py`; A/B test PVNet per-pixel keypoint voting vs the heatmap head on `v3h` + `v3a` + the `n >= 50` offline closed-loop gate before promoting.
+4. **Final milestone check**: confirm on real frames (`2026-11-17-real-pose-eval-set`) once the Pi is off charge (`docs/STATE.md`), and run a final Challenge check only after offline gates pass.
 
 ## Done when
 

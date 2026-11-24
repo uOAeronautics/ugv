@@ -225,3 +225,49 @@ def after_cycles(records: list[Record]) -> list[str]:
             seen.add(cur)
             stack += tasks[cur].get_list("after")
     return sorted(on_cycle)
+
+
+def _lesson(body: str) -> str:
+    """First non-empty line under `## Lesson`, truncated for a compact brief."""
+    in_lesson = False
+    for line in body.splitlines():
+        if line.strip() == "## Lesson":
+            in_lesson = True
+            continue
+        if in_lesson:
+            if line.startswith("## "):
+                break
+            if line.strip():
+                return line.strip()
+    return ""
+
+
+def brief_lines(
+    records: list[Record],
+    *,
+    detector_default: tuple[str, str] | None = None,
+    n_attempts: int = 5,
+    owner: str | None = None,
+) -> list[str]:
+    """Computed cold-start brief: active default, active decisions, live tasks, latest kept lessons."""
+    out = ["# Session brief (computed from code and research/; do not hand-maintain)"]
+    if detector_default is not None:
+        out += ["", f"Active detector DEFAULT: {detector_default[0]}, {detector_default[1]}"]
+    decisions = sorted(
+        (r for r in records if r.kind == "decisions" and r.meta.get("status") == "active"),
+        key=lambda r: r.id,
+    )
+    out += ["", "## Active decisions"]
+    out += [f"- {r.id}" for r in decisions] or ["- none"]
+    out += ["", "## Live tasks"]
+    out += [f"- {line}" for line in status_lines(records, owner=owner)] or ["- none"]
+    kept = sorted(
+        (r for r in records if r.kind == "attempts" and r.meta.get("outcome") == "kept"),
+        key=lambda r: r.id,
+        reverse=True,
+    )[:n_attempts]
+    out += ["", f"## Latest {n_attempts} kept attempts"]
+    for r in kept:
+        lesson = _lesson(r.body)
+        out.append(f"- {r.id}: {lesson}" if lesson else f"- {r.id}")
+    return out

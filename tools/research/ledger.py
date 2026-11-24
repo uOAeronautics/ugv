@@ -1,5 +1,6 @@
 """Read and update research/: decisions, attempts and tasks (one Markdown file each).
 
+uv run python tools/research/ledger.py brief                      # computed cold-start state (default model, active decisions, tasks, lessons)
 uv run python tools/research/ledger.py status                     # live tasks, blocked first
 uv run python tools/research/ledger.py status --as noah           # noah's inbox: his and unassigned ready tasks
 uv run python tools/research/ledger.py roadmap                    # milestones and what each waits on
@@ -21,6 +22,7 @@ from ugv.research import RESEARCH, as_row, board_ids, load, uncovered_board_reco
 from ugv.research.tasks import (
     TRANSITIONS,
     after_cycles,
+    brief_lines,
     roadmap_lines,
     status_lines,
     tasks_by_id,
@@ -87,6 +89,9 @@ def _new(kind: str, slug: str, author: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
+    p_brief = sub.add_parser("brief")
+    p_brief.add_argument("--as", dest="who", help="filter live tasks to your inbox")
+    p_brief.add_argument("-n", type=int, default=5, help="number of latest kept attempts")
     p_status = sub.add_parser("status")
     p_status.add_argument("--as", dest="who", help="only your tasks and unassigned ready ones")
     sub.add_parser("roadmap")
@@ -109,7 +114,15 @@ def main() -> None:
         p.add_argument("--note", default="")
         p.add_argument("--result", nargs="*", default=None)
     args = parser.parse_args()
-    if args.cmd == "status":
+    if args.cmd == "brief":
+        from ugv.pose.detector import DEFAULT
+
+        print(
+            "\n".join(
+                brief_lines(load(), detector_default=DEFAULT, n_attempts=args.n, owner=args.who)
+            )
+        )
+    elif args.cmd == "status":
         print("\n".join(status_lines(load(), owner=args.who)) or "no live tasks")
     elif args.cmd == "roadmap":
         print("\n".join(roadmap_lines(load())))

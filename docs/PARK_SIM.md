@@ -27,8 +27,8 @@ challenge shows cannot flatter the car:
    `research/attempts/2026-11-24-pose-detector-v3c-autopilot-gate.md`.
 3. The network's 15 keypoints (12 skeleton + 3 nose-tyre points) go to `perception.solve` with
    the nominal camera, exactly as the car would, and the estimator fuses them (`solve_planar`
-   requires a horizontal 3D keypoint span >= 0.65 m before freeing yaw, holding yaw from the
-   gyro/prior on tight nose-wheel clusters). A frame that arrives while the previous one is still
+   requires a horizontal 3D keypoint span >= 0.35 m before freeing yaw, holding yaw from the
+   gyro/prior on tight nose-wheel or single-hub clusters). A frame that arrives while the previous one is still
    being read is dropped, as on the car. `Keypoints` and `Network ms` in the HUD come from this
    path.
 

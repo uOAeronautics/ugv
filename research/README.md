@@ -24,6 +24,7 @@ merge and no second copy to drift. The id is the file stem,
 ## Commands
 
 ```sh
+uv run python tools/research/ledger.py brief                    # cold-start state: default model, active decisions, live tasks, latest lessons
 uv run python tools/research/ledger.py status                   # live tasks
 uv run python tools/research/ledger.py status --as <you>        # your inbox
 uv run python tools/research/ledger.py roadmap                  # milestones and their dependencies

@@ -7,7 +7,14 @@ from pathlib import Path
 import pytest
 
 from ugv.research import board_ids, load, parse, uncovered_board_records, validate
-from ugv.research.tasks import after_cycles, roadmap_lines, status_lines, tasks_by_id, transition
+from ugv.research.tasks import (
+    after_cycles,
+    brief_lines,
+    roadmap_lines,
+    status_lines,
+    tasks_by_id,
+    transition,
+)
 
 
 def test_records_are_valid() -> None:
@@ -115,3 +122,13 @@ def test_after_cycle_is_reported(tmp_path: Path) -> None:
 
 def test_live_tasks_have_no_after_cycle() -> None:
     assert not after_cycles(load())
+
+
+def test_brief_lines_reports_active_state() -> None:
+    from ugv.pose.detector import DEFAULT
+
+    text = "\n".join(brief_lines(load(), detector_default=DEFAULT, n_attempts=3))
+    assert f"{DEFAULT[0]}, {DEFAULT[1]}" in text
+    assert "## Active decisions" in text
+    assert "## Live tasks" in text
+    assert "## Latest 3 kept attempts" in text

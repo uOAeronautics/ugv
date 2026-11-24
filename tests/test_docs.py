@@ -47,3 +47,22 @@ def test_retired_paths_are_not_pointed_at() -> None:
         f"{doc.relative_to(ROOT)}: {p}" for doc in LIVE for p in _paths(doc) if p.startswith(GONE)
     ]
     assert not hits, "\n".join(hits)
+
+
+DETECTOR_RUN = re.compile(r"\bkp-(?:crop-)?v\d+[a-z]?\b")
+
+
+def test_live_docs_match_default_detector() -> None:
+    """Live docs only name the active `ugv.pose.detector.DEFAULT` run pair, never stale models."""
+    from ugv.pose.detector import DEFAULT
+
+    active = set(DEFAULT)
+    stale = []
+    for doc in LIVE:
+        for lineno, line in enumerate(doc.read_text().splitlines(), 1):
+            if any(h in line for h in HISTORY):
+                continue
+            for m in DETECTOR_RUN.findall(line):
+                if m not in active:
+                    stale.append(f"{doc.relative_to(ROOT)}:{lineno}: {m} (DEFAULT={DEFAULT})")
+    assert not stale, "\n".join(stale)
