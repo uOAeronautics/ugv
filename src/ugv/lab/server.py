@@ -163,11 +163,17 @@ def create_app() -> FastAPI:
 
     @app.post("/api/park/session/{sid}/frame")
     async def park_frame(
-        sid: str, request: Request, lost: bool = False, exposure: float = 0.0
+        sid: str,
+        request: Request,
+        lost: bool = False,
+        exposure: float = 0.0,
+        rec_car: str = "",
+        rec_mount: str = "",
     ) -> dict:
         """One car-camera frame as rendered by the browser: 1280x720 mono bytes, row-major. The
         trained keypoint detector reads it and the estimator fuses what it finds, as on the car.
-        `lost` marks a frame that never arrived (no pixels)."""
+        `lost` marks a frame that never arrived (no pixels). `rec_car` (x,y,yaw) and `rec_mount`
+        (yaw,pitch) are what the browser rendered; only `--record` uses them, for labels."""
         fx = {"exposure": exposure}
         if lost:
             frame = None
@@ -177,7 +183,15 @@ def create_app() -> FastAPI:
                 raise HTTPException(400, f"a frame is {FRAME_BYTES} bytes (1280x720 mono)")
             frame = np.frombuffer(body, np.uint8).reshape(720, 1280)
         try:
-            return await run_in_threadpool(sim.SESSIONS.camera_image, sid, frame, fx)
+            rendered = None
+            if rec_car and rec_mount:
+                try:
+                    car = [float(v) for v in rec_car.split(",")]
+                    mount = tuple(float(v) for v in rec_mount.split(","))
+                    rendered = (car, mount) if len(car) == 3 and len(mount) == 2 else None
+                except ValueError:
+                    rendered = None
+            return await run_in_threadpool(sim.SESSIONS.camera_image, sid, frame, fx, rendered)
         except KeyError as e:
             raise HTTPException(404, "session expired; start a new round") from e
         except FileNotFoundError as e:
@@ -207,7 +221,14 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Lab dashboard")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8768)
+    ap.add_argument(
+        "--record", type=Path, help="save challenge frames with true keypoints (ugv.lab.record)"
+    )
     args = ap.parse_args()
+    if args.record:
+        from ugv.lab import record
+
+        record.RECORDER = record.Recorder(args.record)
     uvicorn.run(create_app(), host=args.host, port=args.port)
 
 

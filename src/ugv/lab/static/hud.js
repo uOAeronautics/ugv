@@ -163,7 +163,7 @@ function bind(main) {
         <ul class="faults">${faultList(info.faults)}</ul>
         <div class="row" style="justify-content:center;margin-top:20px"><button type="button" data-act="retry">Try again</button><button type="button" class="go" data-act="fresh">New round</button></div></div>`;
     },
-    update({ snap, est, e, eTrue, input, truth, auto, faults }) {
+    update({ snap, est, e, eTrue, input, truth, auto, faults, camHz = 0 }) {
       const st = snap?.state || 'MANUAL';
       fsm.querySelectorAll('span').forEach((s) => s.classList.toggle('on', s.dataset.s === st));
       flashEl.hidden = performance.now() > flashUntil;
@@ -182,7 +182,7 @@ function bind(main) {
         <div><span>Keypoints</span><b>${snap?.kp?.length ?? 0}<small>/12</small></b></div>
         <div><span>Pose fix</span><b class="${snap?.fix ? 'fix' : 'nofix'}">${snap?.fix ? 'Yes' : est ? 'Old' : 'No'}</b></div>
         <div><span>Camera</span><b class="${camLost ? 'nofix' : 'fix'}">${camLost ? 'Lost' : 'Live'}</b></div>
-        <div title="Trained keypoint network (runs/pose_train kp-v1 then kp-crop-v1), server CPU"><span>Network</span><b>${snap?.cam_fx?.ms != null ? Math.round(snap.cam_fx.ms) : '—'}<small>ms</small></b></div>
+        <div title="Trained keypoint network (runs/pose_train kp-v1 then kp-crop-v1), server CPU"><span>Network</span><b>${snap?.cam_fx?.ms != null ? Math.round(snap.cam_fx.ms) : '—'}<small>ms · ${camHz.toFixed(1)} Hz</small></b></div>
         ${truth ? `<div class="truth"><span>True error</span><b>${cm(eTrue[0])} / ${cm(eTrue[1])}<small>cm</small> ${deg(eTrue[2])}<small>°</small></b><ul class="faults">${faultList(faults)}${snap?.floor && snap.floor[1] > 0.05 ? `<li>floor grip ${snap.floor[0].toFixed(2)} · skid ${snap.floor[1].toFixed(2)} · patchy ${snap.floor[2].toFixed(2)}</li>` : ''}</ul></div>` : ''}
         <div class="sub"><span>${auto ? 'Tuned controller' : input.fine() ? 'Fine control' : 'Full control'}</span><span>${rounds.filter((x) => x.ok).length}/${rounds.length} parked by you</span></div>`;
     },

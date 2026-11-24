@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from ugv.lab import sim
 from ugv.lab.server import create_app
 from ugv.park.geometry import bay
-from ugv.pose.detector import DEFAULT_RUNS
+from ugv.pose.detector import default_runs
 
 
 def test_presets_are_clear_of_the_airframe():
@@ -124,7 +124,7 @@ def test_api():
 
 
 @pytest.mark.skipif(
-    not all((p / "model.onnx").exists() for p in DEFAULT_RUNS),
+    not all((p / "model.onnx").exists() for p in default_runs()),
     reason="trained detector not on this machine (runs/pose_train, not in Git)",
 )
 def test_frames_go_through_the_trained_detector():

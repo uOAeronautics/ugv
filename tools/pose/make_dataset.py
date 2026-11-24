@@ -2,14 +2,19 @@
 
     uv run python tools/pose/make_dataset.py --out runs/pose_data/v1 --n 24000
 
-Each sample: a car-camera view (grayscale, the real camera is mono) of the airframe at a random
-pose, drawn over a random real frame from `calibration/runs/**/frames` (70%) or a noise field,
-with a random or fixed texture, lighting, blur, sensor noise, gamma and occluders. Labels: the
-12 keypoints in pixels, their visibility, and the pose. CPU only, S0.
+Each sample: a car-camera view (grayscale, the real camera is mono). 55% use the real car's
+level camera 6.4 cm off the floor, anywhere 0.25-3.5 m around the airframe and facing anywhere
+(`render.sample_car_level_pose`): partial views, and 20% of them facing away (no airframe in
+the picture, all keypoints invisible). 25% are low views aimed at the airframe, 20% anywhere on
+the sphere. Backgrounds: real car frames from `calibration/runs/**/frames`, noise fields, or a
+clean bright room (`render.room_background`). Random or fixed texture, lighting, blur, sensor
+noise, gamma and occluders. Labels: the 12 keypoints in pixels, their visibility, and the
+pose. CPU only, S0.
 
-`--crop` makes the second-stage set instead: a square crop around the airframe (as a first
-stage would propose it: margin 1.1-1.6x, jittered) of the full 1280x720 camera, rendered
-directly with the crop's own intrinsics at 256x256.
+`--crop` makes the second-stage set instead: a square crop of the full 1280x720 camera, rendered
+directly with the crop's own intrinsics at 256x256. For level views the crop is the one the
+deployed first stage proposes (box of the keypoints in the picture, 1.1-1.6x), or a random box
+when fewer than two are in view (stage 2 must call it empty); otherwise the airframe's extent.
 
 Writes images.npy (N, H, W) uint8, kp.npy (N, 12, 2) float32, vis.npy (N, 12) bool,
 pose.npy (N, 12) float32 (R row-major, t), K.npy (N, 3, 3) per-sample intrinsics, meta.json.
@@ -25,8 +30,19 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from ugv.park.geometry import bay
 from ugv.pose.mesh import keypoints, load_airframe
-from ugv.pose.render import CAR_VIEWS, Camera, ViewSpec, procedural_texture, render, sample_pose
+from ugv.pose.render import (
+    CAR_VIEWS,
+    Camera,
+    CarLevelSpec,
+    ViewSpec,
+    procedural_texture,
+    render,
+    room_background,
+    sample_car_level_pose,
+    sample_pose,
+)
 
 REPO = Path(__file__).resolve().parents[2]
 W, H = 320, 180
@@ -41,6 +57,7 @@ def _init(frames: list[str], crop: bool) -> None:
         frame=frame, kp=keypoints(frame), frames=frames, cam=Camera().scaled(W, H), crop=crop
     )
     _STATE["fixed"] = procedural_texture(frame.centroids, seed=0)
+    _STATE["level"] = CarLevelSpec(floor_z=bay().floor_z, away=0.2)
     _STATE["corners"] = frame.tris.reshape(-1, 3)[::25]
 
 
@@ -52,6 +69,26 @@ def _crop_camera(rng: np.random.Generator, R: np.ndarray, t: np.ndarray) -> tupl
     lo, hi = np.percentile(uv, 2, axis=0), np.percentile(uv, 98, axis=0)
     centre = (lo + hi) / 2 + rng.normal(0, 0.08, 2) * (hi - lo)
     size = float(np.clip(max(hi - lo) * rng.uniform(1.1, 1.6), 64, 1400))
+    x0, y0 = centre - size / 2
+    return FULL.crop(x0, y0, size, CROP), (x0, y0, size)
+
+
+def _keypoint_crop(rng: np.random.Generator, R: np.ndarray, t: np.ndarray) -> tuple[Camera, tuple]:
+    """The crop the deployed first stage proposes (`ugv.pose.detector`): the box of the
+    keypoints inside the full 1280x720 picture, 1.1-1.6x, 64-1400 px. With fewer than two in
+    view (the car faces away, or the airframe is mostly out of frame), a random box: what stage
+    1 hands over after a false alarm, which stage 2 must call empty."""
+    kp = np.array(list(_STATE["kp"].values())) @ R.T + t
+    front = kp[:, 2] > 0.05
+    uv = (kp @ FULL.K.T)[:, :2] / np.where(front, kp[:, 2], 1.0)[:, None]
+    inside = front & (uv[:, 0] >= 0) & (uv[:, 0] < 1280) & (uv[:, 1] >= 0) & (uv[:, 1] < 720)
+    if inside.sum() >= 2:
+        lo, hi = uv[inside].min(0), uv[inside].max(0)
+        centre = (lo + hi) / 2 + rng.normal(0, 0.05, 2) * (hi - lo)
+        size = float(np.clip(max(hi - lo) * rng.uniform(1.1, 1.6), 64, 1400))
+    else:
+        size = float(rng.uniform(64, 700))
+        centre = rng.uniform([0, 0], [1280, 720])
     x0, y0 = centre - size / 2
     return FULL.crop(x0, y0, size, CROP), (x0, y0, size)
 
@@ -86,11 +123,18 @@ def _background(rng: np.random.Generator, box: tuple | None = None) -> np.ndarra
 def _one(seed: int) -> tuple:
     rng = np.random.default_rng(seed)
     st = _STATE
-    spec = CAR_VIEWS if rng.random() < 0.6 else ViewSpec(distance_m=(0.4, 4.0))
-    R, t = sample_pose(rng, st["cam"], spec)
+    # 55% the real car's level camera anywhere around the airframe (partial views and pictures
+    # without it included), 25% aimed low views, 20% anywhere on the sphere
+    u = rng.random()
+    level = u < 0.55
+    if level:
+        R, t, _ = sample_car_level_pose(rng, st["level"])
+    else:
+        spec = CAR_VIEWS if u < 0.8 else ViewSpec(distance_m=(0.4, 4.0))
+        R, t = sample_pose(rng, st["cam"], spec)
     cam, box = (st["cam"], None)
     if st["crop"]:
-        cam, box = _crop_camera(rng, R, t)
+        cam, box = _keypoint_crop(rng, R, t) if level else _crop_camera(rng, R, t)
     albedo = (
         st["fixed"]
         if rng.random() < 0.3
@@ -98,7 +142,8 @@ def _one(seed: int) -> tuple:
     )
     if rng.random() < 0.3:  # plain airframe paint, as the real one may be
         albedo = np.full_like(albedo, rng.uniform(0.4, 0.95))
-    v = render(st["frame"], st["kp"], R, t, cam, rng, albedo, _background(rng, box))
+    bg = room_background(rng, cam, R) if level and rng.random() < 0.35 else _background(rng, box)
+    v = render(st["frame"], st["kp"], R, t, cam, rng, albedo, bg)
     w_, h_ = cam.width, cam.height
     g = cv2.cvtColor(v.image, cv2.COLOR_BGR2GRAY).astype(np.float32)
     if rng.random() < 0.6:

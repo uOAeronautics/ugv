@@ -216,15 +216,20 @@ export async function render(main) {
 
   // --- camera frames to the keypoint detector (ugv.pose.detector), one in flight
   let camBusy = false;
-  const sendFrame = async (sid, pixels, exp) => {
+  const camTimes = []; // frames the network answered in the last 2 s, for the HUD rate
+  const sendFrame = async (sid, pixels, exp, car = null, mount = null) => {
     camBusy = true;
     try {
-      const r = await fetch(`/api/park/session/${sid}/frame?exposure=${exp}${pixels ? '' : '&lost=true'}`, {
+      // what was drawn (pose, mount) rides along for `ugv-lab --record` labels only
+      const rec = car ? `&rec_car=${car.map((v) => v.toFixed(5)).join(',')}&rec_mount=${mount.yaw.toFixed(6)},${mount.pitch.toFixed(6)}` : '';
+      const r = await fetch(`/api/park/session/${sid}/frame?exposure=${exp}${pixels ? rec : '&lost=true'}`, {
         method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: pixels || new Uint8Array(0),
       });
       if (r.status === 503) { H.flash((await r.json()).detail); return; }
       if (!r.ok || !sess || sess.id !== sid) return;
       const out = await r.json();
+      camTimes.push(performance.now());
+      while (camTimes.length && camTimes[0] < performance.now() - 2000) camTimes.shift();
       detsLocal = out.det?.points || [];
       if (typeof out.t === 'number') snap = { ...snap, ...out };
     } catch { /* the next frame retries */ } finally { camBusy = false; }
@@ -271,7 +276,7 @@ export async function render(main) {
         detsLocal = [];
         sendFrame(sess.id, null, exposureDraw);
       } else if (!camBusy) {
-        sendFrame(sess.id, detector.capture(fpv ? mainImg : pipImg, fpv ? rect : pipRect), exposureDraw);
+        sendFrame(sess.id, detector.capture(fpv ? mainImg : pipImg, fpv ? rect : pipRect), exposureDraw, q, fxLocal.mount);
       }
     }
     const lost = !!fxLocal?.lost;
@@ -286,7 +291,7 @@ export async function render(main) {
     });
     const e = est ? [est[0] - bay.target[0], est[1] - bay.target[1], wrap(est[2] - bay.target[2])] : null;
     const eTrue = [q[0] - bay.target[0], q[1] - bay.target[1], wrap(q[2] - bay.target[2])];
-    H.update({ snap, est, e, eTrue, input, truth, auto, faults: sess?.faults || [] });
+    H.update({ snap, est, e, eTrue, input, truth, auto, faults: sess?.faults || [], camHz: camTimes.length / 2 });
     H.mode(auto ? 'Autopilot' : 'Manual');
     raf = requestAnimationFrame(frame);
   };

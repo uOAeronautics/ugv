@@ -18,10 +18,11 @@ challenge shows cannot flatter the car:
    are applied to the pixels (isotropic kernel, as a simplification of directional streak),
    never as a CSS filter on the display.
 2. That exact 1280x720 frame is drawn for the human and sent, as mono bytes, to the server,
-   where the trained keypoint network reads it (`ugv.pose.detector`: `kp-v1` on the whole
-   frame, then `kp-crop-v1` on a crop around what it found; ONNX on the CPU). Nothing on this
-   path knows the true pose. Without `runs/pose_train/{kp-v1,kp-crop-v1}/model.onnx` the page
-   says so and the car gets no camera.
+   where the trained keypoint network reads it (`ugv.pose.detector`: `kp-v2` on the whole
+   frame, then `kp-crop-v2` on a crop around what it found; ONNX on the CPU). Nothing on this
+   path knows the true pose. Without `runs/pose_train/{kp-v2,kp-crop-v2}/model.onnx` the page
+   says so and the car gets no camera. How well it reads these frames:
+   `research/attempts/2026-11-24-pose-network-in-challenge-loop.md`.
 3. The network's keypoints (the 12-point skeleton; it has no near-field tyre points) go to PnP
    with the nominal camera, exactly as the car would, and the estimator fuses them. A frame
    that arrives while the previous one is still being read is dropped, as on the car.

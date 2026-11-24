@@ -13,6 +13,7 @@ and a visibility logit each. A point is reported when its visibility probability
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -23,7 +24,8 @@ W, H = 1280, 720
 CROP_MARGIN = 1.35  # middle of the 1.1-1.6x the crop model was trained on
 CROP_MIN, CROP_MAX = 64.0, 1400.0
 REPO = Path(__file__).resolve().parents[3]
-DEFAULT_RUNS = (REPO / "runs/pose_train/kp-v1", REPO / "runs/pose_train/kp-crop-v1")
+TRAIN_DIR = REPO / "runs/pose_train"
+DEFAULT = ("kp-v2", "kp-crop-v2")  # (whole frame, crop) run names
 
 
 @dataclass(frozen=True)
@@ -104,6 +106,13 @@ class KeypointDetector:
         return Detection(pts, np.round(prob, 3).tolist(), box, round(ms, 1))
 
 
+def default_runs() -> tuple[Path, Path]:
+    """The two trained runs the Lab uses: `UGV_DETECTOR=whole,crop` (run names under
+    runs/pose_train) or `DEFAULT`. Not in Git: copy them with the repo."""
+    names = os.environ.get("UGV_DETECTOR", "").split(",")
+    whole, crop = names if len(names) == 2 and all(names) else DEFAULT
+    return TRAIN_DIR / whole, TRAIN_DIR / crop
+
+
 def load_default() -> KeypointDetector:
-    """The two trained runs under runs/pose_train (not in Git: copy them with the repo)."""
-    return KeypointDetector(*DEFAULT_RUNS)
+    return KeypointDetector(*default_runs())

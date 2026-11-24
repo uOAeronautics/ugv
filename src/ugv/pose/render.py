@@ -107,6 +107,75 @@ def sample_pose(
     return R, t
 
 
+@dataclass(frozen=True)
+class CarLevelSpec:
+    """The real car's camera: level, `cam_z_m` above the floor, facing wherever the car faces.
+
+    The car stands `distance_m` from the airframe origin on a random side; its heading points at
+    the airframe plus a bearing offset. Offsets within `in_view_deg` keep the airframe in or near
+    the picture, `partial_deg` lets it leave the frame, and `away` (a probability) turns the car
+    away entirely: a picture with no airframe, which the detector must learn to call empty.
+    """
+
+    floor_z: float  # the floor's height in the model frame (the gear contacts)
+    cam_z_m: float = 0.064
+    distance_m: tuple[float, float] = (0.25, 3.5)
+    in_view_deg: float = 25.0
+    partial_deg: float = 70.0
+    partial: float = 0.3
+    away: float = 0.12
+    pitch_std_deg: float = 2.5  # mount pitch error plus the one-time knock
+    roll_std_deg: float = 1.0
+
+
+def sample_car_level_pose(
+    rng: np.random.Generator, spec: CarLevelSpec
+) -> tuple[np.ndarray, np.ndarray, bool]:
+    """Returns (R, t, away): model -> camera, and whether the car faces away from the airframe."""
+    d = rng.uniform(*spec.distance_m)
+    az = rng.uniform(-np.pi, np.pi)
+    eye = np.array([d * np.cos(az), d * np.sin(az), spec.floor_z + spec.cam_z_m])
+    u = rng.random()
+    if u < spec.away:
+        off = np.radians(rng.uniform(spec.partial_deg, 180.0)) * rng.choice([-1, 1])
+    elif u < spec.away + spec.partial:
+        off = np.radians(rng.uniform(spec.in_view_deg, spec.partial_deg)) * rng.choice([-1, 1])
+    else:
+        off = np.radians(rng.uniform(-spec.in_view_deg, spec.in_view_deg))
+    heading = az + np.pi + off  # facing the airframe origin, then turned by `off`
+    pitch = np.radians(rng.normal(0, spec.pitch_std_deg))
+    fwd = np.array([np.cos(heading), np.sin(heading), np.tan(pitch)])
+    R, t = look_at(eye, eye + fwd, np.radians(rng.normal(0, spec.roll_std_deg)))
+    return R, t, u < spec.away
+
+
+def room_background(rng: np.random.Generator, cam: Camera, R: np.ndarray) -> np.ndarray:
+    """A clean, bright indoor render: flat wall and floor greys split at the horizon, with a few
+    dark blocks (cabinets, tables) on the wall. Covers flat-shaded simulators and plain rooms."""
+    h, w = cam.height, cam.width
+    fwd = R[2].copy()  # optical axis in the model frame
+    fwd[2] = 0.0
+    n = np.linalg.norm(fwd)
+    v_h = h / 2
+    if n > 1e-6:  # the horizon is where level directions project
+        pc = R @ (fwd / n)
+        if pc[2] > 1e-3:
+            v_h = float((cam.K @ pc)[1] / pc[2])
+    wall, floor = rng.uniform(120, 235), rng.uniform(100, 215)
+    img = np.empty((h, w), np.float32)
+    rows = np.arange(h)[:, None]
+    img[:] = np.where(rows < v_h, wall, floor)
+    img += np.linspace(rng.uniform(-25, 25), rng.uniform(-25, 25), w)[None, :]
+    for _ in range(rng.integers(0, 5)):
+        x0 = rng.integers(-w // 4, w)
+        bw, bh = rng.integers(w // 20, w // 3), rng.integers(h // 10, h // 2)
+        y1 = int(np.clip(v_h + rng.uniform(-0.05, 0.05) * h, 0, h))
+        img[max(0, y1 - bh) : y1, max(0, x0) : max(0, x0 + bw)] = rng.uniform(10, 90)
+    img += rng.normal(0, rng.uniform(0, 4), img.shape)
+    g = np.clip(img, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(g, cv2.COLOR_GRAY2BGR)
+
+
 def procedural_texture(centroids: np.ndarray, seed: int = 0) -> np.ndarray:
     """Fixed per-triangle albedo (N, 3) in [0, 1]: a sum of random plane waves over 3D position.
 

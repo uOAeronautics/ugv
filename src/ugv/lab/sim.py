@@ -20,6 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ugv.lab import record
 from ugv.park.episode import DT, Episode, Scenario
 from ugv.park.geometry import bay
 from ugv.park.perception import _model_points
@@ -188,14 +189,21 @@ class Sessions:
             ep.add_camera_frame(detections, fx, lost)
         return snapshot(ep)
 
-    def camera_image(self, sid: str, frame: np.ndarray | None, fx: dict) -> dict:
+    def camera_image(
+        self, sid: str, frame: np.ndarray | None, fx: dict, rendered: tuple | None = None
+    ) -> dict:
         """One rendered camera frame (720x1280 mono) through the trained keypoint detector, then
-        the estimator; `None` is a frame that never arrived. The detector reads pixels only."""
+        the estimator; `None` is a frame that never arrived. The detector reads pixels only.
+        `rendered` (car pose, mount yaw/pitch the browser drew) is used only by the recorder."""
         if sid not in self._s:
             raise KeyError(sid)
         if frame is None:
             return self.camera_frame(sid, None, True, None)
         det = detector()(frame)
+        rec = record.RECORDER
+        if rec is not None and rendered is not None:
+            ep = self._s[sid][0]
+            rec.save(sid, ep.t, frame, ep.cam, np.asarray(rendered[0]), rendered[1], det)
         out = self.camera_frame(sid, det.points, False, fx | {"ms": det.ms})
         return out | {"det": {"points": det.points, "box": det.box, "ms": det.ms}}
 
