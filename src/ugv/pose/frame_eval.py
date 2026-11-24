@@ -22,11 +22,12 @@ MIRROR = {
     "hub_left": "hub_right",
     "vtail_tip_left": "vtail_tip_right",
     "gear_main_left": "gear_main_right",
+    "tyre_left": "tyre_right",
 }
 
 
-def _mirror_index() -> np.ndarray:
-    names = list(keypoints(load_airframe()))
+def _mirror_index(n: int = 12) -> np.ndarray:
+    names = list(keypoints(load_airframe(), near=n > 12))
     m = {**MIRROR, **{v: k for k, v in MIRROR.items()}}
     return np.array([names.index(m.get(n, n)) for n in names])
 
@@ -35,6 +36,7 @@ def _mirror_index() -> np.ndarray:
 class FrameScore:
     range_m: float
     n_true: int  # keypoints in view
+    n_all: int  # keypoints scored
     n_det: int
     n_hit: int
     n_swap: int
@@ -45,14 +47,20 @@ def load(root: Path) -> list[dict]:
     return [json.loads(line) for line in (Path(root) / "labels.jsonl").open()]
 
 
-def score(rows: list[dict], detect, root: Path, hit_px: float = 20.0) -> list[FrameScore]:
-    """`detect(frame) -> [[i, u, v], ...]`; frames are read from `root`."""
-    mirror = _mirror_index()
+def score(
+    rows: list[dict], detect, root: Path, hit_px: float = 20.0, n_kp: int | None = None
+) -> list[FrameScore]:
+    """`detect(frame) -> [[i, u, v], ...]`; frames are read from `root`. `n_kp` scores only the
+    first n keypoints (a 12-point network on a 15-point set)."""
+    n_all = n_kp or (len(rows[0]["true_uv"]) if rows else 12)
+    mirror = _mirror_index(len(rows[0]["true_uv"]) if rows else 12)
     out = []
     for r in rows:
         frame = cv2.imread(str(Path(root) / r["file"]), cv2.IMREAD_GRAYSCALE)
         dets = detect(frame)
         uv, inside = np.array(r["true_uv"]), np.array(r["true_in"])
+        dets = [d for d in dets if int(d[0]) < n_all]
+        uv, inside = uv[:n_all], inside[:n_all]
         hits, swaps, errs = 0, 0, []
         for i, u, v in dets:
             i = int(i)
@@ -60,10 +68,10 @@ def score(rows: list[dict], detect, root: Path, hit_px: float = 20.0) -> list[Fr
             if inside[i] and e <= hit_px:
                 hits += 1
                 errs.append(e)
-            elif inside[mirror[i]] and mirror[i] != i:
+            elif mirror[i] < n_all and inside[mirror[i]] and mirror[i] != i:
                 if np.hypot(u - uv[mirror[i], 0], v - uv[mirror[i], 1]) <= hit_px:
                     swaps += 1
-        out.append(FrameScore(r["range_m"], int(inside.sum()), len(dets), hits, swaps, errs))
+        out.append(FrameScore(r["range_m"], int(inside.sum()), n_all, len(dets), hits, swaps, errs))
     return out
 
 
@@ -86,6 +94,16 @@ def summary(scores: list[FrameScore]) -> dict:
         "median_px": round(float(np.median(errs)), 1) if errs else None,
         "frames_6_correct": round(np.mean([s.n_hit >= 6 for s in seen]), 3) if seen else None,
     }
+    for key, group in (
+        ("whole_airframe_in_view", [s for s in seen if s.n_true == s.n_all]),
+        ("cut_off", [s for s in seen if s.n_true < s.n_all]),
+        ("under_1m", [s for s in seen if s.range_m < 1]),
+        ("under_1m_6_in_view", [s for s in seen if s.range_m < 1 and s.n_true >= 6]),
+    ):
+        out[key] = {
+            "frames": len(group),
+            "frames_6_correct": round(np.mean([s.n_hit >= 6 for s in group]), 3) if group else None,
+        }
     bins = [(0, 1), (1, 2), (2, 3), (3, 9)]
     out["by_range"] = {}
     for lo, hi in bins:

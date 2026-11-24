@@ -27,12 +27,11 @@ from torch import nn
 from ugv.pose.mesh import keypoints, load_airframe
 from ugv.pose.solve import pose_error, solve_pnp
 
-NK = 12
-
 
 class KeypointNet(nn.Module):
-    def __init__(self, pretrained: bool = True) -> None:
+    def __init__(self, nk: int = 15, pretrained: bool = True) -> None:
         super().__init__()
+        self.nk = nk
         weights = (
             torchvision.models.MobileNet_V3_Small_Weights.IMAGENET1K_V1 if pretrained else None
         )
@@ -56,13 +55,13 @@ class KeypointNet(nn.Module):
             nn.ConvTranspose2d(96, 64, 4, stride=2, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, NK, 1),
+            nn.Conv2d(64, nk, 1),
         )
-        self.vis = nn.Linear(576, NK)
+        self.vis = nn.Linear(576, nk)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """x: (B, 1, H, W) in [0, 1]. Returns keypoints (B, NK, 2) in input pixels, visibility
-        logits (B, NK) and heatmaps (B, NK, H/4, W/4)."""
+        """x: (B, 1, H, W) in [0, 1]. Returns keypoints (B, nk, 2) in input pixels, visibility
+        logits (B, nk) and heatmaps (B, nk, H/4, W/4)."""
         x = (x - 0.45) / 0.25
         s8 = self.stem(x)
         s16 = self.mid(s8)
@@ -242,6 +241,15 @@ def main() -> None:
     ap.add_argument("--bs", type=int, default=128)
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument(
+        "--pool",
+        type=int,
+        help="train on a rolling pool of this many generated samples (ugv.pose.dataset) and use "
+        "--data only as the fixed validation set; --crop/--bay/--workers set the generator",
+    )
+    ap.add_argument("--crop", action="store_true", help="pool: second-stage crops")
+    ap.add_argument("--bay", type=float, default=0.0, help="pool: share of bay-range views")
+    ap.add_argument("--workers", type=int, default=12, help="pool: generator processes")
     args = ap.parse_args()
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
@@ -250,9 +258,24 @@ def main() -> None:
     n = len(images)
     perm = np.random.default_rng(123).permutation(n)
     val, tr = np.sort(perm[: max(256, n // 12)]), np.sort(perm[max(256, n // 12) :])
-    kpd = keypoints(load_airframe())
+    pool = None
+    if args.pool:  # --data is the fixed validation set only; the training set keeps changing
+        from ugv.pose.dataset import RollingPool
+
+        val = np.arange(n)
+        pool = RollingPool(
+            args.pool,
+            crop=args.crop,
+            bay=args.bay,
+            workers=args.workers,
+            seed0=7_000_000_000 + args.seed * 1_000_000_000,
+            shape=(meta["height"], meta["width"]),
+        )
+        pool.start()
+        tr = np.arange(args.pool)
+    kpd = keypoints(load_airframe(), near=True)
     model_pts = np.array([kpd[k] for k in meta["keypoints"]])
-    model = KeypointNet().to(dev)
+    model = KeypointNet(kp.shape[1]).to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     steps = args.epochs * (len(tr) // args.bs + 1)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, args.lr, total_steps=steps, pct_start=0.1)
@@ -262,7 +285,11 @@ def main() -> None:
     for epoch in range(args.epochs):
         losses = []
         for b in batches(tr, args.bs, rng):
-            x, k, v = to_gpu(images, kp, vis, b, dev, True)
+            if pool is not None:
+                with pool.lock:
+                    x, k, v = to_gpu(pool.images, pool.kp, pool.vis, b, dev, True)
+            else:
+                x, k, v = to_gpu(images, kp, vis, b, dev, True)
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 pk, pv, _ = model(x)
             l_kp = ((pk.float() - k).abs().sum(-1) * v).sum() / v.sum().clamp(min=1)
@@ -282,6 +309,7 @@ def main() -> None:
             "train_vis_loss": float(np.mean([b for _, b in losses])),
             **m,
             "minutes": round((time.time() - t0) / 60, 2),
+            **({"pool_replaced": pool.replaced} if pool is not None else {}),
         }
         log.write(json.dumps(row) + "\n")
         log.flush()
@@ -303,6 +331,8 @@ def main() -> None:
     summary = {
         "data": str(args.data),
         "train_n": len(tr),
+        "pool": args.pool,
+        "pool_replaced": pool.replaced if pool is not None else 0,
         "val_n": len(val),
         "epochs": args.epochs,
         "input": [h, w],
@@ -311,6 +341,8 @@ def main() -> None:
         **latency(onnx_path, h, w),
         "note": "synthetic validation (same generator); not evidence about real frames",
     }
+    if pool is not None:
+        pool.close()
     (args.out / "summary.json").write_text(json.dumps(summary, indent=1))
     print(json.dumps(summary, indent=1))
 

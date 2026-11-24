@@ -82,13 +82,10 @@ def _model_points() -> tuple[tuple[str, ...], np.ndarray]:
 def _near_points() -> np.ndarray:
     """The nose wheel's tyre seen from behind: its left, right and top extremes (floor heights)."""
     frame = load_airframe()
-    v = frame.tris.reshape(-1, 3).copy()
-    v[:, 2] -= bay().floor_z
-    g = keypoints(frame)["gear_nose"]
-    wheel = v[(np.linalg.norm(v[:, :2] - g[:2], axis=1) < 0.05) & (v[:, 2] < 0.06)]
-    return np.array(
-        [wheel[wheel[:, 1].argmax()], wheel[wheel[:, 1].argmin()], wheel[wheel[:, 2].argmax()]]
-    )
+    kp = keypoints(frame, near=True)
+    pts = np.array([kp[n] for n in ("tyre_left", "tyre_right", "tyre_top")])
+    pts[:, 2] -= bay().floor_z
+    return pts
 
 
 def model_points(det: DetectorModel | None = None) -> np.ndarray:

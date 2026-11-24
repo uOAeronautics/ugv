@@ -20,7 +20,14 @@ import cv2
 import numpy as np
 
 from ugv.park.geometry import inverse
-from ugv.park.perception import HEIGHT, WIDTH, CameraError, _true_projection, camera_points
+from ugv.park.perception import (
+    HEIGHT,
+    WIDTH,
+    CameraError,
+    DetectorModel,
+    _true_projection,
+    camera_points,
+)
 
 
 class Recorder:
@@ -43,7 +50,10 @@ class Recorder:
         """`car`: the car pose the browser rendered, in the airframe frame (as the challenge
         draws it); `mount`: the rendered camera yaw and pitch (base mount, shake and knock)."""
         rel = inverse(np.asarray(car, float))  # the airframe in the car frame
-        uv, front = _true_projection(camera_points(rel), replace(cam, yaw=mount[0], pitch=mount[1]))
+        uv, front = _true_projection(
+            camera_points(rel, DetectorModel(near_field=True)),
+            replace(cam, yaw=mount[0], pitch=mount[1]),
+        )
         inside = (
             front & (uv[:, 0] >= 0) & (uv[:, 0] < WIDTH) & (uv[:, 1] >= 0) & (uv[:, 1] < HEIGHT)
         )

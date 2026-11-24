@@ -2,8 +2,8 @@
 id: 2026-11-24-pose-detector-v3-close-range
 date: 2026-11-24
 author: fer-claude
-owner: fernando
-state: open
+owner: fer-claude
+state: claimed
 updated: 2026-11-24
 due: none
 after: []
@@ -58,3 +58,6 @@ evidence about the method; the challenge is a rendered simulator.
 On held-out challenge frames: 6+ correct points on most frames under 1 m (with the tyre points),
 false points per empty frame at or below v2's 0.14, and the autopilot parking from the named
 starts in a real browser, each with an attempt record and run ids.
+
+## Log
+- 2026-11-24 fer-claude: claim

@@ -149,6 +149,33 @@ def sample_car_level_pose(
     return R, t, u < spec.away
 
 
+def sample_bay_pose(
+    rng: np.random.Generator,
+    floor_z: float,
+    target: np.ndarray,
+    cam_x: float,
+    cam_z: float,
+    run_in: tuple[float, float] = (-1.0, 0.25),
+) -> tuple[np.ndarray, np.ndarray]:
+    """The car's camera on its way into the bay: the car stands at the parking `target`
+    (x, y, yaw in the airframe frame) shifted `run_in` metres along its own heading (negative =
+    still outside), a few cm and degrees off the line, camera mount shake included. The airframe
+    is then mostly out of the picture: the nose gear and the tyre points are what is in view.
+    Returns (R, t): model -> camera."""
+    x, y, yaw = (float(v) for v in target)
+    yaw += np.radians(rng.normal(0, 8))
+    run = rng.uniform(*run_in)
+    side = rng.normal(0, 0.06)
+    fwd2 = np.array([np.cos(yaw), np.sin(yaw)])
+    left2 = np.array([-fwd2[1], fwd2[0]])
+    car = np.array([x, y]) + run * fwd2 + side * left2
+    eye = np.array([*(car + cam_x * fwd2), floor_z + cam_z])
+    heading = yaw + np.radians(rng.normal(0, 3))
+    pitch = np.radians(rng.normal(0, 2.5))
+    d = np.array([np.cos(heading), np.sin(heading), np.tan(pitch)])
+    return look_at(eye, eye + d, np.radians(rng.normal(0, 1.0)))
+
+
 def room_background(rng: np.random.Generator, cam: Camera, R: np.ndarray) -> np.ndarray:
     """A clean, bright indoor render: flat wall and floor greys split at the horizon, with a few
     dark blocks (cabinets, tables) on the wall. Covers flat-shaded simulators and plain rooms."""

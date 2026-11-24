@@ -23,11 +23,14 @@ def main() -> None:
     ap.add_argument("--runs", help="whole,crop run names under runs/pose_train")
     ap.add_argument("--stage1-only", action="store_true")
     ap.add_argument("--threshold", type=float, default=0.5)
+    ap.add_argument("--n-kp", type=int, help="score the first n keypoints (12-point networks)")
     ap.add_argument("--hit-px", type=float, default=20.0)
     args = ap.parse_args()
     whole, crop = (TRAIN_DIR / n for n in args.runs.split(",")) if args.runs else default_runs()
     det = KeypointDetector(whole, None if args.stage1_only else crop, threshold=args.threshold)
-    res = summary(score(load(args.root), lambda f: det(f).points, args.root, args.hit_px))
+    res = summary(
+        score(load(args.root), lambda f: det(f).points, args.root, args.hit_px, args.n_kp)
+    )
     variant = f"{whole.name}-{'s1' if args.stage1_only else crop.name}-t{args.threshold}"
     (args.root / f"eval-{variant}.json").write_text(json.dumps(res, indent=1))
     print(variant, json.dumps(res, indent=1))

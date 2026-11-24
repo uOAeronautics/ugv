@@ -60,12 +60,16 @@ def load_airframe(mesh_dir: Path = MESH_DIR) -> Airframe:
     return Airframe(np.concatenate(tris), np.concatenate(part))
 
 
-def keypoints(frame: Airframe) -> dict[str, np.ndarray]:
+def keypoints(frame: Airframe, near: bool = False) -> dict[str, np.ndarray]:
     """Named 3D keypoints (model frame, metres) picked from mesh extremes, so they follow the mesh.
 
     Nose and tail on the centreline, wingtips, the three rotor hubs, the two V-tail tips, the nose
     wheel and the two main wheels (12 points, asymmetric enough to fix left from right). Replace an entry with a surveyed point when one exists; the
     pose solver only needs the names to agree between this map and the detector.
+
+    `near=True` appends the three nose-tyre points (`tyre_left`, `tyre_right`, `tyre_top`): the
+    wheel's left, right and top extremes seen from behind, which stay in view at bay range when
+    the rest of the airframe is cut off by the picture. 15 points; the first 12 are unchanged.
     """
     v = frame.tris.reshape(-1, 3)
     pv = np.repeat(frame.part, 3)
@@ -98,4 +102,11 @@ def keypoints(frame: Airframe) -> dict[str, np.ndarray]:
     kp["gear_nose"] = front.mean(axis=0)
     kp["gear_main_left"] = rear[rear[:, 1] >= 0].mean(axis=0)
     kp["gear_main_right"] = rear[rear[:, 1] < 0].mean(axis=0)
+    if near:
+        floor = float(frame.tris[:, :, 2].min())
+        g = kp["gear_nose"]
+        wheel = v[(np.linalg.norm(v[:, :2] - g[:2], axis=1) < 0.05) & (v[:, 2] - floor < 0.06)]
+        kp["tyre_left"] = wheel[wheel[:, 1].argmax()]
+        kp["tyre_right"] = wheel[wheel[:, 1].argmin()]
+        kp["tyre_top"] = wheel[wheel[:, 2].argmax()]
     return kp
