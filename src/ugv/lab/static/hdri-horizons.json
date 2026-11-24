@@ -1,0 +1,6837 @@
+{
+ "_comment": "Per-panorama correction for the grounded dome. offset subtracts from the sampled v in the dome shader (v = asin(y)/pi + 0.5 - offset - roll_b*cos(az) - roll_c*sin(az)); absent ids default to 0. Values are either detector pre-fills (see tools/hdri_horizons/predict_horizons.py, conf = inlier fraction) or human-reviewed via tools/hdri_horizons/dashboard.py (conf = 1.0 marks reviewed). Measured by visual review in 3D for old_hall (0.145) and abandoned_construction (0).",
+ "aarfontein_dawn": {
+  "conf": 0.827,
+  "offset": 0.0011,
+  "roll_b": 0.0001,
+  "roll_c": 0.0022
+ },
+ "aarfontein_dawn_2": {
+  "conf": 0.814,
+  "offset": 0.001,
+  "roll_b": 0.0032,
+  "roll_c": 0.004
+ },
+ "aarfontein_dirt_road": {
+  "conf": 0.6,
+  "offset": 0.0281,
+  "roll_b": -0.0414,
+  "roll_c": -0.0297
+ },
+ "aarfontein_dusk": {
+  "conf": 0.817,
+  "offset": 0.0009,
+  "roll_b": -0.0018,
+  "roll_c": -0.0023
+ },
+ "aarfontein_pan": {
+  "conf": 1.0,
+  "offset": -0.0107,
+  "roll_b": -0.001,
+  "roll_c": 0.0018
+ },
+ "aarfontein_sunrise": {
+  "conf": 0.893,
+  "offset": 0.0014,
+  "roll_b": 0.0021,
+  "roll_c": 0.004
+ },
+ "abandoned_bakery": {
+  "conf": 0.413,
+  "offset": 0.0345,
+  "roll_b": 0.0069,
+  "roll_c": 0.0491
+ },
+ "abandoned_church": {
+  "conf": 0.879,
+  "offset": -0.0126,
+  "roll_b": -0.0163,
+  "roll_c": 0.0018
+ },
+ "abandoned_construction": {
+  "conf": 1.0,
+  "offset": 0.0,
+  "roll_b": 0.0,
+  "roll_c": 0.0
+ },
+ "abandoned_factory_canteen_01": {
+  "conf": 0.55,
+  "offset": -0.027,
+  "roll_b": 0.0156,
+  "roll_c": -0.0185
+ },
+ "abandoned_factory_canteen_02": {
+  "conf": 0.769,
+  "offset": 0.0235,
+  "roll_b": -0.0303,
+  "roll_c": -0.0318
+ },
+ "abandoned_games_room_01": {
+  "conf": 0.603,
+  "offset": 0.0406,
+  "roll_b": 0.0243,
+  "roll_c": -0.0354
+ },
+ "abandoned_games_room_02": {
+  "conf": 0.52,
+  "offset": 0.0719,
+  "roll_b": 0.0117,
+  "roll_c": 0.0126
+ },
+ "abandoned_garage": {
+  "conf": 0.552,
+  "offset": 0.2521,
+  "roll_b": -0.0344,
+  "roll_c": 0.0239
+ },
+ "abandoned_greenhouse": {
+  "conf": 0.72,
+  "offset": -0.0303,
+  "roll_b": 0.0059,
+  "roll_c": -0.0117
+ },
+ "abandoned_hall_01": {
+  "conf": 0.678,
+  "offset": 0.0498,
+  "roll_b": 0.0326,
+  "roll_c": -0.0063
+ },
+ "abandoned_hopper_terminal_01": {
+  "conf": 0.626,
+  "offset": -0.0143,
+  "roll_b": -0.0118,
+  "roll_c": -0.007
+ },
+ "abandoned_hopper_terminal_02": {
+  "conf": 0.462,
+  "offset": 0.256,
+  "roll_b": 0.0094,
+  "roll_c": 0.013
+ },
+ "abandoned_hopper_terminal_03": {
+  "conf": 0.792,
+  "offset": 0.0101,
+  "roll_b": -0.0243,
+  "roll_c": 0.01
+ },
+ "abandoned_hopper_terminal_04": {
+  "conf": 0.948,
+  "offset": 0.0133,
+  "roll_b": -0.0081,
+  "roll_c": -0.0004
+ },
+ "abandoned_parking": {
+  "conf": 0.938,
+  "offset": -0.0194,
+  "roll_b": -0.0087,
+  "roll_c": -0.0015
+ },
+ "abandoned_pathway": {
+  "conf": 0.761,
+  "offset": -0.0223,
+  "roll_b": -0.013,
+  "roll_c": -0.0025
+ },
+ "abandoned_slipway": {
+  "conf": 0.557,
+  "offset": -0.0062,
+  "roll_b": 0.0322,
+  "roll_c": -0.0147
+ },
+ "abandoned_tank_farm_01": {
+  "conf": 0.891,
+  "offset": -0.011,
+  "roll_b": -0.0085,
+  "roll_c": -0.0001
+ },
+ "abandoned_tank_farm_02": {
+  "conf": 0.905,
+  "offset": -0.0115,
+  "roll_b": -0.0082,
+  "roll_c": 0.0168
+ },
+ "abandoned_tank_farm_03": {
+  "conf": 0.98,
+  "offset": -0.0212,
+  "roll_b": 0.0001,
+  "roll_c": 0.0036
+ },
+ "abandoned_tank_farm_04": {
+  "conf": 0.935,
+  "offset": -0.0182,
+  "roll_b": -0.0001,
+  "roll_c": -0.0145
+ },
+ "abandoned_tank_farm_05": {
+  "conf": 0.917,
+  "offset": -0.0169,
+  "roll_b": 0.0085,
+  "roll_c": 0.0062
+ },
+ "abandoned_tiled_room": {
+  "conf": 0.364,
+  "offset": 0.0533,
+  "roll_b": -0.0215,
+  "roll_c": -0.0316
+ },
+ "abandoned_waterworks": {
+  "conf": 0.364,
+  "offset": 0.0106,
+  "roll_b": 0.0223,
+  "roll_c": -0.0296
+ },
+ "abandoned_workshop": {
+  "conf": 0.779,
+  "offset": 0.0474,
+  "roll_b": -0.0062,
+  "roll_c": 0.0028
+ },
+ "abandoned_workshop_02": {
+  "conf": 0.611,
+  "offset": -0.0258,
+  "roll_b": 0.0073,
+  "roll_c": -0.0155
+ },
+ "acg_dayenvironmenthdri001": {
+  "conf": 0.473,
+  "offset": 0.2044,
+  "roll_b": 0.0366,
+  "roll_c": -0.0089
+ },
+ "acg_dayenvironmenthdri002": {
+  "conf": 0.42,
+  "offset": -0.0266,
+  "roll_b": 0.0108,
+  "roll_c": -0.0127
+ },
+ "acg_dayenvironmenthdri003": {
+  "conf": 0.844,
+  "offset": -0.0022,
+  "roll_b": 0.001,
+  "roll_c": -0.0138
+ },
+ "acg_dayenvironmenthdri004": {
+  "conf": 0.573,
+  "offset": 0.0099,
+  "roll_b": -0.0532,
+  "roll_c": 0.0176
+ },
+ "acg_dayenvironmenthdri005": {
+  "conf": 0.478,
+  "offset": 0.2325,
+  "roll_b": -0.0139,
+  "roll_c": -0.0011
+ },
+ "acg_dayenvironmenthdri006": {
+  "conf": 0.37,
+  "offset": -0.0237,
+  "roll_b": 0.0201,
+  "roll_c": 0.0044
+ },
+ "acg_dayenvironmenthdri007": {
+  "conf": 0.443,
+  "offset": 0.1763,
+  "roll_b": -0.0113,
+  "roll_c": -0.0958
+ },
+ "acg_dayenvironmenthdri008": {
+  "conf": 0.807,
+  "offset": 0.0047,
+  "roll_b": 0.0144,
+  "roll_c": -0.0092
+ },
+ "acg_dayenvironmenthdri009": {
+  "conf": 0.537,
+  "offset": 0.2218,
+  "roll_b": 0.0224,
+  "roll_c": 0.0499
+ },
+ "acg_dayenvironmenthdri010": {
+  "conf": 0.597,
+  "offset": -0.0082,
+  "roll_b": -0.0103,
+  "roll_c": 0.0067
+ },
+ "acg_dayenvironmenthdri011": {
+  "conf": 0.697,
+  "offset": 0.0625,
+  "roll_b": 0.0025,
+  "roll_c": 0.0053
+ },
+ "acg_dayenvironmenthdri012": {
+  "conf": 0.875,
+  "offset": -0.0217,
+  "roll_b": 0.0018,
+  "roll_c": -0.0054
+ },
+ "acg_dayenvironmenthdri013": {
+  "conf": 0.618,
+  "offset": -0.0361,
+  "roll_b": -0.0079,
+  "roll_c": -0.013
+ },
+ "acg_dayenvironmenthdri014": {
+  "conf": 0.485,
+  "offset": -0.0081,
+  "roll_b": -0.0007,
+  "roll_c": 0.042
+ },
+ "acg_dayenvironmenthdri015": {
+  "conf": 0.676,
+  "offset": -0.0138,
+  "roll_b": 0.0041,
+  "roll_c": -0.0083
+ },
+ "acg_dayenvironmenthdri016": {
+  "conf": 0.858,
+  "offset": -0.0043,
+  "roll_b": -0.03,
+  "roll_c": -0.0086
+ },
+ "acg_dayenvironmenthdri017": {
+  "conf": 0.57,
+  "offset": -0.0279,
+  "roll_b": -0.0083,
+  "roll_c": -0.0024
+ },
+ "acg_dayenvironmenthdri018": {
+  "conf": 0.823,
+  "offset": -0.0105,
+  "roll_b": -0.0056,
+  "roll_c": -0.001
+ },
+ "acg_dayenvironmenthdri019": {
+  "conf": 0.405,
+  "offset": -0.0378,
+  "roll_b": -0.0021,
+  "roll_c": 0.0084
+ },
+ "acg_dayenvironmenthdri020": {
+  "conf": 0.533,
+  "offset": -0.0033,
+  "roll_b": 0.0155,
+  "roll_c": -0.04
+ },
+ "acg_dayenvironmenthdri021": {
+  "conf": 0.311,
+  "offset": 0.2624,
+  "roll_b": -0.0002,
+  "roll_c": -0.0115
+ },
+ "acg_dayenvironmenthdri022": {
+  "conf": 0.723,
+  "offset": 0.0076,
+  "roll_b": 0.0312,
+  "roll_c": 0.0055
+ },
+ "acg_dayenvironmenthdri023": {
+  "conf": 0.622,
+  "offset": 0.0657,
+  "roll_b": 0.0314,
+  "roll_c": -0.0294
+ },
+ "acg_dayenvironmenthdri024": {
+  "conf": 0.441,
+  "offset": 0.2032,
+  "roll_b": -0.0789,
+  "roll_c": -0.0028
+ },
+ "acg_dayenvironmenthdri025": {
+  "conf": 0.927,
+  "offset": -0.0091,
+  "roll_b": 0.0103,
+  "roll_c": 0.0023
+ },
+ "acg_dayenvironmenthdri026": {
+  "conf": 0.358,
+  "offset": -0.0443,
+  "roll_b": -0.0108,
+  "roll_c": -0.0021
+ },
+ "acg_dayenvironmenthdri027": {
+  "conf": 0.994,
+  "offset": -0.0184,
+  "roll_b": -0.0135,
+  "roll_c": 0.0031
+ },
+ "acg_dayenvironmenthdri028": {
+  "conf": 0.668,
+  "offset": -0.033,
+  "roll_b": -0.0002,
+  "roll_c": -0.0081
+ },
+ "acg_dayenvironmenthdri029": {
+  "conf": 0.352,
+  "offset": 0.158,
+  "roll_b": -0.02,
+  "roll_c": 0.0294
+ },
+ "acg_dayenvironmenthdri030": {
+  "conf": 0.69,
+  "offset": -0.0106,
+  "roll_b": 0.008,
+  "roll_c": 0.0044
+ },
+ "acg_dayenvironmenthdri031": {
+  "conf": 0.7,
+  "offset": 0.0482,
+  "roll_b": 0.019,
+  "roll_c": 0.0063
+ },
+ "acg_dayenvironmenthdri032": {
+  "conf": 0.765,
+  "offset": -0.025,
+  "roll_b": 0.01,
+  "roll_c": -0.0103
+ },
+ "acg_dayenvironmenthdri033": {
+  "conf": 0.71,
+  "offset": 0.0511,
+  "roll_b": -0.0512,
+  "roll_c": -0.0395
+ },
+ "acg_dayenvironmenthdri034": {
+  "conf": 0.896,
+  "offset": -0.0134,
+  "roll_b": 0.0008,
+  "roll_c": 0.0003
+ },
+ "acg_dayenvironmenthdri035": {
+  "conf": 0.708,
+  "offset": -0.0006,
+  "roll_b": 0.0035,
+  "roll_c": 0.0044
+ },
+ "acg_dayenvironmenthdri036": {
+  "conf": 0.718,
+  "offset": -0.0284,
+  "roll_b": -0.0084,
+  "roll_c": -0.0026
+ },
+ "acg_dayenvironmenthdri037": {
+  "conf": 0.702,
+  "offset": -0.0158,
+  "roll_b": -0.0116,
+  "roll_c": 0.0134
+ },
+ "acg_dayenvironmenthdri038": {
+  "conf": 0.898,
+  "offset": -0.0168,
+  "roll_b": -0.0042,
+  "roll_c": -0.0064
+ },
+ "acg_dayenvironmenthdri039": {
+  "conf": 0.455,
+  "offset": 0.1795,
+  "roll_b": -0.0027,
+  "roll_c": 0.0033
+ },
+ "acg_dayenvironmenthdri040": {
+  "conf": 0.368,
+  "offset": 0.2185,
+  "roll_b": -0.0123,
+  "roll_c": 0.0149
+ },
+ "acg_dayenvironmenthdri041": {
+  "conf": 0.335,
+  "offset": 0.0069,
+  "roll_b": -0.0616,
+  "roll_c": -0.0077
+ },
+ "acg_dayenvironmenthdri042": {
+  "conf": 0.359,
+  "offset": -0.0387,
+  "roll_b": -0.0047,
+  "roll_c": 0.0521
+ },
+ "acg_dayenvironmenthdri043": {
+  "conf": 0.933,
+  "offset": -0.0144,
+  "roll_b": -0.0042,
+  "roll_c": -0.0016
+ },
+ "acg_dayenvironmenthdri044": {
+  "conf": 0.436,
+  "offset": 0.1221,
+  "roll_b": -0.0001,
+  "roll_c": -0.0239
+ },
+ "acg_dayenvironmenthdri045": {
+  "conf": 0.739,
+  "offset": 0.0127,
+  "roll_b": -0.039,
+  "roll_c": -0.0151
+ },
+ "acg_dayenvironmenthdri046": {
+  "conf": 0.782,
+  "offset": -0.0103,
+  "roll_b": -0.0206,
+  "roll_c": -0.0191
+ },
+ "acg_dayenvironmenthdri047": {
+  "conf": 0.866,
+  "offset": -0.0336,
+  "roll_b": -0.0037,
+  "roll_c": 0.0019
+ },
+ "acg_dayenvironmenthdri048": {
+  "conf": 0.613,
+  "offset": 0.0794,
+  "roll_b": 0.0801,
+  "roll_c": -0.032
+ },
+ "acg_dayenvironmenthdri049": {
+  "conf": 0.777,
+  "offset": 0.0121,
+  "roll_b": -0.0021,
+  "roll_c": -0.002
+ },
+ "acg_dayenvironmenthdri050": {
+  "conf": 0.455,
+  "offset": 0.2225,
+  "roll_b": -0.0041,
+  "roll_c": 0.0209
+ },
+ "acg_dayenvironmenthdri051": {
+  "conf": 0.782,
+  "offset": -0.0188,
+  "roll_b": -0.0173,
+  "roll_c": -0.0038
+ },
+ "acg_dayenvironmenthdri052": {
+  "conf": 0.703,
+  "offset": -0.0025,
+  "roll_b": -0.0068,
+  "roll_c": 0.0385
+ },
+ "acg_dayenvironmenthdri053": {
+  "conf": 0.423,
+  "offset": 0.1948,
+  "roll_b": 0.009,
+  "roll_c": 0.0525
+ },
+ "acg_dayenvironmenthdri054": {
+  "conf": 0.446,
+  "offset": -0.0286,
+  "roll_b": -0.0178,
+  "roll_c": 0.0037
+ },
+ "acg_dayenvironmenthdri055": {
+  "conf": 0.983,
+  "offset": -0.0345,
+  "roll_b": -0.0064,
+  "roll_c": 0.0094
+ },
+ "acg_dayenvironmenthdri056": {
+  "conf": 0.799,
+  "offset": -0.0249,
+  "roll_b": 0.0024,
+  "roll_c": -0.0223
+ },
+ "acg_dayenvironmenthdri057": {
+  "conf": 0.807,
+  "offset": -0.0261,
+  "roll_b": -0.0055,
+  "roll_c": -0.0007
+ },
+ "acg_dayenvironmenthdri058": {
+  "conf": 0.556,
+  "offset": -0.0134,
+  "roll_b": -0.0048,
+  "roll_c": -0.0031
+ },
+ "acg_dayenvironmenthdri059": {
+  "conf": 0.431,
+  "offset": 0.1619,
+  "roll_b": -0.0504,
+  "roll_c": -0.0116
+ },
+ "acg_dayenvironmenthdri061": {
+  "conf": 0.738,
+  "offset": -0.0156,
+  "roll_b": -0.0007,
+  "roll_c": 0.0036
+ },
+ "acg_dayenvironmenthdri062": {
+  "conf": 0.527,
+  "offset": -0.0217,
+  "roll_b": -0.0171,
+  "roll_c": -0.0011
+ },
+ "acg_dayenvironmenthdri063": {
+  "conf": 0.538,
+  "offset": 0.0162,
+  "roll_b": -0.0392,
+  "roll_c": -0.0071
+ },
+ "acg_dayenvironmenthdri064": {
+  "conf": 0.376,
+  "offset": 0.1358,
+  "roll_b": -0.0125,
+  "roll_c": 0.0439
+ },
+ "acg_dayenvironmenthdri065": {
+  "conf": 0.639,
+  "offset": 0.257,
+  "roll_b": 0.0073,
+  "roll_c": -0.0076
+ },
+ "acg_dayenvironmenthdri066": {
+  "conf": 0.446,
+  "offset": 0.2557,
+  "roll_b": -0.0031,
+  "roll_c": 0.0049
+ },
+ "acg_dayenvironmenthdri067": {
+  "conf": 0.512,
+  "offset": 0.2417,
+  "roll_b": 0.0095,
+  "roll_c": 0.0092
+ },
+ "acg_dayenvironmenthdri068": {
+  "conf": 0.512,
+  "offset": 0.0197,
+  "roll_b": 0.0369,
+  "roll_c": 0.0236
+ },
+ "acg_dayenvironmenthdri070": {
+  "conf": 0.355,
+  "offset": 0.1189,
+  "roll_b": -0.0277,
+  "roll_c": -0.0407
+ },
+ "acg_dayenvironmenthdri071": {
+  "conf": 0.552,
+  "offset": 0.1016,
+  "roll_b": -0.0153,
+  "roll_c": 0.019
+ },
+ "acg_dayenvironmenthdri072": {
+  "conf": 0.535,
+  "offset": -0.0166,
+  "roll_b": 0.001,
+  "roll_c": 0.0206
+ },
+ "acg_dayenvironmenthdri073": {
+  "conf": 0.503,
+  "offset": 0.2628,
+  "roll_b": -0.0013,
+  "roll_c": 0.0074
+ },
+ "acg_dayenvironmenthdri074": {
+  "conf": 0.877,
+  "offset": 0.0066,
+  "roll_b": -0.007,
+  "roll_c": 0.0141
+ },
+ "acg_dayenvironmenthdri075": {
+  "conf": 0.335,
+  "offset": -0.0377,
+  "roll_b": 0.0053,
+  "roll_c": 0.0004
+ },
+ "acg_dayenvironmenthdri076": {
+  "conf": 0.5,
+  "offset": 0.0146,
+  "roll_b": -0.0554,
+  "roll_c": 0.0006
+ },
+ "acg_dayenvironmenthdri077": {
+  "conf": 0.699,
+  "offset": -0.0086,
+  "roll_b": 0.0052,
+  "roll_c": 0.0023
+ },
+ "acg_dayenvironmenthdri078": {
+  "conf": 0.431,
+  "offset": 0.066,
+  "roll_b": -0.0662,
+  "roll_c": 0.081
+ },
+ "acg_dayenvironmenthdri079": {
+  "conf": 0.932,
+  "offset": -0.016,
+  "roll_b": -0.0256,
+  "roll_c": 0.0081
+ },
+ "acg_dayenvironmenthdri080": {
+  "conf": 0.559,
+  "offset": 0.0448,
+  "roll_b": 0.0053,
+  "roll_c": -0.0071
+ },
+ "acg_dayenvironmenthdri081": {
+  "conf": 0.74,
+  "offset": -0.0306,
+  "roll_b": -0.0171,
+  "roll_c": -0.0137
+ },
+ "acg_dayenvironmenthdri082": {
+  "conf": 0.949,
+  "offset": -0.0233,
+  "roll_b": 0.0081,
+  "roll_c": -0.0093
+ },
+ "acg_dayenvironmenthdri083": {
+  "conf": 0.69,
+  "offset": -0.0183,
+  "roll_b": -0.0048,
+  "roll_c": -0.0041
+ },
+ "acg_dayenvironmenthdri084": {
+  "conf": 0.663,
+  "offset": 0.0294,
+  "roll_b": -0.0027,
+  "roll_c": -0.0585
+ },
+ "acg_dayenvironmenthdri085": {
+  "conf": 0.681,
+  "offset": -0.0197,
+  "roll_b": -0.0112,
+  "roll_c": -0.002
+ },
+ "acg_dayenvironmenthdri086": {
+  "conf": 0.776,
+  "offset": 0.001,
+  "roll_b": -0.028,
+  "roll_c": 0.0242
+ },
+ "acg_dayenvironmenthdri087": {
+  "conf": 0.611,
+  "offset": 0.0263,
+  "roll_b": 0.0221,
+  "roll_c": 0.0066
+ },
+ "acg_dayenvironmenthdri088": {
+  "conf": 0.477,
+  "offset": 0.0829,
+  "roll_b": -0.0092,
+  "roll_c": -0.0595
+ },
+ "acg_dayenvironmenthdri089": {
+  "conf": 0.794,
+  "offset": -0.0133,
+  "roll_b": 0.0071,
+  "roll_c": -0.0001
+ },
+ "acg_dayenvironmenthdri090": {
+  "conf": 0.66,
+  "offset": 0.0042,
+  "roll_b": -0.005,
+  "roll_c": -0.036
+ },
+ "acg_dayenvironmenthdri091": {
+  "conf": 0.813,
+  "offset": 0.0116,
+  "roll_b": 0.0149,
+  "roll_c": -0.0197
+ },
+ "acg_dayenvironmenthdri092": {
+  "conf": 0.739,
+  "offset": -0.034,
+  "roll_b": -0.0096,
+  "roll_c": -0.0002
+ },
+ "acg_dayenvironmenthdri093": {
+  "conf": 0.686,
+  "offset": 0.0183,
+  "roll_b": 0.0196,
+  "roll_c": 0.0139
+ },
+ "acg_dayenvironmenthdri094": {
+  "conf": 0.586,
+  "offset": 0.055,
+  "roll_b": 0.0105,
+  "roll_c": -0.0326
+ },
+ "acg_dayenvironmenthdri095": {
+  "conf": 0.481,
+  "offset": 0.0041,
+  "roll_b": -0.041,
+  "roll_c": 0.0184
+ },
+ "acg_dayenvironmenthdri096": {
+  "conf": 0.338,
+  "offset": 0.1717,
+  "roll_b": -0.101,
+  "roll_c": -0.0189
+ },
+ "acg_dayenvironmenthdri097": {
+  "conf": 0.804,
+  "offset": -0.0087,
+  "roll_b": -0.0118,
+  "roll_c": -0.0513
+ },
+ "acg_dayenvironmenthdri098": {
+  "conf": 0.674,
+  "offset": -0.0196,
+  "roll_b": -0.0202,
+  "roll_c": 0.0044
+ },
+ "acg_dayenvironmenthdri099": {
+  "conf": 0.544,
+  "offset": -0.0338,
+  "roll_b": -0.0117,
+  "roll_c": -0.0057
+ },
+ "acg_dayenvironmenthdri100": {
+  "conf": 0.7,
+  "offset": -0.0299,
+  "roll_b": 0.0034,
+  "roll_c": -0.0008
+ },
+ "acg_dayenvironmenthdri101": {
+  "conf": 0.673,
+  "offset": -0.0163,
+  "roll_b": -0.002,
+  "roll_c": -0.0058
+ },
+ "acg_dayenvironmenthdri102": {
+  "conf": 0.425,
+  "offset": 0.0419,
+  "roll_b": 0.0512,
+  "roll_c": 0.0575
+ },
+ "acg_dayenvironmenthdri103": {
+  "conf": 0.655,
+  "offset": -0.0219,
+  "roll_b": 0.0002,
+  "roll_c": 0.0011
+ },
+ "acg_dayenvironmenthdri104": {
+  "conf": 0.761,
+  "offset": 0.1011,
+  "roll_b": 0.0003,
+  "roll_c": -0.0028
+ },
+ "acg_dayenvironmenthdri105": {
+  "conf": 0.485,
+  "offset": -0.025,
+  "roll_b": 0.0143,
+  "roll_c": 0.0001
+ },
+ "acg_dayenvironmenthdri106": {
+  "conf": 0.636,
+  "offset": -0.0154,
+  "roll_b": 0.0264,
+  "roll_c": 0.0032
+ },
+ "acg_dayenvironmenthdri107": {
+  "conf": 0.689,
+  "offset": -0.0271,
+  "roll_b": -0.0131,
+  "roll_c": 0.0028
+ },
+ "acg_dayenvironmenthdri108": {
+  "conf": 0.612,
+  "offset": -0.0171,
+  "roll_b": -0.0066,
+  "roll_c": 0.0018
+ },
+ "acg_dayenvironmenthdri109": {
+  "conf": 0.501,
+  "offset": 0.1009,
+  "roll_b": 0.0107,
+  "roll_c": -0.0088
+ },
+ "acg_dayenvironmenthdri110": {
+  "conf": 0.764,
+  "offset": -0.0154,
+  "roll_b": -0.016,
+  "roll_c": -0.0049
+ },
+ "acg_dayenvironmenthdri111": {
+  "conf": 0.549,
+  "offset": -0.033,
+  "roll_b": -0.0007,
+  "roll_c": 0.0056
+ },
+ "acg_dayenvironmenthdri112": {
+  "conf": 0.634,
+  "offset": 0.253,
+  "roll_b": 0.0039,
+  "roll_c": -0.0017
+ },
+ "acg_dayenvironmenthdri113": {
+  "conf": 0.847,
+  "offset": 0.0044,
+  "roll_b": -0.003,
+  "roll_c": 0.0107
+ },
+ "acg_dayenvironmenthdri114": {
+  "conf": 0.509,
+  "offset": 0.2164,
+  "roll_b": -0.0424,
+  "roll_c": 0.0651
+ },
+ "acg_eveningenvironmenthdri001": {
+  "conf": 0.811,
+  "offset": -0.0394,
+  "roll_b": -0.0072,
+  "roll_c": 0.0024
+ },
+ "acg_eveningenvironmenthdri002": {
+  "conf": 0.764,
+  "offset": -0.0106,
+  "roll_b": -0.007,
+  "roll_c": 0.0061
+ },
+ "acg_eveningenvironmenthdri003": {
+  "conf": 0.721,
+  "offset": -0.0172,
+  "roll_b": -0.0155,
+  "roll_c": -0.0023
+ },
+ "acg_eveningenvironmenthdri004": {
+  "conf": 0.549,
+  "offset": 0.0291,
+  "roll_b": -0.0258,
+  "roll_c": 0.0052
+ },
+ "acg_eveningenvironmenthdri005": {
+  "conf": 0.885,
+  "offset": -0.018,
+  "roll_b": 0.0095,
+  "roll_c": 0.0187
+ },
+ "acg_indoorenvironmenthdri002": {
+  "conf": 0.888,
+  "offset": 0.0053,
+  "roll_b": 0.0067,
+  "roll_c": -0.0068
+ },
+ "acg_indoorenvironmenthdri003": {
+  "conf": 0.525,
+  "offset": 0.1414,
+  "roll_b": -0.0071,
+  "roll_c": 0.0207
+ },
+ "acg_indoorenvironmenthdri004": {
+  "conf": 0.635,
+  "offset": 0.1343,
+  "roll_b": -0.1087,
+  "roll_c": -0.0228
+ },
+ "acg_indoorenvironmenthdri005": {
+  "conf": 0.641,
+  "offset": -0.0327,
+  "roll_b": 0.0022,
+  "roll_c": -0.0069
+ },
+ "acg_indoorenvironmenthdri006": {
+  "conf": 0.394,
+  "offset": 0.2035,
+  "roll_b": 0.0036,
+  "roll_c": -0.0
+ },
+ "acg_indoorenvironmenthdri007": {
+  "conf": 0.878,
+  "offset": -0.0138,
+  "roll_b": 0.0011,
+  "roll_c": -0.0031
+ },
+ "acg_indoorenvironmenthdri008": {
+  "conf": 0.549,
+  "offset": 0.0898,
+  "roll_b": -0.0002,
+  "roll_c": 0.0143
+ },
+ "acg_indoorenvironmenthdri010": {
+  "conf": 0.856,
+  "offset": -0.0164,
+  "roll_b": -0.0123,
+  "roll_c": 0.0126
+ },
+ "acg_indoorenvironmenthdri011": {
+  "conf": 0.439,
+  "offset": -0.0364,
+  "roll_b": 0.003,
+  "roll_c": -0.0001
+ },
+ "acg_indoorenvironmenthdri012": {
+  "conf": 0.628,
+  "offset": -0.0382,
+  "roll_b": 0.0008,
+  "roll_c": -0.0119
+ },
+ "acg_indoorenvironmenthdri013": {
+  "conf": 0.493,
+  "offset": 0.0809,
+  "roll_b": -0.0512,
+  "roll_c": -0.0202
+ },
+ "acg_indoorenvironmenthdri014": {
+  "conf": 0.447,
+  "offset": 0.1456,
+  "roll_b": -0.0375,
+  "roll_c": 0.0073
+ },
+ "acg_indoorenvironmenthdri015": {
+  "conf": 0.884,
+  "offset": 0.0018,
+  "roll_b": 0.0179,
+  "roll_c": -0.0091
+ },
+ "acg_indoorenvironmenthdri016": {
+  "conf": 0.905,
+  "offset": 0.2307,
+  "roll_b": -0.0011,
+  "roll_c": 0.0027
+ },
+ "acg_indoorenvironmenthdri017": {
+  "conf": 0.746,
+  "offset": 0.0757,
+  "roll_b": 0.0203,
+  "roll_c": 0.0072
+ },
+ "acg_indoorenvironmenthdri018": {
+  "conf": 0.525,
+  "offset": 0.1412,
+  "roll_b": 0.1033,
+  "roll_c": -0.0004
+ },
+ "acg_indoorenvironmenthdri020": {
+  "conf": 0.654,
+  "offset": 0.261,
+  "roll_b": -0.0072,
+  "roll_c": 0.0065
+ },
+ "acg_indoorenvironmenthdri021": {
+  "conf": 0.551,
+  "offset": 0.2385,
+  "roll_b": -0.0315,
+  "roll_c": -0.011
+ },
+ "acg_indoorenvironmenthdri022": {
+  "conf": 0.436,
+  "offset": 0.2147,
+  "roll_b": 0.0389,
+  "roll_c": 0.0003
+ },
+ "acg_indoorenvironmenthdri023": {
+  "conf": 0.574,
+  "offset": 0.1167,
+  "roll_b": -0.0323,
+  "roll_c": -0.0021
+ },
+ "acg_nightenvironmenthdri001": {
+  "conf": 0.441,
+  "offset": 0.1174,
+  "roll_b": 0.0013,
+  "roll_c": 0.0009
+ },
+ "acg_nightenvironmenthdri002": {
+  "conf": 0.905,
+  "offset": -0.0075,
+  "roll_b": -0.0088,
+  "roll_c": 0.0003
+ },
+ "acg_nightenvironmenthdri003": {
+  "conf": 0.464,
+  "offset": 0.0029,
+  "roll_b": 0.0184,
+  "roll_c": 0.0012
+ },
+ "acg_nightenvironmenthdri004": {
+  "conf": 0.797,
+  "offset": 0.0299,
+  "roll_b": 0.0588,
+  "roll_c": -0.0001
+ },
+ "acg_nightenvironmenthdri005": {
+  "conf": 0.522,
+  "offset": 0.0096,
+  "roll_b": -0.0355,
+  "roll_c": -0.009
+ },
+ "acg_nightenvironmenthdri006": {
+  "conf": 0.846,
+  "offset": -0.0162,
+  "roll_b": -0.0035,
+  "roll_c": -0.0097
+ },
+ "acg_nightenvironmenthdri007": {
+  "conf": 0.75,
+  "offset": -0.0055,
+  "roll_b": 0.0143,
+  "roll_c": 0.0029
+ },
+ "acg_nightenvironmenthdri009": {
+  "conf": 0.898,
+  "offset": -0.0084,
+  "roll_b": 0.0075,
+  "roll_c": 0.0031
+ },
+ "acg_nightenvironmenthdri010": {
+  "conf": 0.529,
+  "offset": -0.0147,
+  "roll_b": 0.0087,
+  "roll_c": -0.0221
+ },
+ "acg_nightenvironmenthdri011": {
+  "conf": 0.76,
+  "offset": 0.0084,
+  "roll_b": 0.0196,
+  "roll_c": -0.0134
+ },
+ "acoustical_shell": {
+  "conf": 0.729,
+  "offset": 0.0696,
+  "roll_b": -0.077,
+  "roll_c": -0.0704
+ },
+ "adams_place_bridge": {
+  "conf": 0.916,
+  "offset": -0.0028,
+  "roll_b": -0.0101,
+  "roll_c": 0.002
+ },
+ "aerodynamics_workshop": {
+  "conf": 0.478,
+  "offset": 0.0697,
+  "roll_b": -0.0466,
+  "roll_c": 0.013
+ },
+ "afrikaans_church_exterior": {
+  "conf": 0.922,
+  "offset": -0.0263,
+  "roll_b": -0.0077,
+  "roll_c": 0.0075
+ },
+ "afrikaans_church_interior": {
+  "conf": 0.823,
+  "offset": 0.0035,
+  "roll_b": 0.0017,
+  "roll_c": 0.005
+ },
+ "ahornsteig": {
+  "conf": 0.634,
+  "offset": -0.0297,
+  "roll_b": 0.0022,
+  "roll_c": -0.0059
+ },
+ "air_museum_playground": {
+  "conf": 0.963,
+  "offset": -0.017,
+  "roll_b": 0.0014,
+  "roll_c": -0.0083
+ },
+ "aircraft_workshop_01": {
+  "conf": 0.502,
+  "offset": -0.0338,
+  "roll_b": -0.0048,
+  "roll_c": 0.0036
+ },
+ "aloe_farm_shade_house": {
+  "conf": 0.574,
+  "offset": 0.1036,
+  "roll_b": 0.0257,
+  "roll_c": 0.0282
+ },
+ "alps_field": {
+  "conf": 0.509,
+  "offset": -0.0292,
+  "roll_b": -0.0241,
+  "roll_c": -0.0038
+ },
+ "altanka": {
+  "conf": 0.919,
+  "offset": -0.0039,
+  "roll_b": 0.0034,
+  "roll_c": 0.0014
+ },
+ "alte_veste_station": {
+  "conf": 0.621,
+  "offset": 0.014,
+  "roll_b": -0.0456,
+  "roll_c": 0.0185
+ },
+ "amphitheatre_zanzibar_fort": {
+  "conf": 0.796,
+  "offset": -0.0239,
+  "roll_b": -0.0016,
+  "roll_c": 0.0112
+ },
+ "anniversary_lounge": {
+  "conf": 0.47,
+  "offset": 0.014,
+  "roll_b": -0.0107,
+  "roll_c": 0.0305
+ },
+ "approaching_storm": {
+  "conf": 1.0,
+  "offset": -0.0256,
+  "roll_b": -0.0032,
+  "roll_c": -0.004
+ },
+ "arboretum": {
+  "conf": 0.469,
+  "offset": -0.0327,
+  "roll_b": -0.0078,
+  "roll_c": 0.0118
+ },
+ "aristea_wreck": {
+  "conf": 0.967,
+  "offset": 0.0266,
+  "roll_b": 0.0182,
+  "roll_c": -0.0087
+ },
+ "art_studio": {
+  "conf": 0.503,
+  "offset": 0.1695,
+  "roll_b": -0.0338,
+  "roll_c": 0.0687
+ },
+ "artist_workshop": {
+  "conf": 0.49,
+  "offset": 0.1064,
+  "roll_b": 0.0044,
+  "roll_c": 0.017
+ },
+ "auto_service": {
+  "conf": 0.637,
+  "offset": 0.0845,
+  "roll_b": 0.0181,
+  "roll_c": -0.0137
+ },
+ "autoshop_01": {
+  "conf": 0.687,
+  "offset": 0.0328,
+  "roll_b": -0.0031,
+  "roll_c": -0.0062
+ },
+ "autumn_crossing": {
+  "conf": 0.494,
+  "offset": 0.0264,
+  "roll_b": 0.0002,
+  "roll_c": -0.0108
+ },
+ "autumn_field": {
+  "conf": 0.859,
+  "offset": -0.0057,
+  "roll_b": 0.0003,
+  "roll_c": 0.001
+ },
+ "autumn_forest_01": {
+  "conf": 0.378,
+  "offset": 0.2509,
+  "roll_b": -0.0019,
+  "roll_c": -0.0025
+ },
+ "autumn_forest_02": {
+  "conf": 0.386,
+  "offset": 0.2273,
+  "roll_b": 0.0446,
+  "roll_c": 0.0164
+ },
+ "autumn_forest_03": {
+  "conf": 0.391,
+  "offset": 0.1284,
+  "roll_b": 0.0714,
+  "roll_c": 0.0278
+ },
+ "autumn_forest_04": {
+  "conf": 0.656,
+  "offset": 0.2511,
+  "roll_b": -0.0086,
+  "roll_c": 0.0124
+ },
+ "autumn_ground": {
+  "conf": 0.377,
+  "offset": 0.2218,
+  "roll_b": -0.029,
+  "roll_c": -0.0241
+ },
+ "autumn_hill_view": {
+  "conf": 0.947,
+  "offset": -0.0233,
+  "roll_b": 0.016,
+  "roll_c": -0.001
+ },
+ "autumn_hilly_field": {
+  "conf": 0.757,
+  "offset": -0.024,
+  "roll_b": 0.014,
+  "roll_c": 0.0059
+ },
+ "autumn_hockey": {
+  "conf": 0.48,
+  "offset": 0.0222,
+  "roll_b": -0.0096,
+  "roll_c": -0.0051
+ },
+ "autumn_meadow": {
+  "conf": 0.665,
+  "offset": -0.0131,
+  "roll_b": -0.0028,
+  "roll_c": 0.0066
+ },
+ "autumn_park": {
+  "conf": 0.938,
+  "offset": -0.0023,
+  "roll_b": 0.0095,
+  "roll_c": 0.0005
+ },
+ "autumn_road": {
+  "conf": 0.551,
+  "offset": 0.1416,
+  "roll_b": 0.0228,
+  "roll_c": -0.0053
+ },
+ "aviation_museum": {
+  "conf": 0.903,
+  "offset": -0.017,
+  "roll_b": 0.0027,
+  "roll_c": -0.0064
+ },
+ "aviation_museum_hill": {
+  "conf": 0.409,
+  "offset": 0.2355,
+  "roll_b": -0.0233,
+  "roll_c": -0.0172
+ },
+ "balcony": {
+  "conf": 0.463,
+  "offset": 0.1394,
+  "roll_b": 0.0232,
+  "roll_c": 0.0115
+ },
+ "ballawley_park": {
+  "conf": 0.669,
+  "offset": -0.0302,
+  "roll_b": -0.007,
+  "roll_c": -0.0019
+ },
+ "ballroom": {
+  "conf": 0.755,
+  "offset": 0.1067,
+  "roll_b": -0.0543,
+  "roll_c": -0.0174
+ },
+ "bambanani_sunset": {
+  "conf": 0.919,
+  "offset": -0.0077,
+  "roll_b": 0.0041,
+  "roll_c": -0.0019
+ },
+ "bamboo_tunnel": {
+  "conf": 0.371,
+  "offset": 0.2495,
+  "roll_b": -0.0164,
+  "roll_c": 0.0143
+ },
+ "bank_vault": {
+  "conf": 0.512,
+  "offset": -0.0415,
+  "roll_b": -0.0067,
+  "roll_c": 0.0065
+ },
+ "barnaslingan_01": {
+  "conf": 0.675,
+  "offset": 0.0131,
+  "roll_b": 0.0296,
+  "roll_c": 0.0191
+ },
+ "barnaslingan_02": {
+  "conf": 0.895,
+  "offset": -0.03,
+  "roll_b": 0.0029,
+  "roll_c": 0.009
+ },
+ "basement_boxing_ring": {
+  "conf": 0.625,
+  "offset": 0.083,
+  "roll_b": 0.0375,
+  "roll_c": 0.007
+ },
+ "bathroom": {
+  "conf": 0.622,
+  "offset": 0.2436,
+  "roll_b": 0.0054,
+  "roll_c": -0.0058
+ },
+ "beach_cloudy_bridge": {
+  "conf": 0.905,
+  "offset": 0.0113,
+  "roll_b": 0.0041,
+  "roll_c": 0.0223
+ },
+ "beach_parking": {
+  "conf": 0.945,
+  "offset": -0.0096,
+  "roll_b": -0.0029,
+  "roll_c": 0.02
+ },
+ "belfast_farmhouse": {
+  "conf": 0.916,
+  "offset": -0.0075,
+  "roll_b": -0.01,
+  "roll_c": 0.0107
+ },
+ "belfast_open_field": {
+  "conf": 0.966,
+  "offset": -0.0296,
+  "roll_b": -0.0079,
+  "roll_c": -0.0016
+ },
+ "belfast_sunset": {
+  "conf": 0.813,
+  "offset": -0.002,
+  "roll_b": -0.0013,
+  "roll_c": -0.0033
+ },
+ "belfast_sunset_puresky": {
+  "conf": 0.997,
+  "offset": -0.0244,
+  "roll_b": 0.01,
+  "roll_c": 0.0141
+ },
+ "bell_park_dawn": {
+  "conf": 0.75,
+  "offset": -0.0379,
+  "roll_b": -0.0203,
+  "roll_c": 0.0218
+ },
+ "bell_park_pier": {
+  "conf": 0.424,
+  "offset": -0.0465,
+  "roll_b": 0.0092,
+  "roll_c": 0.0166
+ },
+ "bell_tower": {
+  "conf": 0.642,
+  "offset": 0.1874,
+  "roll_b": 0.0657,
+  "roll_c": 0.0146
+ },
+ "belvedere": {
+  "conf": 0.705,
+  "offset": 0.0091,
+  "roll_b": -0.0205,
+  "roll_c": 0.0244
+ },
+ "bergen": {
+  "conf": 0.305,
+  "offset": 0.2563,
+  "roll_b": 0.0007,
+  "roll_c": -0.0069
+ },
+ "bethnal_green_entrance": {
+  "conf": 0.83,
+  "offset": -0.0157,
+  "roll_b": -0.0019,
+  "roll_c": -0.0036
+ },
+ "between_bridges": {
+  "conf": 0.886,
+  "offset": -0.0304,
+  "roll_b": -0.0021,
+  "roll_c": 0.0002
+ },
+ "billiard_hall": {
+  "conf": 0.642,
+  "offset": 0.0857,
+  "roll_b": -0.0446,
+  "roll_c": 0.0082
+ },
+ "binnenalster": {
+  "conf": 0.76,
+  "offset": -0.0273,
+  "roll_b": 0.0077,
+  "roll_c": -0.0045
+ },
+ "birbeck_street_underpass": {
+  "conf": 0.854,
+  "offset": -0.0137,
+  "roll_b": 0.004,
+  "roll_c": -0.0067
+ },
+ "birchwood": {
+  "conf": 0.903,
+  "offset": -0.0099,
+  "roll_b": 0.0097,
+  "roll_c": -0.009
+ },
+ "bismarckturm": {
+  "conf": 0.74,
+  "offset": -0.0276,
+  "roll_b": 0.0026,
+  "roll_c": -0.0408
+ },
+ "bismarckturm_hillside": {
+  "conf": 0.933,
+  "offset": -0.017,
+  "roll_b": -0.0141,
+  "roll_c": 0.0338
+ },
+ "blau_river": {
+  "conf": 0.452,
+  "offset": -0.039,
+  "roll_b": 0.0094,
+  "roll_c": -0.0039
+ },
+ "blaubeuren_church_square": {
+  "conf": 0.692,
+  "offset": 0.0146,
+  "roll_b": 0.004,
+  "roll_c": -0.0071
+ },
+ "blaubeuren_hillside": {
+  "conf": 0.425,
+  "offset": -0.026,
+  "roll_b": -0.0024,
+  "roll_c": 0.0014
+ },
+ "blaubeuren_night": {
+  "conf": 0.762,
+  "offset": -0.003,
+  "roll_b": 0.0112,
+  "roll_c": 0.0297
+ },
+ "blaubeuren_outskirts": {
+  "conf": 0.481,
+  "offset": 0.0036,
+  "roll_b": -0.0289,
+  "roll_c": -0.0176
+ },
+ "blender_institute": {
+  "conf": 0.386,
+  "offset": 0.2212,
+  "roll_b": 0.049,
+  "roll_c": -0.0221
+ },
+ "blinds": {
+  "conf": 0.459,
+  "offset": 0.0614,
+  "roll_b": -0.0087,
+  "roll_c": 0.0078
+ },
+ "blocky_photo_studio": {
+  "conf": 0.382,
+  "offset": 0.0684,
+  "roll_b": -0.0267,
+  "roll_c": 0.0114
+ },
+ "bloem_field_sunrise": {
+  "conf": 0.935,
+  "offset": -0.0058,
+  "roll_b": 0.0028,
+  "roll_c": 0.0018
+ },
+ "bloem_hill_01": {
+  "conf": 0.919,
+  "offset": -0.0016,
+  "roll_b": -0.0025,
+  "roll_c": 0.0051
+ },
+ "bloem_hill_02": {
+  "conf": 0.73,
+  "offset": -0.0023,
+  "roll_b": 0.0012,
+  "roll_c": 0.0003
+ },
+ "bloem_hill_03": {
+  "conf": 0.919,
+  "offset": 0.0062,
+  "roll_b": 0.0112,
+  "roll_c": 0.0091
+ },
+ "bloem_olive_house": {
+  "conf": 0.703,
+  "offset": 0.0646,
+  "roll_b": 0.0288,
+  "roll_c": 0.0211
+ },
+ "bloem_train_track_clear": {
+  "conf": 0.481,
+  "offset": 0.2626,
+  "roll_b": 0.0059,
+  "roll_c": 0.002
+ },
+ "bloem_train_track_cloudy": {
+  "conf": 0.775,
+  "offset": -0.0196,
+  "roll_b": -0.0066,
+  "roll_c": 0.0094
+ },
+ "blouberg_sunrise_1": {
+  "conf": 0.927,
+  "offset": -0.0219,
+  "roll_b": 0.0124,
+  "roll_c": 0.0062
+ },
+ "blouberg_sunrise_2": {
+  "conf": 0.964,
+  "offset": -0.0185,
+  "roll_b": 0.0142,
+  "roll_c": 0.0091
+ },
+ "blue_grotto": {
+  "conf": 0.534,
+  "offset": 0.0996,
+  "roll_b": -0.0778,
+  "roll_c": 0.0476
+ },
+ "blue_lagoon": {
+  "conf": 0.953,
+  "offset": 0.0125,
+  "roll_b": -0.0032,
+  "roll_c": 0.001
+ },
+ "blue_lagoon_night": {
+  "conf": 0.968,
+  "offset": 0.0013,
+  "roll_b": 0.0099,
+  "roll_c": 0.0039
+ },
+ "blue_photo_studio": {
+  "conf": 0.631,
+  "offset": 0.112,
+  "roll_b": 0.0092,
+  "roll_c": -0.0336
+ },
+ "boiler_room": {
+  "conf": 0.516,
+  "offset": 0.0177,
+  "roll_b": 0.0023,
+  "roll_c": 0.0358
+ },
+ "boma": {
+  "conf": 0.673,
+  "offset": 0.0403,
+  "roll_b": -0.0014,
+  "roll_c": 0.0306
+ },
+ "borghese_gardens": {
+  "conf": 0.673,
+  "offset": 0.0126,
+  "roll_b": 0.0017,
+  "roll_c": 0.0024
+ },
+ "braustuble_alley": {
+  "conf": 0.336,
+  "offset": 0.2649,
+  "roll_b": 0.0018,
+  "roll_c": -0.0002
+ },
+ "brick_factory_01": {
+  "conf": 0.796,
+  "offset": 0.0111,
+  "roll_b": 0.0438,
+  "roll_c": -0.0293
+ },
+ "brick_factory_02": {
+  "conf": 0.773,
+  "offset": 0.0489,
+  "roll_b": 0.0161,
+  "roll_c": -0.0247
+ },
+ "brown_photostudio_01": {
+  "conf": 0.678,
+  "offset": 0.1419,
+  "roll_b": -0.0569,
+  "roll_c": -0.0102
+ },
+ "brown_photostudio_02": {
+  "conf": 0.717,
+  "offset": 0.0938,
+  "roll_b": 0.0072,
+  "roll_c": 0.0114
+ },
+ "brown_photostudio_03": {
+  "conf": 0.838,
+  "offset": 0.1023,
+  "roll_b": 0.0081,
+  "roll_c": 0.0019
+ },
+ "brown_photostudio_04": {
+  "conf": 0.727,
+  "offset": 0.1124,
+  "roll_b": 0.0201,
+  "roll_c": 0.0016
+ },
+ "brown_photostudio_05": {
+  "conf": 0.707,
+  "offset": 0.1186,
+  "roll_b": 0.025,
+  "roll_c": 0.0005
+ },
+ "brown_photostudio_06": {
+  "conf": 0.451,
+  "offset": 0.1728,
+  "roll_b": -0.0329,
+  "roll_c": 0.0769
+ },
+ "brown_photostudio_07": {
+  "conf": 0.672,
+  "offset": 0.0766,
+  "roll_b": 0.0044,
+  "roll_c": 0.0011
+ },
+ "bryanston_park_sunrise": {
+  "conf": 0.966,
+  "offset": -0.0288,
+  "roll_b": -0.0033,
+  "roll_c": -0.01
+ },
+ "buikslotermeerplein": {
+  "conf": 0.824,
+  "offset": -0.0257,
+  "roll_b": 0.0002,
+  "roll_c": 0.0045
+ },
+ "burnt_warehouse": {
+  "conf": 0.567,
+  "offset": 0.1027,
+  "roll_b": 0.011,
+  "roll_c": 0.0035
+ },
+ "bush_restaurant": {
+  "conf": 0.722,
+  "offset": 0.0267,
+  "roll_b": 0.0492,
+  "roll_c": 0.0075
+ },
+ "cabin": {
+  "conf": 0.428,
+  "offset": 0.2272,
+  "roll_b": -0.0292,
+  "roll_c": 0.0242
+ },
+ "cambridge": {
+  "conf": 0.746,
+  "offset": -0.012,
+  "roll_b": 0.0058,
+  "roll_c": -0.0072
+ },
+ "camdeboo_road": {
+  "conf": 0.647,
+  "offset": -0.0043,
+  "roll_b": -0.0248,
+  "roll_c": -0.0067
+ },
+ "canary_wharf": {
+  "conf": 0.687,
+  "offset": -0.0216,
+  "roll_b": -0.015,
+  "roll_c": 0.009
+ },
+ "cannon": {
+  "conf": 0.438,
+  "offset": -0.0036,
+  "roll_b": 0.0334,
+  "roll_c": 0.0019
+ },
+ "cape_hill": {
+  "conf": 0.315,
+  "offset": 0.2024,
+  "roll_b": -0.0154,
+  "roll_c": 0.0449
+ },
+ "carpentry_shop_01": {
+  "conf": 0.606,
+  "offset": 0.0255,
+  "roll_b": -0.0039,
+  "roll_c": 0.0172
+ },
+ "carpentry_shop_02": {
+  "conf": 0.556,
+  "offset": 0.1371,
+  "roll_b": -0.0185,
+  "roll_c": -0.0278
+ },
+ "castel_st_angelo_roof": {
+  "conf": 0.899,
+  "offset": 0.0103,
+  "roll_b": 0.0022,
+  "roll_c": 0.002
+ },
+ "castle_zavelstein_cellar": {
+  "conf": 0.708,
+  "offset": 0.0928,
+  "roll_b": 0.0369,
+  "roll_c": 0.0192
+ },
+ "cayley_interior": {
+  "conf": 0.41,
+  "offset": 0.2323,
+  "roll_b": 0.0003,
+  "roll_c": -0.0452
+ },
+ "cayley_lookout": {
+  "conf": 0.699,
+  "offset": -0.0331,
+  "roll_b": 0.0136,
+  "roll_c": 0.0168
+ },
+ "cedar_bridge": {
+  "conf": 0.766,
+  "offset": -0.0071,
+  "roll_b": 0.0117,
+  "roll_c": 0.0017
+ },
+ "cedar_bridge_2": {
+  "conf": 0.7,
+  "offset": -0.0024,
+  "roll_b": 0.0212,
+  "roll_c": -0.001
+ },
+ "cedar_bridge_sunset_1": {
+  "conf": 0.897,
+  "offset": -0.0148,
+  "roll_b": 0.0138,
+  "roll_c": 0.0012
+ },
+ "cedar_bridge_sunset_2": {
+  "conf": 0.996,
+  "offset": -0.0147,
+  "roll_b": 0.0161,
+  "roll_c": -0.0021
+ },
+ "champagne_castle_1": {
+  "conf": 0.596,
+  "offset": -0.038,
+  "roll_b": 0.0148,
+  "roll_c": 0.0285
+ },
+ "chapel_day": {
+  "conf": 0.662,
+  "offset": 0.0617,
+  "roll_b": -0.0249,
+  "roll_c": -0.025
+ },
+ "chapmans_drive": {
+  "conf": 0.544,
+  "offset": 0.0858,
+  "roll_b": -0.0493,
+  "roll_c": -0.0277
+ },
+ "charolettenbrunn_park": {
+  "conf": 0.913,
+  "offset": -0.0035,
+  "roll_b": 0.0278,
+  "roll_c": 0.0147
+ },
+ "childrens_hospital": {
+  "conf": 0.59,
+  "offset": 0.2651,
+  "roll_b": 0.0003,
+  "roll_c": 0.0176
+ },
+ "christmas_photo_studio_01": {
+  "conf": 0.586,
+  "offset": 0.1665,
+  "roll_b": 0.0348,
+  "roll_c": 0.0026
+ },
+ "christmas_photo_studio_02": {
+  "conf": 0.595,
+  "offset": 0.2633,
+  "roll_b": 0.0244,
+  "roll_c": -0.0009
+ },
+ "christmas_photo_studio_03": {
+  "conf": 0.46,
+  "offset": 0.1229,
+  "roll_b": -0.0135,
+  "roll_c": -0.0224
+ },
+ "christmas_photo_studio_04": {
+  "conf": 0.522,
+  "offset": 0.172,
+  "roll_b": -0.0386,
+  "roll_c": -0.006
+ },
+ "christmas_photo_studio_05": {
+  "conf": 0.752,
+  "offset": 0.1184,
+  "roll_b": -0.0132,
+  "roll_c": -0.0606
+ },
+ "christmas_photo_studio_06": {
+  "conf": 0.688,
+  "offset": 0.1466,
+  "roll_b": 0.0017,
+  "roll_c": 0.0061
+ },
+ "christmas_photo_studio_07": {
+  "conf": 0.374,
+  "offset": 0.0178,
+  "roll_b": 0.0119,
+  "roll_c": -0.0393
+ },
+ "church_meeting_room": {
+  "conf": 0.71,
+  "offset": 0.0606,
+  "roll_b": 0.0291,
+  "roll_c": 0.0011
+ },
+ "church_museum": {
+  "conf": 0.706,
+  "offset": 0.0442,
+  "roll_b": -0.0111,
+  "roll_c": 0.0005
+ },
+ "church_stairway": {
+  "conf": 0.526,
+  "offset": 0.251,
+  "roll_b": -0.001,
+  "roll_c": -0.0171
+ },
+ "cinema_hall": {
+  "conf": 0.522,
+  "offset": 0.0951,
+  "roll_b": -0.0065,
+  "roll_c": 0.0185
+ },
+ "cinema_lobby": {
+  "conf": 0.527,
+  "offset": 0.121,
+  "roll_b": -0.0292,
+  "roll_c": 0.0085
+ },
+ "circus_maximus_1": {
+  "conf": 0.918,
+  "offset": -0.0343,
+  "roll_b": 0.0023,
+  "roll_c": 0.002
+ },
+ "circus_maximus_2": {
+  "conf": 0.951,
+  "offset": -0.0117,
+  "roll_b": -0.0089,
+  "roll_c": 0.0149
+ },
+ "citrus_orchard": {
+  "conf": 0.982,
+  "offset": -0.0096,
+  "roll_b": 0.0033,
+  "roll_c": -0.0049
+ },
+ "citrus_orchard_road": {
+  "conf": 0.986,
+  "offset": -0.0083,
+  "roll_b": -0.0013,
+  "roll_c": -0.0034
+ },
+ "citrus_orchard_road_puresky": {
+  "conf": 1.0,
+  "offset": -0.054,
+  "roll_b": 0.0257,
+  "roll_c": -0.0157
+ },
+ "clarens_midday": {
+  "conf": 0.899,
+  "offset": -0.014,
+  "roll_b": -0.0213,
+  "roll_c": -0.0019
+ },
+ "clarens_night_01": {
+  "conf": 0.737,
+  "offset": -0.0183,
+  "roll_b": 0.0365,
+  "roll_c": 0.0051
+ },
+ "cliffside": {
+  "conf": 0.37,
+  "offset": 0.2103,
+  "roll_b": 0.0172,
+  "roll_c": -0.0111
+ },
+ "cloud_layers": {
+  "conf": 0.969,
+  "offset": -0.0209,
+  "roll_b": 0.0137,
+  "roll_c": -0.0028
+ },
+ "cloudy_cliffside_road": {
+  "conf": 0.726,
+  "offset": -0.0153,
+  "roll_b": 0.0071,
+  "roll_c": -0.009
+ },
+ "cloudy_netted_nursery": {
+  "conf": 0.517,
+  "offset": 0.0144,
+  "roll_b": -0.0038,
+  "roll_c": -0.0285
+ },
+ "cloudy_vondelpark": {
+  "conf": 0.497,
+  "offset": 0.0031,
+  "roll_b": -0.0144,
+  "roll_c": 0.0184
+ },
+ "cobblestone_parish_road": {
+  "conf": 0.447,
+  "offset": 0.262,
+  "roll_b": -0.0098,
+  "roll_c": 0.005
+ },
+ "cobblestone_street_night": {
+  "conf": 0.519,
+  "offset": 0.0612,
+  "roll_b": 0.0239,
+  "roll_c": 0.0383
+ },
+ "colorful_studio": {
+  "conf": 0.664,
+  "offset": 0.069,
+  "roll_b": 0.0183,
+  "roll_c": -0.0391
+ },
+ "colosseum": {
+  "conf": 0.693,
+  "offset": 0.067,
+  "roll_b": 0.0639,
+  "roll_c": -0.0522
+ },
+ "combination_room": {
+  "conf": 0.599,
+  "offset": 0.2115,
+  "roll_b": 0.0333,
+  "roll_c": 0.0117
+ },
+ "comfy_cafe": {
+  "conf": 0.405,
+  "offset": 0.136,
+  "roll_b": 0.0073,
+  "roll_c": -0.0047
+ },
+ "concrete_tunnel": {
+  "conf": 0.422,
+  "offset": 0.1474,
+  "roll_b": -0.008,
+  "roll_c": 0.0195
+ },
+ "concrete_tunnel_02": {
+  "conf": 0.639,
+  "offset": 0.1354,
+  "roll_b": 0.0019,
+  "roll_c": 0.0002
+ },
+ "construction_yard": {
+  "conf": 0.822,
+  "offset": 0.0227,
+  "roll_b": 0.0187,
+  "roll_c": 0.0076
+ },
+ "country_club": {
+  "conf": 0.714,
+  "offset": 0.0618,
+  "roll_b": -0.0059,
+  "roll_c": -0.0128
+ },
+ "countrytrax_midday": {
+  "conf": 0.983,
+  "offset": -0.0055,
+  "roll_b": -0.0006,
+  "roll_c": 0.0007
+ },
+ "courtyard": {
+  "conf": 0.46,
+  "offset": 0.1452,
+  "roll_b": 0.0444,
+  "roll_c": 0.0295
+ },
+ "courtyard_night": {
+  "conf": 0.778,
+  "offset": 0.0385,
+  "roll_b": 0.0023,
+  "roll_c": 0.0458
+ },
+ "cowboy_town_hall": {
+  "conf": 0.617,
+  "offset": -0.0071,
+  "roll_b": 0.0213,
+  "roll_c": 0.0062
+ },
+ "cowboy_town_saloon": {
+  "conf": 0.366,
+  "offset": 0.0865,
+  "roll_b": 0.0204,
+  "roll_c": 0.0624
+ },
+ "crossfit_gym": {
+  "conf": 0.745,
+  "offset": -0.0354,
+  "roll_b": 0.0057,
+  "roll_c": -0.01
+ },
+ "crosswalk": {
+  "conf": 0.703,
+  "offset": 0.0001,
+  "roll_b": -0.011,
+  "roll_c": -0.0032
+ },
+ "crystal_falls": {
+  "conf": 0.49,
+  "offset": 0.138,
+  "roll_b": -0.0274,
+  "roll_c": -0.0388
+ },
+ "cyclorama_hard_light": {
+  "conf": 0.565,
+  "offset": 0.1577,
+  "roll_b": -0.0085,
+  "roll_c": 0.0087
+ },
+ "dalkey_view": {
+  "conf": 0.833,
+  "offset": 0.0144,
+  "roll_b": 0.0207,
+  "roll_c": -0.0371
+ },
+ "dam_bridge": {
+  "conf": 0.466,
+  "offset": 0.0491,
+  "roll_b": 0.0114,
+  "roll_c": 0.015
+ },
+ "dam_road": {
+  "conf": 0.741,
+  "offset": -0.0227,
+  "roll_b": -0.01,
+  "roll_c": 0.0184
+ },
+ "dam_wall": {
+  "conf": 0.467,
+  "offset": 0.0465,
+  "roll_b": 0.0169,
+  "roll_c": 0.067
+ },
+ "dancing_hall": {
+  "conf": 0.871,
+  "offset": -0.0116,
+  "roll_b": -0.0029,
+  "roll_c": -0.0001
+ },
+ "dark_autumn_forest": {
+  "conf": 0.453,
+  "offset": 0.0188,
+  "roll_b": -0.0224,
+  "roll_c": 0.0059
+ },
+ "de_balie": {
+  "conf": 0.41,
+  "offset": 0.0125,
+  "roll_b": -0.0133,
+  "roll_c": 0.005
+ },
+ "debris_basement_corridor": {
+  "conf": 0.566,
+  "offset": 0.2033,
+  "roll_b": 0.0174,
+  "roll_c": -0.0306
+ },
+ "decor_shop": {
+  "conf": 0.504,
+  "offset": 0.091,
+  "roll_b": 0.0302,
+  "roll_c": -0.0188
+ },
+ "delta_2": {
+  "conf": 0.823,
+  "offset": -0.019,
+  "roll_b": -0.0103,
+  "roll_c": -0.0019
+ },
+ "derelict_airfield_01": {
+  "conf": 0.989,
+  "offset": -0.0218,
+  "roll_b": -0.011,
+  "roll_c": -0.0063
+ },
+ "derelict_airfield_02": {
+  "conf": 0.924,
+  "offset": -0.0266,
+  "roll_b": -0.0115,
+  "roll_c": -0.0133
+ },
+ "derelict_highway_midday": {
+  "conf": 0.857,
+  "offset": -0.0247,
+  "roll_b": -0.0025,
+  "roll_c": 0.0007
+ },
+ "derelict_highway_noon": {
+  "conf": 0.839,
+  "offset": -0.0033,
+  "roll_b": 0.0017,
+  "roll_c": -0.0224
+ },
+ "derelict_overpass": {
+  "conf": 0.784,
+  "offset": -0.0079,
+  "roll_b": -0.0041,
+  "roll_c": -0.002
+ },
+ "derelict_underpass": {
+  "conf": 0.82,
+  "offset": 0.0591,
+  "roll_b": -0.0003,
+  "roll_c": -0.011
+ },
+ "dikhololo_night": {
+  "conf": 0.992,
+  "offset": -0.0175,
+  "roll_b": 0.0088,
+  "roll_c": -0.0036
+ },
+ "dikhololo_sunset": {
+  "conf": 0.979,
+  "offset": -0.0234,
+  "roll_b": 0.0074,
+  "roll_c": 0.0155
+ },
+ "dirt_bike_track_01": {
+  "conf": 0.937,
+  "offset": -0.0058,
+  "roll_b": -0.0063,
+  "roll_c": -0.0006
+ },
+ "distribution_board": {
+  "conf": 0.404,
+  "offset": 0.211,
+  "roll_b": 0.0676,
+  "roll_c": -0.036
+ },
+ "docklands_01": {
+  "conf": 0.805,
+  "offset": 0.0049,
+  "roll_b": -0.0376,
+  "roll_c": -0.0225
+ },
+ "docklands_02": {
+  "conf": 0.756,
+  "offset": 0.0327,
+  "roll_b": -0.0149,
+  "roll_c": -0.0004
+ },
+ "donkin_reserve": {
+  "conf": 0.583,
+  "offset": 0.0037,
+  "roll_b": -0.0125,
+  "roll_c": -0.0114
+ },
+ "drachenfels_cellar": {
+  "conf": 0.508,
+  "offset": 0.0381,
+  "roll_b": 0.0254,
+  "roll_c": -0.0447
+ },
+ "drackenstein_quarry": {
+  "conf": 0.99,
+  "offset": -0.0031,
+  "roll_b": -0.0072,
+  "roll_c": 0.0109
+ },
+ "drackenstein_quarry_puresky": {
+  "conf": 0.999,
+  "offset": -0.0339,
+  "roll_b": -0.0121,
+  "roll_c": 0.0051
+ },
+ "drakensberg_solitary_mountain": {
+  "conf": 0.475,
+  "offset": 0.2555,
+  "roll_b": -0.0046,
+  "roll_c": -0.009
+ },
+ "dreifaltigkeitsberg": {
+  "conf": 0.968,
+  "offset": -0.0077,
+  "roll_b": -0.0049,
+  "roll_c": 0.0029
+ },
+ "dresden_moat": {
+  "conf": 0.589,
+  "offset": -0.0312,
+  "roll_b": -0.0061,
+  "roll_c": -0.0019
+ },
+ "dresden_square": {
+  "conf": 0.929,
+  "offset": -0.0117,
+  "roll_b": -0.0083,
+  "roll_c": -0.003
+ },
+ "dresden_station_night": {
+  "conf": 0.813,
+  "offset": -0.0382,
+  "roll_b": -0.0058,
+  "roll_c": -0.0014
+ },
+ "driving_school": {
+  "conf": 0.891,
+  "offset": -0.0087,
+  "roll_b": -0.0122,
+  "roll_c": -0.0115
+ },
+ "dry_cracked_lake": {
+  "conf": 0.345,
+  "offset": 0.2419,
+  "roll_b": -0.0121,
+  "roll_c": 0.0076
+ },
+ "dry_field": {
+  "conf": 0.975,
+  "offset": -0.008,
+  "roll_b": -0.01,
+  "roll_c": -0.0116
+ },
+ "dry_hay_field": {
+  "conf": 0.976,
+  "offset": -0.0158,
+  "roll_b": 0.0031,
+  "roll_c": -0.0065
+ },
+ "dry_meadow": {
+  "conf": 0.923,
+  "offset": -0.026,
+  "roll_b": -0.0108,
+  "roll_c": 0.008
+ },
+ "dry_orchard_meadow": {
+  "conf": 0.918,
+  "offset": -0.0157,
+  "roll_b": -0.0107,
+  "roll_c": -0.0067
+ },
+ "dusseldorf_bridge": {
+  "conf": 0.803,
+  "offset": -0.0175,
+  "roll_b": 0.0196,
+  "roll_c": 0.0055
+ },
+ "ehingen_hillside": {
+  "conf": 0.613,
+  "offset": -0.0192,
+  "roll_b": 0.0188,
+  "roll_c": 0.0116
+ },
+ "ehingen_hillside_02": {
+  "conf": 0.595,
+  "offset": -0.003,
+  "roll_b": 0.0045,
+  "roll_c": -0.0007
+ },
+ "eilenriede_labyrinth": {
+  "conf": 0.429,
+  "offset": 0.1906,
+  "roll_b": 0.0666,
+  "roll_c": -0.0
+ },
+ "eilenriede_park": {
+  "conf": 0.883,
+  "offset": 0.0085,
+  "roll_b": 0.0007,
+  "roll_c": 0.0005
+ },
+ "emmarentia": {
+  "conf": 0.625,
+  "offset": -0.0098,
+  "roll_b": -0.0017,
+  "roll_c": -0.0083
+ },
+ "empty_play_room": {
+  "conf": 0.653,
+  "offset": 0.0864,
+  "roll_b": 0.0284,
+  "roll_c": 0.0273
+ },
+ "empty_warehouse_01": {
+  "conf": 0.855,
+  "offset": -0.0238,
+  "roll_b": 0.0192,
+  "roll_c": 0.0121
+ },
+ "empty_workshop": {
+  "conf": 0.368,
+  "offset": 0.0684,
+  "roll_b": -0.0123,
+  "roll_c": 0.0217
+ },
+ "en_suite": {
+  "conf": 0.401,
+  "offset": 0.2239,
+  "roll_b": 0.0367,
+  "roll_c": -0.0503
+ },
+ "entrance_hall": {
+  "conf": 0.451,
+  "offset": 0.0508,
+  "roll_b": 0.0053,
+  "roll_c": 0.0003
+ },
+ "epping_forest_01": {
+  "conf": 0.46,
+  "offset": 0.0367,
+  "roll_b": 0.003,
+  "roll_c": -0.0014
+ },
+ "epping_forest_02": {
+  "conf": 0.819,
+  "offset": 0.0005,
+  "roll_b": -0.0122,
+  "roll_c": 0.0103
+ },
+ "etzwihl": {
+  "conf": 0.954,
+  "offset": -0.0202,
+  "roll_b": -0.0042,
+  "roll_c": -0.0077
+ },
+ "evening_field": {
+  "conf": 0.989,
+  "offset": -0.0141,
+  "roll_b": -0.0132,
+  "roll_c": -0.0039
+ },
+ "evening_meadow": {
+  "conf": 0.906,
+  "offset": -0.0209,
+  "roll_b": -0.0048,
+  "roll_c": -0.021
+ },
+ "evening_museum_courtyard": {
+  "conf": 0.667,
+  "offset": 0.0054,
+  "roll_b": 0.003,
+  "roll_c": -0.0376
+ },
+ "evening_road_01": {
+  "conf": 0.994,
+  "offset": -0.0135,
+  "roll_b": -0.0001,
+  "roll_c": 0.0048
+ },
+ "evening_road_01_puresky": {
+  "conf": 0.998,
+  "offset": -0.0392,
+  "roll_b": -0.0007,
+  "roll_c": 0.0045
+ },
+ "events_hall_interior": {
+  "conf": 0.506,
+  "offset": -0.0396,
+  "roll_b": -0.0044,
+  "roll_c": 0.0033
+ },
+ "factory_yard": {
+  "conf": 0.778,
+  "offset": -0.0274,
+  "roll_b": 0.0028,
+  "roll_c": 0.0088
+ },
+ "farm_field": {
+  "conf": 0.865,
+  "offset": -0.0149,
+  "roll_b": -0.003,
+  "roll_c": -0.005
+ },
+ "farm_road": {
+  "conf": 0.988,
+  "offset": -0.0049,
+  "roll_b": 0.0018,
+  "roll_c": -0.0034
+ },
+ "farm_sunset": {
+  "conf": 0.998,
+  "offset": -0.0258,
+  "roll_b": -0.0077,
+  "roll_c": 0.0044
+ },
+ "farmland_overcast": {
+  "conf": 0.999,
+  "offset": -0.0057,
+  "roll_b": 0.0034,
+  "roll_c": -0.0014
+ },
+ "felsenlabyrinth": {
+  "conf": 0.514,
+  "offset": 0.0529,
+  "roll_b": 0.0374,
+  "roll_c": 0.0513
+ },
+ "ferndale_studio_01": {
+  "conf": 0.859,
+  "offset": 0.1194,
+  "roll_b": 0.0223,
+  "roll_c": -0.0442
+ },
+ "ferndale_studio_02": {
+  "conf": 0.353,
+  "offset": 0.0791,
+  "roll_b": 0.0199,
+  "roll_c": -0.0006
+ },
+ "ferndale_studio_03": {
+  "conf": 0.599,
+  "offset": 0.1366,
+  "roll_b": -0.0376,
+  "roll_c": 0.0493
+ },
+ "ferndale_studio_04": {
+  "conf": 0.611,
+  "offset": 0.1369,
+  "roll_b": -0.0383,
+  "roll_c": 0.0497
+ },
+ "ferndale_studio_05": {
+  "conf": 0.581,
+  "offset": 0.0255,
+  "roll_b": 0.0779,
+  "roll_c": 0.0157
+ },
+ "ferndale_studio_06": {
+  "conf": 0.53,
+  "offset": 0.0551,
+  "roll_b": -0.0403,
+  "roll_c": 0.0007
+ },
+ "ferndale_studio_07": {
+  "conf": 0.451,
+  "offset": 0.1033,
+  "roll_b": -0.0437,
+  "roll_c": 0.0266
+ },
+ "ferndale_studio_08": {
+  "conf": 0.789,
+  "offset": 0.103,
+  "roll_b": 0.0311,
+  "roll_c": 0.0368
+ },
+ "ferndale_studio_09": {
+  "conf": 0.727,
+  "offset": 0.1369,
+  "roll_b": 0.0324,
+  "roll_c": -0.0316
+ },
+ "ferndale_studio_10": {
+  "conf": 0.546,
+  "offset": 0.1568,
+  "roll_b": -0.0142,
+  "roll_c": -0.0326
+ },
+ "ferndale_studio_11": {
+  "conf": 0.458,
+  "offset": 0.2309,
+  "roll_b": 0.035,
+  "roll_c": -0.0311
+ },
+ "ferndale_studio_12": {
+  "conf": 0.518,
+  "offset": 0.2246,
+  "roll_b": 0.0289,
+  "roll_c": -0.028
+ },
+ "fireplace": {
+  "conf": 0.598,
+  "offset": 0.1535,
+  "roll_b": 0.0239,
+  "roll_c": 0.0211
+ },
+ "fish_eagle_hill": {
+  "conf": 0.559,
+  "offset": -0.0204,
+  "roll_b": -0.0086,
+  "roll_c": 0.002
+ },
+ "fish_hoek_beach": {
+  "conf": 0.738,
+  "offset": -0.0119,
+  "roll_b": -0.0028,
+  "roll_c": 0.0049
+ },
+ "flamingo_pan": {
+  "conf": 0.975,
+  "offset": -0.0022,
+  "roll_b": 0.0154,
+  "roll_c": 0.0013
+ },
+ "floral_tent": {
+  "conf": 0.785,
+  "offset": 0.0371,
+  "roll_b": -0.0382,
+  "roll_c": -0.0154
+ },
+ "flower_hillside": {
+  "conf": 0.435,
+  "offset": 0.2571,
+  "roll_b": -0.0003,
+  "roll_c": 0.0099
+ },
+ "flower_road": {
+  "conf": 0.648,
+  "offset": -0.0021,
+  "roll_b": -0.0081,
+  "roll_c": -0.0221
+ },
+ "forest_cave": {
+  "conf": 0.432,
+  "offset": 0.247,
+  "roll_b": -0.0003,
+  "roll_c": 0.0088
+ },
+ "forest_grove": {
+  "conf": 0.725,
+  "offset": -0.0329,
+  "roll_b": 0.0025,
+  "roll_c": 0.0016
+ },
+ "forest_slope": {
+  "conf": 0.594,
+  "offset": 0.0596,
+  "roll_b": 0.0194,
+  "roll_c": 0.0235
+ },
+ "forgotten_miniland": {
+  "conf": 0.771,
+  "offset": -0.0211,
+  "roll_b": 0.0054,
+  "roll_c": 0.0087
+ },
+ "fort_schanskop_morning": {
+  "conf": 0.596,
+  "offset": 0.0529,
+  "roll_b": -0.0199,
+  "roll_c": -0.0544
+ },
+ "fouriesburg_mountain_cloudy": {
+  "conf": 0.543,
+  "offset": -0.0207,
+  "roll_b": 0.0214,
+  "roll_c": 0.004
+ },
+ "fouriesburg_mountain_lookout": {
+  "conf": 0.626,
+  "offset": -0.0039,
+  "roll_b": -0.0125,
+  "roll_c": -0.0014
+ },
+ "fouriesburg_mountain_lookout_2": {
+  "conf": 0.666,
+  "offset": -0.009,
+  "roll_b": -0.0102,
+  "roll_c": -0.0013
+ },
+ "fouriesburg_mountain_midday": {
+  "conf": 0.394,
+  "offset": 0.2348,
+  "roll_b": -0.0677,
+  "roll_c": 0.0082
+ },
+ "freight_station": {
+  "conf": 0.999,
+  "offset": -0.0255,
+  "roll_b": 0.0059,
+  "roll_c": 0.0096
+ },
+ "frozen_lake": {
+  "conf": 0.689,
+  "offset": -0.0085,
+  "roll_b": -0.0157,
+  "roll_c": -0.0194
+ },
+ "furry_clouds": {
+  "conf": 0.599,
+  "offset": 0.0257,
+  "roll_b": 0.0031,
+  "roll_c": 0.0353
+ },
+ "furstenstein": {
+  "conf": 0.617,
+  "offset": 0.0749,
+  "roll_b": -0.0044,
+  "roll_c": 0.0005
+ },
+ "future_parking": {
+  "conf": 0.575,
+  "offset": 0.0005,
+  "roll_b": -0.0265,
+  "roll_c": -0.0286
+ },
+ "gamrig": {
+  "conf": 0.61,
+  "offset": -0.0187,
+  "roll_b": -0.0079,
+  "roll_c": 0.0036
+ },
+ "garage": {
+  "conf": 0.686,
+  "offset": 0.0436,
+  "roll_b": -0.007,
+  "roll_c": 0.0009
+ },
+ "garden_nook": {
+  "conf": 0.46,
+  "offset": 0.0579,
+  "roll_b": -0.0079,
+  "roll_c": -0.0159
+ },
+ "gear_store": {
+  "conf": 0.469,
+  "offset": -0.0182,
+  "roll_b": -0.0121,
+  "roll_c": 0.0112
+ },
+ "geislingen_an_der_steige": {
+  "conf": 0.554,
+  "offset": 0.2426,
+  "roll_b": -0.0107,
+  "roll_c": -0.0134
+ },
+ "georgentor": {
+  "conf": 0.481,
+  "offset": 0.1651,
+  "roll_b": -0.0224,
+  "roll_c": -0.0429
+ },
+ "german_town_street": {
+  "conf": 0.47,
+  "offset": -0.0117,
+  "roll_b": -0.0027,
+  "roll_c": -0.011
+ },
+ "glencairn_expressway": {
+  "conf": 0.558,
+  "offset": -0.0257,
+  "roll_b": -0.0009,
+  "roll_c": -0.0087
+ },
+ "goegap": {
+  "conf": 0.783,
+  "offset": 0.0201,
+  "roll_b": 0.0282,
+  "roll_c": -0.028
+ },
+ "goegap_road": {
+  "conf": 0.738,
+  "offset": -0.0264,
+  "roll_b": 0.0062,
+  "roll_c": 0.0074
+ },
+ "golden_bay": {
+  "conf": 0.79,
+  "offset": -0.006,
+  "roll_b": -0.0042,
+  "roll_c": 0.0028
+ },
+ "golden_gate_hills": {
+  "conf": 0.384,
+  "offset": 0.0641,
+  "roll_b": 0.0278,
+  "roll_c": 0.0306
+ },
+ "golf_course_sunrise": {
+  "conf": 0.881,
+  "offset": -0.031,
+  "roll_b": -0.0026,
+  "roll_c": 0.0064
+ },
+ "gothic_manor_01": {
+  "conf": 0.823,
+  "offset": -0.0081,
+  "roll_b": 0.0208,
+  "roll_c": 0.0196
+ },
+ "gothic_manor_02": {
+  "conf": 0.885,
+  "offset": -0.0336,
+  "roll_b": -0.0103,
+  "roll_c": 0.0088
+ },
+ "graaff_reinet_groote_kerk": {
+  "conf": 0.655,
+  "offset": -0.0289,
+  "roll_b": 0.0265,
+  "roll_c": 0.0179
+ },
+ "graffiti_shelter": {
+  "conf": 0.353,
+  "offset": 0.2532,
+  "roll_b": 0.0075,
+  "roll_c": 0.0111
+ },
+ "grasslands_sunset": {
+  "conf": 0.997,
+  "offset": -0.0125,
+  "roll_b": 0.0003,
+  "roll_c": 0.0065
+ },
+ "graveyard_pathways": {
+  "conf": 0.885,
+  "offset": -0.0082,
+  "roll_b": 0.0038,
+  "roll_c": -0.0034
+ },
+ "green_point_park": {
+  "conf": 0.99,
+  "offset": -0.0164,
+  "roll_b": -0.002,
+  "roll_c": 0.0047
+ },
+ "green_sanctuary": {
+  "conf": 0.423,
+  "offset": 0.046,
+  "roll_b": 0.032,
+  "roll_c": 0.0076
+ },
+ "greenwich_park": {
+  "conf": 0.308,
+  "offset": 0.2573,
+  "roll_b": -0.0095,
+  "roll_c": -0.0149
+ },
+ "greenwich_park_02": {
+  "conf": 0.654,
+  "offset": -0.0326,
+  "roll_b": 0.0027,
+  "roll_c": -0.0027
+ },
+ "greenwich_park_03": {
+  "conf": 0.961,
+  "offset": -0.0211,
+  "roll_b": 0.0204,
+  "roll_c": -0.0034
+ },
+ "gum_trees": {
+  "conf": 0.646,
+  "offset": -0.0218,
+  "roll_b": 0.0128,
+  "roll_c": 0.0004
+ },
+ "gym_01": {
+  "conf": 0.605,
+  "offset": -0.0376,
+  "roll_b": -0.0073,
+  "roll_c": -0.0023
+ },
+ "gym_entrance": {
+  "conf": 0.431,
+  "offset": 0.2032,
+  "roll_b": 0.031,
+  "roll_c": -0.0412
+ },
+ "hall_of_finfish": {
+  "conf": 0.617,
+  "offset": 0.1511,
+  "roll_b": 0.021,
+  "roll_c": 0.0186
+ },
+ "hall_of_mammals": {
+  "conf": 0.315,
+  "offset": 0.0936,
+  "roll_b": 0.0597,
+  "roll_c": 0.0169
+ },
+ "hamburg_canal": {
+  "conf": 0.465,
+  "offset": -0.0083,
+  "roll_b": 0.0017,
+  "roll_c": -0.0072
+ },
+ "hamburg_hbf": {
+  "conf": 0.673,
+  "offset": 0.0114,
+  "roll_b": -0.0252,
+  "roll_c": 0.0149
+ },
+ "hangar_interior": {
+  "conf": 0.923,
+  "offset": 0.0091,
+  "roll_b": 0.0145,
+  "roll_c": -0.0089
+ },
+ "hanger_exterior_cloudy": {
+  "conf": 0.993,
+  "offset": -0.0152,
+  "roll_b": -0.0032,
+  "roll_c": -0.0009
+ },
+ "hansaplatz": {
+  "conf": 0.977,
+  "offset": -0.0125,
+  "roll_b": 0.001,
+  "roll_c": 0.0016
+ },
+ "harties": {
+  "conf": 0.308,
+  "offset": 0.2554,
+  "roll_b": -0.0083,
+  "roll_c": 0.0397
+ },
+ "harvest": {
+  "conf": 0.342,
+  "offset": -0.0051,
+  "roll_b": -0.0046,
+  "roll_c": 0.0019
+ },
+ "hausdorf_clear_sky": {
+  "conf": 0.703,
+  "offset": -0.0131,
+  "roll_b": 0.0103,
+  "roll_c": 0.011
+ },
+ "hausdorf_meadow": {
+  "conf": 0.913,
+  "offset": -0.0287,
+  "roll_b": -0.0024,
+  "roll_c": -0.0093
+ },
+ "hay_bales": {
+  "conf": 0.823,
+  "offset": -0.0105,
+  "roll_b": 0.0026,
+  "roll_c": -0.004
+ },
+ "hayloft": {
+  "conf": 0.746,
+  "offset": 0.0401,
+  "roll_b": -0.0312,
+  "roll_c": -0.0083
+ },
+ "herkulessaulen": {
+  "conf": 0.622,
+  "offset": 0.0385,
+  "roll_b": 0.009,
+  "roll_c": -0.0169
+ },
+ "highway_bridge_sunset": {
+  "conf": 0.848,
+  "offset": -0.0169,
+  "roll_b": 0.0067,
+  "roll_c": 0.0075
+ },
+ "hikers_cave": {
+  "conf": 0.598,
+  "offset": 0.0075,
+  "roll_b": 0.0064,
+  "roll_c": 0.0251
+ },
+ "hilltop_construction": {
+  "conf": 0.655,
+  "offset": -0.0047,
+  "roll_b": 0.005,
+  "roll_c": -0.0086
+ },
+ "hilly_terrain_01": {
+  "conf": 0.962,
+  "offset": -0.0034,
+  "roll_b": -0.0019,
+  "roll_c": -0.0043
+ },
+ "historic_cloister_passage": {
+  "conf": 0.586,
+  "offset": 0.0348,
+  "roll_b": 0.0251,
+  "roll_c": 0.0276
+ },
+ "hochsal_field": {
+  "conf": 0.778,
+  "offset": -0.016,
+  "roll_b": -0.0147,
+  "roll_c": 0.0026
+ },
+ "hochsal_forest": {
+  "conf": 0.464,
+  "offset": -0.0278,
+  "roll_b": 0.0016,
+  "roll_c": -0.0025
+ },
+ "homecoming_center_rooftop": {
+  "conf": 0.51,
+  "offset": 0.0699,
+  "roll_b": 0.0071,
+  "roll_c": 0.0034
+ },
+ "horn-koppe_snow": {
+  "conf": 0.947,
+  "offset": 0.0135,
+  "roll_b": -0.0036,
+  "roll_c": -0.0049
+ },
+ "horn-koppe_spring": {
+  "conf": 0.999,
+  "offset": -0.0049,
+  "roll_b": 0.0033,
+  "roll_c": 0.0131
+ },
+ "hospital_room": {
+  "conf": 0.442,
+  "offset": 0.2476,
+  "roll_b": 0.0075,
+  "roll_c": -0.0297
+ },
+ "hotel_rooftop_balcony": {
+  "conf": 0.654,
+  "offset": 0.0895,
+  "roll_b": -0.0242,
+  "roll_c": -0.0073
+ },
+ "hotel_room": {
+  "conf": 0.362,
+  "offset": 0.2141,
+  "roll_b": 0.0493,
+  "roll_c": 0.0308
+ },
+ "illovo_beach_balcony": {
+  "conf": 0.474,
+  "offset": 0.2155,
+  "roll_b": 0.0397,
+  "roll_c": 0.0127
+ },
+ "immenstadter_horn": {
+  "conf": 0.93,
+  "offset": -0.0017,
+  "roll_b": -0.0115,
+  "roll_c": 0.0142
+ },
+ "indoor_pool": {
+  "conf": 0.505,
+  "offset": 0.0801,
+  "roll_b": -0.0168,
+  "roll_c": 0.0065
+ },
+ "industrial_pipe_and_valve_01": {
+  "conf": 0.83,
+  "offset": 0.0314,
+  "roll_b": -0.0062,
+  "roll_c": -0.0161
+ },
+ "industrial_pipe_and_valve_02": {
+  "conf": 0.83,
+  "offset": 0.0157,
+  "roll_b": -0.0084,
+  "roll_c": 0.0184
+ },
+ "industrial_sunset": {
+  "conf": 0.998,
+  "offset": -0.0073,
+  "roll_b": 0.0032,
+  "roll_c": 0.0016
+ },
+ "industrial_sunset_02": {
+  "conf": 0.944,
+  "offset": -0.0123,
+  "roll_b": 0.0136,
+  "roll_c": -0.0033
+ },
+ "industrial_sunset_02_puresky": {
+  "conf": 1.0,
+  "offset": -0.0368,
+  "roll_b": 0.007,
+  "roll_c": 0.0109
+ },
+ "industrial_sunset_puresky": {
+  "conf": 1.0,
+  "offset": -0.0316,
+  "roll_b": 0.0049,
+  "roll_c": 0.009
+ },
+ "industrial_wooden_attic": {
+  "conf": 0.526,
+  "offset": 0.0499,
+  "roll_b": 0.0372,
+  "roll_c": 0.0233
+ },
+ "industrial_workshop_foundry": {
+  "conf": 0.554,
+  "offset": -0.0122,
+  "roll_b": 0.0253,
+  "roll_c": 0.0036
+ },
+ "interior_construction": {
+  "conf": 0.559,
+  "offset": 0.0856,
+  "roll_b": -0.0291,
+  "roll_c": 0.0251
+ },
+ "irish_institute": {
+  "conf": 0.834,
+  "offset": -0.0135,
+  "roll_b": -0.0214,
+  "roll_c": -0.0182
+ },
+ "je_gray_02": {
+  "conf": 0.623,
+  "offset": -0.0273,
+  "roll_b": 0.0001,
+  "roll_c": 0.0113
+ },
+ "je_gray_park": {
+  "conf": 0.964,
+  "offset": -0.0145,
+  "roll_b": -0.0065,
+  "roll_c": -0.016
+ },
+ "kart_club": {
+  "conf": 0.554,
+  "offset": 0.1024,
+  "roll_b": -0.0682,
+  "roll_c": -0.0194
+ },
+ "kiara_1_dawn": {
+  "conf": 0.759,
+  "offset": -0.0285,
+  "roll_b": 0.0059,
+  "roll_c": 0.0035
+ },
+ "kiara_2_sunrise": {
+  "conf": 0.752,
+  "offset": -0.0165,
+  "roll_b": -0.014,
+  "roll_c": 0.006
+ },
+ "kiara_3_morning": {
+  "conf": 0.66,
+  "offset": -0.0023,
+  "roll_b": -0.0362,
+  "roll_c": -0.0038
+ },
+ "kiara_4_mid-morning": {
+  "conf": 0.504,
+  "offset": 0.0044,
+  "roll_b": -0.044,
+  "roll_c": -0.0133
+ },
+ "kiara_5_noon": {
+  "conf": 0.528,
+  "offset": 0.1209,
+  "roll_b": -0.024,
+  "roll_c": 0.0069
+ },
+ "kiara_6_afternoon": {
+  "conf": 0.402,
+  "offset": 0.1199,
+  "roll_b": -0.0074,
+  "roll_c": -0.0093
+ },
+ "kiara_7_late-afternoon": {
+  "conf": 0.671,
+  "offset": -0.0014,
+  "roll_b": -0.0158,
+  "roll_c": -0.0354
+ },
+ "kiara_8_sunset": {
+  "conf": 0.812,
+  "offset": -0.0187,
+  "roll_b": -0.0032,
+  "roll_c": -0.0135
+ },
+ "kiara_9_dusk": {
+  "conf": 0.946,
+  "offset": -0.0274,
+  "roll_b": 0.0011,
+  "roll_c": -0.0004
+ },
+ "kiara_interior": {
+  "conf": 0.431,
+  "offset": 0.0737,
+  "roll_b": 0.0204,
+  "roll_c": -0.0176
+ },
+ "killesberg_park": {
+  "conf": 0.403,
+  "offset": 0.0631,
+  "roll_b": -0.0058,
+  "roll_c": -0.0172
+ },
+ "klippad_dawn_1": {
+  "conf": 0.794,
+  "offset": -0.0303,
+  "roll_b": -0.0028,
+  "roll_c": 0.0027
+ },
+ "klippad_dawn_2": {
+  "conf": 0.736,
+  "offset": -0.0247,
+  "roll_b": -0.001,
+  "roll_c": 0.0088
+ },
+ "klippad_sunrise_1": {
+  "conf": 0.755,
+  "offset": -0.0257,
+  "roll_b": -0.0001,
+  "roll_c": 0.0108
+ },
+ "klippad_sunrise_2": {
+  "conf": 0.686,
+  "offset": -0.029,
+  "roll_b": -0.0014,
+  "roll_c": 0.0084
+ },
+ "kloetzle_blei": {
+  "conf": 0.891,
+  "offset": -0.0333,
+  "roll_b": 0.0075,
+  "roll_c": 0.0052
+ },
+ "kloofendal_28d_misty": {
+  "conf": 0.565,
+  "offset": 0.2449,
+  "roll_b": 0.0054,
+  "roll_c": 0.0148
+ },
+ "kloofendal_38d_partly_cloudy": {
+  "conf": 0.599,
+  "offset": 0.0051,
+  "roll_b": -0.0137,
+  "roll_c": -0.0054
+ },
+ "kloofendal_43d_clear": {
+  "conf": 0.562,
+  "offset": 0.2503,
+  "roll_b": 0.0048,
+  "roll_c": 0.0052
+ },
+ "kloofendal_48d_partly_cloudy": {
+  "conf": 0.774,
+  "offset": 0.0068,
+  "roll_b": -0.0098,
+  "roll_c": 0.0003
+ },
+ "kloofendal_48d_partly_cloudy_puresky": {
+  "conf": 1.0,
+  "offset": -0.0495,
+  "roll_b": -0.0018,
+  "roll_c": 0.0011
+ },
+ "kloofendal_misty_morning": {
+  "conf": 0.551,
+  "offset": 0.2449,
+  "roll_b": 0.0181,
+  "roll_c": 0.0157
+ },
+ "kloofendal_overcast": {
+  "conf": 0.34,
+  "offset": 0.0206,
+  "roll_b": -0.0142,
+  "roll_c": 0.019
+ },
+ "kloppenheim_01": {
+  "conf": 0.942,
+  "offset": -0.0056,
+  "roll_b": 0.0044,
+  "roll_c": 0.0022
+ },
+ "kloppenheim_01_puresky": {
+  "conf": 1.0,
+  "offset": -0.0159,
+  "roll_b": -0.0059,
+  "roll_c": 0.0171
+ },
+ "kloppenheim_02": {
+  "conf": 0.885,
+  "offset": -0.0055,
+  "roll_b": 0.005,
+  "roll_c": -0.0008
+ },
+ "kloppenheim_03": {
+  "conf": 0.964,
+  "offset": -0.007,
+  "roll_b": 0.0005,
+  "roll_c": -0.0051
+ },
+ "kloppenheim_03_puresky": {
+  "conf": 0.99,
+  "offset": -0.0422,
+  "roll_b": -0.0028,
+  "roll_c": 0.0065
+ },
+ "kloppenheim_04": {
+  "conf": 0.586,
+  "offset": -0.0066,
+  "roll_b": 0.0085,
+  "roll_c": 0.0066
+ },
+ "kloppenheim_05": {
+  "conf": 0.746,
+  "offset": -0.0056,
+  "roll_b": -0.0016,
+  "roll_c": -0.0028
+ },
+ "kloppenheim_05_puresky": {
+  "conf": 1.0,
+  "offset": -0.0497,
+  "roll_b": -0.0032,
+  "roll_c": 0.0032
+ },
+ "kloppenheim_06": {
+  "conf": 0.444,
+  "offset": 0.2654,
+  "roll_b": 0.0185,
+  "roll_c": -0.0052
+ },
+ "kloppenheim_06_puresky": {
+  "conf": 0.996,
+  "offset": -0.0362,
+  "roll_b": -0.0047,
+  "roll_c": -0.0039
+ },
+ "kloppenheim_07": {
+  "conf": 0.995,
+  "offset": -0.0049,
+  "roll_b": 0.0055,
+  "roll_c": -0.0012
+ },
+ "konigsallee": {
+  "conf": 0.66,
+  "offset": 0.0533,
+  "roll_b": 0.06,
+  "roll_c": 0.0654
+ },
+ "konzerthaus": {
+  "conf": 0.742,
+  "offset": -0.0111,
+  "roll_b": -0.0258,
+  "roll_c": -0.0051
+ },
+ "ladybrand_heritage_house": {
+  "conf": 0.311,
+  "offset": 0.2234,
+  "roll_b": -0.0714,
+  "roll_c": 0.0171
+ },
+ "lago_disola": {
+  "conf": 0.732,
+  "offset": 0.0186,
+  "roll_b": 0.009,
+  "roll_c": -0.025
+ },
+ "lake_pier": {
+  "conf": 0.867,
+  "offset": -0.0175,
+  "roll_b": -0.0009,
+  "roll_c": 0.0028
+ },
+ "lakes": {
+  "conf": 0.949,
+  "offset": -0.018,
+  "roll_b": 0.0013,
+  "roll_c": -0.0029
+ },
+ "lakeside": {
+  "conf": 0.562,
+  "offset": -0.0051,
+  "roll_b": -0.005,
+  "roll_c": -0.0089
+ },
+ "lakeside_dawn": {
+  "conf": 0.644,
+  "offset": -0.025,
+  "roll_b": 0.0118,
+  "roll_c": -0.0007
+ },
+ "lakeside_night": {
+  "conf": 0.75,
+  "offset": -0.0245,
+  "roll_b": 0.0155,
+  "roll_c": -0.0066
+ },
+ "lakeside_sunrise": {
+  "conf": 0.656,
+  "offset": -0.0217,
+  "roll_b": 0.0131,
+  "roll_c": -0.004
+ },
+ "lapa": {
+  "conf": 0.7,
+  "offset": 0.0275,
+  "roll_b": 0.0336,
+  "roll_c": -0.0244
+ },
+ "large_corridor": {
+  "conf": 0.422,
+  "offset": 0.2539,
+  "roll_b": 0.0687,
+  "roll_c": 0.0636
+ },
+ "laufenurg_church": {
+  "conf": 0.851,
+  "offset": -0.0022,
+  "roll_b": -0.0154,
+  "roll_c": 0.0268
+ },
+ "lauter_waterfall": {
+  "conf": 0.578,
+  "offset": 0.0567,
+  "roll_b": -0.0593,
+  "roll_c": 0.0118
+ },
+ "leadenhall_market": {
+  "conf": 0.752,
+  "offset": 0.007,
+  "roll_b": 0.009,
+  "roll_c": -0.0129
+ },
+ "learner_park": {
+  "conf": 0.995,
+  "offset": -0.0213,
+  "roll_b": 0.0142,
+  "roll_c": 0.0084
+ },
+ "lebombo": {
+  "conf": 0.363,
+  "offset": 0.0756,
+  "roll_b": -0.022,
+  "roll_c": 0.1374
+ },
+ "leibstadt": {
+  "conf": 0.818,
+  "offset": -0.0065,
+  "roll_b": 0.031,
+  "roll_c": -0.0186
+ },
+ "lenong_1": {
+  "conf": 0.879,
+  "offset": -0.0155,
+  "roll_b": 0.0063,
+  "roll_c": 0.0023
+ },
+ "lenong_2": {
+  "conf": 0.406,
+  "offset": 0.2404,
+  "roll_b": 0.001,
+  "roll_c": -0.0014
+ },
+ "lenong_3": {
+  "conf": 0.885,
+  "offset": -0.0152,
+  "roll_b": -0.0129,
+  "roll_c": 0.0018
+ },
+ "lilienstein": {
+  "conf": 0.953,
+  "offset": -0.0166,
+  "roll_b": 0.002,
+  "roll_c": -0.0145
+ },
+ "limehouse": {
+  "conf": 0.75,
+  "offset": 0.0182,
+  "roll_b": 0.0062,
+  "roll_c": -0.0562
+ },
+ "limpopo_golf_course": {
+  "conf": 0.905,
+  "offset": -0.0106,
+  "roll_b": -0.0054,
+  "roll_c": -0.0126
+ },
+ "little_paris_eiffel_tower": {
+  "conf": 0.641,
+  "offset": -0.0154,
+  "roll_b": 0.0084,
+  "roll_c": -0.0272
+ },
+ "little_paris_under_tower": {
+  "conf": 0.461,
+  "offset": 0.0447,
+  "roll_b": -0.0023,
+  "roll_c": 0.056
+ },
+ "lonely_road_afternoon": {
+  "conf": 0.887,
+  "offset": 0.0222,
+  "roll_b": -0.0103,
+  "roll_c": -0.033
+ },
+ "lookout": {
+  "conf": 0.616,
+  "offset": -0.0049,
+  "roll_b": 0.0265,
+  "roll_c": -0.0494
+ },
+ "lot_01": {
+  "conf": 0.952,
+  "offset": -0.0342,
+  "roll_b": -0.001,
+  "roll_c": -0.0053
+ },
+ "lot_02": {
+  "conf": 0.875,
+  "offset": -0.0343,
+  "roll_b": 0.0086,
+  "roll_c": 0.0012
+ },
+ "ludwikowice_farmland": {
+  "conf": 0.616,
+  "offset": -0.0128,
+  "roll_b": 0.0041,
+  "roll_c": -0.0168
+ },
+ "lush_dirt_path": {
+  "conf": 0.307,
+  "offset": 0.1596,
+  "roll_b": -0.0131,
+  "roll_c": -0.0544
+ },
+ "lythwood_field": {
+  "conf": 0.971,
+  "offset": -0.0117,
+  "roll_b": -0.004,
+  "roll_c": 0.0092
+ },
+ "lythwood_lounge": {
+  "conf": 0.657,
+  "offset": 0.1171,
+  "roll_b": -0.0272,
+  "roll_c": -0.0273
+ },
+ "lythwood_room": {
+  "conf": 0.569,
+  "offset": 0.13,
+  "roll_b": -0.0071,
+  "roll_c": 0.0376
+ },
+ "lythwood_terrace": {
+  "conf": 0.898,
+  "offset": -0.0238,
+  "roll_b": -0.0014,
+  "roll_c": -0.0007
+ },
+ "machine_shop_01": {
+  "conf": 0.489,
+  "offset": -0.0063,
+  "roll_b": 0.0154,
+  "roll_c": -0.0087
+ },
+ "machine_shop_02": {
+  "conf": 0.576,
+  "offset": 0.0657,
+  "roll_b": 0.0218,
+  "roll_c": 0.0391
+ },
+ "machine_shop_03": {
+  "conf": 0.686,
+  "offset": -0.0153,
+  "roll_b": 0.02,
+  "roll_c": 0.0019
+ },
+ "magalies_field_sunset": {
+  "conf": 0.945,
+  "offset": -0.0243,
+  "roll_b": 0.0037,
+  "roll_c": 0.0064
+ },
+ "malagas_ferry_road": {
+  "conf": 0.606,
+  "offset": -0.011,
+  "roll_b": -0.0186,
+  "roll_c": 0.0072
+ },
+ "mall_parking_lot": {
+  "conf": 0.923,
+  "offset": -0.0237,
+  "roll_b": 0.0015,
+  "roll_c": -0.0088
+ },
+ "marry_hall": {
+  "conf": 0.714,
+  "offset": 0.1019,
+  "roll_b": 0.0257,
+  "roll_c": -0.0092
+ },
+ "meadow": {
+  "conf": 0.811,
+  "offset": 0.0039,
+  "roll_b": 0.0059,
+  "roll_c": -0.0102
+ },
+ "meadow_2": {
+  "conf": 0.839,
+  "offset": -0.0019,
+  "roll_b": -0.0181,
+  "roll_c": 0.0226
+ },
+ "mealie_road": {
+  "conf": 0.937,
+  "offset": -0.0152,
+  "roll_b": -0.0013,
+  "roll_c": 0.0021
+ },
+ "medieval_cafe": {
+  "conf": 0.713,
+  "offset": -0.009,
+  "roll_b": 0.0253,
+  "roll_c": -0.0018
+ },
+ "metro_noord": {
+  "conf": 0.826,
+  "offset": -0.0028,
+  "roll_b": 0.0051,
+  "roll_c": -0.0265
+ },
+ "metro_vijzelgracht": {
+  "conf": 0.764,
+  "offset": 0.0771,
+  "roll_b": -0.0002,
+  "roll_c": -0.0001
+ },
+ "minedump_flats": {
+  "conf": 0.929,
+  "offset": -0.0087,
+  "roll_b": 0.0051,
+  "roll_c": 0.0041
+ },
+ "mirrored_hall": {
+  "conf": 0.632,
+  "offset": 0.0425,
+  "roll_b": -0.002,
+  "roll_c": 0.0049
+ },
+ "missile_launch_facility_01": {
+  "conf": 0.644,
+  "offset": 0.0353,
+  "roll_b": 0.0121,
+  "roll_c": -0.0053
+ },
+ "missile_launch_facility_02": {
+  "conf": 0.653,
+  "offset": -0.0255,
+  "roll_b": -0.0118,
+  "roll_c": -0.0048
+ },
+ "missile_launch_facility_03": {
+  "conf": 0.331,
+  "offset": -0.0481,
+  "roll_b": 0.0006,
+  "roll_c": -0.0026
+ },
+ "misty_dawn": {
+  "conf": 0.7,
+  "offset": -0.0322,
+  "roll_b": 0.0071,
+  "roll_c": -0.0001
+ },
+ "misty_farm_road": {
+  "conf": 0.547,
+  "offset": 0.255,
+  "roll_b": -0.0009,
+  "roll_c": -0.0076
+ },
+ "misty_pines": {
+  "conf": 0.467,
+  "offset": 0.2579,
+  "roll_b": 0.0098,
+  "roll_c": 0.0091
+ },
+ "modern_bathroom": {
+  "conf": 0.594,
+  "offset": 0.2198,
+  "roll_b": -0.0011,
+  "roll_c": 0.0044
+ },
+ "modern_buildings": {
+  "conf": 0.931,
+  "offset": -0.0154,
+  "roll_b": -0.0112,
+  "roll_c": 0.0022
+ },
+ "modern_buildings_2": {
+  "conf": 0.54,
+  "offset": 0.0175,
+  "roll_b": 0.0217,
+  "roll_c": 0.0405
+ },
+ "modern_buildings_night": {
+  "conf": 0.707,
+  "offset": -0.0165,
+  "roll_b": -0.0092,
+  "roll_c": 0.004
+ },
+ "modern_evening_street": {
+  "conf": 0.59,
+  "offset": 0.0382,
+  "roll_b": 0.0462,
+  "roll_c": 0.0053
+ },
+ "monks_forest": {
+  "conf": 0.506,
+  "offset": -0.0298,
+  "roll_b": -0.0034,
+  "roll_c": -0.0125
+ },
+ "monkstown_castle": {
+  "conf": 0.338,
+  "offset": 0.1644,
+  "roll_b": -0.0175,
+  "roll_c": 0.0441
+ },
+ "monochrome_studio_01": {
+  "conf": 0.385,
+  "offset": -0.1398,
+  "roll_b": 0.1253,
+  "roll_c": -0.0011
+ },
+ "monochrome_studio_02": {
+  "conf": 0.517,
+  "offset": 0.2822,
+  "roll_b": -0.156,
+  "roll_c": -0.1159
+ },
+ "monochrome_studio_03": {
+  "conf": 0.66,
+  "offset": -0.0065,
+  "roll_b": 0.1673,
+  "roll_c": 0.103
+ },
+ "monochrome_studio_04": {
+  "conf": 0.56,
+  "offset": 0.1654,
+  "roll_b": 0.0459,
+  "roll_c": -0.0296
+ },
+ "monte_scherbelino": {
+  "conf": 0.921,
+  "offset": -0.0247,
+  "roll_b": 0.009,
+  "roll_c": 0.0261
+ },
+ "montorfano": {
+  "conf": 0.423,
+  "offset": 0.1531,
+  "roll_b": -0.019,
+  "roll_c": -0.0437
+ },
+ "moon_lab": {
+  "conf": 0.523,
+  "offset": 0.0572,
+  "roll_b": -0.0021,
+  "roll_c": 0.0054
+ },
+ "moonless_golf": {
+  "conf": 0.993,
+  "offset": -0.0284,
+  "roll_b": -0.008,
+  "roll_c": 0.0122
+ },
+ "moonlit_golf": {
+  "conf": 0.994,
+  "offset": -0.0207,
+  "roll_b": 0.0,
+  "roll_c": 0.0
+ },
+ "mosaic_tunnel": {
+  "conf": 0.426,
+  "offset": -0.0268,
+  "roll_b": 0.0103,
+  "roll_c": -0.0076
+ },
+ "mpumalanga_veld": {
+  "conf": 0.818,
+  "offset": 0.0051,
+  "roll_b": -0.0047,
+  "roll_c": -0.0103
+ },
+ "mud_road": {
+  "conf": 0.939,
+  "offset": -0.0071,
+  "roll_b": -0.0008,
+  "roll_c": 0.0023
+ },
+ "muddy_autumn_forest": {
+  "conf": 0.566,
+  "offset": 0.256,
+  "roll_b": -0.0023,
+  "roll_c": 0.0016
+ },
+ "museum_of_ethnography": {
+  "conf": 0.683,
+  "offset": 0.128,
+  "roll_b": -0.0142,
+  "roll_c": -0.0541
+ },
+ "museum_of_history": {
+  "conf": 0.777,
+  "offset": 0.0191,
+  "roll_b": 0.0315,
+  "roll_c": 0.0093
+ },
+ "museumplein": {
+  "conf": 0.956,
+  "offset": -0.0271,
+  "roll_b": 0.0019,
+  "roll_c": -0.0091
+ },
+ "music_hall_01": {
+  "conf": 0.493,
+  "offset": 0.0182,
+  "roll_b": -0.007,
+  "roll_c": -0.005
+ },
+ "music_hall_02": {
+  "conf": 0.768,
+  "offset": 0.0696,
+  "roll_b": -0.0345,
+  "roll_c": -0.0134
+ },
+ "nagoya_wall_path": {
+  "conf": 0.625,
+  "offset": -0.0238,
+  "roll_b": -0.0153,
+  "roll_c": 0.0025
+ },
+ "narrow_moonlit_road": {
+  "conf": 0.618,
+  "offset": 0.092,
+  "roll_b": 0.0049,
+  "roll_c": 0.0771
+ },
+ "nature_reserve_forest": {
+  "conf": 0.44,
+  "offset": -0.0418,
+  "roll_b": -0.0152,
+  "roll_c": 0.0049
+ },
+ "near_the_river_01": {
+  "conf": 0.787,
+  "offset": -0.0141,
+  "roll_b": -0.0117,
+  "roll_c": 0.001
+ },
+ "near_the_river_02": {
+  "conf": 0.575,
+  "offset": -0.0184,
+  "roll_b": -0.0051,
+  "roll_c": -0.0162
+ },
+ "neon_photostudio": {
+  "conf": 0.499,
+  "offset": 0.1407,
+  "roll_b": 0.0036,
+  "roll_c": 0.0061
+ },
+ "netball_court": {
+  "conf": 0.892,
+  "offset": -0.0348,
+  "roll_b": -0.0003,
+  "roll_c": 0.0067
+ },
+ "neuer_zollhof": {
+  "conf": 0.916,
+  "offset": 0.0021,
+  "roll_b": 0.0019,
+  "roll_c": 0.0056
+ },
+ "neurathen_rock_castle": {
+  "conf": 0.514,
+  "offset": -0.005,
+  "roll_b": -0.0362,
+  "roll_c": -0.0079
+ },
+ "newman_cafeteria": {
+  "conf": 0.453,
+  "offset": 0.1545,
+  "roll_b": 0.0217,
+  "roll_c": 0.0267
+ },
+ "newman_lobby": {
+  "conf": 0.475,
+  "offset": -0.0326,
+  "roll_b": 0.0108,
+  "roll_c": 0.0003
+ },
+ "newman_locker_room": {
+  "conf": 0.732,
+  "offset": -0.0376,
+  "roll_b": -0.0043,
+  "roll_c": 0.0121
+ },
+ "niederwihl_forest": {
+  "conf": 0.333,
+  "offset": 0.2496,
+  "roll_b": 0.0126,
+  "roll_c": 0.0022
+ },
+ "night_bridge": {
+  "conf": 0.884,
+  "offset": 0.0058,
+  "roll_b": 0.015,
+  "roll_c": 0.015
+ },
+ "ninomaru_teien": {
+  "conf": 0.532,
+  "offset": -0.0304,
+  "roll_b": 0.0033,
+  "roll_c": -0.0106
+ },
+ "noga": {
+  "conf": 0.536,
+  "offset": -0.0269,
+  "roll_b": -0.0094,
+  "roll_c": 0.0034
+ },
+ "noon_grass": {
+  "conf": 0.949,
+  "offset": -0.0015,
+  "roll_b": -0.0031,
+  "roll_c": -0.0154
+ },
+ "northcliff": {
+  "conf": 0.661,
+  "offset": -0.0138,
+  "roll_b": 0.0128,
+  "roll_c": 0.0142
+ },
+ "nowhere_road": {
+  "conf": 0.903,
+  "offset": -0.0042,
+  "roll_b": -0.0039,
+  "roll_c": -0.0066
+ },
+ "nqweba_bridge": {
+  "conf": 0.771,
+  "offset": -0.0209,
+  "roll_b": 0.0145,
+  "roll_c": -0.0017
+ },
+ "nqweba_dawn": {
+  "conf": 0.613,
+  "offset": -0.0189,
+  "roll_b": 0.0148,
+  "roll_c": -0.0087
+ },
+ "oberer_kuhberg": {
+  "conf": 0.853,
+  "offset": 0.0112,
+  "roll_b": -0.0326,
+  "roll_c": -0.0253
+ },
+ "ohl_autumn-bridge-arch": {
+  "conf": 0.486,
+  "offset": 0.0706,
+  "roll_b": 0.0688,
+  "roll_c": -0.0283
+ },
+ "ohl_big-studio-01": {
+  "conf": 0.348,
+  "offset": -0.0071,
+  "roll_b": -0.0215,
+  "roll_c": 0.0755
+ },
+ "ohl_big-studio-02": {
+  "conf": 0.499,
+  "offset": 0.1302,
+  "roll_b": -0.1221,
+  "roll_c": -0.0009
+ },
+ "ohl_big-studio-03": {
+  "conf": 0.646,
+  "offset": 0.053,
+  "roll_b": -0.0262,
+  "roll_c": 0.021
+ },
+ "ohl_big-studio-04": {
+  "conf": 0.631,
+  "offset": 0.0279,
+  "roll_b": 0.0425,
+  "roll_c": 0.0052
+ },
+ "ohl_brick-wall-alley": {
+  "conf": 0.378,
+  "offset": 0.1107,
+  "roll_b": 0.0278,
+  "roll_c": 0.0283
+ },
+ "ohl_broumov-airport-runway": {
+  "conf": 0.966,
+  "offset": -0.0203,
+  "roll_b": -0.002,
+  "roll_c": 0.0054
+ },
+ "ohl_broumov-airport-sunset": {
+  "conf": 1.0,
+  "offset": -0.0139,
+  "roll_b": -0.006,
+  "roll_c": 0.0012
+ },
+ "ohl_calvary-hill-chapels": {
+  "conf": 0.377,
+  "offset": 0.2655,
+  "roll_b": -0.0514,
+  "roll_c": 0.0126
+ },
+ "ohl_chapel-interior": {
+  "conf": 0.456,
+  "offset": 0.2618,
+  "roll_b": 0.0058,
+  "roll_c": 0.0069
+ },
+ "ohl_egg-hill-april-late-afternoon": {
+  "conf": 0.894,
+  "offset": -0.0244,
+  "roll_b": 0.0111,
+  "roll_c": -0.0044
+ },
+ "ohl_egg-hill-autumn-noon": {
+  "conf": 0.894,
+  "offset": -0.0222,
+  "roll_b": 0.0072,
+  "roll_c": 0.015
+ },
+ "ohl_egg-hill-cloud-break": {
+  "conf": 0.984,
+  "offset": -0.0251,
+  "roll_b": 0.0106,
+  "roll_c": 0.0141
+ },
+ "ohl_egg-hill-cloudy": {
+  "conf": 0.95,
+  "offset": -0.0149,
+  "roll_b": 0.0054,
+  "roll_c": -0.0098
+ },
+ "ohl_egg-hill-distant-valley-glow": {
+  "conf": 0.963,
+  "offset": -0.0244,
+  "roll_b": 0.0137,
+  "roll_c": -0.0078
+ },
+ "ohl_egg-hill-sunset-clear-sky": {
+  "conf": 0.985,
+  "offset": -0.0234,
+  "roll_b": 0.0115,
+  "roll_c": -0.0075
+ },
+ "ohl_factory-road-turnaround": {
+  "conf": 0.993,
+  "offset": -0.0269,
+  "roll_b": 0.0067,
+  "roll_c": -0.006
+ },
+ "ohl_fluorescent-lit-machinery-room": {
+  "conf": 0.589,
+  "offset": -0.0239,
+  "roll_b": 0.0082,
+  "roll_c": 0.0034
+ },
+ "ohl_fly-studio-01": {
+  "conf": 0.865,
+  "offset": 0.1252,
+  "roll_b": 0.0035,
+  "roll_c": 0.0041
+ },
+ "ohl_fly-studio-02": {
+  "conf": 0.804,
+  "offset": 0.1266,
+  "roll_b": 0.0098,
+  "roll_c": -0.0074
+ },
+ "ohl_fly-studio-03": {
+  "conf": 0.584,
+  "offset": 0.1308,
+  "roll_b": 0.0278,
+  "roll_c": -0.0015
+ },
+ "ohl_fly-studio-04": {
+  "conf": 0.67,
+  "offset": 0.1254,
+  "roll_b": 0.0471,
+  "roll_c": 0.0189
+ },
+ "ohl_fly-studio-05": {
+  "conf": 0.66,
+  "offset": 0.112,
+  "roll_b": -0.0099,
+  "roll_c": -0.0267
+ },
+ "ohl_gruntowa-april-golden-hour": {
+  "conf": 0.931,
+  "offset": -0.0073,
+  "roll_b": 0.0086,
+  "roll_c": -0.007
+ },
+ "ohl_gruntowa-april-pre-sunset": {
+  "conf": 0.999,
+  "offset": -0.0103,
+  "roll_b": 0.0081,
+  "roll_c": -0.0052
+ },
+ "ohl_gruntowa-autumn-sunclouds": {
+  "conf": 0.851,
+  "offset": 0.0017,
+  "roll_b": -0.0006,
+  "roll_c": 0.0105
+ },
+ "ohl_gruntowa-may-cumulus": {
+  "conf": 0.986,
+  "offset": -0.0111,
+  "roll_b": 0.004,
+  "roll_c": -0.0031
+ },
+ "ohl_gruntowa-meadow-afternoon": {
+  "conf": 0.991,
+  "offset": -0.01,
+  "roll_b": 0.0079,
+  "roll_c": -0.0018
+ },
+ "ohl_gruntowa-meadow-clear-sky": {
+  "conf": 0.992,
+  "offset": -0.0103,
+  "roll_b": 0.0054,
+  "roll_c": -0.0015
+ },
+ "ohl_gruntowa-meadow-overcast": {
+  "conf": 0.996,
+  "offset": -0.0107,
+  "roll_b": 0.0033,
+  "roll_c": 0.006
+ },
+ "ohl_hausdorf-winter-view": {
+  "conf": 0.968,
+  "offset": -0.0285,
+  "roll_b": 0.0131,
+  "roll_c": 0.0106
+ },
+ "ohl_hilberts-mill-conference-room": {
+  "conf": 0.671,
+  "offset": 0.0568,
+  "roll_b": -0.0043,
+  "roll_c": -0.0756
+ },
+ "ohl_historic-flour-mill": {
+  "conf": 0.63,
+  "offset": 0.0024,
+  "roll_b": -0.0092,
+  "roll_c": -0.0061
+ },
+ "ohl_jawornik-meadow-noon": {
+  "conf": 0.913,
+  "offset": -0.0308,
+  "roll_b": -0.0099,
+  "roll_c": -0.013
+ },
+ "ohl_jugow-glowna-overcast": {
+  "conf": 0.536,
+  "offset": -0.0333,
+  "roll_b": -0.0124,
+  "roll_c": -0.0107
+ },
+ "ohl_jugow-jana-overcast": {
+  "conf": 0.795,
+  "offset": -0.0167,
+  "roll_b": -0.0056,
+  "roll_c": -0.0166
+ },
+ "ohl_ludwikowice-underpass": {
+  "conf": 0.41,
+  "offset": -0.0103,
+  "roll_b": -0.0249,
+  "roll_c": -0.0212
+ },
+ "ohl_molke-sunny-road": {
+  "conf": 0.411,
+  "offset": 0.1151,
+  "roll_b": -0.0441,
+  "roll_c": 0.0065
+ },
+ "ohl_naroznik-autumn-haze": {
+  "conf": 0.892,
+  "offset": -0.0117,
+  "roll_b": -0.0078,
+  "roll_c": 0.0179
+ },
+ "ohl_neogothic-church-exterior": {
+  "conf": 0.448,
+  "offset": -0.02,
+  "roll_b": 0.0249,
+  "roll_c": 0.0141
+ },
+ "ohl_overcast-afternoon-quarry": {
+  "conf": 0.364,
+  "offset": 0.1582,
+  "roll_b": 0.0164,
+  "roll_c": -0.0726
+ },
+ "ohl_overcast-frozen-river": {
+  "conf": 0.988,
+  "offset": -0.0055,
+  "roll_b": -0.0085,
+  "roll_c": 0.0054
+ },
+ "ohl_pilgrim-farmland-october-sun": {
+  "conf": 0.938,
+  "offset": -0.0059,
+  "roll_b": 0.0056,
+  "roll_c": -0.0027
+ },
+ "ohl_pilgrim-farmland-overcast": {
+  "conf": 1.0,
+  "offset": -0.0059,
+  "roll_b": -0.0019,
+  "roll_c": -0.0052
+ },
+ "ohl_polanica-bandshell-morning": {
+  "conf": 0.65,
+  "offset": 0.0641,
+  "roll_b": -0.0267,
+  "roll_c": -0.0133
+ },
+ "ohl_polanica-fountain-square": {
+  "conf": 0.823,
+  "offset": -0.0101,
+  "roll_b": 0.014,
+  "roll_c": -0.0087
+ },
+ "ohl_polanica-fountain-terrace": {
+  "conf": 0.801,
+  "offset": 0.0523,
+  "roll_b": 0.0001,
+  "roll_c": 0.0015
+ },
+ "ohl_rock-theatre-viewpoint": {
+  "conf": 0.489,
+  "offset": 0.1468,
+  "roll_b": 0.0671,
+  "roll_c": -0.0057
+ },
+ "ohl_rubinkowo-sandbox-overcast": {
+  "conf": 0.565,
+  "offset": 0.0753,
+  "roll_b": 0.0177,
+  "roll_c": -0.0368
+ },
+ "ohl_skarpa-winter-forest": {
+  "conf": 0.959,
+  "offset": 0.0211,
+  "roll_b": -0.0063,
+  "roll_c": -0.0027
+ },
+ "ohl_stairway-to-basilica": {
+  "conf": 0.476,
+  "offset": 0.049,
+  "roll_b": 0.0359,
+  "roll_c": 0.0401
+ },
+ "ohl_studio-2nd-floor": {
+  "conf": 0.642,
+  "offset": 0.0869,
+  "roll_b": 0.0283,
+  "roll_c": -0.0289
+ },
+ "ohl_studio-2nd-floor-cyclorama": {
+  "conf": 0.582,
+  "offset": 0.055,
+  "roll_b": -0.0469,
+  "roll_c": 0.0113
+ },
+ "ohl_studio-2nd-floor-snoot": {
+  "conf": 0.735,
+  "offset": 0.0818,
+  "roll_b": -0.1059,
+  "roll_c": 0.0001
+ },
+ "ohl_sunlit-castle-fountain": {
+  "conf": 0.559,
+  "offset": 0.0697,
+  "roll_b": 0.0227,
+  "roll_c": -0.0257
+ },
+ "ohl_sunny-industrial-yard": {
+  "conf": 0.726,
+  "offset": 0.0234,
+  "roll_b": 0.0362,
+  "roll_c": -0.0096
+ },
+ "ohl_west-basilica-courtyard": {
+  "conf": 0.576,
+  "offset": 0.0523,
+  "roll_b": -0.0517,
+  "roll_c": -0.058
+ },
+ "ohl_wlodyka-bunker-entrance": {
+  "conf": 0.508,
+  "offset": 0.236,
+  "roll_b": -0.013,
+  "roll_c": 0.001
+ },
+ "ohl_zum-bergkeller-ruins": {
+  "conf": 0.506,
+  "offset": -0.0141,
+  "roll_b": 0.0017,
+  "roll_c": -0.0128
+ },
+ "old_apartments_walkway": {
+  "conf": 0.513,
+  "offset": 0.041,
+  "roll_b": 0.0087,
+  "roll_c": 0.004
+ },
+ "old_bus_depot": {
+  "conf": 0.906,
+  "offset": -0.0303,
+  "roll_b": -0.0174,
+  "roll_c": 0.0012
+ },
+ "old_depot": {
+  "conf": 0.761,
+  "offset": -0.0067,
+  "roll_b": -0.0271,
+  "roll_c": -0.0038
+ },
+ "old_hall": {
+  "conf": 1.0,
+  "offset": 0.145,
+  "roll_b": 0.0,
+  "roll_c": 0.0
+ },
+ "old_outdoor_theater": {
+  "conf": 0.949,
+  "offset": -0.0405,
+  "roll_b": -0.0062,
+  "roll_c": 0.0058
+ },
+ "old_quarry_gerlingen": {
+  "conf": 0.823,
+  "offset": 0.0117,
+  "roll_b": -0.0016,
+  "roll_c": -0.0199
+ },
+ "old_room": {
+  "conf": 0.89,
+  "offset": 0.095,
+  "roll_b": -0.0253,
+  "roll_c": 0.0033
+ },
+ "old_tree_in_city_park": {
+  "conf": 0.56,
+  "offset": -0.0114,
+  "roll_b": -0.0016,
+  "roll_c": 0.0039
+ },
+ "orbita": {
+  "conf": 0.606,
+  "offset": 0.0452,
+  "roll_b": 0.0461,
+  "roll_c": 0.0011
+ },
+ "orlando_stadium": {
+  "conf": 1.0,
+  "offset": -0.0196,
+  "roll_b": 0.0119,
+  "roll_c": 0.0091
+ },
+ "ostrich_road": {
+  "conf": 0.952,
+  "offset": -0.0286,
+  "roll_b": -0.0232,
+  "roll_c": -0.0089
+ },
+ "ouchy_pier": {
+  "conf": 0.58,
+  "offset": 0.0879,
+  "roll_b": -0.0666,
+  "roll_c": 0.1065
+ },
+ "outdoor_chapel": {
+  "conf": 0.691,
+  "offset": -0.042,
+  "roll_b": 0.001,
+  "roll_c": -0.0085
+ },
+ "outdoor_umbrellas": {
+  "conf": 0.959,
+  "offset": -0.0168,
+  "roll_b": -0.0042,
+  "roll_c": 0.0046
+ },
+ "outdoor_workshop": {
+  "conf": 0.756,
+  "offset": 0.0039,
+  "roll_b": -0.0273,
+  "roll_c": 0.0198
+ },
+ "overcast_industrial_courtyard": {
+  "conf": 0.857,
+  "offset": -0.0205,
+  "roll_b": -0.0065,
+  "roll_c": 0.0087
+ },
+ "overcast_soil": {
+  "conf": 0.955,
+  "offset": -0.0084,
+  "roll_b": 0.0094,
+  "roll_c": 0.0077
+ },
+ "overcast_soil_2": {
+  "conf": 0.932,
+  "offset": -0.0128,
+  "roll_b": -0.013,
+  "roll_c": 0.0087
+ },
+ "overcast_soil_puresky": {
+  "conf": 0.994,
+  "offset": -0.0308,
+  "roll_b": 0.0126,
+  "roll_c": -0.0072
+ },
+ "ox_bridge_morning": {
+  "conf": 0.379,
+  "offset": 0.039,
+  "roll_b": -0.016,
+  "roll_c": -0.0525
+ },
+ "palermo_park": {
+  "conf": 0.894,
+  "offset": -0.0147,
+  "roll_b": 0.0093,
+  "roll_c": -0.0059
+ },
+ "palermo_sidewalk": {
+  "conf": 0.637,
+  "offset": -0.0143,
+  "roll_b": -0.0077,
+  "roll_c": 0.0011
+ },
+ "palermo_square": {
+  "conf": 0.939,
+  "offset": -0.0046,
+  "roll_b": 0.0102,
+  "roll_c": 0.0076
+ },
+ "parched_canal": {
+  "conf": 0.414,
+  "offset": 0.0588,
+  "roll_b": 0.004,
+  "roll_c": -0.0369
+ },
+ "park_bench": {
+  "conf": 0.793,
+  "offset": -0.0087,
+  "roll_b": 0.0117,
+  "roll_c": -0.0038
+ },
+ "park_music_stage": {
+  "conf": 0.518,
+  "offset": 0.1602,
+  "roll_b": -0.0671,
+  "roll_c": 0.0506
+ },
+ "park_parking": {
+  "conf": 0.782,
+  "offset": 0.0273,
+  "roll_b": 0.0064,
+  "roll_c": -0.0068
+ },
+ "parking_garage": {
+  "conf": 0.866,
+  "offset": -0.0251,
+  "roll_b": -0.0033,
+  "roll_c": -0.0217
+ },
+ "partial_eclipse": {
+  "conf": 0.411,
+  "offset": 0.2496,
+  "roll_b": -0.0024,
+  "roll_c": 0.0032
+ },
+ "passendorf_snow": {
+  "conf": 0.916,
+  "offset": 0.0041,
+  "roll_b": -0.0028,
+  "roll_c": -0.0049
+ },
+ "pathway_morning": {
+  "conf": 0.753,
+  "offset": -0.0339,
+  "roll_b": 0.0105,
+  "roll_c": -0.0093
+ },
+ "paul_lobe_haus": {
+  "conf": 0.875,
+  "offset": -0.0163,
+  "roll_b": 0.0099,
+  "roll_c": -0.0023
+ },
+ "pav_studio_01": {
+  "conf": 0.724,
+  "offset": 0.1989,
+  "roll_b": 0.022,
+  "roll_c": 0.0389
+ },
+ "pav_studio_02": {
+  "conf": 0.55,
+  "offset": 0.1081,
+  "roll_b": -0.0355,
+  "roll_c": -0.0264
+ },
+ "pav_studio_03": {
+  "conf": 0.675,
+  "offset": 0.1804,
+  "roll_b": 0.0104,
+  "roll_c": -0.0621
+ },
+ "pedestrian_overpass": {
+  "conf": 0.717,
+  "offset": -0.0128,
+  "roll_b": -0.0052,
+  "roll_c": 0.009
+ },
+ "penguin_museum": {
+  "conf": 0.439,
+  "offset": 0.0488,
+  "roll_b": -0.0372,
+  "roll_c": 0.0166
+ },
+ "peppermint_powerplant": {
+  "conf": 0.469,
+  "offset": 0.0393,
+  "roll_b": 0.0167,
+  "roll_c": 0.0408
+ },
+ "peppermint_powerplant_2": {
+  "conf": 0.556,
+  "offset": -0.0004,
+  "roll_b": -0.0117,
+  "roll_c": 0.0125
+ },
+ "pergola_walkway": {
+  "conf": 0.377,
+  "offset": 0.1954,
+  "roll_b": -0.0653,
+  "roll_c": -0.0152
+ },
+ "petit_port": {
+  "conf": 0.757,
+  "offset": 0.0015,
+  "roll_b": 0.0207,
+  "roll_c": 0.0041
+ },
+ "phalzer_forest_01": {
+  "conf": 0.509,
+  "offset": -0.0111,
+  "roll_b": -0.0153,
+  "roll_c": -0.0175
+ },
+ "phone_shop": {
+  "conf": 0.397,
+  "offset": 0.0941,
+  "roll_b": -0.0337,
+  "roll_c": 0.0323
+ },
+ "photo_studio_01": {
+  "conf": 0.621,
+  "offset": 0.2186,
+  "roll_b": 0.0046,
+  "roll_c": 0.0122
+ },
+ "photo_studio_broadway_hall": {
+  "conf": 0.766,
+  "offset": 0.1444,
+  "roll_b": 0.0116,
+  "roll_c": 0.017
+ },
+ "photo_studio_loft_hall": {
+  "conf": 0.444,
+  "offset": 0.2593,
+  "roll_b": -0.0051,
+  "roll_c": 0.0256
+ },
+ "photo_studio_london_hall": {
+  "conf": 0.598,
+  "offset": 0.1073,
+  "roll_b": -0.0188,
+  "roll_c": -0.0133
+ },
+ "piazza_bologni": {
+  "conf": 0.82,
+  "offset": -0.0127,
+  "roll_b": -0.0072,
+  "roll_c": -0.0073
+ },
+ "piazza_martin_lutero": {
+  "conf": 0.722,
+  "offset": 0.0284,
+  "roll_b": 0.0047,
+  "roll_c": 0.0428
+ },
+ "piazza_san_marco": {
+  "conf": 0.776,
+  "offset": -0.0235,
+  "roll_b": -0.0017,
+  "roll_c": 0.0031
+ },
+ "pillars": {
+  "conf": 0.559,
+  "offset": 0.08,
+  "roll_b": 0.0314,
+  "roll_c": 0.0115
+ },
+ "pine_attic": {
+  "conf": 0.629,
+  "offset": 0.1106,
+  "roll_b": 0.0334,
+  "roll_c": 0.0132
+ },
+ "pine_picnic": {
+  "conf": 0.949,
+  "offset": -0.0245,
+  "roll_b": 0.0004,
+  "roll_c": 0.0013
+ },
+ "pink_sunrise": {
+  "conf": 0.568,
+  "offset": 0.0516,
+  "roll_b": 0.0219,
+  "roll_c": -0.0316
+ },
+ "pisztyk": {
+  "conf": 0.423,
+  "offset": 0.2375,
+  "roll_b": -0.0292,
+  "roll_c": -0.0054
+ },
+ "pizzo_pernice": {
+  "conf": 0.665,
+  "offset": 0.0843,
+  "roll_b": 0.0539,
+  "roll_c": 0.0008
+ },
+ "plac_wolnosci": {
+  "conf": 0.952,
+  "offset": -0.0117,
+  "roll_b": 0.012,
+  "roll_c": 0.0103
+ },
+ "plains_sunset": {
+  "conf": 0.961,
+  "offset": -0.0192,
+  "roll_b": 0.0057,
+  "roll_c": -0.0163
+ },
+ "poly_haven_studio": {
+  "conf": 0.367,
+  "offset": 0.155,
+  "roll_b": -0.0026,
+  "roll_c": 0.0724
+ },
+ "pond": {
+  "conf": 0.402,
+  "offset": 0.1176,
+  "roll_b": -0.0288,
+  "roll_c": -0.018
+ },
+ "pond_bridge_night": {
+  "conf": 0.547,
+  "offset": -0.0183,
+  "roll_b": 0.0153,
+  "roll_c": -0.001
+ },
+ "pool": {
+  "conf": 0.933,
+  "offset": 0.0025,
+  "roll_b": 0.0019,
+  "roll_c": -0.0061
+ },
+ "poolbeg": {
+  "conf": 0.62,
+  "offset": -0.0016,
+  "roll_b": 0.0293,
+  "roll_c": -0.0185
+ },
+ "portland_landing_pad": {
+  "conf": 0.786,
+  "offset": 0.0243,
+  "roll_b": -0.0067,
+  "roll_c": -0.0067
+ },
+ "potsdamer_platz": {
+  "conf": 0.91,
+  "offset": -0.019,
+  "roll_b": 0.0049,
+  "roll_c": -0.0041
+ },
+ "preller_drive": {
+  "conf": 0.622,
+  "offset": -0.0304,
+  "roll_b": -0.0026,
+  "roll_c": 0.0039
+ },
+ "pretoria_gardens": {
+  "conf": 0.928,
+  "offset": -0.0058,
+  "roll_b": -0.0154,
+  "roll_c": -0.0158
+ },
+ "pretville_cinema": {
+  "conf": 0.513,
+  "offset": 0.0885,
+  "roll_b": -0.013,
+  "roll_c": -0.0292
+ },
+ "pretville_street": {
+  "conf": 0.675,
+  "offset": -0.0169,
+  "roll_b": -0.0149,
+  "roll_c": -0.0072
+ },
+ "provence_studio": {
+  "conf": 0.567,
+  "offset": 0.0703,
+  "roll_b": -0.0333,
+  "roll_c": 0.0268
+ },
+ "pump_house": {
+  "conf": 0.569,
+  "offset": 0.2445,
+  "roll_b": -0.0199,
+  "roll_c": 0.0155
+ },
+ "pump_station": {
+  "conf": 0.739,
+  "offset": 0.0119,
+  "roll_b": -0.0194,
+  "roll_c": -0.0232
+ },
+ "pylons": {
+  "conf": 0.68,
+  "offset": -0.015,
+  "roll_b": 0.0048,
+  "roll_c": -0.0165
+ },
+ "quadrangle_cloudy": {
+  "conf": 0.774,
+  "offset": -0.001,
+  "roll_b": 0.0278,
+  "roll_c": 0.0031
+ },
+ "quadrangle_sunny": {
+  "conf": 0.859,
+  "offset": 0.0307,
+  "roll_b": 0.006,
+  "roll_c": 0.0008
+ },
+ "quarry_01": {
+  "conf": 0.963,
+  "offset": -0.0039,
+  "roll_b": -0.0032,
+  "roll_c": 0.0027
+ },
+ "quarry_02": {
+  "conf": 0.837,
+  "offset": 0.0042,
+  "roll_b": -0.001,
+  "roll_c": -0.0019
+ },
+ "quarry_03": {
+  "conf": 0.986,
+  "offset": -0.0079,
+  "roll_b": 0.0177,
+  "roll_c": -0.0047
+ },
+ "quarry_04": {
+  "conf": 0.766,
+  "offset": -0.0077,
+  "roll_b": -0.0038,
+  "roll_c": -0.0014
+ },
+ "quarry_04_puresky": {
+  "conf": 1.0,
+  "offset": -0.0287,
+  "roll_b": -0.0064,
+  "roll_c": -0.0126
+ },
+ "quarry_cloudy": {
+  "conf": 0.912,
+  "offset": -0.0201,
+  "roll_b": 0.0081,
+  "roll_c": 0.0162
+ },
+ "quattro_canti": {
+  "conf": 0.837,
+  "offset": -0.0102,
+  "roll_b": 0.0059,
+  "roll_c": 0.0123
+ },
+ "qwantani": {
+  "conf": 0.558,
+  "offset": 0.2514,
+  "roll_b": -0.0193,
+  "roll_c": 0.0064
+ },
+ "qwantani_afternoon": {
+  "conf": 0.463,
+  "offset": 0.26,
+  "roll_b": -0.0192,
+  "roll_c": -0.0015
+ },
+ "qwantani_dawn": {
+  "conf": 0.643,
+  "offset": 0.018,
+  "roll_b": 0.0208,
+  "roll_c": -0.0095
+ },
+ "qwantani_dawn_puresky": {
+  "conf": 1.0,
+  "offset": -0.0299,
+  "roll_b": 0.0089,
+  "roll_c": 0.0107
+ },
+ "qwantani_dusk_1": {
+  "conf": 0.527,
+  "offset": 0.0158,
+  "roll_b": -0.0094,
+  "roll_c": 0.0162
+ },
+ "qwantani_dusk_1_puresky": {
+  "conf": 0.998,
+  "offset": -0.0003,
+  "roll_b": -0.0294,
+  "roll_c": 0.0166
+ },
+ "qwantani_dusk_2": {
+  "conf": 0.515,
+  "offset": 0.0249,
+  "roll_b": 0.0061,
+  "roll_c": 0.0145
+ },
+ "qwantani_dusk_2_puresky": {
+  "conf": 1.0,
+  "offset": -0.0188,
+  "roll_b": -0.017,
+  "roll_c": 0.0095
+ },
+ "qwantani_late_afternoon": {
+  "conf": 0.524,
+  "offset": 0.1126,
+  "roll_b": -0.0543,
+  "roll_c": -0.0707
+ },
+ "qwantani_mid_morning": {
+  "conf": 0.415,
+  "offset": 0.2539,
+  "roll_b": 0.0086,
+  "roll_c": -0.0095
+ },
+ "qwantani_moon_noon": {
+  "conf": 0.316,
+  "offset": 0.017,
+  "roll_b": 0.004,
+  "roll_c": -0.0167
+ },
+ "qwantani_moonrise": {
+  "conf": 0.341,
+  "offset": 0.0624,
+  "roll_b": 0.0011,
+  "roll_c": -0.0763
+ },
+ "qwantani_morning": {
+  "conf": 0.42,
+  "offset": 0.2514,
+  "roll_b": 0.0182,
+  "roll_c": -0.0056
+ },
+ "qwantani_night": {
+  "conf": 0.587,
+  "offset": 0.0323,
+  "roll_b": -0.0132,
+  "roll_c": 0.0087
+ },
+ "qwantani_noon": {
+  "conf": 0.317,
+  "offset": 0.2615,
+  "roll_b": 0.0009,
+  "roll_c": 0.0042
+ },
+ "qwantani_patio": {
+  "conf": 0.585,
+  "offset": 0.0079,
+  "roll_b": -0.0135,
+  "roll_c": -0.0419
+ },
+ "qwantani_sunrise": {
+  "conf": 0.786,
+  "offset": 0.0177,
+  "roll_b": 0.019,
+  "roll_c": -0.0116
+ },
+ "qwantani_sunrise_puresky": {
+  "conf": 1.0,
+  "offset": -0.0165,
+  "roll_b": 0.0017,
+  "roll_c": 0.0032
+ },
+ "qwantani_sunset": {
+  "conf": 0.77,
+  "offset": 0.0012,
+  "roll_b": -0.0015,
+  "roll_c": 0.008
+ },
+ "radkow_lake": {
+  "conf": 0.934,
+  "offset": -0.0306,
+  "roll_b": 0.0075,
+  "roll_c": -0.0072
+ },
+ "railway_bridge_02": {
+  "conf": 0.833,
+  "offset": -0.022,
+  "roll_b": -0.0006,
+  "roll_c": 0.0071
+ },
+ "railway_bridges": {
+  "conf": 0.722,
+  "offset": -0.0168,
+  "roll_b": -0.0025,
+  "roll_c": -0.0035
+ },
+ "rainforest_trail": {
+  "conf": 0.333,
+  "offset": 0.1539,
+  "roll_b": -0.0172,
+  "roll_c": -0.0306
+ },
+ "rathaus": {
+  "conf": 0.933,
+  "offset": -0.0116,
+  "roll_b": -0.0056,
+  "roll_c": -0.0053
+ },
+ "reading_room": {
+  "conf": 0.398,
+  "offset": 0.131,
+  "roll_b": 0.0004,
+  "roll_c": 0.0781
+ },
+ "red_church": {
+  "conf": 0.46,
+  "offset": 0.2641,
+  "roll_b": -0.0072,
+  "roll_c": 0.0027
+ },
+ "red_hill_cloudy": {
+  "conf": 0.475,
+  "offset": 0.0479,
+  "roll_b": 0.0132,
+  "roll_c": 0.001
+ },
+ "red_hill_curve": {
+  "conf": 0.546,
+  "offset": 0.0243,
+  "roll_b": -0.0409,
+  "roll_c": 0.0284
+ },
+ "red_hill_straight": {
+  "conf": 0.652,
+  "offset": 0.0233,
+  "roll_b": -0.0105,
+  "roll_c": -0.0285
+ },
+ "red_wall": {
+  "conf": 0.413,
+  "offset": 0.0875,
+  "roll_b": -0.0468,
+  "roll_c": 0.0051
+ },
+ "reichstag_1": {
+  "conf": 0.994,
+  "offset": -0.0265,
+  "roll_b": 0.0039,
+  "roll_c": -0.0052
+ },
+ "reinforced_concrete_01": {
+  "conf": 0.545,
+  "offset": -0.0376,
+  "roll_b": -0.0,
+  "roll_c": 0.0037
+ },
+ "reinforced_concrete_02": {
+  "conf": 0.515,
+  "offset": -0.0406,
+  "roll_b": -0.0066,
+  "roll_c": -0.0005
+ },
+ "relax_inn_seaview_suite": {
+  "conf": 0.567,
+  "offset": 0.1434,
+  "roll_b": 0.001,
+  "roll_c": -0.0032
+ },
+ "residential_garden": {
+  "conf": 0.81,
+  "offset": -0.0304,
+  "roll_b": -0.0033,
+  "roll_c": -0.0025
+ },
+ "resting_place": {
+  "conf": 0.992,
+  "offset": -0.0212,
+  "roll_b": -0.007,
+  "roll_c": -0.0029
+ },
+ "resting_place_2": {
+  "conf": 0.919,
+  "offset": -0.0152,
+  "roll_b": -0.0018,
+  "roll_c": -0.0029
+ },
+ "rhodes_memorial": {
+  "conf": 0.667,
+  "offset": 0.0527,
+  "roll_b": -0.002,
+  "roll_c": 0.0414
+ },
+ "river_alcove": {
+  "conf": 0.839,
+  "offset": 0.0587,
+  "roll_b": 0.0042,
+  "roll_c": 0.0235
+ },
+ "river_rocks": {
+  "conf": 0.617,
+  "offset": -0.0251,
+  "roll_b": -0.0089,
+  "roll_c": 0.001
+ },
+ "river_walk_1": {
+  "conf": 0.424,
+  "offset": -0.0377,
+  "roll_b": -0.0024,
+  "roll_c": -0.0079
+ },
+ "river_walk_2": {
+  "conf": 0.495,
+  "offset": -0.0341,
+  "roll_b": -0.0027,
+  "roll_c": -0.0132
+ },
+ "rocky_ridge": {
+  "conf": 0.548,
+  "offset": 0.01,
+  "roll_b": -0.0168,
+  "roll_c": 0.0193
+ },
+ "rocky_ridge_puresky": {
+  "conf": 1.0,
+  "offset": -0.0417,
+  "roll_b": 0.0048,
+  "roll_c": 0.0151
+ },
+ "rogland_clear_night": {
+  "conf": 0.785,
+  "offset": -0.0257,
+  "roll_b": -0.0004,
+  "roll_c": 0.0003
+ },
+ "rogland_overcast": {
+  "conf": 0.701,
+  "offset": -0.0237,
+  "roll_b": 0.0091,
+  "roll_c": -0.005
+ },
+ "rogland_sunset": {
+  "conf": 0.308,
+  "offset": 0.0835,
+  "roll_b": -0.0056,
+  "roll_c": 0.0203
+ },
+ "rolling_hills": {
+  "conf": 0.817,
+  "offset": 0.0001,
+  "roll_b": -0.023,
+  "roll_c": -0.0237
+ },
+ "rooftop_day": {
+  "conf": 0.498,
+  "offset": 0.0089,
+  "roll_b": 0.014,
+  "roll_c": -0.0457
+ },
+ "rooftop_night": {
+  "conf": 0.866,
+  "offset": -0.0044,
+  "roll_b": 0.0031,
+  "roll_c": -0.0084
+ },
+ "rooitou_park": {
+  "conf": 0.912,
+  "offset": -0.0147,
+  "roll_b": -0.0085,
+  "roll_c": 0.0107
+ },
+ "rosendal_mountain_midmorning": {
+  "conf": 0.743,
+  "offset": -0.0043,
+  "roll_b": -0.0264,
+  "roll_c": 0.0328
+ },
+ "rosendal_park_sunset": {
+  "conf": 0.988,
+  "offset": -0.0187,
+  "roll_b": 0.0026,
+  "roll_c": -0.0003
+ },
+ "rosendal_plains_1": {
+  "conf": 0.818,
+  "offset": -0.0109,
+  "roll_b": -0.0165,
+  "roll_c": 0.0004
+ },
+ "rosendal_plains_2": {
+  "conf": 0.565,
+  "offset": -0.0163,
+  "roll_b": -0.0034,
+  "roll_c": 0.015
+ },
+ "rostock_arches": {
+  "conf": 0.455,
+  "offset": 0.1285,
+  "roll_b": 0.0474,
+  "roll_c": 0.0622
+ },
+ "rostock_laage_airport": {
+  "conf": 0.747,
+  "offset": -0.0274,
+  "roll_b": -0.0102,
+  "roll_c": -0.0053
+ },
+ "rotes_rathaus": {
+  "conf": 0.999,
+  "offset": -0.0128,
+  "roll_b": -0.0021,
+  "roll_c": 0.0004
+ },
+ "round_platform": {
+  "conf": 0.926,
+  "offset": -0.0122,
+  "roll_b": -0.0031,
+  "roll_c": -0.0003
+ },
+ "royal_esplanade": {
+  "conf": 0.369,
+  "offset": 0.1537,
+  "roll_b": -0.0605,
+  "roll_c": 0.089
+ },
+ "ruckenkreuz": {
+  "conf": 0.943,
+  "offset": -0.0322,
+  "roll_b": -0.0093,
+  "roll_c": -0.0121
+ },
+ "rural_asphalt_road": {
+  "conf": 0.888,
+  "offset": -0.0154,
+  "roll_b": 0.0159,
+  "roll_c": 0.0143
+ },
+ "rural_crossroads": {
+  "conf": 0.845,
+  "offset": -0.0086,
+  "roll_b": -0.0022,
+  "roll_c": -0.0028
+ },
+ "rural_evening_road": {
+  "conf": 0.998,
+  "offset": -0.0106,
+  "roll_b": -0.0018,
+  "roll_c": 0.0022
+ },
+ "rural_graffiti_tower": {
+  "conf": 0.874,
+  "offset": -0.0153,
+  "roll_b": 0.0059,
+  "roll_c": 0.0114
+ },
+ "rural_landscape": {
+  "conf": 1.0,
+  "offset": -0.011,
+  "roll_b": 0.0036,
+  "roll_c": -0.0055
+ },
+ "rural_winter_roadside": {
+  "conf": 0.637,
+  "offset": -0.0029,
+  "roll_b": 0.0039,
+  "roll_c": -0.0065
+ },
+ "rustig_koppie": {
+  "conf": 0.581,
+  "offset": 0.2616,
+  "roll_b": -0.0011,
+  "roll_c": -0.002
+ },
+ "sabie_tent": {
+  "conf": 0.601,
+  "offset": -0.0201,
+  "roll_b": -0.0163,
+  "roll_c": 0.0092
+ },
+ "safari_sunset": {
+  "conf": 0.982,
+  "offset": -0.014,
+  "roll_b": -0.0003,
+  "roll_c": -0.0004
+ },
+ "san_giuseppe_bridge": {
+  "conf": 0.313,
+  "offset": 0.2139,
+  "roll_b": 0.0112,
+  "roll_c": -0.0983
+ },
+ "satara_night": {
+  "conf": 0.937,
+  "offset": 0.0107,
+  "roll_b": 0.0018,
+  "roll_c": 0.0063
+ },
+ "satara_night_no_lamps": {
+  "conf": 0.388,
+  "offset": -0.0082,
+  "roll_b": -0.0176,
+  "roll_c": -0.0391
+ },
+ "schachen_forest": {
+  "conf": 0.343,
+  "offset": 0.2269,
+  "roll_b": -0.0366,
+  "roll_c": 0.0025
+ },
+ "schadowplatz": {
+  "conf": 0.815,
+  "offset": -0.0021,
+  "roll_b": 0.0242,
+  "roll_c": -0.0154
+ },
+ "school_hall": {
+  "conf": 0.825,
+  "offset": 0.0772,
+  "roll_b": 0.0073,
+  "roll_c": -0.0149
+ },
+ "school_quad": {
+  "conf": 0.931,
+  "offset": -0.0369,
+  "roll_b": -0.0011,
+  "roll_c": 0.0051
+ },
+ "sculpture_exhibition": {
+  "conf": 0.414,
+  "offset": 0.1658,
+  "roll_b": -0.0061,
+  "roll_c": 0.0348
+ },
+ "scythian_tombs": {
+  "conf": 1.0,
+  "offset": -0.0079,
+  "roll_b": -0.0056,
+  "roll_c": -0.005
+ },
+ "scythian_tombs_2": {
+  "conf": 0.974,
+  "offset": -0.0099,
+  "roll_b": -0.0106,
+  "roll_c": -0.0068
+ },
+ "scythian_tombs_puresky": {
+  "conf": 1.0,
+  "offset": -0.0448,
+  "roll_b": 0.0041,
+  "roll_c": -0.004
+ },
+ "secluded_beach": {
+  "conf": 0.778,
+  "offset": 0.0094,
+  "roll_b": -0.0193,
+  "roll_c": -0.0028
+ },
+ "sepulchral_chapel_basement": {
+  "conf": 0.688,
+  "offset": 0.0258,
+  "roll_b": 0.0056,
+  "roll_c": 0.0084
+ },
+ "sepulchral_chapel_rotunda": {
+  "conf": 0.636,
+  "offset": 0.2739,
+  "roll_b": 0.0025,
+  "roll_c": 0.0002
+ },
+ "shady_patch": {
+  "conf": 0.932,
+  "offset": -0.0303,
+  "roll_b": -0.0065,
+  "roll_c": 0.0035
+ },
+ "shanghai_bund": {
+  "conf": 0.809,
+  "offset": 0.0088,
+  "roll_b": -0.0125,
+  "roll_c": -0.0083
+ },
+ "shanghai_riverside": {
+  "conf": 0.82,
+  "offset": -0.0166,
+  "roll_b": -0.0077,
+  "roll_c": -0.0211
+ },
+ "short_tunnel": {
+  "conf": 0.522,
+  "offset": -0.0387,
+  "roll_b": 0.078,
+  "roll_c": -0.0481
+ },
+ "shudu_lake": {
+  "conf": 0.753,
+  "offset": -0.0366,
+  "roll_b": 0.0014,
+  "roll_c": 0.007
+ },
+ "signal_hill_dawn": {
+  "conf": 0.538,
+  "offset": 0.0211,
+  "roll_b": 0.0429,
+  "roll_c": -0.0276
+ },
+ "signal_hill_sunrise": {
+  "conf": 0.391,
+  "offset": 0.2476,
+  "roll_b": 0.0027,
+  "roll_c": 0.0043
+ },
+ "simons_town_harbour": {
+  "conf": 0.341,
+  "offset": 0.1583,
+  "roll_b": 0.0329,
+  "roll_c": 0.0726
+ },
+ "simons_town_road": {
+  "conf": 0.648,
+  "offset": 0.0163,
+  "roll_b": 0.0083,
+  "roll_c": -0.0103
+ },
+ "simons_town_rocks": {
+  "conf": 0.585,
+  "offset": 0.2026,
+  "roll_b": 0.0718,
+  "roll_c": 0.0383
+ },
+ "sisulu": {
+  "conf": 0.851,
+  "offset": -0.0038,
+  "roll_b": -0.0102,
+  "roll_c": -0.0175
+ },
+ "skate_park": {
+  "conf": 0.969,
+  "offset": -0.0277,
+  "roll_b": -0.0002,
+  "roll_c": 0.0102
+ },
+ "skidpan": {
+  "conf": 1.0,
+  "offset": -0.0099,
+  "roll_b": 0.0069,
+  "roll_c": 0.007
+ },
+ "skukuza_golf": {
+  "conf": 0.671,
+  "offset": 0.0315,
+  "roll_b": 0.0241,
+  "roll_c": -0.0396
+ },
+ "skylit_garage": {
+  "conf": 0.731,
+  "offset": -0.0146,
+  "roll_b": -0.002,
+  "roll_c": 0.0063
+ },
+ "small_cathedral": {
+  "conf": 0.58,
+  "offset": 0.1325,
+  "roll_b": -0.0414,
+  "roll_c": 0.036
+ },
+ "small_cathedral_02": {
+  "conf": 0.528,
+  "offset": 0.233,
+  "roll_b": 0.097,
+  "roll_c": -0.0411
+ },
+ "small_cave": {
+  "conf": 0.5,
+  "offset": 0.0481,
+  "roll_b": 0.0176,
+  "roll_c": 0.0445
+ },
+ "small_empty_house": {
+  "conf": 0.445,
+  "offset": 0.1655,
+  "roll_b": 0.0112,
+  "roll_c": 0.0076
+ },
+ "small_empty_room_1": {
+  "conf": 0.907,
+  "offset": 0.2081,
+  "roll_b": -0.0007,
+  "roll_c": 0.001
+ },
+ "small_empty_room_2": {
+  "conf": 0.592,
+  "offset": 0.2238,
+  "roll_b": -0.0357,
+  "roll_c": -0.0216
+ },
+ "small_empty_room_3": {
+  "conf": 0.892,
+  "offset": 0.2162,
+  "roll_b": -0.0085,
+  "roll_c": 0.0166
+ },
+ "small_empty_room_4": {
+  "conf": 0.688,
+  "offset": 0.1683,
+  "roll_b": 0.0296,
+  "roll_c": -0.0425
+ },
+ "small_hangar_01": {
+  "conf": 0.892,
+  "offset": 0.0288,
+  "roll_b": 0.0227,
+  "roll_c": -0.0056
+ },
+ "small_hangar_02": {
+  "conf": 0.608,
+  "offset": 0.0513,
+  "roll_b": -0.0646,
+  "roll_c": -0.0311
+ },
+ "small_harbor_01": {
+  "conf": 0.983,
+  "offset": -0.0309,
+  "roll_b": 0.013,
+  "roll_c": 0.012
+ },
+ "small_harbor_02": {
+  "conf": 0.984,
+  "offset": -0.0313,
+  "roll_b": 0.0102,
+  "roll_c": 0.0167
+ },
+ "small_harbour_morning": {
+  "conf": 0.375,
+  "offset": 0.2748,
+  "roll_b": 0.0075,
+  "roll_c": 0.0019
+ },
+ "small_harbour_sunset": {
+  "conf": 0.696,
+  "offset": -0.0233,
+  "roll_b": 0.0243,
+  "roll_c": -0.003
+ },
+ "small_rural_road": {
+  "conf": 0.996,
+  "offset": -0.0242,
+  "roll_b": -0.0147,
+  "roll_c": -0.0091
+ },
+ "small_rural_road_02": {
+  "conf": 0.796,
+  "offset": -0.028,
+  "roll_b": 0.0006,
+  "roll_c": 0.0002
+ },
+ "small_workshop": {
+  "conf": 0.601,
+  "offset": 0.1432,
+  "roll_b": 0.0392,
+  "roll_c": 0.0645
+ },
+ "smelting_tower_01": {
+  "conf": 0.87,
+  "offset": -0.0054,
+  "roll_b": -0.0079,
+  "roll_c": -0.0108
+ },
+ "smelting_tower_02": {
+  "conf": 0.969,
+  "offset": -0.0247,
+  "roll_b": 0.0077,
+  "roll_c": -0.006
+ },
+ "smelting_tower_interior": {
+  "conf": 0.495,
+  "offset": 0.2294,
+  "roll_b": 0.0167,
+  "roll_c": -0.0361
+ },
+ "snow_field": {
+  "conf": 0.995,
+  "offset": 0.0031,
+  "roll_b": -0.0001,
+  "roll_c": 0.0025
+ },
+ "snow_field_2": {
+  "conf": 0.762,
+  "offset": 0.0037,
+  "roll_b": -0.0067,
+  "roll_c": -0.0036
+ },
+ "snow_field_2_puresky": {
+  "conf": 1.0,
+  "offset": 0.021,
+  "roll_b": -0.0753,
+  "roll_c": 0.0051
+ },
+ "snowy_cemetery": {
+  "conf": 0.72,
+  "offset": 0.0244,
+  "roll_b": 0.0102,
+  "roll_c": -0.0143
+ },
+ "snowy_field": {
+  "conf": 0.915,
+  "offset": -0.0137,
+  "roll_b": -0.0059,
+  "roll_c": 0.008
+ },
+ "snowy_forest": {
+  "conf": 0.308,
+  "offset": 0.2272,
+  "roll_b": -0.007,
+  "roll_c": 0.0282
+ },
+ "snowy_forest_path_01": {
+  "conf": 0.844,
+  "offset": -0.0011,
+  "roll_b": 0.0078,
+  "roll_c": 0.0126
+ },
+ "snowy_forest_path_02": {
+  "conf": 0.963,
+  "offset": -0.0111,
+  "roll_b": 0.0041,
+  "roll_c": 0.0
+ },
+ "snowy_hillside": {
+  "conf": 0.879,
+  "offset": 0.0169,
+  "roll_b": 0.0222,
+  "roll_c": 0.0214
+ },
+ "snowy_hillside_02": {
+  "conf": 0.497,
+  "offset": 0.0123,
+  "roll_b": 0.0403,
+  "roll_c": 0.0332
+ },
+ "snowy_park_01": {
+  "conf": 0.926,
+  "offset": 0.0015,
+  "roll_b": 0.0038,
+  "roll_c": -0.0035
+ },
+ "soliltude": {
+  "conf": 0.999,
+  "offset": -0.0203,
+  "roll_b": 0.0175,
+  "roll_c": -0.0127
+ },
+ "solitude_interior": {
+  "conf": 0.678,
+  "offset": 0.0483,
+  "roll_b": -0.0047,
+  "roll_c": -0.0046
+ },
+ "solitude_night": {
+  "conf": 0.882,
+  "offset": -0.0013,
+  "roll_b": -0.0192,
+  "roll_c": 0.0075
+ },
+ "spaichingen_hill": {
+  "conf": 0.683,
+  "offset": -0.0126,
+  "roll_b": 0.0253,
+  "roll_c": 0.0058
+ },
+ "spiaggia_di_mondello": {
+  "conf": 0.618,
+  "offset": -0.0151,
+  "roll_b": -0.0229,
+  "roll_c": -0.0176
+ },
+ "spooky_bamboo_morning": {
+  "conf": 0.479,
+  "offset": 0.2475,
+  "roll_b": -0.0035,
+  "roll_c": -0.004
+ },
+ "spree_bank": {
+  "conf": 0.839,
+  "offset": -0.015,
+  "roll_b": -0.0129,
+  "roll_c": -0.0124
+ },
+ "spruit_dawn": {
+  "conf": 0.895,
+  "offset": -0.0273,
+  "roll_b": 0.0027,
+  "roll_c": -0.0071
+ },
+ "spruit_sunrise": {
+  "conf": 0.379,
+  "offset": 0.244,
+  "roll_b": 0.0144,
+  "roll_c": 0.0157
+ },
+ "squash_court": {
+  "conf": 0.871,
+  "offset": 0.1001,
+  "roll_b": -0.0087,
+  "roll_c": 0.003
+ },
+ "st_fagans_interior": {
+  "conf": 0.632,
+  "offset": 0.063,
+  "roll_b": -0.0281,
+  "roll_c": -0.0248
+ },
+ "st_peters_square_night": {
+  "conf": 0.698,
+  "offset": -0.0284,
+  "roll_b": -0.0122,
+  "roll_c": 0.007
+ },
+ "stadium_01": {
+  "conf": 0.999,
+  "offset": -0.0295,
+  "roll_b": 0.0,
+  "roll_c": 0.0012
+ },
+ "stadium_exterior": {
+  "conf": 0.979,
+  "offset": -0.0182,
+  "roll_b": 0.004,
+  "roll_c": -0.0072
+ },
+ "steinbach_field": {
+  "conf": 0.994,
+  "offset": -0.0227,
+  "roll_b": -0.0135,
+  "roll_c": -0.0037
+ },
+ "sterkspruit_falls": {
+  "conf": 0.369,
+  "offset": 0.1847,
+  "roll_b": 0.0064,
+  "roll_c": 0.0897
+ },
+ "stierberg_sunrise": {
+  "conf": 0.834,
+  "offset": 0.0036,
+  "roll_b": 0.0252,
+  "roll_c": -0.024
+ },
+ "stone_alley_02": {
+  "conf": 0.453,
+  "offset": 0.219,
+  "roll_b": 0.0189,
+  "roll_c": 0.0262
+ },
+ "stone_alley_03": {
+  "conf": 0.58,
+  "offset": 0.1347,
+  "roll_b": 0.074,
+  "roll_c": 0.0699
+ },
+ "stone_pines": {
+  "conf": 0.842,
+  "offset": -0.0387,
+  "roll_b": 0.0005,
+  "roll_c": -0.0022
+ },
+ "storeroom": {
+  "conf": 0.505,
+  "offset": 0.1744,
+  "roll_b": 0.015,
+  "roll_c": 0.0061
+ },
+ "story_studio_01": {
+  "conf": 0.559,
+  "offset": 0.1152,
+  "roll_b": 0.0125,
+  "roll_c": -0.0568
+ },
+ "story_studio_03": {
+  "conf": 0.454,
+  "offset": 0.2232,
+  "roll_b": 0.021,
+  "roll_c": -0.0429
+ },
+ "story_studio_04": {
+  "conf": 0.476,
+  "offset": 0.2616,
+  "roll_b": 0.0021,
+  "roll_c": 0.0147
+ },
+ "story_studio_05": {
+  "conf": 0.567,
+  "offset": 0.1463,
+  "roll_b": -0.0006,
+  "roll_c": 0.0359
+ },
+ "straw_rolls_field_01": {
+  "conf": 0.999,
+  "offset": -0.0181,
+  "roll_b": -0.0133,
+  "roll_c": -0.0072
+ },
+ "stream": {
+  "conf": 0.348,
+  "offset": 0.1745,
+  "roll_b": -0.0144,
+  "roll_c": 0.0695
+ },
+ "street_lamp": {
+  "conf": 0.605,
+  "offset": -0.0091,
+  "roll_b": -0.0135,
+  "roll_c": 0.0027
+ },
+ "studio_country_hall": {
+  "conf": 0.61,
+  "offset": 0.1034,
+  "roll_b": -0.0343,
+  "roll_c": 0.007
+ },
+ "studio_garden": {
+  "conf": 0.472,
+  "offset": 0.0806,
+  "roll_b": 0.0036,
+  "roll_c": -0.0006
+ },
+ "studio_kominka_02": {
+  "conf": 0.683,
+  "offset": 0.2078,
+  "roll_b": 0.0141,
+  "roll_c": -0.0666
+ },
+ "studio_kominka_03": {
+  "conf": 0.566,
+  "offset": 0.1117,
+  "roll_b": 0.0798,
+  "roll_c": -0.0662
+ },
+ "studio_kominka_04": {
+  "conf": 0.637,
+  "offset": 0.0917,
+  "roll_b": 0.0152,
+  "roll_c": 0.0085
+ },
+ "studio_kontrast_01": {
+  "conf": 0.736,
+  "offset": 0.1066,
+  "roll_b": 0.016,
+  "roll_c": 0.0125
+ },
+ "studio_kontrast_02": {
+  "conf": 0.741,
+  "offset": 0.0781,
+  "roll_b": 0.0465,
+  "roll_c": 0.0288
+ },
+ "studio_kontrast_03": {
+  "conf": 0.348,
+  "offset": 0.072,
+  "roll_b": -0.0361,
+  "roll_c": -0.0924
+ },
+ "studio_kontrast_04": {
+  "conf": 0.384,
+  "offset": 0.0226,
+  "roll_b": 0.0024,
+  "roll_c": -0.0045
+ },
+ "studio_small_01": {
+  "conf": 0.809,
+  "offset": 0.22,
+  "roll_b": 0.0038,
+  "roll_c": -0.0123
+ },
+ "studio_small_02": {
+  "conf": 0.805,
+  "offset": 0.2254,
+  "roll_b": -0.0027,
+  "roll_c": -0.0384
+ },
+ "studio_small_03": {
+  "conf": 0.694,
+  "offset": 0.2285,
+  "roll_b": 0.0047,
+  "roll_c": 0.0024
+ },
+ "studio_small_04": {
+  "conf": 0.808,
+  "offset": 0.2372,
+  "roll_b": 0.0064,
+  "roll_c": -0.05
+ },
+ "studio_small_05": {
+  "conf": 0.693,
+  "offset": 0.2348,
+  "roll_b": -0.005,
+  "roll_c": 0.0235
+ },
+ "studio_small_06": {
+  "conf": 0.836,
+  "offset": 0.2229,
+  "roll_b": 0.0056,
+  "roll_c": -0.0322
+ },
+ "studio_small_07": {
+  "conf": 0.869,
+  "offset": 0.2242,
+  "roll_b": -0.0073,
+  "roll_c": -0.0403
+ },
+ "studio_small_08": {
+  "conf": 0.525,
+  "offset": 0.1284,
+  "roll_b": 0.0111,
+  "roll_c": -0.0168
+ },
+ "studio_small_09": {
+  "conf": 0.698,
+  "offset": 0.1331,
+  "roll_b": -0.0156,
+  "roll_c": 0.0903
+ },
+ "studio_wizja_01": {
+  "conf": 0.398,
+  "offset": 0.0913,
+  "roll_b": 0.0745,
+  "roll_c": -0.1331
+ },
+ "studio_wizja_02": {
+  "conf": 0.438,
+  "offset": -0.0768,
+  "roll_b": -0.0207,
+  "roll_c": 0.061
+ },
+ "studio_wizja_03": {
+  "conf": 0.747,
+  "offset": 0.1195,
+  "roll_b": 0.0061,
+  "roll_c": 0.1035
+ },
+ "stuttgart_hillside": {
+  "conf": 0.948,
+  "offset": -0.0129,
+  "roll_b": -0.0092,
+  "roll_c": 0.0154
+ },
+ "stuttgart_suburbs": {
+  "conf": 0.713,
+  "offset": 0.024,
+  "roll_b": 0.0387,
+  "roll_c": -0.0073
+ },
+ "suburban_field_01": {
+  "conf": 0.998,
+  "offset": -0.0143,
+  "roll_b": 0.0019,
+  "roll_c": -0.0042
+ },
+ "suburban_field_02": {
+  "conf": 0.948,
+  "offset": -0.0066,
+  "roll_b": 0.0019,
+  "roll_c": 0.0057
+ },
+ "suburban_football_field": {
+  "conf": 0.997,
+  "offset": -0.0368,
+  "roll_b": -0.0025,
+  "roll_c": 0.0147
+ },
+ "suburban_garden": {
+  "conf": 0.867,
+  "offset": 0.0366,
+  "roll_b": 0.0384,
+  "roll_c": -0.0024
+ },
+ "suburban_parking_area": {
+  "conf": 0.73,
+  "offset": -0.0303,
+  "roll_b": 0.0179,
+  "roll_c": -0.0024
+ },
+ "suburban_soccer_park": {
+  "conf": 0.995,
+  "offset": -0.0246,
+  "roll_b": -0.0087,
+  "roll_c": -0.0055
+ },
+ "subway_entrance": {
+  "conf": 0.48,
+  "offset": 0.1111,
+  "roll_b": -0.0029,
+  "roll_c": 0.0437
+ },
+ "summer_stage_01": {
+  "conf": 0.691,
+  "offset": -0.0164,
+  "roll_b": 0.0222,
+  "roll_c": 0.0139
+ },
+ "summer_stage_02": {
+  "conf": 0.604,
+  "offset": 0.0712,
+  "roll_b": 0.0072,
+  "roll_c": 0.0051
+ },
+ "sundowner_deck": {
+  "conf": 0.41,
+  "offset": 0.1786,
+  "roll_b": 0.03,
+  "roll_c": 0.0265
+ },
+ "sundowner_overlook": {
+  "conf": 0.711,
+  "offset": 0.0234,
+  "roll_b": 0.0099,
+  "roll_c": 0.0059
+ },
+ "sunflowers": {
+  "conf": 0.668,
+  "offset": 0.0063,
+  "roll_b": 0.0115,
+  "roll_c": -0.0149
+ },
+ "sunflowers_puresky": {
+  "conf": 1.0,
+  "offset": -0.041,
+  "roll_b": 0.0058,
+  "roll_c": -0.0026
+ },
+ "sunny_country_road": {
+  "conf": 0.802,
+  "offset": -0.0261,
+  "roll_b": -0.0058,
+  "roll_c": 0.0065
+ },
+ "sunny_rose_garden": {
+  "conf": 0.747,
+  "offset": -0.0208,
+  "roll_b": -0.011,
+  "roll_c": -0.0039
+ },
+ "sunny_vondelpark": {
+  "conf": 0.529,
+  "offset": 0.2561,
+  "roll_b": -0.0064,
+  "roll_c": 0.004
+ },
+ "sunset_fairway": {
+  "conf": 0.955,
+  "offset": -0.0241,
+  "roll_b": -0.002,
+  "roll_c": 0.0218
+ },
+ "sunset_forest": {
+  "conf": 0.411,
+  "offset": 0.0847,
+  "roll_b": 0.0097,
+  "roll_c": 0.028
+ },
+ "sunset_in_the_chalk_quarry": {
+  "conf": 0.981,
+  "offset": -0.0185,
+  "roll_b": 0.0196,
+  "roll_c": -0.0154
+ },
+ "sunset_jhbcentral": {
+  "conf": 0.599,
+  "offset": -0.0107,
+  "roll_b": -0.012,
+  "roll_c": 0.0065
+ },
+ "sunset_meadow_path": {
+  "conf": 0.997,
+  "offset": -0.0213,
+  "roll_b": 0.0026,
+  "roll_c": 0.0005
+ },
+ "surgery": {
+  "conf": 0.377,
+  "offset": 0.1783,
+  "roll_b": -0.0471,
+  "roll_c": 0.0059
+ },
+ "syferfontein_0d_clear": {
+  "conf": 0.466,
+  "offset": 0.0055,
+  "roll_b": -0.0086,
+  "roll_c": 0.0036
+ },
+ "syferfontein_0d_clear_puresky": {
+  "conf": 1.0,
+  "offset": -0.0063,
+  "roll_b": 0.0014,
+  "roll_c": 0.0045
+ },
+ "syferfontein_18d_clear": {
+  "conf": 0.559,
+  "offset": 0.2297,
+  "roll_b": 0.0205,
+  "roll_c": -0.0196
+ },
+ "syferfontein_1d_clear": {
+  "conf": 0.612,
+  "offset": 0.0033,
+  "roll_b": -0.0057,
+  "roll_c": 0.0074
+ },
+ "syferfontein_1d_clear_puresky": {
+  "conf": 1.0,
+  "offset": -0.0071,
+  "roll_b": -0.0015,
+  "roll_c": 0.0063
+ },
+ "syferfontein_6d_clear": {
+  "conf": 0.473,
+  "offset": 0.0737,
+  "roll_b": -0.0634,
+  "roll_c": -0.0461
+ },
+ "symmetrical_garden": {
+  "conf": 0.476,
+  "offset": 0.0916,
+  "roll_b": -0.0687,
+  "roll_c": -0.0843
+ },
+ "symmetrical_garden_02": {
+  "conf": 0.318,
+  "offset": 0.1015,
+  "roll_b": -0.0306,
+  "roll_c": -0.0041
+ },
+ "table_mountain_1": {
+  "conf": 0.491,
+  "offset": 0.1727,
+  "roll_b": -0.0044,
+  "roll_c": 0.0363
+ },
+ "table_mountain_1_puresky": {
+  "conf": 0.998,
+  "offset": -0.0274,
+  "roll_b": 0.0009,
+  "roll_c": -0.0119
+ },
+ "table_mountain_2": {
+  "conf": 0.383,
+  "offset": 0.0345,
+  "roll_b": 0.0245,
+  "roll_c": -0.0391
+ },
+ "table_mountain_2_puresky": {
+  "conf": 0.999,
+  "offset": -0.0239,
+  "roll_b": 0.0043,
+  "roll_c": -0.0113
+ },
+ "teatro_massimo": {
+  "conf": 0.95,
+  "offset": -0.0171,
+  "roll_b": -0.0094,
+  "roll_c": -0.0008
+ },
+ "teufelsberg_ground_1": {
+  "conf": 0.56,
+  "offset": -0.0007,
+  "roll_b": -0.0005,
+  "roll_c": 0.0343
+ },
+ "teufelsberg_ground_2": {
+  "conf": 0.388,
+  "offset": 0.1336,
+  "roll_b": 0.0487,
+  "roll_c": -0.1123
+ },
+ "teufelsberg_inner": {
+  "conf": 0.566,
+  "offset": -0.024,
+  "roll_b": 0.0114,
+  "roll_c": -0.0012
+ },
+ "teufelsberg_roof": {
+  "conf": 0.794,
+  "offset": 0.03,
+  "roll_b": 0.0639,
+  "roll_c": -0.0338
+ },
+ "teutonic_castle_moat": {
+  "conf": 0.769,
+  "offset": 0.0408,
+  "roll_b": 0.0111,
+  "roll_c": -0.0099
+ },
+ "thatch_chapel": {
+  "conf": 0.448,
+  "offset": 0.0532,
+  "roll_b": -0.0279,
+  "roll_c": 0.0265
+ },
+ "the_lost_city": {
+  "conf": 0.724,
+  "offset": -0.0203,
+  "roll_b": -0.0126,
+  "roll_c": -0.0222
+ },
+ "the_sky_is_on_fire": {
+  "conf": 0.522,
+  "offset": 0.105,
+  "roll_b": 0.0633,
+  "roll_c": 0.1292
+ },
+ "theater_01": {
+  "conf": 0.647,
+  "offset": 0.043,
+  "roll_b": 0.063,
+  "roll_c": -0.0006
+ },
+ "theater_02": {
+  "conf": 0.633,
+  "offset": 0.0437,
+  "roll_b": 0.0641,
+  "roll_c": -0.0051
+ },
+ "tiber_1": {
+  "conf": 0.722,
+  "offset": 0.0339,
+  "roll_b": 0.0463,
+  "roll_c": -0.0212
+ },
+ "tiber_2": {
+  "conf": 0.495,
+  "offset": 0.2464,
+  "roll_b": 0.0001,
+  "roll_c": 0.0071
+ },
+ "tiber_island": {
+  "conf": 0.82,
+  "offset": 0.0196,
+  "roll_b": 0.0053,
+  "roll_c": 0.0146
+ },
+ "ticknock_01": {
+  "conf": 0.882,
+  "offset": -0.0289,
+  "roll_b": -0.0147,
+  "roll_c": -0.0027
+ },
+ "ticknock_02": {
+  "conf": 0.911,
+  "offset": 0.0059,
+  "roll_b": -0.0315,
+  "roll_c": -0.0123
+ },
+ "ticknock_03": {
+  "conf": 0.821,
+  "offset": 0.007,
+  "roll_b": -0.011,
+  "roll_c": -0.0142
+ },
+ "ticknock_04": {
+  "conf": 0.507,
+  "offset": -0.0316,
+  "roll_b": 0.0142,
+  "roll_c": -0.0459
+ },
+ "tief_etz": {
+  "conf": 0.796,
+  "offset": 0.0085,
+  "roll_b": -0.0391,
+  "roll_c": 0.0137
+ },
+ "tiergarten": {
+  "conf": 0.607,
+  "offset": 0.0008,
+  "roll_b": 0.0008,
+  "roll_c": 0.0029
+ },
+ "toposcope_sunset": {
+  "conf": 0.897,
+  "offset": -0.0013,
+  "roll_b": -0.0079,
+  "roll_c": -0.0139
+ },
+ "tree_lined_driveway": {
+  "conf": 0.768,
+  "offset": -0.0242,
+  "roll_b": -0.006,
+  "roll_c": 0.0075
+ },
+ "treetop_balcony": {
+  "conf": 0.456,
+  "offset": -0.0275,
+  "roll_b": 0.009,
+  "roll_c": 0.0123
+ },
+ "trekker_monument": {
+  "conf": 0.344,
+  "offset": -0.0396,
+  "roll_b": -0.0052,
+  "roll_c": 0.0064
+ },
+ "tucker_wreck": {
+  "conf": 0.323,
+  "offset": 0.2487,
+  "roll_b": 0.0031,
+  "roll_c": -0.0081
+ },
+ "turning_area": {
+  "conf": 0.891,
+  "offset": 0.0019,
+  "roll_b": 0.0034,
+  "roll_c": -0.0288
+ },
+ "tv_studio": {
+  "conf": 0.48,
+  "offset": 0.0616,
+  "roll_b": -0.0275,
+  "roll_c": 0.0087
+ },
+ "twilight_sunset": {
+  "conf": 0.719,
+  "offset": -0.0333,
+  "roll_b": 0.0059,
+  "roll_c": 0.0039
+ },
+ "ulmer_muenster": {
+  "conf": 0.876,
+  "offset": 0.0004,
+  "roll_b": 0.0005,
+  "roll_c": 0.0274
+ },
+ "umhlanga_sunrise": {
+  "conf": 0.939,
+  "offset": -0.0085,
+  "roll_b": 0.0104,
+  "roll_c": 0.0241
+ },
+ "under_bridge": {
+  "conf": 0.856,
+  "offset": -0.0164,
+  "roll_b": -0.0019,
+  "roll_c": -0.0001
+ },
+ "unfinished_office": {
+  "conf": 0.483,
+  "offset": 0.1119,
+  "roll_b": -0.0408,
+  "roll_c": -0.008
+ },
+ "university_workshop": {
+  "conf": 0.603,
+  "offset": 0.0673,
+  "roll_b": 0.0209,
+  "roll_c": 0.0096
+ },
+ "urban_alley_01": {
+  "conf": 0.587,
+  "offset": 0.0723,
+  "roll_b": 0.0088,
+  "roll_c": 0.0095
+ },
+ "urban_courtyard": {
+  "conf": 0.781,
+  "offset": 0.0333,
+  "roll_b": 0.0147,
+  "roll_c": 0.0116
+ },
+ "urban_courtyard_02": {
+  "conf": 0.842,
+  "offset": -0.0089,
+  "roll_b": 0.007,
+  "roll_c": -0.0102
+ },
+ "urban_street_01": {
+  "conf": 0.478,
+  "offset": 0.1919,
+  "roll_b": 0.0031,
+  "roll_c": -0.0327
+ },
+ "urban_street_02": {
+  "conf": 0.645,
+  "offset": 0.0327,
+  "roll_b": 0.0521,
+  "roll_c": 0.0113
+ },
+ "urban_street_03": {
+  "conf": 0.596,
+  "offset": 0.0263,
+  "roll_b": -0.0011,
+  "roll_c": -0.0319
+ },
+ "urban_street_04": {
+  "conf": 0.827,
+  "offset": 0.01,
+  "roll_b": 0.0021,
+  "roll_c": 0.018
+ },
+ "ushaka_dolphin_stadium": {
+  "conf": 0.742,
+  "offset": -0.0251,
+  "roll_b": -0.008,
+  "roll_c": -0.0017
+ },
+ "ushaka_sea_world_aquarium": {
+  "conf": 0.487,
+  "offset": 0.0543,
+  "roll_b": 0.016,
+  "roll_c": -0.0153
+ },
+ "valley_of_desolation": {
+  "conf": 0.714,
+  "offset": 0.0157,
+  "roll_b": -0.0058,
+  "roll_c": -0.0332
+ },
+ "vatican_road": {
+  "conf": 0.55,
+  "offset": 0.0711,
+  "roll_b": -0.0106,
+  "roll_c": 0.0024
+ },
+ "veld_fire": {
+  "conf": 0.634,
+  "offset": 0.0699,
+  "roll_b": 0.0381,
+  "roll_c": -0.0224
+ },
+ "venetian_crossroads": {
+  "conf": 0.611,
+  "offset": 0.0802,
+  "roll_b": 0.0537,
+  "roll_c": -0.0857
+ },
+ "venice_dawn_1": {
+  "conf": 0.547,
+  "offset": 0.0008,
+  "roll_b": -0.0023,
+  "roll_c": 0.0366
+ },
+ "venice_dawn_2": {
+  "conf": 0.919,
+  "offset": -0.0063,
+  "roll_b": 0.0032,
+  "roll_c": 0.0181
+ },
+ "venice_sunrise": {
+  "conf": 0.955,
+  "offset": -0.0043,
+  "roll_b": 0.0007,
+  "roll_c": 0.0226
+ },
+ "venice_sunset": {
+  "conf": 0.569,
+  "offset": -0.0119,
+  "roll_b": 0.0026,
+  "roll_c": -0.002
+ },
+ "veranda": {
+  "conf": 0.469,
+  "offset": 0.13,
+  "roll_b": -0.0266,
+  "roll_c": 0.005
+ },
+ "versveldpas": {
+  "conf": 0.561,
+  "offset": 0.1282,
+  "roll_b": -0.05,
+  "roll_c": 0.1071
+ },
+ "vestibule": {
+  "conf": 0.768,
+  "offset": 0.0356,
+  "roll_b": 0.0075,
+  "roll_c": -0.002
+ },
+ "viale_giuseppe_garibaldi": {
+  "conf": 0.8,
+  "offset": -0.0009,
+  "roll_b": 0.0016,
+  "roll_c": 0.0042
+ },
+ "victoria_curve_01": {
+  "conf": 0.713,
+  "offset": -0.0022,
+  "roll_b": -0.0079,
+  "roll_c": -0.0256
+ },
+ "victoria_curve_02": {
+  "conf": 0.809,
+  "offset": -0.0045,
+  "roll_b": 0.0054,
+  "roll_c": -0.0
+ },
+ "victoria_sunset": {
+  "conf": 0.754,
+  "offset": -0.002,
+  "roll_b": 0.0033,
+  "roll_c": 0.0405
+ },
+ "vignaioli": {
+  "conf": 0.409,
+  "offset": 0.211,
+  "roll_b": 0.0341,
+  "roll_c": 0.0347
+ },
+ "vignaioli_night": {
+  "conf": 0.861,
+  "offset": -0.0049,
+  "roll_b": -0.0013,
+  "roll_c": -0.0079
+ },
+ "vintage_measuring_lab": {
+  "conf": 0.364,
+  "offset": 0.0787,
+  "roll_b": 0.0092,
+  "roll_c": 0.0092
+ },
+ "voortrekker_interior": {
+  "conf": 0.359,
+  "offset": 0.065,
+  "roll_b": 0.0033,
+  "roll_c": 0.0011
+ },
+ "vulture_hide": {
+  "conf": 0.684,
+  "offset": 0.1138,
+  "roll_b": -0.0235,
+  "roll_c": -0.0321
+ },
+ "warm_bar": {
+  "conf": 0.586,
+  "offset": 0.0748,
+  "roll_b": 0.0031,
+  "roll_c": 0.0057
+ },
+ "warm_reception_dinner": {
+  "conf": 0.654,
+  "offset": -0.0117,
+  "roll_b": -0.024,
+  "roll_c": 0.0073
+ },
+ "warm_restaurant": {
+  "conf": 0.504,
+  "offset": 0.0877,
+  "roll_b": 0.0387,
+  "roll_c": 0.0303
+ },
+ "warm_restaurant_night": {
+  "conf": 0.575,
+  "offset": 0.053,
+  "roll_b": 0.0137,
+  "roll_c": 0.0093
+ },
+ "wasteland_clouds": {
+  "conf": 0.945,
+  "offset": -0.0051,
+  "roll_b": 0.0019,
+  "roll_c": -0.0031
+ },
+ "wasteland_clouds_puresky": {
+  "conf": 1.0,
+  "offset": -0.0437,
+  "roll_b": 0.006,
+  "roll_c": -0.0062
+ },
+ "waterbuck_trail": {
+  "conf": 0.951,
+  "offset": -0.0269,
+  "roll_b": 0.0154,
+  "roll_c": 0.0205
+ },
+ "waterkloof_farm": {
+  "conf": 0.43,
+  "offset": 0.0932,
+  "roll_b": -0.0082,
+  "roll_c": -0.0446
+ },
+ "whale_skeleton": {
+  "conf": 0.478,
+  "offset": -0.0117,
+  "roll_b": -0.0083,
+  "roll_c": -0.0148
+ },
+ "whipple_creek_gazebo": {
+  "conf": 0.452,
+  "offset": -0.0249,
+  "roll_b": 0.0005,
+  "roll_c": 0.0119
+ },
+ "whipple_creek_regional_park_01": {
+  "conf": 0.645,
+  "offset": 0.0343,
+  "roll_b": 0.0173,
+  "roll_c": -0.0024
+ },
+ "whipple_creek_regional_park_04": {
+  "conf": 0.394,
+  "offset": 0.1398,
+  "roll_b": -0.0011,
+  "roll_c": -0.0411
+ },
+ "white_chapel": {
+  "conf": 0.688,
+  "offset": 0.1496,
+  "roll_b": 0.0501,
+  "roll_c": 0.007
+ },
+ "white_cliff_top": {
+  "conf": 0.43,
+  "offset": 0.2305,
+  "roll_b": -0.0297,
+  "roll_c": -0.0059
+ },
+ "white_home_studio": {
+  "conf": 0.662,
+  "offset": 0.1388,
+  "roll_b": -0.0607,
+  "roll_c": -0.0235
+ },
+ "white_studio_02": {
+  "conf": 0.4,
+  "offset": 0.1329,
+  "roll_b": -0.0657,
+  "roll_c": 0.0218
+ },
+ "white_studio_03": {
+  "conf": 0.566,
+  "offset": 0.0889,
+  "roll_b": -0.1019,
+  "roll_c": -0.0594
+ },
+ "white_studio_04": {
+  "conf": 0.486,
+  "offset": -0.0225,
+  "roll_b": -0.0031,
+  "roll_c": -0.0033
+ },
+ "white_studio_05": {
+  "conf": 0.556,
+  "offset": 0.2391,
+  "roll_b": 0.0431,
+  "roll_c": -0.032
+ },
+ "white_studio_06": {
+  "conf": 0.663,
+  "offset": 0.1148,
+  "roll_b": -0.0129,
+  "roll_c": 0.0457
+ },
+ "wide_street_01": {
+  "conf": 0.969,
+  "offset": 0.0047,
+  "roll_b": 0.0183,
+  "roll_c": 0.0064
+ },
+ "wide_street_02": {
+  "conf": 0.914,
+  "offset": -0.0093,
+  "roll_b": -0.0051,
+  "roll_c": -0.0105
+ },
+ "wildflower_field": {
+  "conf": 0.995,
+  "offset": -0.021,
+  "roll_b": -0.0024,
+  "roll_c": 0.0051
+ },
+ "winter_evening": {
+  "conf": 0.719,
+  "offset": 0.0061,
+  "roll_b": -0.0022,
+  "roll_c": -0.0051
+ },
+ "winter_lake_01": {
+  "conf": 0.999,
+  "offset": -0.0121,
+  "roll_b": -0.0037,
+  "roll_c": 0.0006
+ },
+ "winter_orchard": {
+  "conf": 0.922,
+  "offset": -0.0115,
+  "roll_b": 0.0015,
+  "roll_c": -0.0011
+ },
+ "winter_river": {
+  "conf": 0.852,
+  "offset": -0.0139,
+  "roll_b": -0.0167,
+  "roll_c": -0.0078
+ },
+ "winter_sky": {
+  "conf": 0.833,
+  "offset": -0.0201,
+  "roll_b": 0.0089,
+  "roll_c": 0.0049
+ },
+ "witsand_woolshop": {
+  "conf": 0.527,
+  "offset": 0.0146,
+  "roll_b": -0.0292,
+  "roll_c": 0.0055
+ },
+ "wobbly_bridge": {
+  "conf": 0.314,
+  "offset": 0.2601,
+  "roll_b": 0.0032,
+  "roll_c": -0.0146
+ },
+ "wooden_lounge": {
+  "conf": 0.543,
+  "offset": 0.0881,
+  "roll_b": 0.0173,
+  "roll_c": -0.0306
+ },
+ "wooden_motel": {
+  "conf": 0.55,
+  "offset": -0.0183,
+  "roll_b": 0.0009,
+  "roll_c": -0.0192
+ },
+ "wooden_studio_01": {
+  "conf": 0.568,
+  "offset": 0.0262,
+  "roll_b": 0.027,
+  "roll_c": -0.0005
+ },
+ "wooden_studio_02": {
+  "conf": 0.545,
+  "offset": 0.0961,
+  "roll_b": -0.0097,
+  "roll_c": -0.017
+ },
+ "wooden_studio_03": {
+  "conf": 0.514,
+  "offset": 0.1335,
+  "roll_b": -0.0412,
+  "roll_c": -0.0242
+ },
+ "wooden_studio_04": {
+  "conf": 0.487,
+  "offset": 0.1815,
+  "roll_b": -0.0535,
+  "roll_c": 0.0597
+ },
+ "wooden_studio_05": {
+  "conf": 0.415,
+  "offset": 0.2677,
+  "roll_b": -0.0,
+  "roll_c": 0.0117
+ },
+ "wooden_studio_06": {
+  "conf": 0.506,
+  "offset": 0.2636,
+  "roll_b": -0.0094,
+  "roll_c": -0.0152
+ },
+ "wooden_studio_07": {
+  "conf": 0.483,
+  "offset": 0.2413,
+  "roll_b": 0.0361,
+  "roll_c": 0.025
+ },
+ "wooden_studio_08": {
+  "conf": 0.427,
+  "offset": 0.2159,
+  "roll_b": 0.0156,
+  "roll_c": -0.0417
+ },
+ "wooden_studio_09": {
+  "conf": 0.443,
+  "offset": 0.1242,
+  "roll_b": -0.0436,
+  "roll_c": -0.0241
+ },
+ "wooden_studio_10": {
+  "conf": 0.336,
+  "offset": 0.1679,
+  "roll_b": 0.0083,
+  "roll_c": -0.0083
+ },
+ "wooden_studio_11": {
+  "conf": 0.45,
+  "offset": -0.0082,
+  "roll_b": 0.0039,
+  "roll_c": 0.08
+ },
+ "wooden_studio_12": {
+  "conf": 0.366,
+  "offset": 0.1661,
+  "roll_b": 0.0227,
+  "roll_c": 0.0289
+ },
+ "wooden_studio_13": {
+  "conf": 0.695,
+  "offset": 0.1504,
+  "roll_b": 0.0054,
+  "roll_c": -0.0281
+ },
+ "wooden_studio_14": {
+  "conf": 0.502,
+  "offset": 0.1039,
+  "roll_b": -0.0177,
+  "roll_c": -0.0784
+ },
+ "wooden_studio_15": {
+  "conf": 0.449,
+  "offset": 0.3817,
+  "roll_b": -0.0186,
+  "roll_c": -0.3669
+ },
+ "wooden_studio_16": {
+  "conf": 0.633,
+  "offset": 0.1811,
+  "roll_b": -0.1058,
+  "roll_c": 0.0007
+ },
+ "wooden_studio_17": {
+  "conf": 0.37,
+  "offset": 0.2247,
+  "roll_b": -0.0202,
+  "roll_c": 0.0311
+ },
+ "wooden_studio_18": {
+  "conf": 0.533,
+  "offset": 0.2244,
+  "roll_b": 0.0622,
+  "roll_c": -0.0254
+ },
+ "woods": {
+  "conf": 0.769,
+  "offset": -0.0036,
+  "roll_b": -0.0115,
+  "roll_c": -0.005
+ },
+ "workshop": {
+  "conf": 0.409,
+  "offset": 0.1325,
+  "roll_b": 0.068,
+  "roll_c": -0.0071
+ },
+ "wrestling_gym": {
+  "conf": 0.751,
+  "offset": 0.0384,
+  "roll_b": -0.02,
+  "roll_c": -0.0152
+ },
+ "xiequ_yuan": {
+  "conf": 0.692,
+  "offset": 0.004,
+  "roll_b": -0.0305,
+  "roll_c": 0.0131
+ },
+ "yaris_interior_garage": {
+  "conf": 0.723,
+  "offset": -0.005,
+  "roll_b": 0.0053,
+  "roll_c": 0.0151
+ },
+ "yellow_field": {
+  "conf": 1.0,
+  "offset": -0.012,
+  "roll_b": 0.0013,
+  "roll_c": -0.0019
+ },
+ "yoga_room": {
+  "conf": 0.791,
+  "offset": 0.1298,
+  "roll_b": 0.0062,
+  "roll_c": 0.0015
+ },
+ "zavelstein": {
+  "conf": 0.716,
+  "offset": -0.0083,
+  "roll_b": 0.0184,
+  "roll_c": 0.0154
+ },
+ "zawiszy_czarnego": {
+  "conf": 0.716,
+  "offset": 0.0058,
+  "roll_b": -0.0225,
+  "roll_c": 0.0138
+ },
+ "zhengyang_gate": {
+  "conf": 0.99,
+  "offset": -0.0117,
+  "roll_b": -0.0079,
+  "roll_c": 0.0055
+ },
+ "zwartkops_curve_afternoon": {
+  "conf": 0.799,
+  "offset": -0.0123,
+  "roll_b": 0.0112,
+  "roll_c": -0.0007
+ },
+ "zwartkops_curve_morning": {
+  "conf": 0.676,
+  "offset": -0.01,
+  "roll_b": 0.011,
+  "roll_c": -0.0035
+ },
+ "zwartkops_curve_sunset": {
+  "conf": 0.961,
+  "offset": -0.0178,
+  "roll_b": 0.0008,
+  "roll_c": 0.008
+ },
+ "zwartkops_pit": {
+  "conf": 0.729,
+  "offset": 0.0265,
+  "roll_b": 0.0885,
+  "roll_c": -0.0264
+ },
+ "zwartkops_start_afternoon": {
+  "conf": 0.718,
+  "offset": 0.0637,
+  "roll_b": -0.1009,
+  "roll_c": -0.0191
+ },
+ "zwartkops_start_morning": {
+  "conf": 0.864,
+  "offset": -0.007,
+  "roll_b": -0.0019,
+  "roll_c": -0.007
+ },
+ "zwartkops_start_sunset": {
+  "conf": 0.677,
+  "offset": -0.0187,
+  "roll_b": -0.0116,
+  "roll_c": 0.0059
+ },
+ "zwartkops_straight_afternoon": {
+  "conf": 0.938,
+  "offset": 0.0073,
+  "roll_b": 0.0022,
+  "roll_c": -0.0109
+ },
+ "zwartkops_straight_morning": {
+  "conf": 0.985,
+  "offset": 0.0042,
+  "roll_b": -0.0047,
+  "roll_c": -0.011
+ },
+ "zwartkops_straight_sunset": {
+  "conf": 0.998,
+  "offset": -0.0145,
+  "roll_b": 0.005,
+  "roll_c": 0.0067
+ },
+ "zwinger_night": {
+  "conf": 0.96,
+  "offset": -0.0195,
+  "roll_b": -0.001,
+  "roll_c": 0.0
+ }
+}

@@ -26,7 +26,7 @@ from ugv.park.controller import ParkController, ParkParams
 from ugv.park.estimator import Estimator
 from ugv.park.faults import Faults, FaultState
 from ugv.park.geometry import bay, compose, inverse, wrap
-from ugv.park.perception import CameraError, DetectorModel, measure
+from ugv.park.perception import CameraError, DetectorModel, measure, measurement_from_detections
 from ugv.park.plant import Floor, Plant, PlantParams
 
 DT = 0.02
@@ -106,7 +106,13 @@ class Episode:
         seed: int = 0,
         keep_trace: bool = False,
         engaged: bool = True,
+        external_camera: bool = False,
     ) -> None:
+        """`external_camera`: the pixels (and the detector's reads of them) arrive from the
+        outside through `add_camera_frame` — the challenge's strict mode, where the HUD frame
+        and the pipeline see the same image. The batch simulator leaves this False and samples
+        the detector's statistics instead."""
+        self.external = external_camera
         self.rng = rng = np.random.default_rng(seed)
         self.b = bay()
         self.scenario = scenario
@@ -162,6 +168,21 @@ class Episode:
     def true_rel(self) -> np.ndarray:
         """The car's true pose in the airframe frame."""
         return compose(inverse(self.A), self.plant.pose)
+
+    def set_exposure_stops(self, stops: float) -> None:
+        """Live: pin (or release) the fixed over-exposure fault on a running episode.
+
+        A car drawn clean (faults off) carries no fault state, so build one that holds only
+        the exposure defect; every other fault stays off.
+        """
+        if self.faults is None:
+            f = Faults(exposure_stops=stops)
+            fs = FaultState(f, np.random.default_rng([0, 8]))
+            fs.t = self.t
+            self.faults = fs
+            self.plant.faults = fs
+            return
+        self.faults.f = replace(self.faults.f, exposure_stops=stops)
 
     def engage(self, on: bool) -> None:
         """Hand the car to a fresh controller (it starts from SEARCH) or take it back."""
@@ -219,7 +240,35 @@ class Episode:
         self.k += 1
         return False
 
+    def add_camera_frame(
+        self,
+        detections: list | None = None,
+        fx: dict | None = None,
+        lost: bool = False,
+    ) -> None:
+        """one camera frame, measured elsewhere from the actual pixels: `detections` is
+        [[keypoint_index, u, v], ...] (millisecond-late by construction, as the car sees it).
+        `fx` describes the frame for the HUD. Lost frames age the pose fix, like on the car."""
+        t = self.t
+        if lost:
+            self.last_kp = []
+            self.cam_fx = {"lost": True}
+            return
+        self.est.last_frame_t = t
+        self.cam_fx = fx or {}
+        self.last_kp = list(detections or [])
+        if not self.last_kp:
+            return
+        prior = self.est.predicted_airframe_in_car()
+        m = measurement_from_detections(self.last_kp, self.scenario.detector, prior)
+        # no phantom injection here: the frame is the input, and the picture shows no other drone
+        if m is None:
+            return
+        self.pending.append((self.k + LATENCY_TICKS, t, m))
+
     def _camera(self, t: float, k: int) -> None:
+        if self.external:
+            return  # frames arrive through add_camera_frame; nothing is sampled here
         if self.faults is not None and self.faults.frame_lost():
             self.last_kp = []
             self.cam_fx = {"lost": True}  # no frame: drop the previous frame's faults

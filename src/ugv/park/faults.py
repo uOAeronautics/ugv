@@ -18,6 +18,8 @@ their own random stream (so a fault-free run is unchanged):
 - `gyro_scale`, `gyro_walk`: gyro scale error and a bias that wanders.
 - Camera (what the mono image suffers, as its effect on the keypoint detector):
   `exposure_rate`: spells of over/under-exposure (0.3-2 s) that hide most keypoints;
+  `exposure_stops`: exposure stuck fixed N stops over (auto-exposure off, set too high). Permanent,
+  the detector drowns gradually as the level rises — the challenge's fixed-high-exposure defect.
   `blur_px`: motion blur, pixel error growing with the turn rate; `noise_px`: sensor noise;
   `occluder`: a fixed region of the image blocked (a cable, a smudge, the car's own wire);
   `shake_deg`: mount jitter per frame; `bump_deg`: the mount knocked to a new angle once,
@@ -81,6 +83,8 @@ class Faults:
     gyro_scale: float = 1.0
     gyro_walk: float = 0.0  # rad/s per sqrt(s)
     exposure_rate: float = 0.0  # bad-exposure spells per second
+    # fixed over-exposure, stops over correct (0 = auto); negative = under
+    exposure_stops: float = 0.0
     blur_px: float = 0.0  # extra pixel error per rad/s of turn
     noise_px: float = 0.0
     occluder: tuple[float, float, float, float] | None = None  # u0, v0, u1, v1 at 1280x720
@@ -178,6 +182,8 @@ class Faults:
             out.append(f"gyro scale {100 * (self.gyro_scale - 1):+.1f}%, bias drifts")
         if self.exposure_rate:
             out.append(f"bad exposure spells {self.exposure_rate:.2f}/s")
+        if self.exposure_stops:
+            out.append(f"exposure stuck at {self.exposure_stops:+.1f} stops")
         if self.blur_px:
             out.append(f"motion blur {self.blur_px:.0f} px per rad/s")
         if self.noise_px:
@@ -281,6 +287,9 @@ class FaultState:
             self.exposure_sign = self.rng.choice([-1.0, 1.0])
         bad = self.exposure_left > 0
         self.exposure_left -= 0.1
+        # A fixed setting never clears, so it reports its own stop count and swamps the spells
+        fixed, strength = f.exposure_stops, abs(f.exposure_stops)
+        exposure = float(fixed) if strength else (float(self.exposure_sign) if bad else 0.0)
         shake = np.radians(f.shake_deg) * self.rng.normal(size=2) if f.shake_deg else np.zeros(2)
         bump = np.radians(f.bump_deg) if f.bump_deg and self.t >= f.bump_at_s else 0.0
         knock = bump if bump and not self.knocked else 0.0  # the frame in which it happens
@@ -291,9 +300,9 @@ class FaultState:
         defocus = f.blur_coc * abs(1 / max(range_m, 0.1) - 1 / f.focus_m) if f.focus_m else 0.0
         blur = smear + defocus
         return {
-            "px": f.noise_px + 0.5 * blur,
-            "miss": (0.6 if bad else 0.0) + min(0.5, 0.02 * blur),
-            "exposure": float(self.exposure_sign) if bad else 0.0,
+            "px": f.noise_px + 0.5 * blur + 0.5 * strength,
+            "miss": (0.6 if bad else 0.0) + min(0.95, 0.3 * strength) + min(0.5, 0.02 * blur),
+            "exposure": exposure,
             "yaw": float(shake[0] + 0.6 * bump),
             "pitch": float(shake[1] - bump),
             "occluder": f.occluder,

@@ -129,6 +129,22 @@ def _true_projection(pc: np.ndarray, cam: CameraError) -> tuple[np.ndarray, np.n
     return uv, front
 
 
+def measurement_from_detections(
+    detections, det: DetectorModel, prior: np.ndarray | None = None
+) -> np.ndarray | None:
+    """The measurement built from what the detector actually detected: [[index, u, v], ...]
+    projected on the nominal model, solved as the car solves it. The challenge's only path to a
+    fix; the batch simulator samples statistics instead."""
+    if not detections:
+        return None
+    pts = model_points(det)
+    keep = np.array([int(d[0]) for d in detections])
+    obs = np.array([[float(d[1]), float(d[2])] for d in detections])
+    if int(keep.min()) < 0 or int(keep.max()) >= len(pts) or len(keep) < 2:
+        return None
+    return solve(pts[keep], obs, det, prior)
+
+
 def measure(
     rel_true: np.ndarray,
     rng: np.random.Generator,

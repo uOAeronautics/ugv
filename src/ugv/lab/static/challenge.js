@@ -7,9 +7,11 @@ import { makeInput } from './drive.js';
 import { hud, START_NAME } from './hud.js';
 import { makeOrbit } from './orbit.js';
 import { makeWorld, P } from './scene3d.js';
+import { makeDetector } from './camdetect.js';
 import { drawWorld, loadPlan, makeView } from './world2d.js';
 
 const W0 = 1280, H0 = 720, F0 = 968, TICK = 20;
+const F0ImageCenter = W0 / 2, H0ImageCenter = H0 / 2;
 // The sensor frame: what the camera actually sees. Both the full-screen ride and the inset show
 // exactly this 16:9 rectangle, so the two pictures can be compared pixel for pixel.
 const sensorRect = (w, h) => {
@@ -26,10 +28,11 @@ const compose = (a, b) => [a[0] + Math.cos(a[2]) * b[0] - Math.sin(a[2]) * b[1],
 const inverse = (a) => [-Math.cos(a[2]) * a[0] - Math.sin(a[2]) * a[1], Math.sin(a[2]) * a[0] - Math.cos(a[2]) * a[1], -a[2]];
 
 export async function render(main) {
-  const [world, plan, hdris] = await Promise.all([
+  const [world, plan, hdris, horizons] = await Promise.all([
     api('/api/park/world'),
     loadPlan(),
     api('/static/hdri.json').catch(() => ({ assets: [] })),
+    api('/static/hdri-horizons.json').catch(() => ({})),
   ]);
   const bay = world.bay;
   main.classList.add('stage-page');
@@ -45,14 +48,17 @@ export async function render(main) {
 
   let sess = null, snap = null, prev = null, recvAt = 0, interval = 100, lastPump = 0, inflight = false;
   let auto = false, truth = false, started = false, done = null, startName = 'random', raf = 0;
-  let envName = 'lab', quality = 'bad';
+  let envName = 'lab', quality = 'bad', exposure = 0;
+  // The browser is the sensor: one rendered frame feeds both the human's view and the pipeline
+  let detector = null, cal = null, mountBase = { yaw: 0, pitch: 0 }, fxLocal = null;
+  let detsLocal = [], occluderLocal = null, lastCam = 0;
   let paths = { est: [], true: [] };
   const input = makeInput({ onAction: (k) => ({ Space: declare, KeyR: () => newRound(), KeyV: () => orbit.toggle(), KeyP: toggleAuto, KeyT: toggleTruth })[k]?.() });
   input.pad($('#ch-pad'));
 
   // --- rounds
   const newRound = async ({ seed = Math.floor(Math.random() * 1e6), start = null } = {}) => {
-    const body = { seed, env: envName, quality };
+    const body = { seed, env: envName, quality, exposure };
     if (start) body.start = start;
     else if (startName !== 'random' && startName !== 'placed') body.preset = startName;
     try {
@@ -61,6 +67,26 @@ export async function render(main) {
       H.flash('THAT START TOUCHES THE AIRFRAME OR LEAVES THE ROOM');
       return;
     }
+    const cs = sess.camera_sim;
+    if (!cs) {
+      // the lab process predates the strict camera build; it cannot serve this page
+      sess = null;
+      snap = null;
+      detector = null;
+      H.banner('fail', {
+        who: 'Lab server',
+        t: 0,
+        why: 'RESTART ugv-lab · this page needs the new build',
+        e: [0, 0, 0],
+        faults: ['uv run ugv-lab'],
+      });
+      return;
+    }
+    cal = { f0: F0, focalScale: cs.mount.focal_scale, cx: F0ImageCenter + cs.fx.cx_px, cy: H0ImageCenter + cs.fx.cy_px, k1: cs.fx.k1, k2: cs.fx.k2, camX: bay.car.camera_x, camZ: bay.car.camera_z };
+    mountBase = { yaw: cs.mount.yaw, pitch: cs.mount.pitch };
+    occluderLocal = cs.occluder || null;
+    detector = makeDetector({ seed: sess.seed, sim: cs, cal, points: plan.skeleton.points });
+    fxLocal = null; detsLocal = []; lastCam = 0;
     snap = prev = sess;
     auto = false; started = false; done = null; paths = { est: [], true: [] };
     lastPump = performance.now();
@@ -128,29 +154,28 @@ export async function render(main) {
   };
 
   // --- cameras: the car's own (the true camera, mount errors included) and the orbit
+  // The sensor frame content comes from `fxLocal` (drawn by the detector, one frame per camera
+  // tick): mount shake/knock, exposure (fixed stops + spells), so the render matches its dice.
   const carCamera = (q) => {
-    const ce0 = sess?.camera_error || { focal_scale: 1, yaw: 0, pitch: 0 }, fx = snap?.cam_fx;
-    const cam = W.carCam, ce = { ...ce0, yaw: ce0.yaw + (fx?.yaw || 0), pitch: ce0.pitch + (fx?.pitch || 0) };
+    const mt = fxLocal ? fxLocal.mount : mountBase;
+    const fl = cal ? cal.focalScale : 1;
+    const cam = W.carCam;
     cam.aspect = W0 / H0;
-    cam.fov = (2 * Math.atan(H0 / 2 / (F0 * ce.focal_scale)) * 180) / Math.PI;
+    cam.fov = (2 * Math.atan(H0 / 2 / (F0 * fl)) * 180) / Math.PI;
     const c = Math.cos(q[2]), s = Math.sin(q[2]), cx = bay.car.camera_x;
     cam.position.copy(P(q[0] + cx * c, q[1] + cx * s, bay.car.camera_z));
     cam.lookAt(P(q[0] + (cx + 1) * c, q[1] + (cx + 1) * s, bay.car.camera_z));
-    const cy = Math.cos(ce.yaw), sy = Math.sin(ce.yaw), cp = Math.cos(ce.pitch), sp = Math.sin(ce.pitch);
+    const cy = Math.cos(mt.yaw), sy = Math.sin(mt.yaw), cp = Math.cos(mt.pitch), sp = Math.sin(mt.pitch);
     const M = new THREE.Matrix3().set(1, 0, 0, 0, cp, -sp, 0, sp, cp).multiply(new THREE.Matrix3().set(cy, 0, -sy, 0, 1, 0, sy, 0, cy));
     const S = new THREE.Matrix3().set(1, 0, 0, 0, -1, 0, 0, 0, -1);
     cam.quaternion.multiply(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().setFromMatrix3(S.clone().multiply(M.clone().transpose()).multiply(S))));
     cam.updateProjectionMatrix();
   };
-  // what the camera faults do to the picture: exposure, blur, a blocked region
+  // what does to the picture: the lost frame blacks it; blur and exposure live in the render
   const pipImg = $('#ch-pip'), mainImg = $('#ch-3d');
-  // The same fault at the same visual size in both views: blur is in sensor pixels, so it is
-  // scaled by how many screen pixels one sensor pixel covers.
-  const imageFaults = (img, on, rect) => {
-    const fx = snap?.cam_fx, lost = !!fx?.lost;
-    const expo = fx?.exposure > 0 ? 'brightness(2.6) contrast(.6)' : fx?.exposure < 0 ? 'brightness(.28)' : '';
-    const blur = !lost && fx?.blur > 0.5 ? `blur(${Math.min(16, fx.blur * (rect.w / W0)).toFixed(1)}px)` : '';
-    const f = on && !lost ? `grayscale(1) contrast(1.08) ${expo} ${blur}`.trim() : on ? 'brightness(0)' : '';
+  const imageFaults = (img, on) => {
+    const lost = !!fxLocal?.lost;
+    const f = on && !lost ? '' : on ? 'brightness(0)' : '';
     if (img.style.filter !== f) img.style.filter = f;
   };
   const detections = (canvas, w, h, r, kp, frame, lost) => {
@@ -178,7 +203,7 @@ export async function render(main) {
       const b = 22, x0 = X(0) + 10, x1 = X(W0) - 10, y0 = Y(0) + 10, y1 = Y(H0) - 10;
       for (const [x, y, dx, dy] of [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]]) { g.beginPath(); g.moveTo(x + dx * b, y); g.lineTo(x, y); g.lineTo(x, y + dy * b); g.stroke(); }
     }
-    const o = snap?.cam_fx?.occluder;
+    const o = occluderLocal;
     if (kp && o) {
       g.fillStyle = 'rgba(8,8,8,.92)';
       g.fillRect(X(o[0]), Y(o[1]), X(o[2]) - X(o[0]), Y(o[3]) - Y(o[1]));
@@ -206,6 +231,12 @@ export async function render(main) {
     if (!fpv) orbit.apply(W.cam, q);
     const pw = pipImg.clientWidth, ph = pipImg.clientHeight; // the canvas, not the plate around it
     const rect = sensorRect(w, h), pipRect = sensorRect(pw, ph);
+    // 10 Hz camera: draw the frame's dice, then render through the sensor chain
+    const camDue = started && !done && detector && now - lastCam >= 100;
+    if (camDue) {
+      const rangeM = Math.hypot(q[0], q[1]); // car in the airframe frame; the airframe is at the origin
+      fxLocal = detector.beginFrame(snap?.t ?? 0, snap?.vel?.[2] ?? 0, rangeM);
+    }
     carCamera(q);
     // The WebGL background is drawn over the whole canvas, so clip the picture to the sensor
     // frame; the stage behind it is black, which gives the monitor bars.
@@ -213,12 +244,31 @@ export async function render(main) {
       ? `inset(${rect.y}px ${w - rect.x - rect.w}px ${h - rect.y - rect.h}px ${rect.x}px)`
       : '';
     W.resize(w, h, fpv ? 0 : pw, ph);
-    W.render(fpv, !fpv, fpv ? rect : null, pipRect);
-    const lost = !!snap?.cam_fx?.lost;
-    detections(ov, w, h, fpv ? rect : { ...sensorRect(w, h) }, fpv ? snap?.kp : null, fpv, fpv && lost);
-    imageFaults(mainImg, fpv, rect);
-    if (!fpv) imageFaults(pipImg, true, pipRect);
-    if (!fpv) detections(pipOv, pw, ph, pipRect, snap?.kp, false, lost);
+    const exposureDraw = fxLocal ? fxLocal.exposure : exposure;
+    const sensor = { f0: cal?.f0 ?? F0, focalScale: cal?.focalScale ?? 1, cx: cal?.cx ?? F0ImageCenter, cy: cal?.cy ?? H0ImageCenter, k1: cal?.k1 ?? 0, k2: cal?.k2 ?? 0, res: [W0, H0], exposure: exposureDraw, blurPx: fxLocal?.blurPx ?? 0 };
+    W.render(fpv, !fpv, fpv ? rect : null, pipRect, sensor);
+    // the detector reads the exact pixels we just drew, and posts them
+    if (camDue) {
+      lastCam = now;
+      if (fxLocal.lost) {
+        detsLocal = [];
+        snap.kp = [];
+        snap.cam_fx = { lost: true };
+        api(`/api/park/session/${sess.id}/camera`, { body: { detections: [], lost: true, fx: { exposure: exposureDraw } } }).catch(() => {});
+      } else {
+        detsLocal = detector.detect(fpv ? mainImg : pipImg, fpv ? rect : pipRect, fxLocal, q);
+        snap.kp = detsLocal;
+        snap.cam_fx = { exposure: exposureDraw, blur: 0 };
+        api(`/api/park/session/${sess.id}/camera`, { body: { detections: detsLocal, fx: snap.cam_fx } })
+          .then((r) => { if (r && typeof r.t === 'number') snap = { ...snap, ...r }; })
+          .catch(() => {});
+      }
+    }
+    const lost = !!fxLocal?.lost;
+    detections(ov, w, h, fpv ? rect : { ...sensorRect(w, h) }, fpv ? detsLocal : null, fpv, fpv && lost);
+    imageFaults(mainImg, fpv);
+    if (!fpv) imageFaults(pipImg, true);
+    if (!fpv) detections(pipOv, pw, ph, pipRect, detsLocal, false, lost);
     drawWorld(mini, bay, plan, {
       paths: [{ pts: paths.est, color: 'var(--signal)', width: 1.25 }, ...(truth ? [{ pts: paths.true, color: 'var(--ink-2)', width: 1, dashed: true }] : [])],
       car: est || undefined, carEst: truth ? q : undefined, scaleBar: false,
@@ -244,18 +294,36 @@ export async function render(main) {
       envName = v;
       if (v.startsWith('hdri:')) {
         H.flash('LOADING PANORAMA');
-        W.setHdri(v.slice(5)).catch(() => H.flash('PANORAMA UNAVAILABLE · keeping the last set'));
+        const id = v.slice(5);
+        const horizon = horizons[id] ?? {};
+        W.setHdri(id, typeof horizon === 'number' ? { offset: horizon } : horizon).catch(() => H.flash('PANORAMA UNAVAILABLE · keeping the last set'));
       } else W.setEnv(v);
       newRound();
     },
     quality: (v) => { quality = v; newRound(); },
+    // live: pin the defect on the running round; the picture and the detector respond from the next frame
+    exposure: (v) => {
+      exposure = v;
+      detector?.setStops(v);
+      const s = sess;
+      if (!s) return;
+      H.flash(v ? `EXPOSURE FIXED +${v} · LIVE` : 'EXPOSURE · AUTO');
+      api(`/api/park/session/${s.id}/exposure`, { body: { stops: v } })
+        .then(() => {
+          // keep the fault list shown at the end in sync with the running defect
+          s.camera_sim = { ...s.camera_sim, exposure_stops: v };
+          s.faults = (s.faults || []).filter((f) => !f.startsWith('exposure stuck'));
+          if (v) s.faults.push(`exposure stuck at +${v.toFixed(1)} stops`);
+        })
+        .catch(() => H.flash('SESSION EXPIRED · press R'));
+    },
     auto: toggleAuto, truth: toggleTruth, fresh: () => newRound(),
     retry: () => newRound({ seed: sess.seed, start: sess.start }),
     drive: () => { started = true; H.banner(null); },
   });
   rethemeFn = () => { W.theme(); mini.layer = null; };
   W.setEnv(envName);
-  H.setup(envName, quality);
+  H.setup(envName, quality, exposure);
   const onResize = () => { mini = makeView(mapCanvas, 2.0, [-0.3, 0]); };
   addEventListener('resize', onResize);
   await newRound();

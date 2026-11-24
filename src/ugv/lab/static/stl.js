@@ -11,11 +11,13 @@ const BASE = '/static/models/strl001/';
 // Gazebo (x forward, y left, z up) -> three.js (X right, Y up, Z back), as in pov3d.js.
 const gx = (x, y, z) => new THREE.Vector3(x, z, -y);
 
-// SDF visual materials, by link role.
+// SDF visual materials, by link role. Flat STL normals are kept (see parseBinarySTL): the
+// generated meshes are coarse (~26° mean dihedral), so welded smooth normals read as crumpled
+// foil under the panorama IBL. Surface character comes from the materials instead.
 const MATERIALS = {
-  airframe: { color: 0xdfe3e8, roughness: 0.62, metalness: 0.12 },
-  control: { color: 0xf2731a, roughness: 0.55 },
-  propulsion: { color: 0x272a2f, roughness: 0.45, metalness: 0.35 },
+  airframe: { color: 0xdfe3e8, roughness: 0.55, metalness: 0.1, clearcoat: 0.25, clearcoatRoughness: 0.6 },
+  control: { color: 0xf2731a, roughness: 0.5, metalness: 0.05 },
+  propulsion: { color: 0x272a2f, roughness: 0.4, metalness: 0.55 },
 };
 
 // Revolute limits from model.sdf; props are continuous.
@@ -133,7 +135,7 @@ export async function loadStrlModel(onPart, makeCard) {
   for (const part of parts) {
     const [px, py, pz] = part.pose;
     const geometry = parseBinarySTL(await fetchBuffer(BASE + part.file));
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial(materialFor(part.id)));
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshPhysicalMaterial(materialFor(part.id)));
     // Undo the pivot offset: the vertices are already in the model frame.
     mesh.position.copy(gx(-px, -py, -pz));
     mesh.castShadow = false;

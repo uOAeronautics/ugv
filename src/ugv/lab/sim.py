@@ -2,10 +2,11 @@
 
 A session is one `ugv.park.episode.Episode` with the airframe at the origin (airframe frame, nose
 along +x), a car drawn like a scored episode with faults (weak wheels, battery, stalls, lost
-frames, false detections ...), the tuned controller parameters, and the simulated keypoint
-detector. The browser advances it in real time: with a duty when a person drives, without one
-when the controller is engaged, and can switch at any tick. Simulation only; nothing here talks
-to the car.
+frames, false detections ...), the tuned controller parameters, and a strict camera: the browser
+renders the frame, analyses the same pixels, and posts the detections back (see
+docs/PARK_SIM.md, "The strict camera protocol"). The browser advances it in real time: with a
+duty when a person drives, without one when the controller is engaged, and can switch at any
+tick. Simulation only; nothing here talks to the car.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from __future__ import annotations
 import threading
 import time
 from collections import OrderedDict
+from dataclasses import replace
 from functools import cache
 from pathlib import Path
 
@@ -97,11 +99,14 @@ class Sessions:
         preset: str | None = None,
         quality: str = "bad",
         env: str = "lab",
+        exposure: float = 0.0,
     ) -> dict:
         q = start_pose(seed, start, preset)
         sev, only = QUALITY[quality]
         car = tuple(float(v) for v in q)
-        overrides, floor = ENVIRONMENTS.get(env, ((), 0.25))  # a real panorama: neutral effects
+        env_overrides, floor = ENVIRONMENTS.get(env, ((), 0.25))  # a real panorama: neutral effects
+        # A fixed over-exposure setting on top of everything else (0 = auto-exposure as normal)
+        overrides = (*env_overrides, *((("exposure_stops", float(exposure)),) if exposure else ()))
         sc = Scenario(
             (0.0, 0.0, 0.0),
             car,
@@ -111,7 +116,11 @@ class Sessions:
             overrides=overrides,
             floor=floor,
         )
-        ep = Episode(sc, _params(), seed=seed, engaged=False)
+        ep = Episode(sc, _params(), seed=seed, engaged=False, external_camera=True)
+        if ep.faults is not None:
+            # the phantom (a drone-looking impostor the detector cannot see) is a batch-surrogate
+            # artifact — the strict protocol never hallucinates what the picture does not contain
+            ep.faults.f = replace(ep.faults.f, phantom_rate=0.0)
         sid = f"{seed}-{time.monotonic_ns()}"
         with self._lock:
             self._s[sid] = (ep, threading.Lock())
@@ -119,14 +128,65 @@ class Sessions:
                 self._s.popitem(last=False)
         faults = ep.faults.f.describe() if ep.faults else []
         cam = {"focal_scale": ep.cam.focal_scale, "yaw": ep.cam.yaw, "pitch": ep.cam.pitch}
+        # What the browser needs to render the frame exactly as this car's camera would: the
+        # mount error plus the round's fixed camera faults. The per-frame dice (shake, spells,
+        # drops) are drawn browser-side from the round's seed; the server draws none of them.
+        cfs = ep.faults.f if ep.faults else None
+        camera_sim = {
+            "seed": seed,
+            "mount": cam,
+            "fx": {
+                "cx_px": ep.cam.cx_px,
+                "cy_px": ep.cam.cy_px,
+                "k1": ep.cam.k1,
+                "k2": ep.cam.k2,
+            },
+            "exposure_stops": cfs.exposure_stops if cfs else 0.0,
+            "exposure_rate": cfs.exposure_rate if cfs else 0.0,
+            "blur_px": cfs.blur_px if cfs else 0.0,
+            "noise_px": cfs.noise_px if cfs else 0.0,
+            "focus_m": cfs.focus_m if cfs else 0.0,
+            "blur_coc": cfs.blur_coc if cfs else 0.0,
+            "shake_deg": cfs.shake_deg if cfs else 0.0,
+            "bump_deg": cfs.bump_deg if cfs else 0.0,
+            "bump_at_s": cfs.bump_at_s if cfs else 0.0,
+            "occluder": list(cfs.occluder) if cfs and cfs.occluder else None,
+            "drop_rate": cfs.drop_rate if cfs else 0.0,
+            "burst": cfs.burst if cfs else 0.0,
+        }
         return {
             "id": sid,
             "seed": seed,
             "start": q.round(4).tolist(),
             "faults": faults,
             "camera_error": cam,
+            "camera_sim": camera_sim,
+            "exposure": exposure,
             **snapshot(ep),
         }
+
+    def set_exposure(self, sid: str, stops: float) -> dict:
+        """Pin (or release) the fixed over-exposure defect on a live session; no restart."""
+        with self._lock:
+            if sid not in self._s:
+                raise KeyError(sid)
+            self._s.move_to_end(sid)
+            ep, lock = self._s[sid]
+        with lock:
+            ep.set_exposure_stops(stops)
+        return {"ok": True, "exposure": stops}
+
+    def camera_frame(self, sid: str, detections: list | None, lost: bool, fx: dict | None) -> dict:
+        """One camera frame from the challenge's pixel-accurate sensor simulation: the estimator
+        fuses the detections (the same picture the human sees). The server samples nothing."""
+        with self._lock:
+            if sid not in self._s:
+                raise KeyError(sid)
+            self._s.move_to_end(sid)
+            ep, lock = self._s[sid]
+        with lock:
+            ep.add_camera_frame(detections, fx, lost)
+        return snapshot(ep)
 
     def step(self, sid: str, ticks: int, duty: list[float] | None, auto: bool) -> dict:
         with self._lock:
@@ -167,9 +227,12 @@ def snapshot(ep: Episode) -> dict:
 
 @cache
 def skeleton() -> dict:
-    names, pts = _model_points()
+    from ugv.park.perception import DetectorModel, model_points
+
+    pts = model_points(DetectorModel())  # the 12-point skeleton plus the 3 near-field tyre points
+    names, _ = _model_points()
     return {
-        "names": list(names),
+        "names": [*names, "tyre_left", "tyre_right", "tyre_top"],
         "points": np.round(pts, 4).tolist(),
         "presets": {k: [float(x) for x in v] for k, v in PRESETS.items()},
         "dt": DT,

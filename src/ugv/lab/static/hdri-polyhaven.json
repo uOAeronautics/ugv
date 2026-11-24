@@ -1,0 +1,5996 @@
+{
+ "source": "polyhaven.com",
+ "license": "CC0",
+ "url": "https://polyhaven.com/hdris",
+ "assets": [
+  {
+   "id": "abandoned_bakery",
+   "name": "Abandoned Bakery",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_construction",
+   "name": "Abandoned Construction",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_factory_canteen_01",
+   "name": "Abandoned Factory Canteen 01",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_factory_canteen_02",
+   "name": "Abandoned Factory Canteen 02",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_games_room_01",
+   "name": "Abandoned Games Room 01",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_games_room_02",
+   "name": "Abandoned Games Room 02",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_garage",
+   "name": "Abandoned Garage",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_greenhouse",
+   "name": "Abandoned Greenhouse",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_hall_01",
+   "name": "Abandoned Hall 01",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_tiled_room",
+   "name": "Abandoned Tiled Room",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_workshop_02",
+   "name": "Abandoned Workshop 02",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_workshop",
+   "name": "Abandoned workshop",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "burnt_warehouse",
+   "name": "Burnt Warehouse",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "creepy_bathroom",
+   "name": "Creepy Bathroom",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "debris_basement_corridor",
+   "name": "Debris Basement Corridor",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "distribution_board",
+   "name": "Distribution Board",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "empty_warehouse_01",
+   "name": "Empty Warehouse 01",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "industrial_wooden_attic",
+   "name": "Industrial Wooden Attic",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "mirrored_hall",
+   "name": "Mirrored Hall",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "missile_launch_facility_01",
+   "name": "Missile Launch Facility 01",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "old_bus_depot",
+   "name": "Old Bus Depot",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "old_depot",
+   "name": "Old Depot",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "old_hall",
+   "name": "Old Hall",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "old_room",
+   "name": "Old Room",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "peppermint_powerplant",
+   "name": "Peppermint Powerplant",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "peppermint_powerplant_2",
+   "name": "Peppermint Powerplant 2",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "reinforced_concrete_01",
+   "name": "Reinforced Concrete 01",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "smelting_tower_interior",
+   "name": "Smelting Tower Interior",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "teufelsberg_inner",
+   "name": "Teufelsberg Inner",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "teufelsberg_lookout",
+   "name": "Teufelsberg Lookout",
+   "env": "indoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "hangar_interior",
+   "name": "Hangar Interior",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "industrial_pipe_and_valve_01",
+   "name": "Industrial Pipe & Valve 01",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "industrial_pipe_and_valve_02",
+   "name": "Industrial Pipe & Valve 02",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "interior_construction",
+   "name": "Interior Construction",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "small_hangar_01",
+   "name": "Small Hangar 01",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "small_hangar_02",
+   "name": "Small Hangar 02",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "unfinished_office",
+   "name": "Unfinished Office",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "unfinished_office_night",
+   "name": "Unfinished Office Night",
+   "env": "indoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "aerodynamics_workshop",
+   "name": "Aerodynamics Workshop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "afrikaans_church_interior",
+   "name": "Afrikaans Church Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "aft_lounge",
+   "name": "Aft Lounge",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "aircraft_workshop_01",
+   "name": "Aircraft Workshop 01",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "anniversary_lounge",
+   "name": "Anniversary Lounge",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "art_studio",
+   "name": "Art Studio",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "artist_workshop",
+   "name": "Artist Workshop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "auto_service",
+   "name": "Auto Service",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "autoshop_01",
+   "name": "Autoshop 01",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "ballroom",
+   "name": "Ballroom",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "bank_vault",
+   "name": "Bank Vault",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "basement_boxing_ring",
+   "name": "Basement Boxing Ring",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "bathroom",
+   "name": "Bathroom",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "bell_tower",
+   "name": "Bell Tower",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "billiard_hall",
+   "name": "Billiard Hall",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "blender_institute",
+   "name": "Blender Institute",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "blinds",
+   "name": "Blinds",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "boiler_room",
+   "name": "Boiler Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "boma",
+   "name": "Boma",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "bush_restaurant",
+   "name": "Bush Restaurant",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "cabin",
+   "name": "Cabin",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "carpentry_shop_01",
+   "name": "Carpentry Shop 01",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "carpentry_shop_02",
+   "name": "Carpentry Shop 02",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "castle_zavelstein_cellar",
+   "name": "Castle Zavelstein Cellar",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "cayley_interior",
+   "name": "Cayley Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "chapel_day",
+   "name": "Chapel Day",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "childrens_hospital",
+   "name": "Children's Hospital",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "church_meeting_room",
+   "name": "Church Meeting Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "church_museum",
+   "name": "Church Museum",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "church_stairway",
+   "name": "Church Stairway",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "cinema_hall",
+   "name": "Cinema Hall",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "cinema_lobby",
+   "name": "Cinema Lobby",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "circus_arena",
+   "name": "Circus Arena",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "climbing_gym",
+   "name": "Climbing Gym",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "combination_room",
+   "name": "Combination Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "comfy_cafe",
+   "name": "Comfy Caf\u00e9",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "country_club",
+   "name": "Country Club",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "cowboy_town_hall",
+   "name": "Cowboy Town Hall",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "cowboy_town_saloon",
+   "name": "Cowboy Town Saloon",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "crossfit_gym",
+   "name": "Crossfit Gym",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "dancing_hall",
+   "name": "Dancing Hall",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "de_balie",
+   "name": "De Balie",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "decor_shop",
+   "name": "Decor Shop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "drachenfels_cellar",
+   "name": "Drachenfels Cellar",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "dresden_station_night",
+   "name": "Dresden Station Night",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "empty_play_room",
+   "name": "Empty Play Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "empty_workshop",
+   "name": "Empty Workshop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "en_suite",
+   "name": "En Suite",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "entrance_hall",
+   "name": "Entrance Hall",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "events_hall_interior",
+   "name": "Events Hall Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "fireplace",
+   "name": "Fireplace",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "garage",
+   "name": "Garage",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "gear_store",
+   "name": "Gear Store",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "glasshouse_interior",
+   "name": "Glasshouse Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "graaff_reinet_groote_kerk",
+   "name": "Graaff Reinet Groote Kerk",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "gym_01",
+   "name": "Gym 01",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "gym_entrance",
+   "name": "Gym Entrance",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "hall_of_finfish",
+   "name": "Hall of Finfish",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "hall_of_mammals",
+   "name": "Hall of Mammals",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "hamburg_hbf",
+   "name": "Hamburg Hbf",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "hayloft",
+   "name": "Hayloft",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "historic_cloister_passage",
+   "name": "Historic Cloister Passage",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "hospital_room",
+   "name": "Hospital Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "hospital_room_2",
+   "name": "Hospital Room 2",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "hotel_room",
+   "name": "Hotel Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "indoor_pool",
+   "name": "Indoor Pool",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "industrial_workshop_foundry",
+   "name": "Industrial Workshop Foundry",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "kart_club",
+   "name": "Kart Club",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "kiara_interior",
+   "name": "Kiara Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "large_corridor",
+   "name": "Large Corridor",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "leadenhall_market",
+   "name": "Leadenhall Market",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "lebombo",
+   "name": "Lebombo",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "lythwood_lounge",
+   "name": "Lythwood Lounge",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "lythwood_room",
+   "name": "Lythwood Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "machine_shop_01",
+   "name": "Machine Shop 01",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "machine_shop_02",
+   "name": "Machine Shop 02",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "machine_shop_03",
+   "name": "Machine Shop 03",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "metro_noord",
+   "name": "Metro: Noord",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "metro_vijzelgracht",
+   "name": "Metro: Vijzelgracht",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "modern_bathroom",
+   "name": "Modern Bathroom",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "moon_lab",
+   "name": "Moon Lab",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "museum_of_ethnography",
+   "name": "Museum of Ethnography",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "music_hall_01",
+   "name": "Music Hall 01",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "music_hall_02",
+   "name": "Music Hall 02",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "mutianyu",
+   "name": "Mutianyu",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "newman_cafeteria",
+   "name": "Newman Cafeteria",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "newman_lobby",
+   "name": "Newman Lobby",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "newman_locker_room",
+   "name": "Newman Locker Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "paul_lobe_haus",
+   "name": "Paul Lobe Haus",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "penguin_museum",
+   "name": "Penguin Museum",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "phone_shop",
+   "name": "Phone Shop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "pillars",
+   "name": "Pillars",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "pine_attic",
+   "name": "Pine Attic",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "poly_haven_studio",
+   "name": "Poly Haven Studio",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "pretville_cinema",
+   "name": "Pretville Cinema",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "pump_house",
+   "name": "Pump House",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "reading_room",
+   "name": "Reading Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "relax_inn_seaview_suite",
+   "name": "Relax Inn Seaview Suite",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "rostock_arches",
+   "name": "Rostock Arches",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "rostock_laage_airport",
+   "name": "Rostock-Laage Airport",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "royal_esplanade",
+   "name": "Royal Esplanade",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "school_hall",
+   "name": "School Hall",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "school_quad",
+   "name": "School Quad",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "sculpture_exhibition",
+   "name": "Sculpture Exhibition",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "sepulchral_chapel_basement",
+   "name": "Sepulchral Chapel Basement",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "sepulchral_chapel_rotunda",
+   "name": "Sepulchral Chapel Rotunda",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "small_cathedral",
+   "name": "Small Cathedral",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "small_empty_house",
+   "name": "Small Empty House",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "small_empty_room_1",
+   "name": "Small Empty Room 1",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "small_empty_room_2",
+   "name": "Small Empty Room 2",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "small_empty_room_3",
+   "name": "Small Empty Room 3",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "small_empty_room_4",
+   "name": "Small Empty Room 4",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "small_workshop",
+   "name": "Small Workshop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "solitude_interior",
+   "name": "Solitude Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "squash_court",
+   "name": "Squash Court",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "st_fagans_interior",
+   "name": "St. Fagans Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "storeroom",
+   "name": "Storeroom",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "subway_entrance",
+   "name": "Subway Entrance",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "sundowner_deck",
+   "name": "Sundowner Deck",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "surgery",
+   "name": "Surgery",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "thatch_chapel",
+   "name": "Thatch Chapel",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "theater_01",
+   "name": "Theater 01",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "theater_02",
+   "name": "Theater 02",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "trekker_monument",
+   "name": "Trekker Monument",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "university_workshop",
+   "name": "University Workshop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "ushaka_sea_world_aquarium",
+   "name": "Ushaka Sea World Aquarium",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "vestibule",
+   "name": "Vestibule",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "vintage_measuring_lab",
+   "name": "Vintage Measuring Lab",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "voortrekker_interior",
+   "name": "Voortrekker Interior",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "vulture_hide",
+   "name": "Vulture Hide",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "warm_bar",
+   "name": "Warm Bar",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "warm_reception_dinner",
+   "name": "Warm Reception Dinner",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "warm_restaurant",
+   "name": "Warm Restaurant",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "warm_restaurant_night",
+   "name": "Warm Restaurant Night",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "whale_skeleton",
+   "name": "Whale Skeleton",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "white_chapel",
+   "name": "White Chapel",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "witsand_woolshop",
+   "name": "Witsand Woolshop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "wooden_lounge",
+   "name": "Wooden Lounge",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "workshop",
+   "name": "Workshop",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "wrestling_gym",
+   "name": "Wrestling Gym",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "yaris_interior_garage",
+   "name": "Yaris Interior Garage",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "yoga_room",
+   "name": "Yoga Room",
+   "env": "indoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "veranda",
+   "name": "Veranda",
+   "env": "indoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "blocky_photo_studio",
+   "name": "Blocky Photo Studio",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "blue_photo_studio",
+   "name": "Blue Photo Studio",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "brown_photostudio_01",
+   "name": "Brown Photostudio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "brown_photostudio_02",
+   "name": "Brown Photostudio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "brown_photostudio_03",
+   "name": "Brown Photostudio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "brown_photostudio_04",
+   "name": "Brown Photostudio 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "brown_photostudio_05",
+   "name": "Brown Photostudio 05",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "brown_photostudio_06",
+   "name": "Brown Photostudio 06",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "brown_photostudio_07",
+   "name": "Brown Photostudio 07",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "christmas_photo_studio_01",
+   "name": "Christmas Photo Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "christmas_photo_studio_02",
+   "name": "Christmas Photo Studio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "christmas_photo_studio_03",
+   "name": "Christmas Photo Studio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "christmas_photo_studio_04",
+   "name": "Christmas Photo Studio 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "christmas_photo_studio_05",
+   "name": "Christmas Photo Studio 05",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "christmas_photo_studio_06",
+   "name": "Christmas Photo Studio 06",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "christmas_photo_studio_07",
+   "name": "Christmas Photo Studio 07",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "colorful_studio",
+   "name": "Colorful Studio",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "cyclorama_hard_light",
+   "name": "Cyclorama Hard Light",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_01",
+   "name": "Ferndale Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_02",
+   "name": "Ferndale Studio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_03",
+   "name": "Ferndale Studio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_04",
+   "name": "Ferndale Studio 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_05",
+   "name": "Ferndale Studio 05",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_06",
+   "name": "Ferndale Studio 06",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_07",
+   "name": "Ferndale Studio 07",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_08",
+   "name": "Ferndale Studio 08",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_09",
+   "name": "Ferndale Studio 09",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_10",
+   "name": "Ferndale Studio 10",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_11",
+   "name": "Ferndale Studio 11",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "ferndale_studio_12",
+   "name": "Ferndale Studio 12",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "marry_hall",
+   "name": "Marry Hall",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "monochrome_studio_01",
+   "name": "Monochrome Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "monochrome_studio_02",
+   "name": "Monochrome Studio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "monochrome_studio_03",
+   "name": "Monochrome Studio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "monochrome_studio_04",
+   "name": "Monochrome Studio 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "neon_photostudio",
+   "name": "Neon Photostudio",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "pav_studio_01",
+   "name": "PAV Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "pav_studio_02",
+   "name": "PAV Studio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "pav_studio_03",
+   "name": "PAV Studio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "photo_studio_01",
+   "name": "Photo Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "photo_studio_broadway_hall",
+   "name": "Photo Studio Broadway Hall",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "photo_studio_loft_hall",
+   "name": "Photo Studio Loft Hall",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "photo_studio_london_hall",
+   "name": "Photo Studio London Hall",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "provence_studio",
+   "name": "Provence Studio",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "story_studio_01",
+   "name": "Story Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "story_studio_02",
+   "name": "Story Studio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "story_studio_03",
+   "name": "Story Studio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "story_studio_04",
+   "name": "Story Studio 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "story_studio_05",
+   "name": "Story Studio 05",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_country_hall",
+   "name": "Studio Country Hall",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kominka_01",
+   "name": "Studio Kominka 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kominka_02",
+   "name": "Studio Kominka 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kominka_03",
+   "name": "Studio Kominka 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kominka_04",
+   "name": "Studio Kominka 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kontrast_01",
+   "name": "Studio Kontrast 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kontrast_02",
+   "name": "Studio Kontrast 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kontrast_03",
+   "name": "Studio Kontrast 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_kontrast_04",
+   "name": "Studio Kontrast 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_01",
+   "name": "Studio Small 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_02",
+   "name": "Studio Small 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_03",
+   "name": "Studio Small 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_04",
+   "name": "Studio Small 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_05",
+   "name": "Studio Small 05",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_06",
+   "name": "Studio Small 06",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_07",
+   "name": "Studio Small 07",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_08",
+   "name": "Studio Small 08",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_small_09",
+   "name": "Studio Small 09",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_wizja_01",
+   "name": "Studio Wizja 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_wizja_02",
+   "name": "Studio Wizja 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "studio_wizja_03",
+   "name": "Studio Wizja 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "tv_studio",
+   "name": "TV Studio",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "white_home_studio",
+   "name": "White Home Studio",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "white_studio_01",
+   "name": "White Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "white_studio_02",
+   "name": "White Studio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "white_studio_03",
+   "name": "White Studio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "white_studio_04",
+   "name": "White Studio 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "white_studio_05",
+   "name": "White Studio 05",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "white_studio_06",
+   "name": "White Studio 06",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_01",
+   "name": "Wooden Studio 01",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_02",
+   "name": "Wooden Studio 02",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_03",
+   "name": "Wooden Studio 03",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_04",
+   "name": "Wooden Studio 04",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_05",
+   "name": "Wooden Studio 05",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_06",
+   "name": "Wooden Studio 06",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_07",
+   "name": "Wooden Studio 07",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_08",
+   "name": "Wooden Studio 08",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_09",
+   "name": "Wooden Studio 09",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_10",
+   "name": "Wooden Studio 10",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_11",
+   "name": "Wooden Studio 11",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_12",
+   "name": "Wooden Studio 12",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_13",
+   "name": "Wooden Studio 13",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_14",
+   "name": "Wooden Studio 14",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_15",
+   "name": "Wooden Studio 15",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_16",
+   "name": "Wooden Studio 16",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_17",
+   "name": "Wooden Studio 17",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_18",
+   "name": "Wooden Studio 18",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "wooden_studio_19",
+   "name": "Wooden Studio 19",
+   "env": "indoor",
+   "cat": "Studio"
+  },
+  {
+   "id": "abandoned_church",
+   "name": "Abandoned Church",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_hopper_terminal_01",
+   "name": "Abandoned Hopper Terminal 01",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_hopper_terminal_02",
+   "name": "Abandoned Hopper Terminal 02",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_hopper_terminal_03",
+   "name": "Abandoned Hopper Terminal 03",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_hopper_terminal_04",
+   "name": "Abandoned Hopper Terminal 04",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_slipway",
+   "name": "Abandoned Slipway",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_tank_farm_01",
+   "name": "Abandoned Tank Farm 01",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_tank_farm_02",
+   "name": "Abandoned Tank Farm 02",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_tank_farm_03",
+   "name": "Abandoned Tank Farm 03",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_tank_farm_05",
+   "name": "Abandoned Tank Farm 05",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "abandoned_waterworks",
+   "name": "Abandoned Waterworks",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "brick_factory_01",
+   "name": "Brick Factory 01",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "derelict_airfield_01",
+   "name": "Derelict Airfield 01",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "derelict_airfield_02",
+   "name": "Derelict Airfield 02",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "gothic_manor_01",
+   "name": "Gothic Manor 01",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "gothic_manor_02",
+   "name": "Gothic Manor 02",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "monkstown_castle",
+   "name": "Monkstown Castle",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "old_apartments_walkway",
+   "name": "Old Apartments Walkway",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "old_quarry_gerlingen",
+   "name": "Old Quarry Gerlingen",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "pump_station",
+   "name": "Pump Station",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "pylons",
+   "name": "Pylons",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "reinforced_concrete_02",
+   "name": "Reinforced Concrete 02",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "roofless_ruins",
+   "name": "Roofless Ruins",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "smelting_tower_01",
+   "name": "Smelting Tower 01",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "smelting_tower_02",
+   "name": "Smelting Tower 02",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "summer_stage_01",
+   "name": "Summer Stage 01",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "summer_stage_02",
+   "name": "Summer Stage 02",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "teufelsberg_ground_1",
+   "name": "Teufelsberg Ground 1",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "teufelsberg_ground_2",
+   "name": "Teufelsberg Ground 2",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "teufelsberg_roof",
+   "name": "Teufelsberg Roof",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "zavelstein",
+   "name": "Zavelstein",
+   "env": "outdoor",
+   "cat": "Abandoned & Ruins"
+  },
+  {
+   "id": "arboretum",
+   "name": "Arboretum",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "aristea_wreck",
+   "name": "Aristea Wreck",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "bell_park_pier",
+   "name": "Bell Park Pier",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "blau_river",
+   "name": "Blau River",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "blouberg_sunrise_1",
+   "name": "Blouberg Sunrise 1",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "blouberg_sunrise_2",
+   "name": "Blouberg Sunrise 2",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "blue_lagoon",
+   "name": "Blue Lagoon",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "blue_lagoon_night",
+   "name": "Blue Lagoon Night",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "cannon",
+   "name": "Cannon",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "cape_hill",
+   "name": "Cape Hill",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "cloudy_cliffside_road",
+   "name": "Cloudy Cliffside Road",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "crystal_falls",
+   "name": "Crystal Falls",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "dam_wall",
+   "name": "Dam Wall",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "docklands_01",
+   "name": "Docklands 01",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "docklands_02",
+   "name": "Docklands 02",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "dresden_moat",
+   "name": "Dresden Moat",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "fish_hoek_beach",
+   "name": "Fish Hoek Beach",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "frozen_lake",
+   "name": "Frozen Lake",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "furry_clouds",
+   "name": "Furry Clouds",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "golden_bay",
+   "name": "Golden Bay",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "gray_pier",
+   "name": "Gray Pier",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "lake_pier",
+   "name": "Lake Pier",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "lakes",
+   "name": "Lakes",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "lakeside",
+   "name": "Lakeside",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "lakeside_dawn",
+   "name": "Lakeside Dawn",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "lakeside_night",
+   "name": "Lakeside Night",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "lakeside_sunrise",
+   "name": "Lakeside Sunrise",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "limehouse",
+   "name": "Limehouse",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "modern_buildings",
+   "name": "Modern Buildings",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "monbachtal_riverbank",
+   "name": "Monbachtal Riverbank",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "near_the_river_01",
+   "name": "Near The River 01",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "near_the_river_02",
+   "name": "Near The River 02",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "nkuhlu",
+   "name": "Nkuhlu",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "nqweba_dawn",
+   "name": "Nqweba Dawn",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "ouchy_pier",
+   "name": "Ouchy Pier",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "petit_port",
+   "name": "Petit Port",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "pink_sunrise",
+   "name": "Pink Sunrise",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "poolbeg",
+   "name": "Poolbeg",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "promenade_de_vidy",
+   "name": "Promenade De Vidy",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "quarry_cloudy",
+   "name": "Quarry Cloudy",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "radkow_lake",
+   "name": "Radkow Lake",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "resting_place",
+   "name": "Resting Place",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "resting_place_2",
+   "name": "Resting Place 2",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "river_alcove",
+   "name": "River Alcove",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "river_rocks",
+   "name": "River Rocks",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "rural_landscape",
+   "name": "Rural Landscape",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "sandsloot",
+   "name": "Sandsloot",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "secluded_beach",
+   "name": "Secluded Beach",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "shanghai_bund",
+   "name": "Shanghai Bund",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "shanghai_riverside",
+   "name": "Shanghai Riverside",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "shudu_lake",
+   "name": "Shudu Lake",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "simons_town_harbour",
+   "name": "Simon's Town Harbour",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "simons_town_rocks",
+   "name": "Simon's Town Rocks",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "small_harbor_01",
+   "name": "Small Harbor 01",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "small_harbor_02",
+   "name": "Small Harbor 02",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "small_harbour_morning",
+   "name": "Small Harbour Morning",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "small_harbour_sunset",
+   "name": "Small Harbour Sunset",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "spiaggia_di_mondello",
+   "name": "Spiaggia di Mondello",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "spree_bank",
+   "name": "Spree Bank",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "spruit_dawn",
+   "name": "Spruit Dawn",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "sundowner_overlook",
+   "name": "Sundowner Overlook",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "the_sky_is_on_fire",
+   "name": "The Sky Is On Fire",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "tiber_2",
+   "name": "Tiber 2",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "tiber_island",
+   "name": "Tiber Island",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "tucker_wreck",
+   "name": "Tucker Wreck",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "umhlanga_sunrise",
+   "name": "Umhlanga Sunrise",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "venice_sunset",
+   "name": "Venice Sunset",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "white_cliff_top",
+   "name": "White Cliff Top",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "winter_lake_01",
+   "name": "Winter Lake 01",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "winter_river",
+   "name": "Winter River",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "winter_sky",
+   "name": "Winter Sky",
+   "env": "outdoor",
+   "cat": "Coast & Water"
+  },
+  {
+   "id": "aarfontein_dawn",
+   "name": "Aarfontein Dawn",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "aarfontein_dawn_2",
+   "name": "Aarfontein Dawn 2",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "aarfontein_dirt_road",
+   "name": "Aarfontein Dirt Road",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "aarfontein_dusk",
+   "name": "Aarfontein Dusk",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "aarfontein_pan",
+   "name": "Aarfontein Pan",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "aarfontein_sunrise",
+   "name": "Aarfontein Sunrise",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "camdeboo_road",
+   "name": "Camdeboo Road",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "dry_cracked_lake",
+   "name": "Dry Cracked Lake",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "goegap",
+   "name": "Goegap",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "goegap_road",
+   "name": "Goegap Road",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "noga",
+   "name": "Noga",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "ostrich_road",
+   "name": "Ostrich Road",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "parched_canal",
+   "name": "Parched Canal",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "quarry_01",
+   "name": "Quarry 01",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "quarry_02",
+   "name": "Quarry 02",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "quarry_03",
+   "name": "Quarry 03",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "quarry_04",
+   "name": "Quarry 04",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "rogland_clear_night",
+   "name": "Rogland Clear Night",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "rogland_moonlit_night",
+   "name": "Rogland Moonlit Night",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "rogland_overcast",
+   "name": "Rogland Overcast",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "rogland_sunset",
+   "name": "Rogland Sunset",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "the_lost_city",
+   "name": "The Lost City",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "valley_of_desolation",
+   "name": "Valley Of Desolation",
+   "env": "outdoor",
+   "cat": "Desert & Arid"
+  },
+  {
+   "id": "abandoned_pathway",
+   "name": "Abandoned Pathway",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "abandoned_tank_farm_04",
+   "name": "Abandoned Tank Farm 04",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "aloe_farm_shade_house",
+   "name": "Aloe Farm Shade House",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "autumn_field",
+   "name": "Autumn Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "autumn_hilly_field",
+   "name": "Autumn Hilly Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "autumn_meadow",
+   "name": "Autumn Meadow",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "bambanani_sunset",
+   "name": "Bambanani Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "belfast_farmhouse",
+   "name": "Belfast Farmhouse",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "belfast_open_field",
+   "name": "Belfast Open Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "bloem_field_sunrise",
+   "name": "Bloem Field Sunrise",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "bloem_train_track_clear",
+   "name": "Bloem Train Track Clear",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "bloem_train_track_cloudy",
+   "name": "Bloem Train Track Cloudy",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "citrus_orchard",
+   "name": "Citrus Orchard",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "citrus_orchard_road",
+   "name": "Citrus Orchard Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "cloud_layers",
+   "name": "Cloud Layers",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "cloudy_netted_nursery",
+   "name": "Cloudy Netted Nursery",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "countrytrax_midday",
+   "name": "Countrytrax Midday",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dam_road",
+   "name": "Dam Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dikhololo_night",
+   "name": "Dikhololo Night",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dikhololo_sunset",
+   "name": "Dikhololo Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dreifaltigkeitsberg",
+   "name": "Dreifaltigkeitsberg",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dry_field",
+   "name": "Dry Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dry_hay_field",
+   "name": "Dry Hay Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dry_meadow",
+   "name": "Dry Meadow",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "dry_orchard_meadow",
+   "name": "Dry Orchard Meadow",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "etzwihl",
+   "name": "Etzwihl",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "evening_field",
+   "name": "Evening Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "evening_meadow",
+   "name": "Evening Meadow",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "evening_road_01",
+   "name": "Evening Road 01",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "farm_field",
+   "name": "Farm Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "farm_road",
+   "name": "Farm Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "farm_sunset",
+   "name": "Farm Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "farmland_overcast",
+   "name": "Farmland Overcast",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "flower_road",
+   "name": "Flower Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "geislingen_an_der_steige",
+   "name": "Geislingen An Der Steige",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "golf_course_sunrise",
+   "name": "Golf Course Sunrise",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "grasslands_sunset",
+   "name": "Grasslands Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "hausdorf_clear_sky",
+   "name": "Hausdorf Clear Sky",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "hausdorf_meadow",
+   "name": "Hausdorf Meadow",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "hay_bales",
+   "name": "Hay Bales",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "hochsal_field",
+   "name": "Hochsal Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "horn-koppe_snow",
+   "name": "Horn-koppe Snow",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "horn-koppe_spring",
+   "name": "Horn-koppe Spring",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "industrial_sunset",
+   "name": "Industrial Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "industrial_sunset_02",
+   "name": "Industrial Sunset 02",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "kloppenheim_01",
+   "name": "Kloppenheim 01",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "kloppenheim_02",
+   "name": "Kloppenheim 02",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "kloppenheim_03",
+   "name": "Kloppenheim 03",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "kloppenheim_04",
+   "name": "Kloppenheim 04",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "kloppenheim_05",
+   "name": "Kloppenheim 05",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "kloppenheim_07",
+   "name": "Kloppenheim 07",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "lilienstein",
+   "name": "Lilienstein",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "lonely_road_afternoon",
+   "name": "Lonely Road Afternoon",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "lot_01",
+   "name": "Lot 01",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "ludwikowice_farmland",
+   "name": "Ludwikowice Farmland",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "lythwood_field",
+   "name": "Lythwood Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "magalies_field_sunset",
+   "name": "Magalies Field Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "malagas_ferry_road",
+   "name": "Malagas Ferry Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "mealie_road",
+   "name": "Mealie Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "misty_dawn",
+   "name": "Misty Dawn",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "misty_farm_road",
+   "name": "Misty Farm Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "moonless_golf",
+   "name": "Moonless Golf",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "moonlit_golf",
+   "name": "Moonlit Golf",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "mpumalanga_veld",
+   "name": "Mpumalanga Veld",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "mud_road",
+   "name": "Mud Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "noon_grass",
+   "name": "Noon Grass",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "oberer_kuhberg",
+   "name": "Oberer Kuhberg",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "outdoor_workshop",
+   "name": "Outdoor Workshop",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "overcast_soil",
+   "name": "Overcast Soil",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "overcast_soil_2",
+   "name": "Overcast Soil 2",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "partial_eclipse",
+   "name": "Partial Eclipse",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "passendorf_snow",
+   "name": "Passendorf Snow",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "pisztyk",
+   "name": "Pisztyk",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "plains_sunset",
+   "name": "Plains Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "preller_drive",
+   "name": "Preller Drive",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "railway_bridge_02",
+   "name": "Railway Bridge 02",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "reichstag_1",
+   "name": "Reichstag 1",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "rosendal_plains_1",
+   "name": "Rosendal Plains 1",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "rosendal_plains_2",
+   "name": "Rosendal Plains 2",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "rural_asphalt_road",
+   "name": "Rural Asphalt Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "rural_crossroads",
+   "name": "Rural Crossroads",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "rural_evening_road",
+   "name": "Rural Evening Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "rural_graffiti_tower",
+   "name": "Rural Graffiti Tower",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "rural_winter_roadside",
+   "name": "Rural Winter Roadside",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "safari_sunset",
+   "name": "Safari Sunset",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "satara_night",
+   "name": "Satara Night",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "satara_night_no_lamps",
+   "name": "Satara Night (No Lamps)",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "scythian_tombs",
+   "name": "Scythian Tombs",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "scythian_tombs_2",
+   "name": "Scythian Tombs 2",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "small_rural_road_02",
+   "name": "Small Rural Road 02",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "snow_field",
+   "name": "Snow Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "snow_field_2",
+   "name": "Snow Field 2",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "snowy_field",
+   "name": "Snowy Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "soliltude",
+   "name": "Soliltude",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "solitude_night",
+   "name": "Solitude Night",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "spruit_sunrise",
+   "name": "Spruit Sunrise",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "steinbach_field",
+   "name": "Steinbach Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "stierberg_sunrise",
+   "name": "Stierberg Sunrise",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "straw_rolls_field_01",
+   "name": "Straw Rolls Field 01",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "suburban_field_01",
+   "name": "Suburban Field 01",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "suburban_field_02",
+   "name": "Suburban Field 02",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "sunflowers",
+   "name": "Sunflowers",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "sunny_country_road",
+   "name": "Sunny Country Road",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "sunset_meadow_path",
+   "name": "Sunset Meadow Path",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "veld_fire",
+   "name": "Veld Fire",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "wasteland_clouds",
+   "name": "Wasteland Clouds",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "waterkloof_farm",
+   "name": "Waterkloof Farm",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "wildflower_field",
+   "name": "Wildflower Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "winter_orchard",
+   "name": "Winter Orchard",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "yellow_field",
+   "name": "Yellow Field",
+   "env": "outdoor",
+   "cat": "Fields & Countryside"
+  },
+  {
+   "id": "autumn_crossing",
+   "name": "Autumn Crossing",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "autumn_forest_01",
+   "name": "Autumn Forest 01",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "autumn_forest_02",
+   "name": "Autumn Forest 02",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "autumn_forest_03",
+   "name": "Autumn Forest 03",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "autumn_forest_04",
+   "name": "Autumn Forest 04",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "autumn_ground",
+   "name": "Autumn Ground",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "bamboo_tunnel",
+   "name": "Bamboo Tunnel",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "birchwood",
+   "name": "Birchwood",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "blaubeuren_outskirts",
+   "name": "Blaubeuren Outskirts",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "blue_grotto",
+   "name": "Blue Grotto",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "cave_wall",
+   "name": "Cave Wall",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "dark_autumn_forest",
+   "name": "Dark Autumn Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "eilenriede_labyrinth",
+   "name": "Eilenriede Labyrinth",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "epping_forest_01",
+   "name": "Epping Forest 01",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "epping_forest_02",
+   "name": "Epping Forest 02",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "felsenlabyrinth",
+   "name": "Felsenlabyrinth",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "forest_cave",
+   "name": "Forest Cave",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "forest_grove",
+   "name": "Forest Grove",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "forest_slope",
+   "name": "Forest Slope",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "green_sanctuary",
+   "name": "Green Sanctuary",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "gum_trees",
+   "name": "Gum Trees",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "herkulessaulen",
+   "name": "Herkuless\u00e4ulen",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "hikers_cave",
+   "name": "Hiker's Cave",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "hochsal_forest",
+   "name": "Hochsal Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "je_gray_02",
+   "name": "J&E Gray 02",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "lauter_waterfall",
+   "name": "Lauter Waterfall",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "lush_dirt_path",
+   "name": "Lush Dirt Path",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "meadow",
+   "name": "Meadow",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "meadow_2",
+   "name": "Meadow 2",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "missile_launch_facility_02",
+   "name": "Missile Launch Facility 02",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "missile_launch_facility_03",
+   "name": "Missile Launch Facility 03",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "misty_pines",
+   "name": "Misty Pines",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "monks_forest",
+   "name": "Monk's forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "mossy_forest",
+   "name": "Mossy Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "moulton_falls_train_tunnel_east",
+   "name": "Moulton Falls Train Tunnel East",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "moulton_station_train_tunnel_west",
+   "name": "Moulton Station Train Tunnel West",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "muddy_autumn_forest",
+   "name": "Muddy Autumn Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "nature_reserve_forest",
+   "name": "Nature Reserve Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "niederwihl_forest",
+   "name": "Niederwihl Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "pathway_morning",
+   "name": "Pathway Morning",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "phalzer_forest_01",
+   "name": "Pf\u00e4lzer Forest 01",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "rainforest_trail",
+   "name": "Rainforest Trail",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "river_walk_1",
+   "name": "River Walk 1",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "river_walk_2",
+   "name": "River Walk 2",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "schachen_forest",
+   "name": "Schachen Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "shady_patch",
+   "name": "Shady Patch",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "skukuza_golf",
+   "name": "Skukuza Golf",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "small_cave",
+   "name": "Small Cave",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "snowy_forest",
+   "name": "Snowy Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "snowy_forest_path_01",
+   "name": "Snowy Forest Path 01",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "snowy_forest_path_02",
+   "name": "Snowy Forest Path 02",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "spooky_bamboo_morning",
+   "name": "Spooky Bamboo Morning",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "stream",
+   "name": "Stream",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "sunset_forest",
+   "name": "Sunset Forest",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "tief_etz",
+   "name": "Tief Etz",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "tree_lined_driveway",
+   "name": "Tree Lined Driveway",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "treetop_balcony",
+   "name": "Treetop Balcony",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "woods",
+   "name": "Woods",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "xanderklinge",
+   "name": "Xanderklinge",
+   "env": "outdoor",
+   "cat": "Forest & Woodland"
+  },
+  {
+   "id": "barnaslingan_01",
+   "name": "Barnaslingan 01",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "barnaslingan_02",
+   "name": "Barnaslingan 02",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "brick_factory_02",
+   "name": "Brick Factory 02",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "construction_yard",
+   "name": "Construction Yard",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "factory_yard",
+   "name": "Factory Yard",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "freight_station",
+   "name": "Freight Station",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "future_parking",
+   "name": "Future Parking",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "hanger_exterior_cloudy",
+   "name": "Hanger Exterior Cloudy",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "minedump_flats",
+   "name": "Minedump Flats",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "sunset_in_the_chalk_quarry",
+   "name": "Sunset in the Chalk Quarry",
+   "env": "outdoor",
+   "cat": "Industrial"
+  },
+  {
+   "id": "alte_veste_station",
+   "name": "Alte Veste Station",
+   "env": "outdoor",
+   "cat": "Interiors"
+  },
+  {
+   "id": "alps_field",
+   "name": "Alps Field",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "autumn_hill_view",
+   "name": "Autumn Hill View",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "aviation_museum_hill",
+   "name": "Aviation Museum Hill",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "belfast_sunset",
+   "name": "Belfast Sunset",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "bell_park_dawn",
+   "name": "Bell Park Dawn",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "bergen",
+   "name": "Bergen",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "blaubeuren_hillside",
+   "name": "Blaubeuren Hillside",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "bloem_hill_01",
+   "name": "Bloem Hill 01",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "bloem_hill_02",
+   "name": "Bloem Hill 02",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "bloem_hill_03",
+   "name": "Bloem Hill 03",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "cayley_lookout",
+   "name": "Cayley Lookout",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "champagne_castle_1",
+   "name": "Champagne Castle 1",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "clarens_midday",
+   "name": "Clarens Midday",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "clarens_night_01",
+   "name": "Clarens Night 01",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "clarens_night_02",
+   "name": "Clarens Night 02",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "cliffside",
+   "name": "Cliffside",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "dalkey_view",
+   "name": "Dalkey View",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "drackenstein_quarry",
+   "name": "Drackenstein Quarry",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "drakensberg_solitary_mountain",
+   "name": "Drakensberg Solitary Mountain",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "ehingen_hillside",
+   "name": "Ehingen Hillside",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "ehingen_hillside_02",
+   "name": "Ehingen Hillside 02",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "fish_eagle_hill",
+   "name": "Fish Eagle Hill",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "flamingo_pan",
+   "name": "Flamingo Pan",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "flower_hillside",
+   "name": "Flower Hillside",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "fort_schanskop_morning",
+   "name": "Fort Schanskop Morning",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "fouriesburg_mountain_cloudy",
+   "name": "Fouriesburg Mountain Cloudy",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "fouriesburg_mountain_lookout",
+   "name": "Fouriesburg Mountain Lookout",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "fouriesburg_mountain_lookout_2",
+   "name": "Fouriesburg Mountain Lookout 2",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "fouriesburg_mountain_midday",
+   "name": "Fouriesburg Mountain Midday",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "gamrig",
+   "name": "Gamrig",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "golden_gate_hills",
+   "name": "Golden Gate Hills",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "harties",
+   "name": "Harties",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "harties_cliff_view",
+   "name": "Harties Cliff View",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "hilltop_construction",
+   "name": "Hilltop Construction",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "hilly_terrain_01",
+   "name": "Hilly Terrain 01",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "immenstadter_horn",
+   "name": "Immenst\u00e4dter Horn",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_1_dawn",
+   "name": "Kiara 1 Dawn",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_2_sunrise",
+   "name": "Kiara 2 Sunrise",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_3_morning",
+   "name": "Kiara 3 Morning",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_4_mid-morning",
+   "name": "Kiara 4 Mid-Morning",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_5_noon",
+   "name": "Kiara 5 Noon",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_6_afternoon",
+   "name": "Kiara 6 Afternoon",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_7_late-afternoon",
+   "name": "Kiara 7 Late-Afternoon",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_8_sunset",
+   "name": "Kiara 8 Sunset",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kiara_9_dusk",
+   "name": "Kiara 9 Dusk",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "klippad_dawn_1",
+   "name": "Klippad Dawn 1",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "klippad_dawn_2",
+   "name": "Klippad Dawn 2",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "klippad_sunrise_1",
+   "name": "Klippad Sunrise 1",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "klippad_sunrise_2",
+   "name": "Klippad Sunrise 2",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloetzle_blei",
+   "name": "Kloetzle Blei",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloofendal_28d_misty",
+   "name": "Kloofendal 28d Misty",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloofendal_38d_partly_cloudy",
+   "name": "Kloofendal 38d Partly Cloudy",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloofendal_43d_clear",
+   "name": "Kloofendal 43d Clear",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloofendal_48d_partly_cloudy",
+   "name": "Kloofendal 48d Partly Cloudy",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloofendal_misty_morning",
+   "name": "Kloofendal Misty Morning",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloofendal_overcast",
+   "name": "Kloofendal Overcast",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "kloppenheim_06",
+   "name": "Kloppenheim 06",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "lago_disola",
+   "name": "Lago d'Isola",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "lenong_1",
+   "name": "Lenong 1",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "lenong_2",
+   "name": "Lenong 2",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "lenong_3",
+   "name": "Lenong 3",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "monte_scherbelino",
+   "name": "Monte Scherbelino",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "montorfano",
+   "name": "Montorfano",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "neurathen_rock_castle",
+   "name": "Neurathen Rock Castle",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "northcliff",
+   "name": "Northcliff",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "orbita",
+   "name": "Orbita",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "pizzo_pernice",
+   "name": "Pizzo Pernice",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani",
+   "name": "Qwantani",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_afternoon",
+   "name": "Qwantani Afternoon",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_dawn",
+   "name": "Qwantani Dawn",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_dusk_1",
+   "name": "Qwantani Dusk 1",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_dusk_2",
+   "name": "Qwantani Dusk 2",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_late_afternoon",
+   "name": "Qwantani Late Afternoon",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_mid_morning",
+   "name": "Qwantani Mid Morning",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_moon_noon",
+   "name": "Qwantani Moon Noon",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_moonrise",
+   "name": "Qwantani Moonrise",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_morning",
+   "name": "Qwantani Morning",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_night",
+   "name": "Qwantani Night",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_noon",
+   "name": "Qwantani Noon",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_sunrise",
+   "name": "Qwantani Sunrise",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "qwantani_sunset",
+   "name": "Qwantani Sunset",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "rhodes_memorial",
+   "name": "Rhodes Memorial",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "rocky_ridge",
+   "name": "Rocky Ridge",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "rolling_hills",
+   "name": "Rolling Hills",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "rosendal_mountain_midmorning",
+   "name": "Rosendal Mountain Midmorning",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "ruckenkreuz",
+   "name": "Ruckenkreuz",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "rustig_koppie",
+   "name": "Rustig Koppie",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "signal_hill_dawn",
+   "name": "Signal Hill Dawn",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "signal_hill_sunrise",
+   "name": "Signal Hill Sunrise",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "snowy_hillside",
+   "name": "Snowy Hillside",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "snowy_hillside_02",
+   "name": "Snowy Hillside 02",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "spaichingen_hill",
+   "name": "Spaichingen Hill",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "sterkspruit_falls",
+   "name": "Sterkspruit Falls",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "stuttgart_hillside",
+   "name": "Stuttgart Hillside",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "syferfontein_0d_clear",
+   "name": "Syferfontein 0d Clear",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "syferfontein_18d_clear",
+   "name": "Syferfontein 18d Clear",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "syferfontein_1d_clear",
+   "name": "Syferfontein 1d Clear",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "syferfontein_6d_clear",
+   "name": "Syferfontein 6d Clear",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "table_mountain_1",
+   "name": "Table Mountain 1",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "table_mountain_2",
+   "name": "Table Mountain 2",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "ticknock_01",
+   "name": "Ticknock 01",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "ticknock_02",
+   "name": "Ticknock 02",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "ticknock_03",
+   "name": "Ticknock 03",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "ticknock_04",
+   "name": "Ticknock 04",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "toposcope_sunset",
+   "name": "Toposcope Sunset",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "versveldpas",
+   "name": "Versveldpas",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "waterbuck_trail",
+   "name": "Waterbuck Trail",
+   "env": "outdoor",
+   "cat": "Mountains & Hills"
+  },
+  {
+   "id": "acoustical_shell",
+   "name": "Acoustical Shell",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "ahornsteig",
+   "name": "Ahornsteig",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "air_museum_playground",
+   "name": "Air Museum Playground",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "altanka",
+   "name": "Altanka",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "approaching_storm",
+   "name": "Approaching Storm",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "autumn_hockey",
+   "name": "Autumn Hockey",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "autumn_park",
+   "name": "Autumn Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "aviation_museum",
+   "name": "Aviation Museum",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "balcony",
+   "name": "Balcony",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "ballawley_park",
+   "name": "Ballawley Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "binnenalster",
+   "name": "Binnenalster",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "bismarckturm",
+   "name": "Bismarckturm",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "bismarckturm_hillside",
+   "name": "Bismarckturm Hillside",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "blaubeuren_night",
+   "name": "Blaubeuren Night",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "borghese_gardens",
+   "name": "Borghese Gardens",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "bryanston_park_sunrise",
+   "name": "Bryanston Park Sunrise",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "buikslotermeerplein",
+   "name": "Buikslotermeerplein",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "charolettenbrunn_park",
+   "name": "Charolettenbrunn Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "chinese_garden",
+   "name": "Chinese Garden",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "cloudy_vondelpark",
+   "name": "Cloudy Vondelpark",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "delta_2",
+   "name": "Delta 2",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "donkin_reserve",
+   "name": "Donkin Reserve",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "eilenriede_park",
+   "name": "Eilenriede Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "emmarentia",
+   "name": "Emmarentia",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "floral_tent",
+   "name": "Floral Tent",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "forgotten_miniland",
+   "name": "Forgotten Miniland",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "furstenstein",
+   "name": "Furstenstein",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "garden_nook",
+   "name": "Garden Nook",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "graffiti_shelter",
+   "name": "Graffiti Shelter",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "graveyard_pathways",
+   "name": "Graveyard Pathways",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "green_point_park",
+   "name": "Green Point Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "greenwich_park",
+   "name": "Greenwich Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "greenwich_park_02",
+   "name": "Greenwich Park 02",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "greenwich_park_03",
+   "name": "Greenwich Park 03",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "je_gray_park",
+   "name": "J&E Gray Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "killesberg_park",
+   "name": "Killesberg Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "ladybrand_heritage_house",
+   "name": "Ladybrand Heritage House",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "lapa",
+   "name": "Lapa",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "limpopo_golf_course",
+   "name": "Limpopo Golf Course",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "little_paris_under_tower",
+   "name": "Little Paris Under Tower",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "lookout",
+   "name": "Lookout",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "lythwood_terrace",
+   "name": "Lythwood Terrace",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "museumplein",
+   "name": "Museumplein",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "nagoya_wall_path",
+   "name": "Nagoya Wall Path",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "netball_court",
+   "name": "Netball Court",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "ninomaru_teien",
+   "name": "Ninomaru Teien",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "old_tree_in_city_park",
+   "name": "Old Tree in City Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "orlando_stadium",
+   "name": "Orlando Stadium",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "outdoor_chapel",
+   "name": "Outdoor Chapel",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "palermo_park",
+   "name": "Palermo Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "park_bench",
+   "name": "Park Bench",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "park_music_stage",
+   "name": "Park Music Stage",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "piazza_martin_lutero",
+   "name": "Piazza Martin Lutero",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "pine_picnic",
+   "name": "Pine Picnic",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "pond",
+   "name": "Pond",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "pond_bridge_night",
+   "name": "Pond Bridge Night",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "pool",
+   "name": "Pool",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "pretoria_gardens",
+   "name": "Pretoria Gardens",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "qwantani_patio",
+   "name": "Qwantani Patio",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "residential_garden",
+   "name": "Residential Garden",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "roof_garden",
+   "name": "Roof Garden",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "rooitou_park",
+   "name": "Rooitou Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "rosendal_park_sunset",
+   "name": "Rosendal Park Sunset",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "sabie_tent",
+   "name": "Sabie Tent",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "sisulu",
+   "name": "Sisulu",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "skate_park",
+   "name": "Skate Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "snowy_cemetery",
+   "name": "Snowy Cemetery",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "snowy_park_01",
+   "name": "Snowy Park 01",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "stadium_01",
+   "name": "Stadium 01",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "stone_pines",
+   "name": "Stone Pines",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "studio_garden",
+   "name": "Studio Garden",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "suburban_football_field",
+   "name": "Suburban Football Field",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "suburban_garden",
+   "name": "Suburban Garden",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "suburban_soccer_park",
+   "name": "Suburban Soccer Park",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "sunny_rose_garden",
+   "name": "Sunny Rose Garden",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "sunny_vondelpark",
+   "name": "Sunny Vondelpark",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "sunset_fairway",
+   "name": "Sunset Fairway",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "symmetrical_garden",
+   "name": "Symmetrical Garden",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "symmetrical_garden_02",
+   "name": "Symmetrical Garden 02",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "tiergarten",
+   "name": "Tiergarten",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "turning_area",
+   "name": "Turning Area",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "viale_giuseppe_garibaldi",
+   "name": "Viale Giuseppe Garibaldi",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "whipple_creek_gazebo",
+   "name": "Whipple Creek Gazebo",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "whipple_creek_regional_park_01",
+   "name": "Whipple Creek Regional Park 01",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "whipple_creek_regional_park_04",
+   "name": "Whipple Creek Regional Park 04",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "xiequ_yuan",
+   "name": "Xiequ Yuan",
+   "env": "outdoor",
+   "cat": "Parks & Gardens"
+  },
+  {
+   "id": "aristea_wreck_puresky",
+   "name": "Aristea Wreck (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "autumn_field_puresky",
+   "name": "Autumn Field (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "belfast_sunset_puresky",
+   "name": "Belfast Sunset (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "citrus_orchard_puresky",
+   "name": "Citrus Orchard (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "citrus_orchard_road_puresky",
+   "name": "Citrus Orchard Road (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "drackenstein_quarry_puresky",
+   "name": "Drackenstein Quarry (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "drakensberg_solitary_mountain_puresky",
+   "name": "Drakensberg Solitary Mountain (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "evening_road_01_puresky",
+   "name": "Evening Road 01 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "farm_field_puresky",
+   "name": "Farm Field (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "hilly_terrain_01_puresky",
+   "name": "Hilly Terrain 01 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "industrial_sunset_puresky",
+   "name": "Industrial Sunset (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "industrial_sunset_02_puresky",
+   "name": "Industrial Sunset 02 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloofendal_28d_misty_puresky",
+   "name": "Kloofendal 28d Misty (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloofendal_38d_partly_cloudy_puresky",
+   "name": "Kloofendal 38d Partly Cloudy (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloofendal_43d_clear_puresky",
+   "name": "Kloofendal 43d Clear (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloofendal_48d_partly_cloudy_puresky",
+   "name": "Kloofendal 48d Partly Cloudy (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloofendal_misty_morning_puresky",
+   "name": "Kloofendal Misty Morning (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloofendal_overcast_puresky",
+   "name": "Kloofendal Overcast (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloppenheim_01_puresky",
+   "name": "Kloppenheim 01 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloppenheim_02_puresky",
+   "name": "Kloppenheim 02 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloppenheim_03_puresky",
+   "name": "Kloppenheim 03 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloppenheim_05_puresky",
+   "name": "Kloppenheim 05 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloppenheim_06_puresky",
+   "name": "Kloppenheim 06 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "kloppenheim_07_puresky",
+   "name": "Kloppenheim 07 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "lonely_road_afternoon_puresky",
+   "name": "Lonely Road Afternoon (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "mpumalanga_veld_puresky",
+   "name": "Mpumalanga Veld (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "mud_road_puresky",
+   "name": "Mud Road (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "overcast_soil_puresky",
+   "name": "Overcast Soil (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "pizzo_pernice_puresky",
+   "name": "Pizzo Pernice (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "quarry_01_puresky",
+   "name": "Quarry 01 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "quarry_04_puresky",
+   "name": "Quarry 04 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_puresky",
+   "name": "Qwantani (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_afternoon_puresky",
+   "name": "Qwantani Afternoon (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_dawn_puresky",
+   "name": "Qwantani Dawn (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_dusk_1_puresky",
+   "name": "Qwantani Dusk 1 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_dusk_2_puresky",
+   "name": "Qwantani Dusk 2 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_late_afternoon_puresky",
+   "name": "Qwantani Late Afternoon (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_mid_morning_puresky",
+   "name": "Qwantani Mid Morning (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_moon_noon_puresky",
+   "name": "Qwantani Moon Noon (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_moonrise_puresky",
+   "name": "Qwantani Moonrise (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_morning_puresky",
+   "name": "Qwantani Morning (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_night_puresky",
+   "name": "Qwantani Night (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_noon_puresky",
+   "name": "Qwantani Noon (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_sunrise_puresky",
+   "name": "Qwantani Sunrise (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "qwantani_sunset_puresky",
+   "name": "Qwantani Sunset (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "rocky_ridge_puresky",
+   "name": "Rocky Ridge (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "rosendal_park_sunset_puresky",
+   "name": "Rosendal Park Sunset (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "rustig_koppie_puresky",
+   "name": "Rustig Koppie (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "scythian_tombs_puresky",
+   "name": "Scythian Tombs (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "snow_field_puresky",
+   "name": "Snow Field (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "snow_field_2_puresky",
+   "name": "Snow Field 2 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "sunflowers_puresky",
+   "name": "Sunflowers (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "syferfontein_0d_clear_puresky",
+   "name": "Syferfontein 0d Clear (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "syferfontein_18d_clear_puresky",
+   "name": "Syferfontein 18d Clear (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "syferfontein_1d_clear_puresky",
+   "name": "Syferfontein 1d Clear (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "syferfontein_6d_clear_puresky",
+   "name": "Syferfontein 6d Clear (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "table_mountain_1_puresky",
+   "name": "Table Mountain 1 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "table_mountain_2_puresky",
+   "name": "Table Mountain 2 (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "wasteland_clouds_puresky",
+   "name": "Wasteland Clouds (Pure Sky)",
+   "env": "outdoor",
+   "cat": "Pure Skies"
+  },
+  {
+   "id": "abandoned_parking",
+   "name": "Abandoned Parking",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "adams_place_bridge",
+   "name": "Adams Place Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "afrikaans_church_exterior",
+   "name": "Afrikaans Church Exterior",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "amphitheatre_zanzibar_fort",
+   "name": "Amphitheatre Zanzibar Fort",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "autumn_road",
+   "name": "Autumn Road",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "beach_cloudy_bridge",
+   "name": "Beach Cloudy Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "beach_parking",
+   "name": "Beach Parking",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "belvedere",
+   "name": "Belvedere",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "bethnal_green_entrance",
+   "name": "Bethnal Green Entrance",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "between_bridges",
+   "name": "Between Bridges",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "birbeck_street_underpass",
+   "name": "Birbeck Street Underpass",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "blaubeuren_church_square",
+   "name": "Blaubeuren Church Square",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "bloem_olive_house",
+   "name": "Bloem Olive House",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "braustuble_alley",
+   "name": "Braustuble Alley",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "cambridge",
+   "name": "Cambridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "canary_wharf",
+   "name": "Canary Wharf",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "castel_st_angelo_roof",
+   "name": "Castel St. Angelo Roof",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "cedar_bridge",
+   "name": "Cedar Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "cedar_bridge_2",
+   "name": "Cedar Bridge 2",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "cedar_bridge_sunset_1",
+   "name": "Cedar Bridge Sunset 1",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "cedar_bridge_sunset_2",
+   "name": "Cedar Bridge Sunset 2",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "chapmans_drive",
+   "name": "Chapman's Drive",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "circus_maximus_1",
+   "name": "Circus Maximus 1",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "circus_maximus_2",
+   "name": "Circus Maximus 2",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "cobblestone_parish_road",
+   "name": "Cobblestone Parish Road",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "cobblestone_street_night",
+   "name": "Cobblestone Street Night",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "colosseum",
+   "name": "Colosseum",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "concrete_tunnel",
+   "name": "Concrete Tunnel",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "concrete_tunnel_02",
+   "name": "Concrete Tunnel 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "courtyard",
+   "name": "Courtyard",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "courtyard_night",
+   "name": "Courtyard Night",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "crosswalk",
+   "name": "Crosswalk",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "dam_bridge",
+   "name": "Dam Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "derelict_highway_midday",
+   "name": "Derelict Highway Midday",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "derelict_highway_noon",
+   "name": "Derelict Highway Noon",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "derelict_overpass",
+   "name": "Derelict Overpass",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "derelict_underpass",
+   "name": "Derelict Underpass",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "dirt_bike_track_01",
+   "name": "Dirt Bike Track 01",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "dresden_square",
+   "name": "Dresden Square",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "driving_school",
+   "name": "Driving School",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "dusseldorf_bridge",
+   "name": "Dusseldorf Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "evening_museum_courtyard",
+   "name": "Evening Museum Courtyard",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "georgentor",
+   "name": "Georgentor",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "german_town_street",
+   "name": "German Town Street",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "glass_passage",
+   "name": "Glass Passage",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "glencairn_expressway",
+   "name": "Glencairn Expressway",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "hamburg_canal",
+   "name": "Hamburg Canal",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "hansaplatz",
+   "name": "Hansaplatz",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "highway_bridge_sunset",
+   "name": "Highway Bridge Sunset",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "homecoming_center_rooftop",
+   "name": "Homecoming Center Rooftop",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "hotel_rooftop_balcony",
+   "name": "Hotel Rooftop Balcony",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "illovo_beach_balcony",
+   "name": "Illovo Beach Balcony",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "irish_institute",
+   "name": "Irish Institute",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "sunset_jhbcentral",
+   "name": "Joburg Central Sunset",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "konigsallee",
+   "name": "Konigsallee",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "konzerthaus",
+   "name": "Konzerthaus",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "laufenurg_church",
+   "name": "Laufenurg Church",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "learner_park",
+   "name": "Learner Park",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "leibstadt",
+   "name": "Leibstadt",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "little_paris_eiffel_tower",
+   "name": "Little Paris Eiffel Tower",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "lot_02",
+   "name": "Lot 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "mall_parking_lot",
+   "name": "Mall Parking Lot",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "medieval_cafe",
+   "name": "Medieval Cafe",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "modern_buildings_2",
+   "name": "Modern Buildings 2",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "modern_buildings_night",
+   "name": "Modern Buildings Night",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "modern_evening_street",
+   "name": "Modern Evening Street",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "mosaic_tunnel",
+   "name": "Mosaic Tunnel",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "museum_of_history",
+   "name": "Museum of History",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "narrow_moonlit_road",
+   "name": "Narrow Moonlit Road",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "neuer_zollhof",
+   "name": "Neuer Zollhof",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "night_bridge",
+   "name": "Night Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "nowhere_road",
+   "name": "Nowhere Road",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "nqweba_bridge",
+   "name": "Nqweba Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "old_outdoor_theater",
+   "name": "Old Outdoor Theater",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "outdoor_umbrellas",
+   "name": "Outdoor Umbrellas",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "overcast_industrial_courtyard",
+   "name": "Overcast Industrial Courtyard",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "ox_bridge_morning",
+   "name": "Ox Bridge Morning",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "palermo_sidewalk",
+   "name": "Palermo Sidewalk",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "palermo_square",
+   "name": "Palermo Square",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "park_parking",
+   "name": "Park Parking",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "parking_garage",
+   "name": "Parking Garage",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "pedestrian_overpass",
+   "name": "Pedestrian Overpass",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "pergola_walkway",
+   "name": "Pergola Walkway",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "piazza_bologni",
+   "name": "Piazza Bologni",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "piazza_san_marco",
+   "name": "Piazza San Marco",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "plac_wolnosci",
+   "name": "Plac Wolnosci",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "portland_landing_pad",
+   "name": "Portland Landing pad",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "potsdamer_platz",
+   "name": "Potsdamer Platz",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "pretville_street",
+   "name": "Pretville Street",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "quadrangle_cloudy",
+   "name": "Quadrangle Cloudy",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "quadrangle_sunny",
+   "name": "Quadrangle Sunny",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "quattro_canti",
+   "name": "Quattro Canti",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "railway_bridges",
+   "name": "Railway Bridges",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "rathaus",
+   "name": "Rathaus",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "red_church",
+   "name": "Red Church",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "red_hill_cloudy",
+   "name": "Red Hill Cloudy",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "red_hill_curve",
+   "name": "Red Hill Curve",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "red_hill_straight",
+   "name": "Red Hill Straight",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "red_wall",
+   "name": "Red Wall",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "rooftop_day",
+   "name": "Rooftop Day",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "rooftop_night",
+   "name": "Rooftop Night",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "rotes_rathaus",
+   "name": "Rotes Rathaus",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "round_platform",
+   "name": "Round Platform",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "san_giuseppe_bridge",
+   "name": "San Giuseppe Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "schadowplatz",
+   "name": "Schadowplatz",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "short_tunnel",
+   "name": "Short Tunnel",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "simons_town_road",
+   "name": "Simon's Town Road",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "skidpan",
+   "name": "Skidpan",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "skylit_garage",
+   "name": "Skylit Garage",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "small_cathedral_02",
+   "name": "Small Cathedral 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "small_rural_road",
+   "name": "Small Rural Road",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "st_peters_square_night",
+   "name": "St. Peters Square Night",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "stadium_exterior",
+   "name": "Stadium Exterior",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "stone_alley",
+   "name": "Stone Alley",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "stone_alley_02",
+   "name": "Stone Alley 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "stone_alley_03",
+   "name": "Stone Alley 03",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "street_lamp",
+   "name": "Street Lamp",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "stuttgart_suburbs",
+   "name": "Stuttgart Suburbs",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "suburban_parking_area",
+   "name": "Suburban Parking Area",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "tears_of_steel_bridge",
+   "name": "Tears of Steel Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "teatro_massimo",
+   "name": "Teatro Massimo",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "teutonic_castle_moat",
+   "name": "Teutonic Castle Moat",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "tiber_1",
+   "name": "Tiber 1",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "twilight_sunset",
+   "name": "Twilight Sunset",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "ulmer_muenster",
+   "name": "Ulmer Muenster",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "under_bridge",
+   "name": "Under Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "urban_alley_01",
+   "name": "Urban Alley 01",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "urban_courtyard",
+   "name": "Urban Courtyard",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "urban_courtyard_02",
+   "name": "Urban Courtyard 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "urban_street_01",
+   "name": "Urban Street 01",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "urban_street_02",
+   "name": "Urban Street 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "urban_street_03",
+   "name": "Urban Street 03",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "urban_street_04",
+   "name": "Urban Street 04",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "ushaka_dolphin_stadium",
+   "name": "Ushaka Dolphin Stadium",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "vatican_road",
+   "name": "Vatican Road",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "venetian_crossroads",
+   "name": "Venetian Crossroads",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "venice_dawn_1",
+   "name": "Venice Dawn 1",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "venice_dawn_2",
+   "name": "Venice Dawn 2",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "venice_sunrise",
+   "name": "Venice Sunrise",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "victoria_curve_01",
+   "name": "Victoria Curve 01",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "victoria_curve_02",
+   "name": "Victoria Curve 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "victoria_sunset",
+   "name": "Victoria Sunset",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "vignaioli",
+   "name": "Vignaioli",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "vignaioli_night",
+   "name": "Vignaioli Night",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "wide_street_01",
+   "name": "Wide Street 01",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "wide_street_02",
+   "name": "Wide Street 02",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "winter_evening",
+   "name": "Winter Evening",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "wobbly_bridge",
+   "name": "Wobbly Bridge",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "wooden_motel",
+   "name": "Wooden Motel",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zawiszy_czarnego",
+   "name": "Zawiszy Czarnego",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zhengyang_gate",
+   "name": "Zhengyang Gate",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_curve_afternoon",
+   "name": "Zwartkops Curve Afternoon",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_curve_morning",
+   "name": "Zwartkops Curve Morning",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_curve_sunset",
+   "name": "Zwartkops Curve Sunset",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_pit",
+   "name": "Zwartkops Pit",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_start_afternoon",
+   "name": "Zwartkops Start Afternoon",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_start_morning",
+   "name": "Zwartkops Start Morning",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_start_sunset",
+   "name": "Zwartkops Start Sunset",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_straight_afternoon",
+   "name": "Zwartkops Straight Afternoon",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_straight_morning",
+   "name": "Zwartkops Straight Morning",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwartkops_straight_sunset",
+   "name": "Zwartkops Straight Sunset",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  },
+  {
+   "id": "zwinger_night",
+   "name": "Zwinger Night",
+   "env": "outdoor",
+   "cat": "Streets & Town"
+  }
+ ],
+ "_comment": "Poly Haven CC0 set, kept for reference; the active set is static/hdri.json"
+}

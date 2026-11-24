@@ -5,6 +5,37 @@ piece that decides success on the real car taken from measurement or from the 3D
 only, S0. Results: `uv run ugv-lab` (Park page: results, replay, tuning); history: the attempt
 tree under `research/attempts/2026-11-17-track-3d-parking.md`.
 
+## The strict camera protocol (challenge = pipeline)
+
+The batch simulator (`run()`, `tools/park/*`) samples the detector's statistics; the challenge
+page does not. One rendered frame feeds both the human's eyes and the estimator, so what the
+challenge shows cannot flatter the car:
+
+1. The browser renders the car camera through a real sensor chain: linear HDR scene with the
+   true mount (fixed mount error, then per-frame shake and the one-time knock) → the true
+   lens (radial distortion k1/k2, principal-point offset, monotone full-well curve with
+   saturation) → mono luma gained in stops → 8-bit quantization. Lens defocus and motion blur
+   are applied to the pixels (isotropic kernel, as a simplification of directional streak),
+   never as a CSS filter on the display.
+2. That exact 1280x720 frame is drawn for the human and analysed for the machine: the 15
+   keypoints (the 12-point skeleton plus the 3 near-field nose-tyre points) are projected
+   with the same intrinsics; each keypoint's patch is measured (saturation, crush, local
+   contrast); detection is decided from those pixels with a noise model — never from the true
+   pose. A blown frame reads as blind, a black occluder is invisible, untextured white-on-white
+   struggles.
+3. The detections (not the pose) are posted to the server; it solves PnP on them with the
+   nominal camera, exactly as the car would, and the existing estimator fuses them. The
+   server samples nothing. `KEYPOINTS x/15` in the HUD is the count through this path.
+
+Still approximated, on purpose: occlusion by other body parts is not depth-tested (a keypoint
+hidden behind the nose gear stays detectable); frame drops are drawn browser-side from the
+round seed; motion blur is isotropic, not a directional streak; exposure spells layer on top
+of the fixed setting. The phantom family (a drone-looking impostor in view) is not fired in
+the challenge — the picture never contains an impostor to detect. The batch surrogate remains
+for robustness statistics, not evidence.
+
+## What is modelled, and from where
+
 ## What is modelled, and from where
 
 | Piece | Module | Source |
@@ -12,7 +43,7 @@ tree under `research/attempts/2026-11-17-track-3d-parking.md`.
 | Bay, obstacles, target | `geometry.py` | the STRL-001 mesh: every surface point lower than the car (body 0.044 m, camera stand 0.084 m) is an obstacle; the target is the deepest pose between the main-gear axle and the nose wheel whose straight tail entry clears by the most (3.5 cm per side) |
 | Car | `plant.py` | measured gains, deadzones and onsets (`docs/L7_FIELD_NOTES.md`), duty cap 0.44; each episode draws a different car: gains ±25%, deadzones ±40%, lags ±50%, strafe-to-yaw slip, gyro vibration noise |
 | Floor | `plant.Floor` | traction: strafe and yaw authority lost to the surface, ground velocity lagging the body through turns, and grip that changes from patch to patch; a model, not a measurement |
-| Camera and detector | `perception.py` | the 12 skeleton keypoints projected through the car camera (1280x720, fx 968, 6.4 cm off the floor); 2 px noise, 10% misses, 3% gross outliers; per-episode focal (2%), mount yaw (1 deg) and pitch (1.5 deg) errors; 10 Hz, 0.1 s late |
+| Camera and detector | `perception.py` | the 15 keypoints (12 skeleton + 3 near-field tyre points) projected through the car camera (1280x720, fx 968, 6.4 cm off the floor); 2 px noise, 10% misses, 3% gross outliers; per-episode focal (2%), mount yaw (1 deg) and pitch (1.5 deg) errors; 10 Hz, 0.1 s late. The batch path; the challenge renders and analyses the actual frame instead (see The strict camera protocol) |
 | Pose solver | `perception.solve` | 6-DoF PnP when 6+ points are seen, then a floor-constrained solve of x, y, yaw (and camera pitch with 6+ points); with 2-5 points, from the estimator's prior |
 | Estimator | `estimator.py` | the airframe as a static landmark in an odometry frame; gated fusion; odometry through the identified motor model and lag |
 | Motor model | `actuator.py` | gain and deadzone per axis identified online: yaw from the gyro, forward and strafe from fix-to-fix motion |
@@ -38,6 +69,7 @@ severity 1 each family is present with probability 0.5:
 | phantom | a false airframe detection at a plausible range | 1-5% of frames |
 | gyro | scale error and wandering bias | ±5%, 0-0.001 rad/s/√s |
 | exposure | over/under-exposed spells that hide most keypoints | 0.05-0.3 per s, 0.3-2 s |
+| exposure, fixed | auto-exposure off, set permanently high: `exposure_stops`, never clears | +1..+4 stops in the challenge selector |
 | blur, noise | motion blur with turn rate; sensor noise | 2-10 px per rad/s; 0.5-2 px |
 | occlusion | a fixed region of the image blocked | 2-20% of the image |
 | shake | mount jitter per frame (also blurs) | 0.2-1 deg |
@@ -47,9 +79,11 @@ severity 1 each family is present with probability 0.5:
 
 `--start close` places the car 0.4-1.3 m from the airframe on any side (nose and wingtips
 included). The challenge page drives the same faulty cars live, and named awkward starts
-(nose-on, beside the nose wheel, under a wingtip) are in `ugv.lab.sim.PRESETS`.
-Attempts: `research/attempts/2026-11-18-park-*`. Magnitudes are guesses until measured on
-the car; the per-family sweep (`eval.py --families`) says which ones matter.
+(nose-on, beside the nose wheel, under a wingtip) are in `ugv.lab.sim.PRESETS`. Its exposure
+selector pins the car's exposure permanently high (0 = auto) on top of the round's other
+faults; it applies live to the running round through the browser's sensor chain, and the
+detector reads the same pixels. Attempts: `research/attempts/2026-11-18-park-*`. Magnitudes are
+guesses until measured on the car; the per-family sweep (`eval.py --families`) says which ones matter.
 
 ## Floor traction
 
@@ -86,12 +120,25 @@ the same exposure and motion blur at the same visual scale, and the same blocked
 dropped frame paints the frame black and says NO SIGNAL instead of leaving the previous image
 up. The orbit view is an observer, not the sensor: it never receives the camera's faults.
 
-The environment selector has six procedural sets plus Poly Haven's 998 CC0 panoramas
-(indoor and outdoor, indexed in `src/ugv/lab/static/hdri.json`). The lab server fetches a
-1k `.hdr` on first use and caches it under `runs/cache/hdri/`, so the repository carries no
-panorama data. The panorama is both the background and the image-based light; the floor is a
-transparent shadow catcher, so no invented surface or texture covers the photograph, and the
-car and airframe still cast their shadows onto it.
+The environment selector has six procedural sets plus the merged CC0 panorama set indexed in
+`src/ugv/lab/static/hdri.json`: Poly Haven's original 998 (preserved in `static/hdri-polyhaven.json`)
+and 213 pre-fetched captures from OpenHDRI (43 outdoor, 17 indoor, 60 total, CC0) and ambientCG
+(Indoor/Day/Evening/Night Environment HDRIs, ~153 captures, CC0). The extended panoramas are
+pre-downloaded at 2K by `tools/hdri_horizons/fetch_panos.py` into `runs/cache/hdri_v2/`; the lab
+server serves those files directly (ids `ohl_*`, `acg_*`), falling back to Poly Haven's CDN for the
+plain ids. The repository therefore carries no panorama data. The panorama is both the scene and the
+image-based light. It renders on a grounded dome whose equator is the y=0 floor plane (a
+directional equirect sample, not the infinite `scene.background`), so the photograph's horizon sits
+at floor level at every azimuth, and an opaque ground disc at y=0 deprojects the panorama's ground
+half onto the floor plane: each floor point samples the panorama pixel that photographed that
+distance from the capture point (camera height ≈ 1.55 m, `uEyeH` in `scene3d.js`), so the ground
+stays at true scale from orbit height down to the car camera's 6 cm. Shadows still land on a
+transparent catcher riding just above the disc. A
+panorama whose camera was not level can ship a per-id horizon offset in `static/hdri-horizons.json`
+(absent ids default to 0), shifting the dome's sampled `v` so the photograph's floor/wall junction
+lands on the y=0 plane. `tools/hdri_horizons/predict_horizons.py` prefills the offsets from the
+cached `.hdr` files; `tools/hdri_horizons/dashboard.py` is the review UI (pitch/roll scrubbing,
+reviewed flags in `static/hdri-horizons-reviewed.json`).
 
 ## Results (seed 11, 1000 episodes, full noise)
 

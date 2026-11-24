@@ -49,6 +49,13 @@ function markup(hdri = []) {
         </div>
       </div>
       <select id="ch-quality" aria-label="Sensors">${Object.entries(QUALITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+      <select id="ch-exposure" aria-label="Exposure" title="Applies live to the running round">
+        <option value="0">Exposure: auto</option>
+        <option value="1">Exposure: fixed +1 stop</option>
+        <option value="2">Exposure: fixed +2 stops</option>
+        <option value="3">Exposure: fixed +3 stops</option>
+        <option value="4">Exposure: fixed +4 stops</option>
+      </select>
       <select id="ch-start" aria-label="Start">${Object.entries(START_NAME).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}<option value="placed" hidden>Placed on the map</option></select>
       <button type="button" id="ch-auto" aria-pressed="false"><span>Autopilot</span> <kbd>P</kbd></button>
       <button type="button" id="ch-new">New round <kbd>R</kbd></button>
@@ -72,6 +79,7 @@ function bind(main) {
 
   $('#ch-start').addEventListener('change', (e) => { handlers.start?.(e.target.value); e.target.blur(); });
   $('#ch-quality').addEventListener('change', (e) => { handlers.quality?.(e.target.value); e.target.blur(); });
+  $('#ch-exposure').addEventListener('change', (e) => { handlers.exposure?.(parseFloat(e.target.value)); e.target.blur(); });
   const envBtn = $('#ch-env'), envMenu = $('#ch-env-menu'), envQ = $('#ch-env-q'), envList = $('#ch-env-list'), envLabel = $('#ch-env-label');
   const filterEnv = (q) => {
     const s = q.trim().toLowerCase();
@@ -125,7 +133,7 @@ function bind(main) {
   return {
     on(h) { handlers = h; },
     start(v) { $('#ch-start').value = v; },
-    setup(env, quality) { setEnvLabel(env); $('#ch-quality').value = quality; },
+    setup(env, quality, exposure = 0) { setEnvLabel(env); $('#ch-quality').value = quality; $('#ch-exposure').value = String(exposure); },
     auto(on) {
       const b = $('#ch-auto');
       b.classList.toggle('go', on);
@@ -171,7 +179,7 @@ function bind(main) {
         <div><span>SPEED</span><b>${v.toFixed(2)}<small>m/s</small></b></div>
         <div><span>TO BAY, EST</span><b>${dist == null ? '—' : (dist * 100).toFixed(dist < 0.1 ? 1 : 0)}<small>cm</small></b></div>
         <div><span>YAW ERR, EST</span><b>${e ? deg(e[2]) : '—'}<small>°</small></b></div>
-        <div><span>KEYPOINTS</span><b>${snap?.kp?.length ?? 0}<small>/12</small></b></div>
+        <div><span>KEYPOINTS</span><b>${snap?.kp?.length ?? 0}<small>/15</small></b></div>
         <div><span>POSE FIX</span><b class="${snap?.fix ? 'fix' : 'nofix'}">${snap?.fix ? 'YES' : est ? 'OLD' : 'NO'}</b></div>
         <div><span>CAMERA</span><b class="${camLost ? 'nofix' : 'fix'}">${camLost ? 'LOST' : 'LIVE'}</b></div>
         ${truth ? `<div class="truth"><span>TRUE ERROR</span><b>${cm(eTrue[0])} / ${cm(eTrue[1])}<small>cm</small> ${deg(eTrue[2])}<small>°</small></b><ul class="faults">${faultList(faults)}${snap?.floor && snap.floor[1] > 0.05 ? `<li>floor grip ${snap.floor[0].toFixed(2)} · skid ${snap.floor[1].toFixed(2)} · patchy ${snap.floor[2].toFixed(2)}</li>` : ''}</ul></div>` : ''}
