@@ -34,7 +34,7 @@
 
     <dl class="hud-rows">
       <div><dt>Motion</dt><dd id="motion" class="mono">STOPPED</dd></div>
-      <div><dt>Pose / Tag</dt><dd id="pose-tag" class="mono">—</dd></div>
+      <div><dt>Pose</dt><dd id="pose-tag" class="mono">—</dd></div>
       <div><dt>IMU</dt><dd id="imu-status" class="mono">—</dd></div>
       <div><dt>Cmd F/S/T</dt><dd class="mono"><span id="forward">0.00</span> / <span id="strafe">0.00</span> / <span id="turn">0.00</span></dd></div>
     </dl>
@@ -48,14 +48,11 @@
         <div><dt>Clients</dt><dd id="clients" class="mono">0</dd></div>
         <div><dt>Watchdog</dt><dd id="watchdog" class="mono">600 ms</dd></div>
         <div><dt>Pan / Tilt</dt><dd class="mono"><span id="pan">1500 µs</span> · <span id="tilt">1500 µs</span></dd></div>
-        <div><dt>ArUco</dt><dd id="aruco-readout" class="mono">—</dd></div>
         <div><dt>Plane</dt><dd id="plane-readout" class="mono">—</dd></div>
         <div>
           <dt>Plane Model</dt>
           <dd><select id="plane-model-select" class="hud-select"></select></dd>
         </div>
-        <div><dt>Vision FPS</dt><dd id="vision-rate" class="mono">—</dd></div>
-        <div><dt>Vision Age</dt><dd id="vision-time" class="mono">—</dd></div>
         <div><dt>Accel (g)</dt><dd id="imu-accel" class="mono">—</dd></div>
         <div><dt>Gyro (°/s)</dt><dd id="imu-gyro" class="mono">—</dd></div>
         <div>
@@ -90,9 +87,7 @@
     </label>
     <div class="btn-group">
       <button id="camera-toggle" type="button" class="btn" aria-pressed="true" title="Toggle camera stream">Cam</button>
-      <button id="aruco-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco detection">Tags</button>
       <button id="plane-toggle" type="button" class="btn" aria-pressed="false" title="Toggle airframe keypoint detection">Plane</button>
-      <button id="follow-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco follow">Follow</button>
       <button id="view-fit-toggle" type="button" class="btn active" aria-pressed="true" title="Fit: Cover (click for Contain)">Fit</button>
       <button id="map-toggle" type="button" class="btn" aria-pressed="false" title="Toggle parking map">Map</button>
       <button id="perf-toggle" class="btn" type="button" aria-pressed="false" title="Live Pi profiler">Perf</button>

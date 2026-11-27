@@ -190,14 +190,12 @@ function render(next) {
   if (cameraEnabled && !feed.hasAttribute("src")) feed.src = "/stream.mjpg";
   feed.style.visibility = cameraEnabled ? "visible" : "hidden";
 
-  $("#aruco-toggle").disabled = !cameraEnabled;
   const planeBtn = $("#plane-toggle");
   if (planeBtn) {
     planeBtn.disabled = !cameraEnabled;
     planeBtn.setAttribute("aria-pressed", String(Boolean(next.plane_enabled)));
     planeBtn.classList.toggle("active", Boolean(next.plane_enabled));
   }
-  $("#follow-toggle").disabled = !cameraEnabled;
 
   const cameraFresh = next.camera_frame_age_ms != null && next.camera_frame_age_ms < 500;
   $("#feed-stats").textContent = `${!cameraEnabled ? "CAM PAUSED" : cameraFresh ? "LIVE" : "STALE"} · ${(next.camera_fps || 0).toFixed(1)} FPS`;
@@ -240,9 +238,7 @@ function render(next) {
       ? `PLANE ${next.plane_pose.x_m.toFixed(2)}m · ${next.plane_pose.yaw_deg.toFixed(0)}°`
       : (next.plane_status || "PLANE"))
     : null;
-  const tagSummary = next.aruco_visible
-    ? `#${next.aruco_id ?? "?"} · ${Number(next.aruco_distance_m ?? 0).toFixed(2)}m`
-    : (planeSummary || (next.heading_calibrated ? `${Math.round(((Number(next.heading_deg) || 0) % 360 + 360) % 360)}°` : (next.aruco_status || "—")));
+  const tagSummary = planeSummary || (next.heading_calibrated ? `${Math.round(((Number(next.heading_deg) || 0) % 360 + 360) % 360)}°` : "—");
   $("#pose-tag").textContent = tagSummary;
   $("#imu-status").textContent = next.imu_connected ? `${(next.imu_rate_hz || 0).toFixed(0)} Hz · ${next.imu_age_ms ?? "—"} ms` : (next.imu_status || "offline");
 
@@ -258,9 +254,6 @@ function render(next) {
   if (watchdog && next.watchdog_ms != null) watchdog.textContent = `${next.watchdog_ms} ms`;
   $("#pan").textContent = `${next.pan_us ?? 1500} µs`;
   $("#tilt").textContent = `${next.tilt_us ?? 1500} µs`;
-  $("#aruco-readout").textContent = next.aruco_visible
-    ? `${next.aruco_markers?.length || 1} tag(s) · #${next.aruco_id} · ${Number(next.aruco_distance_m ?? 0).toFixed(2)} m`
-    : (next.aruco_status || "none");
   const planeReadout = $("#plane-readout");
   if (planeReadout) {
     const fpsPart = next.plane_enabled && next.plane_fps ? ` · ${Number(next.plane_fps).toFixed(1)} fps` : "";
@@ -281,8 +274,6 @@ function render(next) {
     }
     planeModelSel.disabled = !models.length;
   }
-  $("#vision-rate").textContent = `${(next.aruco_fps || 0).toFixed(1)} fps`;
-  $("#vision-time").textContent = `${(next.aruco_processing_ms || 0).toFixed(0)} ms · ${next.aruco_result_age_ms ?? "—"} ms`;
 
   const vectorText = (v, d) => v ? ["x", "y", "z"].map((a) => Number(v[a] || 0).toFixed(d)).join(" / ") : "— / — / —";
   $("#imu-accel").textContent = vectorText(next.imu_accel_g, 3);
@@ -290,11 +281,6 @@ function render(next) {
 
   const select = $("#controller-select");
   if (select && next.controller && select.value !== next.controller) select.value = next.controller;
-
-  $("#aruco-toggle").setAttribute("aria-pressed", String(Boolean(next.aruco_enabled)));
-  $("#aruco-toggle").classList.toggle("active", Boolean(next.aruco_enabled));
-  $("#follow-toggle").setAttribute("aria-pressed", String(Boolean(next.aruco_follow)));
-  $("#follow-toggle").classList.toggle("active", Boolean(next.aruco_follow));
 
   const heading = Number(next.heading_deg) || 0;
   // heading_deg wraps at 360; turn the needle by the shortest arc so it never sweeps backwards.
@@ -375,12 +361,10 @@ $("#auto-park-toggle").addEventListener("click", () => {
   send({ type: "auto-park", enabled: !state.auto_park });
 });
 $("#camera-toggle").addEventListener("click", () => send({ type: "camera-capture", enabled: state.camera_enabled === false }));
-$("#aruco-toggle").addEventListener("click", () => send({ type: "aruco", enabled: !state.aruco_enabled, follow: state.aruco_follow ? false : null }));
 $("#plane-toggle")?.addEventListener("click", () => send({ type: "plane", enabled: !state.plane_enabled }));
 $("#plane-model-select")?.addEventListener("change", (event) => {
   if (event.target.value) send({ type: "plane", model: event.target.value });
 });
-$("#follow-toggle").addEventListener("click", () => send({ type: "aruco", enabled: true, follow: !state.aruco_follow, speed_limit: Number(speed.value) }));
 $("#heading-calibrate").addEventListener("click", () => send({ type: "heading-calibrate" }));
 $("#controller-select")?.addEventListener("change", (event) => send({ type: "controller", controller: event.target.value }));
 $("#view-fit-toggle").addEventListener("click", () => {
@@ -447,13 +431,9 @@ const perfLegend = $("#perf-legend");
 const perfDetails = $("#perf-details");
 
 const PERF_LEGEND = [
-  ["Decode", "#38bdf8"],
-  ["Detect", "#818cf8"],
-  ["SubPix", "#c084fc"],
-  ["PnP", "#f472b6"],
-  ["Plan/Ctrl", "#34d399"],
+  ["Plane YOLO", "#34d399"],
+  ["Plan/Ctrl", "#818cf8"],
   ["Drive", "#fbbf24"],
-  ["ArUco", "#fb7185"],
   ["Cam/IMU/IO", "#60a5fa"],
 ];
 
@@ -522,54 +502,30 @@ function drawPerfChart(next) {
   const sys = perf.system && typeof perf.system === "object" ? perf.system : {};
   const budgetMs = Number(perf.budget_ms) > 0 ? Number(perf.budget_ms) : 33.33;
 
-  const decode = readStage(stages, ["decode_ms", "decode"]);
-  const detect = readStage(stages, ["detect_ms", "detect"]);
-  const subpix = readStage(stages, ["subpix_ms", "subpix"]);
-  const pnp = readStage(stages, ["pnp_ms", "pnp"]);
-  const visionAgg = readStage(stages, ["autopark_vision", "vision", "vision_ms"]);
+  const planeSt = readStage(stages, ["plane_ms", "plane"], next?.plane_ms ?? 0);
   const plan = readStage(stages, ["plan_ms", "plan"]);
   const driveSt = readStage(stages, ["drive_ms", "drive", "ctrl_ms", "ctrl"]);
-  const loopAgg = readStage(stages, ["park_loop", "autopark_loop", "loop_ms"]);
-  const aruco = readStage(stages, ["aruco_ms", "aruco"], next?.aruco_processing_ms ?? 0);
+  const loopAgg = readStage(stages, ["autopark_loop_ms", "park_loop", "autopark_loop", "loop_ms"]);
   const camAge = readStage(stages, ["camera_frame_age_ms", "cam_age_ms", "camera_age"], next?.camera_frame_age_ms ?? 0);
   const imuAge = readStage(stages, ["imu_age_ms", "imu_age"], next?.imu_age_ms ?? 0);
   const bcast = readStage(stages, ["broadcast_ms", "broadcast"]);
 
-  const visionStat = sumStats([decode, detect, subpix, pnp], visionAgg.last_ms > 0 ? visionAgg : null);
-  const visionTotalMs = visionStat.last;
-  const loopStat = sumStats(
-    [{ last_ms: visionTotalMs, p50_ms: visionStat.p50, p95_ms: visionStat.p95 }, plan, driveSt],
-    loopAgg.last_ms > 0 ? loopAgg : null
-  );
-  const arucoStat = sumStats([aruco], aruco);
+  const loopStat = sumStats([plan, driveSt], loopAgg.last_ms > 0 ? loopAgg : null);
   const ioStat = sumStats([camAge, imuAge, bcast], null);
 
   const rows = [
     {
-      label: "AutoPark Vision",
-      stat: visionStat,
-      segments: (decode.last_ms + detect.last_ms + subpix.last_ms + pnp.last_ms) > 0 || visionAgg.last_ms === 0
-        ? [
-            { value: decode.last_ms, color: "#38bdf8" },
-            { value: detect.last_ms, color: "#818cf8" },
-            { value: subpix.last_ms, color: "#c084fc" },
-            { value: pnp.last_ms, color: "#f472b6" },
-          ]
-        : [{ value: visionAgg.last_ms, color: "#38bdf8" }],
+      label: "Plane YOLO",
+      stat: sumStats([planeSt], planeSt),
+      segments: [{ value: planeSt.last_ms, color: "#34d399" }],
     },
     {
-      label: "Park Loop",
+      label: "Park Loop (50Hz)",
       stat: loopStat,
       segments: [
-        { value: visionTotalMs, color: "#38bdf8" },
-        { value: plan.last_ms, color: "#34d399" },
+        { value: plan.last_ms, color: "#818cf8" },
         { value: driveSt.last_ms, color: "#fbbf24" },
       ],
-    },
-    {
-      label: "ArUco Tags",
-      stat: arucoStat,
-      segments: [{ value: aruco.last_ms, color: "#fb7185" }],
     },
     {
       label: "IO / Age",
@@ -675,8 +631,8 @@ function drawPerfChart(next) {
 
     const camHz = next?.camera_fps != null ? `${Number(next.camera_fps).toFixed(1)}Hz` : "—";
     const imuHz = next?.imu_rate_hz != null ? `${Number(next.imu_rate_hz).toFixed(0)}Hz` : "—";
-    const arucoHz = aruco.hz != null ? `${aruco.hz.toFixed(1)}Hz` : (next?.aruco_fps != null ? `${Number(next.aruco_fps).toFixed(1)}Hz` : "—");
-    const rateLine = `cam ${camHz} · imu ${imuHz} · aruco ${arucoHz} · budget ${budgetMs.toFixed(1)}ms`;
+    const planeHz = planeSt.hz != null ? `${planeSt.hz.toFixed(1)}Hz` : (next?.plane_fps != null ? `${Number(next.plane_fps).toFixed(1)}Hz` : "—");
+    const rateLine = `cam ${camHz} · imu ${imuHz} · plane ${planeHz} · budget ${budgetMs.toFixed(1)}ms`;
 
     const stageKeys = Object.keys(stages);
     const stageLine = stageKeys.length
