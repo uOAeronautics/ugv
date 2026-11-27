@@ -28,25 +28,13 @@ from ugv.park.perception import (
     model_points,
 )
 from ugv.pose.detector import Detection, load_default
-from ugv.pose.mesh import PARTS, Airframe, keypoints, load_airframe
-from ugv.pose.render import Camera, View, render, room_background
-
-_SDF_RGB = {"body": (0.85, 0.85, 0.85), "control": (0.95, 0.45, 0.1), "prop": (0.15, 0.15, 0.15)}
+from ugv.pose.mesh import Airframe, keypoints, load_airframe
+from ugv.pose.render import SDF_PART_RGB, Camera, View, part_albedo, render, room_background
 
 
 def sdf_albedo(frame: Airframe) -> np.ndarray:
     """Per-triangle RGB albedo matching `simulation/gazebo/strl_001/model.sdf` and `stl.js`."""
-    albedo = np.empty((len(frame.part), 3), dtype=np.float64)
-    for i, name in enumerate(PARTS):
-        role = (
-            "body"
-            if name == "body"
-            else "control"
-            if name.startswith(("aileron_", "ruddervator_"))
-            else "prop"
-        )
-        albedo[frame.part == i] = _SDF_RGB[role]
-    return albedo
+    return part_albedo(frame, **SDF_PART_RGB)
 
 
 def camera_extrinsics(
@@ -114,9 +102,10 @@ def apply_image_faults(
         ).astype(np.uint8)
     occ = fx.get("occluder") if fx is not None else occluder
     if occ is not None:
+        h, w = gray.shape[:2]
         u0, v0, u1, v1 = (int(round(v)) for v in occ)
         gray = gray.copy()
-        gray[max(0, v0) : min(HEIGHT, v1), max(0, u0) : min(WIDTH, u1)] = 0
+        gray[max(0, v0) : min(h, v1), max(0, u0) : min(w, u1)] = 0
     return gray
 
 

@@ -14,7 +14,58 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from ugv.pose.mesh import Airframe
+from ugv.pose.mesh import PARTS, Airframe
+
+SDF_PART_RGB = {
+    "body": (0.85, 0.85, 0.85),
+    "control": (0.95, 0.45, 0.1),
+    "prop": (0.15, 0.15, 0.15),
+}
+
+
+def part_albedo(
+    frame: Airframe,
+    body: tuple[float, float, float] = SDF_PART_RGB["body"],
+    control: tuple[float, float, float] = SDF_PART_RGB["control"],
+    prop: tuple[float, float, float] = SDF_PART_RGB["prop"],
+) -> np.ndarray:
+    """Per-triangle RGB albedo (N, 3) in [0, 1] by airframe part role."""
+    albedo = np.empty((len(frame.part), 3), dtype=np.float64)
+    for i, name in enumerate(PARTS):
+        rgb = (
+            body
+            if name == "body"
+            else control
+            if name.startswith(("aileron_", "ruddervator_"))
+            else prop
+        )
+        albedo[frame.part == i] = rgb
+    return albedo
+
+
+def random_part_albedo(frame: Airframe, rng: np.random.Generator) -> np.ndarray:
+    """Randomised per-part RGB albedo around `SDF_PART_RGB`: light body, medium/accent control
+    surfaces, and dark rotors/nacelles."""
+    body_g = float(rng.uniform(0.55, 0.98))
+    body = tuple(np.clip(body_g + rng.uniform(-0.04, 0.04, 3), 0.45, 1.0).tolist())
+    prop_g = float(rng.uniform(0.03, 0.30))
+    prop = tuple(np.clip(prop_g + rng.uniform(-0.03, 0.03, 3), 0.02, 0.35).tolist())
+    if rng.random() < 0.6:
+        control = (
+            float(rng.uniform(0.70, 1.0)),
+            float(rng.uniform(0.28, 0.68)),
+            float(rng.uniform(0.03, 0.30)),
+        )
+    else:
+        ctrl_g = float(rng.uniform(0.30, 0.92))
+        control = tuple(np.clip(ctrl_g + rng.uniform(-0.06, 0.06, 3), 0.20, 0.98).tolist())
+    albedo = part_albedo(frame, body=body, control=control, prop=prop)
+    # Small independent jitter per nacelle/prop so rotors and nacelles are not always identical.
+    for i, name in enumerate(PARTS):
+        if name.startswith(("nacelle_", "prop_")):
+            delta = float(rng.uniform(-0.05, 0.05))
+            albedo[frame.part == i] = np.clip(albedo[frame.part == i] + delta, 0.02, 0.38)
+    return albedo
 
 
 @dataclass(frozen=True)

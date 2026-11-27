@@ -16,6 +16,7 @@ import cv2
 import numpy as np
 
 from ugv.park.geometry import CAMERA_X_M, CAMERA_Z_M, bay
+from ugv.park.perception import CameraError
 from ugv.pose.mesh import keypoints, load_airframe
 from ugv.pose.render import (
     CAR_VIEWS,
@@ -23,6 +24,7 @@ from ugv.pose.render import (
     CarLevelSpec,
     ViewSpec,
     procedural_texture,
+    random_part_albedo,
     render,
     room_background,
     sample_bay_pose,
@@ -39,6 +41,8 @@ LEVEL = 0.55  # share of generic level car-camera views; `--bay` takes its extra
 
 
 def init_worker(frames: list[str], crop: bool, bay_frac: float) -> None:
+    from ugv.park.camera import apply_image_faults
+
     frame = load_airframe()
     _STATE.update(
         frame=frame,
@@ -47,6 +51,7 @@ def init_worker(frames: list[str], crop: bool, bay_frac: float) -> None:
         cam=Camera().scaled(W, H),
         crop=crop,
         bay=bay_frac,
+        apply_faults=apply_image_faults,
     )
     _STATE["fixed"] = procedural_texture(frame.centroids, seed=0)
     _STATE["level"] = CarLevelSpec(floor_z=bay().floor_z, away=0.2)
@@ -130,43 +135,61 @@ def sample(seed: int) -> tuple:
     cam, box = (st["cam"], None)
     if st["crop"]:
         cam, box = _keypoint_crop(rng, R, t) if level else _crop_camera(rng, R, t)
-    albedo = (
-        st["fixed"]
-        if rng.random() < 0.3
-        else procedural_texture(st["frame"].centroids, int(rng.integers(1 << 30)))
-    )
-    if rng.random() < 0.3:  # plain airframe paint, as the real one may be
-        albedo = np.full_like(albedo, rng.uniform(0.4, 0.95))
+    u_alb = rng.random()
+    if u_alb < 0.5:
+        albedo = random_part_albedo(st["frame"], rng)
+    elif u_alb < 0.7:  # plain airframe paint, as the real one may be
+        albedo = np.full_like(st["fixed"], rng.uniform(0.4, 0.95))
+    elif u_alb < 0.8:
+        albedo = st["fixed"]
+    else:
+        albedo = procedural_texture(st["frame"].centroids, int(rng.integers(1 << 30)))
     bg = room_background(rng, cam, R) if level and rng.random() < 0.35 else _background(rng, box)
     v = render(st["frame"], st["kp"], R, t, cam, rng, albedo, bg)
     w_, h_ = cam.width, cam.height
     g = cv2.cvtColor(v.image, cv2.COLOR_BGR2GRAY).astype(np.float32)
-    if rng.random() < 0.6:
-        g = cv2.GaussianBlur(g, (0, 0), rng.uniform(0.3, 1.4))
-    if rng.random() < 0.2:  # motion blur
-        k = np.zeros((7, 7), np.float32)
-        k[3] = 1 / 7
-        g = cv2.filter2D(
-            g,
-            -1,
-            cv2.warpAffine(k, cv2.getRotationMatrix2D((3, 3), rng.uniform(0, 180), 1), (7, 7)),
+    if rng.random() < 0.25:  # directional motion blur
+        klen = int(rng.choice([5, 7, 9, 11]))
+        k = np.zeros((klen, klen), np.float32)
+        k[klen // 2] = 1.0 / klen
+        rot = cv2.getRotationMatrix2D((klen / 2 - 0.5, klen / 2 - 0.5), rng.uniform(0, 180), 1)
+        g = cv2.filter2D(g, -1, cv2.warpAffine(k, rot, (klen, klen)))
+    g = 255 * (np.clip(g, 0, 255) / 255) ** rng.uniform(0.8, 1.25)
+    gray = np.clip(g, 0, 255).astype(np.uint8)
+    scale = float(cam.K[0, 0] / FULL.K[0, 0])
+    faulty = rng.random() < 0.45
+    fx: dict = {}
+    if faulty and rng.random() < 0.65:  # defocus / isotropic smear matching faults.py (up to 25 px)
+        blur_1280 = float(np.exp(rng.uniform(np.log(1.5), np.log(25.0))))
+        fx["blur"] = blur_1280 * scale
+    elif rng.random() < 0.5:
+        fx["blur"] = float(rng.uniform(0.4, 1.4))
+    if faulty and rng.random() < 0.55:  # over/under-exposure spells & fixed high exposure
+        fx["exposure"] = float(
+            rng.uniform(0.7, 3.5) if rng.random() < 0.6 else rng.uniform(-2.5, -0.6)
         )
-    g = 255 * (np.clip(g, 0, 255) / 255) ** rng.uniform(0.7, 1.4)
-    g += rng.normal(0, rng.uniform(1, 8), g.shape)
-    for _ in range(rng.integers(0, 3) if rng.random() < 0.3 else 0):  # occluders
+    elif rng.random() < 0.5:
+        fx["exposure"] = float(rng.uniform(-0.4, 0.4))
+    if faulty and rng.random() < 0.55:  # black occluder matching faults.py (15-40% W x 15-50% H)
+        bw, bh = rng.uniform(0.15, 0.40) * w_, rng.uniform(0.15, 0.50) * h_
+        u0, v0 = rng.uniform(0, w_ - bw), rng.uniform(0, h_ - bh)
+        fx["occluder"] = (float(u0), float(v0), float(u0 + bw), float(v0 + bh))
+    noise_px = float(rng.uniform(0.5, 2.5)) if faulty else float(rng.uniform(0.2, 1.0))
+    gray = st["apply_faults"](gray, CameraError(), fx, noise_px, rng, {})
+    for _ in range(rng.integers(1, 3) if rng.random() < 0.15 else 0):  # non-black occluders
         x, y = rng.integers(0, w_), rng.integers(0, h_)
         cv2.rectangle(
-            g,
+            gray,
             (x, y),
-            (x + rng.integers(10, 80), y + rng.integers(10, 60)),
-            float(rng.uniform(0, 255)),
+            (x + rng.integers(10, max(11, w_ // 3)), y + rng.integers(10, max(11, h_ // 3))),
+            int(rng.integers(20, 240)),
             -1,
         )
     names = list(st["kp"])
     kp = np.array([v.kp2d[n] for n in names], np.float32)
     vis = np.array([v.kp_visible[n] for n in names], bool)
     pose = np.concatenate([R.ravel(), t]).astype(np.float32)
-    return np.clip(g, 0, 255).astype(np.uint8), kp, vis, pose, cam.K.astype(np.float32)
+    return gray, kp, vis, pose, cam.K.astype(np.float32)
 
 
 def sample_chunk(seeds: list[int]) -> list[tuple]:

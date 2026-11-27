@@ -81,6 +81,12 @@ def test_image_faults_modify_pixels() -> None:
     distorted = apply_image_faults(base, CameraError(k1=-0.2), None, 0.0, rng, cache)
     assert not np.array_equal(distorted, base)
 
+    small = np.full((180, 320), 140, dtype=np.uint8)
+    small_occ = apply_image_faults(
+        small, CameraError(), {"occluder": (20, 10, 120, 90)}, 0.0, rng, cache
+    )
+    assert small_occ.shape == small.shape and np.all(small_occ[15:85, 25:115] == 0)
+
 
 def test_episode_routes_stub_network_perception_and_drops_frames() -> None:
     calls = 0

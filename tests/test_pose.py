@@ -5,7 +5,15 @@ from __future__ import annotations
 import numpy as np
 
 from ugv.pose.mesh import PARTS, keypoints, load_airframe
-from ugv.pose.render import CAR_VIEWS, Camera, look_at, procedural_texture, render
+from ugv.pose.render import (
+    CAR_VIEWS,
+    Camera,
+    look_at,
+    part_albedo,
+    procedural_texture,
+    random_part_albedo,
+    render,
+)
 from ugv.pose.solve import pose_error, solve_pnp
 
 
@@ -45,3 +53,17 @@ def test_render_and_pnp_round_trip() -> None:
 
 def test_car_views_look_up_at_the_belly() -> None:
     assert CAR_VIEWS.eye_z_m is not None and max(CAR_VIEWS.eye_z_m) < 0
+
+
+def test_part_albedo_dark_rotors_and_light_body() -> None:
+    frame = load_airframe()
+    sdf = part_albedo(frame)
+    body_mask = frame.part == PARTS.index("body")
+    prop_mask = frame.part == PARTS.index("prop_left")
+    assert sdf[body_mask].mean() > 0.8 and sdf[prop_mask].mean() < 0.2
+    rng = np.random.default_rng(7)
+    for _ in range(10):
+        rand = random_part_albedo(frame, rng)
+        assert rand.shape == sdf.shape
+        assert 0.0 <= rand.min() and rand.max() <= 1.0
+        assert rand[body_mask].mean() > rand[prop_mask].mean() + 0.15
