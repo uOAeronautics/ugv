@@ -111,14 +111,16 @@ function drawAruco(next) {
   if (!next.aruco_visible && !next.plane_enabled) return;
 
   const image = $("#camera-feed");
-  const naturalWidth = image.naturalWidth || 1280;
-  const naturalHeight = image.naturalHeight || 720;
+  // Vision coordinates (ArUco + YOLO-pose) are always in 1280x720 camera pixels,
+  // even when /stream.mjpg sends a downscaled 16:9 preview (e.g. 640x360) for Wi-Fi.
+  const camW = 1280;
+  const camH = 720;
   const fit = image.style.objectFit || window.__viewFit || "cover";
   const scale = fit === "cover"
-    ? Math.max(width / naturalWidth, height / naturalHeight)
-    : Math.min(width / naturalWidth, height / naturalHeight);
-  const x0 = (width - naturalWidth * scale) / 2;
-  const y0 = (height - naturalHeight * scale) / 2;
+    ? Math.max(width / camW, height / camH)
+    : Math.min(width / camW, height / camH);
+  const x0 = (width - camW * scale) / 2;
+  const y0 = (height - camH * scale) / 2;
 
   drawPlane(next, x0, y0, scale);
   if (!next.aruco_visible) return;

@@ -211,7 +211,14 @@ class CameraStream:
             self.cv.notify_all()
 
     def frames(self) -> Iterator[bytes]:
+        import cv2
+        import numpy as np
+
         seen = -1
+        last_sent = 0.0
+        min_interval = 1.0 / max(1.0, float(os.environ.get("UGV_PREVIEW_FPS", "20")))
+        preview_w = int(os.environ.get("UGV_PREVIEW_WIDTH", "640"))
+        preview_q = int(os.environ.get("UGV_PREVIEW_QUALITY", "65"))
         while not self.stop.is_set():
             with self.cv:
                 self.cv.wait_for(
@@ -222,12 +229,28 @@ class CameraStream:
                 if self.seq == seen:
                     continue
                 frame, seen = self.frame, self.seq
-            if frame:
-                yield (
-                    b"--frame\r\nContent-Type: image/jpeg\r\nCache-Control: no-store\r\n\r\n"
-                    + frame
-                    + b"\r\n"
-                )
+            if not frame:
+                continue
+            now = time.monotonic()
+            if now - last_sent < min_interval:
+                continue
+            last_sent = now
+            out = frame
+            if preview_w > 0 and preview_w < 1280:
+                img = cv2.imdecode(np.frombuffer(frame, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+                if img is not None and img.shape[1] > preview_w:
+                    ph = max(2, round(img.shape[0] * preview_w / img.shape[1]))
+                    small = cv2.resize(img, (preview_w, ph), interpolation=cv2.INTER_AREA)
+                    ok, buf = cv2.imencode(
+                        ".jpg", small, [int(cv2.IMWRITE_JPEG_QUALITY), preview_q]
+                    )
+                    if ok:
+                        out = buf.tobytes()
+            yield (
+                b"--frame\r\nContent-Type: image/jpeg\r\nCache-Control: no-store\r\n\r\n"
+                + out
+                + b"\r\n"
+            )
 
     def latest(self) -> tuple[bytes | None, int]:
         with self.cv:
@@ -851,9 +874,28 @@ class RobotController:
 
     async def _auto_park_loop(self, cid, epoch):
         plane.set_external(True)
+        vision_task: asyncio.Task[None] | None = None
         try:
             runner = PlaneAutoPark(start_t=time.monotonic())
-            last_seq = -1
+            latest_fix: dict[str, Any] = {"seq": -1, "meas": None, "cap": None}
+
+            async def _vision_worker() -> None:
+                last_seq = -1
+                while self.state.auto_park and self.auto_park_epoch == epoch:
+                    frame, seq, cap = camera.latest_sample()
+                    now_v = time.monotonic()
+                    if frame is None or seq == last_seq or not cap or (now_v - cap) > 0.45:
+                        await asyncio.sleep(0.01)
+                        continue
+                    last_seq = seq
+                    prior = runner.prior_for_solver()
+                    _, meas = await asyncio.to_thread(plane.detect_once, frame, prior)
+                    latest_fix["seq"] = seq
+                    latest_fix["meas"] = meas
+                    latest_fix["cap"] = cap
+
+            vision_task = asyncio.create_task(_vision_worker(), name="auto-park-vision")
+            consumed_seq = -1
             while self.state.auto_park and self.auto_park_epoch == epoch:
                 loop_t0 = time.perf_counter()
                 if self.state.owner != cid or not self.state.armed:
@@ -861,23 +903,8 @@ class RobotController:
                     self.state.auto_park_status = "auto-park ownership lost"
                     break
                 now = time.monotonic()
-                frame, seq, cap = camera.latest_sample()
+                frame, _, cap = camera.latest_sample()
                 frame_age = (now - cap) if (frame is not None and cap) else None
-                meas = None
-                cap_used = None
-                if (
-                    frame is not None
-                    and seq != last_seq
-                    and frame_age is not None
-                    and frame_age <= 0.45
-                ):
-                    last_seq = seq
-                    cap_used = cap
-                    prior = runner.prior_for_solver()
-                    _, meas = await asyncio.to_thread(plane.detect_once, frame, prior)
-                    if not self.state.auto_park or self.auto_park_epoch != epoch:
-                        break
-                now = time.monotonic()
                 imu_age = (
                     (now - self.imu_sample_at)
                     if (
@@ -887,7 +914,13 @@ class RobotController:
                     )
                     else None
                 )
-                frame_age = (now - cap) if (frame is not None and cap) else None
+                meas = None
+                cap_used = None
+                if latest_fix["seq"] != consumed_seq:
+                    consumed_seq = latest_fix["seq"]
+                    meas = latest_fix["meas"]
+                    cap_used = latest_fix["cap"]
+
                 plan_t0 = time.perf_counter()
                 # RelativeHeading emits CW+ heading_rate_dps; PlaneAutoPark expects CCW+ rad/s.
                 cmd = runner.step(
@@ -928,6 +961,12 @@ class RobotController:
             self.state.auto_park_stage = "error"
             self.state.auto_park_status = f"auto-park-error: {exc}"
         finally:
+            if vision_task is not None:
+                vision_task.cancel()
+                try:
+                    await vision_task
+                except asyncio.CancelledError:
+                    pass
             plane.set_external(False)
             if self.auto_park_epoch == epoch:
                 self.state.auto_park = False

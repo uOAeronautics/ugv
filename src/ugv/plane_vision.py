@@ -430,7 +430,19 @@ class PlaneAutoPark:
         self.est = Estimator(calib_min_points=4)
         self.ctrl = ParkController(
             bay=bay(),
-            params=ParkParams(camera_silent_s=1.0),
+            params=ParkParams(
+                search_w=0.55,
+                orbit_r=1.15,
+                orbit_v=0.14,
+                k_radial=0.8,
+                k_face=1.4,
+                approach_v=0.12,
+                k_lat=1.2,
+                k_head=1.5,
+                step_v=0.06,
+                step_w=0.35,
+                camera_silent_s=1.0,
+            ),
         )
         self.last_duty = np.zeros(3, dtype=float)
 
@@ -496,6 +508,14 @@ class PlaneAutoPark:
                 jumped = upd == "reinit"
 
         cmd_vel = self.ctrl.step(t, self.est, jumped)
+        cmd_vel = np.array(
+            [
+                float(np.clip(cmd_vel[0], -0.22, 0.22)),
+                float(np.clip(cmd_vel[1], -0.18, 0.18)),
+                float(np.clip(cmd_vel[2], -0.65, 0.65)),
+            ],
+            dtype=float,
+        )
         duty = self.est.actuator.to_duty(cmd_vel)
         state = self.ctrl.state
         if state == "PARKED":
