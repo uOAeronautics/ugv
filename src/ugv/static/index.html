@@ -49,6 +49,11 @@
         <div><dt>Watchdog</dt><dd id="watchdog" class="mono">600 ms</dd></div>
         <div><dt>Pan / Tilt</dt><dd class="mono"><span id="pan">1500 µs</span> · <span id="tilt">1500 µs</span></dd></div>
         <div><dt>ArUco</dt><dd id="aruco-readout" class="mono">—</dd></div>
+        <div><dt>Plane</dt><dd id="plane-readout" class="mono">—</dd></div>
+        <div>
+          <dt>Plane Model</dt>
+          <dd><select id="plane-model-select" class="hud-select"></select></dd>
+        </div>
         <div><dt>Vision FPS</dt><dd id="vision-rate" class="mono">—</dd></div>
         <div><dt>Vision Age</dt><dd id="vision-time" class="mono">—</dd></div>
         <div><dt>Accel (g)</dt><dd id="imu-accel" class="mono">—</dd></div>
@@ -86,6 +91,7 @@
     <div class="btn-group">
       <button id="camera-toggle" type="button" class="btn" aria-pressed="true" title="Toggle camera stream">Cam</button>
       <button id="aruco-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco detection">Tags</button>
+      <button id="plane-toggle" type="button" class="btn" aria-pressed="false" title="Toggle airframe keypoint detection">Plane</button>
       <button id="follow-toggle" type="button" class="btn" aria-pressed="false" title="Toggle ArUco follow">Follow</button>
       <button id="view-fit-toggle" type="button" class="btn active" aria-pressed="true" title="Fit: Cover (click for Contain)">Fit</button>
       <button id="map-toggle" type="button" class="btn" aria-pressed="false" title="Toggle parking map">Map</button>

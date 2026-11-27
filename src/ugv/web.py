@@ -30,6 +30,7 @@ from .imu import ImuStream
 from .motion import GyroMotion, MotionFault, ramp_wheels
 from .parking import DockingFeedback, ParkingEstimator, Pose2, gear_obstacles
 from .perf import PerfMonitor
+from .plane_vision import PlaneDetectorRunner
 
 STATIC = Path(__file__).parent / "static"
 WATCHDOG_SECONDS = 0.60
@@ -1104,6 +1105,7 @@ class RobotController:
         )
         p.update(camera.metrics())
         p.update(aruco.metrics())
+        p.update(plane.metrics())
         p["parking"] = self.parking.snapshot()
         p["parking"].update(active=self.parking_active, execution_status=self.parking_status)
         p["motion_input_age_ms"] = (
@@ -1129,6 +1131,7 @@ class RobotController:
 controller = RobotController()
 camera = CameraStream()
 aruco = ArucoFollower(camera, controller)
+plane = PlaneDetectorRunner(camera, controller)
 imu = ImuStream(controller.imu_sample, controller.imu_status)
 app = FastAPI(title="UGV Control", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
@@ -1139,11 +1142,13 @@ async def startup():
     await controller.start()
     camera.start()
     aruco.start()
+    plane.start()
     imu.start()
 
 
 @app.on_event("shutdown")
 async def shutdown():
+    await plane.close()
     await aruco.close()
     imu.close()
     camera.close()
@@ -1258,6 +1263,13 @@ async def websocket_endpoint(ws: WebSocket):
                         m.get("follow"),
                         m.get("speed_limit"),
                         m.get("follow_mode"),
+                    )
+                elif kind == "plane":
+                    if m.get("enabled") and not camera.enabled:
+                        raise PermissionError("enable camera capture before Plane detector")
+                    await plane.configure(
+                        m.get("enabled") if "enabled" in m else None,
+                        m.get("model"),
                     )
                 elif kind == "controller":
                     await controller.select_controller(cid, str(m.get("controller", "manual")))

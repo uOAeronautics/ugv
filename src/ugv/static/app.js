@@ -25,6 +25,77 @@ function applyJoyDeadzone(v) {
   return (v - Math.sign(v) * JOY_DEADZONE) / (1 - JOY_DEADZONE);
 }
 
+const PLANE_KP_NAMES = [
+  "nose", "tail", "wingL", "wingR", "hubL", "hubR", "hubRear",
+  "vtailL", "vtailR", "gearN", "gearL", "gearR", "tyreL", "tyreR", "tyreT",
+];
+const PLANE_BONES = [
+  [0, 1], [0, 9], [2, 4], [4, 5], [5, 3], [6, 1],
+  [1, 7], [1, 8], [10, 11], [9, 10], [9, 11], [12, 14], [14, 13],
+];
+
+function drawPlane(next, x0, y0, scale) {
+  if (!next.plane_enabled) return;
+  const pts = next.plane_points || [];
+  const byIdx = new Map();
+  for (const pt of pts) {
+    if (!Array.isArray(pt) || pt.length < 3) continue;
+    byIdx.set(pt[0], [x0 + pt[1] * scale, y0 + pt[2] * scale, pt[3] ?? 1]);
+  }
+
+  if (Array.isArray(next.plane_box) && next.plane_box.length === 3) {
+    const [bx, by, bsize] = next.plane_box;
+    arucoContext.save();
+    arucoContext.setLineDash([6, 4]);
+    arucoContext.strokeStyle = "rgba(52, 211, 153, 0.75)";
+    arucoContext.lineWidth = 1.5;
+    arucoContext.strokeRect(x0 + bx * scale, y0 + by * scale, bsize * scale, bsize * scale);
+    arucoContext.restore();
+  }
+
+  arucoContext.save();
+  arucoContext.strokeStyle = "rgba(52, 211, 153, 0.9)";
+  arucoContext.lineWidth = 2;
+  for (const [a, b] of PLANE_BONES) {
+    const pa = byIdx.get(a);
+    const pb = byIdx.get(b);
+    if (!pa || !pb) continue;
+    arucoContext.beginPath();
+    arucoContext.moveTo(pa[0], pa[1]);
+    arucoContext.lineTo(pb[0], pb[1]);
+    arucoContext.stroke();
+  }
+
+  arucoContext.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+  for (const [idx, [px, py]] of byIdx.entries()) {
+    const isNear = idx >= 12;
+    arucoContext.fillStyle = isNear ? "#fbbf24" : "#34d399";
+    arucoContext.beginPath();
+    arucoContext.arc(px, py, isNear ? 3.5 : 4.5, 0, Math.PI * 2);
+    arucoContext.fill();
+    arucoContext.strokeStyle = "#0f172a";
+    arucoContext.lineWidth = 1.5;
+    arucoContext.stroke();
+    const label = PLANE_KP_NAMES[idx] || String(idx);
+    arucoContext.fillStyle = "#ecfdf5";
+    arucoContext.fillText(label, px + 6, py - 5);
+  }
+
+  if (next.plane_pose && Array.isArray(next.plane_box)) {
+    const p = next.plane_pose;
+    const tx = Math.max(12, x0 + next.plane_box[0] * scale);
+    const ty = Math.max(20, y0 + next.plane_box[1] * scale - 8);
+    arucoContext.fillStyle = "#34d399";
+    arucoContext.font = "700 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+    arucoContext.fillText(
+      `PLANE (${next.plane_model || ""}) x=${p.x_m.toFixed(2)}m y=${p.y_m >= 0 ? "+" : ""}${p.y_m.toFixed(2)}m yaw=${p.yaw_deg >= 0 ? "+" : ""}${p.yaw_deg.toFixed(0)}° · ${pts.length}pts · ${next.plane_ms ?? "—"}ms`,
+      tx,
+      ty
+    );
+  }
+  arucoContext.restore();
+}
+
 function drawAruco(next) {
   const ratio = devicePixelRatio || 1;
   const width = arucoCanvas.clientWidth;
@@ -35,17 +106,20 @@ function drawAruco(next) {
   }
   arucoContext.setTransform(ratio, 0, 0, ratio, 0, 0);
   arucoContext.clearRect(0, 0, width, height);
-  if (!next.aruco_visible) return;
+  if (!next.aruco_visible && !next.plane_enabled) return;
 
   const image = $("#camera-feed");
-  const naturalWidth = image.naturalWidth || 640;
-  const naturalHeight = image.naturalHeight || 480;
+  const naturalWidth = image.naturalWidth || 1280;
+  const naturalHeight = image.naturalHeight || 720;
   const fit = image.style.objectFit || window.__viewFit || "cover";
   const scale = fit === "cover"
     ? Math.max(width / naturalWidth, height / naturalHeight)
     : Math.min(width / naturalWidth, height / naturalHeight);
   const x0 = (width - naturalWidth * scale) / 2;
   const y0 = (height - naturalHeight * scale) / 2;
+
+  drawPlane(next, x0, y0, scale);
+  if (!next.aruco_visible) return;
   const markers = next.aruco_markers?.length
     ? next.aruco_markers
     : [{ id: next.aruco_id, distance_m: next.aruco_distance_m, corners: next.aruco_corners, target: true }];
@@ -113,6 +187,12 @@ function render(next) {
   feed.style.visibility = cameraEnabled ? "visible" : "hidden";
 
   $("#aruco-toggle").disabled = !cameraEnabled;
+  const planeBtn = $("#plane-toggle");
+  if (planeBtn) {
+    planeBtn.disabled = !cameraEnabled;
+    planeBtn.setAttribute("aria-pressed", String(Boolean(next.plane_enabled)));
+    planeBtn.classList.toggle("active", Boolean(next.plane_enabled));
+  }
   $("#follow-toggle").disabled = !cameraEnabled;
 
   const cameraFresh = next.camera_frame_age_ms != null && next.camera_frame_age_ms < 500;
@@ -151,9 +231,14 @@ function render(next) {
   motion.textContent = next.stopped ? "STOPPED" : "MOVING";
   motion.classList.toggle("moving", !next.stopped);
 
+  const planeSummary = next.plane_enabled
+    ? (next.plane_pose
+      ? `PLANE ${next.plane_pose.x_m.toFixed(2)}m · ${next.plane_pose.yaw_deg.toFixed(0)}°`
+      : (next.plane_status || "PLANE"))
+    : null;
   const tagSummary = next.aruco_visible
     ? `#${next.aruco_id ?? "?"} · ${Number(next.aruco_distance_m ?? 0).toFixed(2)}m`
-    : (next.heading_calibrated ? `${Math.round(((Number(next.heading_deg) || 0) % 360 + 360) % 360)}°` : (next.aruco_status || "—"));
+    : (planeSummary || (next.heading_calibrated ? `${Math.round(((Number(next.heading_deg) || 0) % 360 + 360) % 360)}°` : (next.aruco_status || "—")));
   $("#pose-tag").textContent = tagSummary;
   $("#imu-status").textContent = next.imu_connected ? `${(next.imu_rate_hz || 0).toFixed(0)} Hz · ${next.imu_age_ms ?? "—"} ms` : (next.imu_status || "offline");
 
@@ -172,6 +257,26 @@ function render(next) {
   $("#aruco-readout").textContent = next.aruco_visible
     ? `${next.aruco_markers?.length || 1} tag(s) · #${next.aruco_id} · ${Number(next.aruco_distance_m ?? 0).toFixed(2)} m`
     : (next.aruco_status || "none");
+  const planeReadout = $("#plane-readout");
+  if (planeReadout) {
+    const fpsPart = next.plane_enabled && next.plane_fps ? ` · ${Number(next.plane_fps).toFixed(1)} fps` : "";
+    planeReadout.textContent = `${next.plane_status || "disabled"}${fpsPart}`;
+  }
+  const planeModelSel = $("#plane-model-select");
+  if (planeModelSel && Array.isArray(next.plane_available_models)) {
+    const models = next.plane_available_models;
+    const key = models.join(",");
+    if (planeModelSel.dataset.models !== key) {
+      planeModelSel.dataset.models = key;
+      planeModelSel.innerHTML = models.length
+        ? models.map((m) => `<option value="${m}">${m}</option>`).join("")
+        : `<option value="">no models</option>`;
+    }
+    if (next.plane_model && planeModelSel.value !== next.plane_model && models.includes(next.plane_model)) {
+      planeModelSel.value = next.plane_model;
+    }
+    planeModelSel.disabled = !models.length;
+  }
   $("#vision-rate").textContent = `${(next.aruco_fps || 0).toFixed(1)} fps`;
   $("#vision-time").textContent = `${(next.aruco_processing_ms || 0).toFixed(0)} ms · ${next.aruco_result_age_ms ?? "—"} ms`;
 
@@ -267,6 +372,10 @@ $("#auto-park-toggle").addEventListener("click", () => {
 });
 $("#camera-toggle").addEventListener("click", () => send({ type: "camera-capture", enabled: state.camera_enabled === false }));
 $("#aruco-toggle").addEventListener("click", () => send({ type: "aruco", enabled: !state.aruco_enabled, follow: state.aruco_follow ? false : null }));
+$("#plane-toggle")?.addEventListener("click", () => send({ type: "plane", enabled: !state.plane_enabled }));
+$("#plane-model-select")?.addEventListener("change", (event) => {
+  if (event.target.value) send({ type: "plane", model: event.target.value });
+});
 $("#follow-toggle").addEventListener("click", () => send({ type: "aruco", enabled: true, follow: !state.aruco_follow, speed_limit: Number(speed.value) }));
 $("#heading-calibrate").addEventListener("click", () => send({ type: "heading-calibrate" }));
 $("#controller-select")?.addEventListener("change", (event) => send({ type: "controller", controller: event.target.value }));
