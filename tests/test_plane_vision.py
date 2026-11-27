@@ -45,6 +45,20 @@ def test_plane_autopark_search_acquire_orbit_and_safety():
     assert c_err["stop"] is True and c_err["done"] is True
 
 
+def test_plane_autopark_gyro_pi_ramps_on_stall_and_damps_overshoot():
+    ap = PlaneAutoPark(start_t=0.0)
+    # Stalled in SEARCH (gyro=0): turn command should ramp up automatically to break friction
+    turns = []
+    for i in range(1, 20):
+        c = ap.step(i * 0.02, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0)
+        turns.append(c["turn"])
+    assert turns[-1] > turns[0] + 0.1
+
+    # Overshooting target rate (gyro=1.5 rad/s >> 0.55 rad/s): turn command should drop
+    c_over = ap.step(0.42, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=1.5)
+    assert c_over["turn"] < turns[-1]
+
+
 def test_discover_models_finds_pairs_and_yolo(tmp_path: Path):
     for name in ("yolo11n-pose-v1", "kp-v3c", "kp-crop-v3c", "kp-v4", "kp-crop-v4", "kp-orphan"):
         d = tmp_path / name

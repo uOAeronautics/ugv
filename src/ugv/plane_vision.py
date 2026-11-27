@@ -445,6 +445,8 @@ class PlaneAutoPark:
             ),
         )
         self.last_duty = np.zeros(3, dtype=float)
+        self._yaw_int = 0.0
+        self._yaw_sign = 0.0
 
     def prior_for_solver(self) -> np.ndarray | None:
         from .park.geometry import inverse
@@ -517,6 +519,22 @@ class PlaneAutoPark:
             dtype=float,
         )
         duty = self.est.actuator.to_duty(cmd_vel)
+        # Closed-loop IMU gyro PI yaw-rate controller: ramps through static friction / low
+        # battery if the car stalls in SEARCH/ORBIT, and damps overshoot at 50 Hz.
+        w_cmd = float(cmd_vel[2])
+        if abs(w_cmd) < 1e-3:
+            self._yaw_int = 0.0
+            self._yaw_sign = 0.0
+            duty[2] = 0.0
+        else:
+            sgn = 1.0 if w_cmd > 0 else -1.0
+            if self._yaw_sign != 0.0 and sgn != self._yaw_sign:
+                self._yaw_int = 0.0
+            self._yaw_sign = sgn
+            err_w = w_cmd - float(gyro_ccw_rad_s)
+            self._yaw_int = float(np.clip(self._yaw_int + 0.35 * err_w * dt, -0.25, 0.25))
+            d_w = float(duty[2]) + 0.08 * err_w + self._yaw_int
+            duty[2] = float(np.clip(d_w, -DUTY_CAP, DUTY_CAP))
         state = self.ctrl.state
         if state == "PARKED":
             stage, done = "parked", True
