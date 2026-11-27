@@ -177,8 +177,8 @@ class YoloPoseDetector:
     def __init__(
         self,
         model_dir: Path,
-        conf_threshold: float = 0.25,
-        kpt_threshold: float = 0.45,
+        conf_threshold: float = 0.50,
+        kpt_threshold: float = 0.50,
         threads: int = 2,
     ) -> None:
         import onnxruntime as ort
@@ -245,6 +245,10 @@ class YoloPoseDetector:
             for i in range(n_kp)
             if kc[i] >= self.kpt_threshold and 0.0 <= ku[i] <= W and 0.0 <= kv[i] <= H
         ]
+        # Reject weak clutter false positives (e.g. rolling chair/table casters with 2-4 stray pts)
+        # while still keeping close-range bay views (3-4 nose-tyre pts at high object confidence).
+        if len(pts) < 5 and best_score < 0.65:
+            return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
         return Detection(
             pts,
             np.round(kc.astype(np.float64), 3).tolist(),
