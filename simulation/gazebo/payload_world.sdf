@@ -1,0 +1,244 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.9">
+  <world name="payload_lab">
+    <physics name="default" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+    </physics>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands" />
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <scene>
+      <ambient>.65 .65 .65 1</ambient>
+      <background>.84 .88 .9 1</background>
+      <shadows>true</shadows>
+      <grid>false</grid>
+    </scene>
+    <light name="key_light" type="directional">
+      <pose>0 0 3 0 0 0</pose>
+      <diffuse>.85 .85 .85 1</diffuse>
+      <specular>.05 .05 .05 1</specular>
+      <direction>-.4 .3 -1</direction>
+      <cast_shadows>true</cast_shadows>
+    </light>
+    <light name="fill_light" type="directional">
+      <pose>0 0 3 0 0 0</pose>
+      <diffuse>.35 .38 .42 1</diffuse>
+      <specular>.05 .05 .05 1</specular>
+      <direction>.4 -.5 -1</direction>
+      <cast_shadows>false</cast_shadows>
+    </light>
+    <model name="ground">
+      <static>true</static>
+      <link name="ground_link">
+        <visual name="floor_visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>.64 .69 .7 1</ambient>
+            <diffuse>.64 .69 .7 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+        <collision name="floor_collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="metric_test_pad">
+          <pose>0 0 .00025 0 0 0</pose>
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>1.6 1.6</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0 0 0 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>assets/test_pad.png</albedo_map>
+                <roughness>1</roughness>
+                <metalness>0</metalness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="payload_car">
+      <!-- Payload car visual meshes and collision envelopes from measured CAD (simulation/gazebo/payload_dimensions.json). Mass, inertia, N20 motor curves, camera intrinsics and BNO055 IMU noise are UNKNOWN (TODO). -->
+      <!-- Emitted as <static>true</static> (geometry/visual and collision model only) until mass and motor parameters are measured (research/tasks/2026-11-27-characterise-payload-car.md); dynamic links without <inertial> would otherwise receive an implicit 1 kg mass from Gazebo. -->
+      <static>true</static>
+      <pose>0 0 0.001 0 0 0</pose>
+      <link name="chassis">
+        <pose>0 0 0 0 0 0</pose>
+        <!-- TODO: chassis mass/inertia UNKNOWN (UNMEASURED_CHASSIS_MASS_KG_TODO is None) -->
+        <visual name="chassis_visual">
+          <geometry>
+            <mesh>
+              <uri>assets/car/payload_assembly/chassis.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <collision name="fairing_collision">
+          <pose>0.000000 0.000000 0.037041 0.000000 0.000000 0.000000</pose>
+          <geometry>
+            <box>
+              <size>0.100000 0.100000 0.047400</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="m12_lens_collision">
+          <pose>0.060100 0.000000 0.038741 0.000000 1.570796 0.000000</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.006000</radius>
+              <length>0.007000</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <!-- TODO: camera sensor at measured M12 lens front [0.0636, 0.0, 0.038741] m omitted because sensor model and intrinsics are UNKNOWN -->
+        <!-- TODO: BNO055 IMU sensor at measured pose [0.008, 0.0, 0.017491] m omitted because noise profile and mounting matrix are UNKNOWN -->
+      </link>
+      <link name="front_left_wheel">
+        <pose>0.035400 0.063250 0.019941 0.000000 0.000000 0.000000</pose>
+        <!-- TODO: wheel mass/inertia UNKNOWN (UNMEASURED_WHEEL_MASS_KG_TODO is None) -->
+        <visual name="front_left_wheel_visual">
+          <geometry>
+            <mesh>
+              <uri>assets/car/payload_assembly/front_left_wheel.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <collision name="front_left_wheel_collision">
+          <pose>0 0 0 1.570796 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.019950</radius>
+              <length>0.022500</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <joint name="front_left_wheel_joint" type="revolute">
+        <parent>chassis</parent>
+        <child>front_left_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit>
+        </axis>
+      </joint>
+      <link name="front_right_wheel">
+        <pose>0.035400 -0.063250 0.019941 0.000000 0.000000 0.000000</pose>
+        <!-- TODO: wheel mass/inertia UNKNOWN (UNMEASURED_WHEEL_MASS_KG_TODO is None) -->
+        <visual name="front_right_wheel_visual">
+          <geometry>
+            <mesh>
+              <uri>assets/car/payload_assembly/front_right_wheel.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <collision name="front_right_wheel_collision">
+          <pose>0 0 0 1.570796 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.019950</radius>
+              <length>0.022500</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <joint name="front_right_wheel_joint" type="revolute">
+        <parent>chassis</parent>
+        <child>front_right_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit>
+        </axis>
+      </joint>
+      <link name="rear_left_wheel">
+        <pose>-0.035400 0.063250 0.019941 0.000000 0.000000 0.000000</pose>
+        <!-- TODO: wheel mass/inertia UNKNOWN (UNMEASURED_WHEEL_MASS_KG_TODO is None) -->
+        <visual name="rear_left_wheel_visual">
+          <geometry>
+            <mesh>
+              <uri>assets/car/payload_assembly/rear_left_wheel.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <collision name="rear_left_wheel_collision">
+          <pose>0 0 0 1.570796 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.019950</radius>
+              <length>0.022500</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <joint name="rear_left_wheel_joint" type="revolute">
+        <parent>chassis</parent>
+        <child>rear_left_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit>
+        </axis>
+      </joint>
+      <link name="rear_right_wheel">
+        <pose>-0.035400 -0.063250 0.019941 0.000000 0.000000 0.000000</pose>
+        <!-- TODO: wheel mass/inertia UNKNOWN (UNMEASURED_WHEEL_MASS_KG_TODO is None) -->
+        <visual name="rear_right_wheel_visual">
+          <geometry>
+            <mesh>
+              <uri>assets/car/payload_assembly/rear_right_wheel.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <collision name="rear_right_wheel_collision">
+          <pose>0 0 0 1.570796 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.019950</radius>
+              <length>0.022500</length>
+            </cylinder>
+          </geometry>
+        </collision>
+      </link>
+      <joint name="rear_right_wheel_joint" type="revolute">
+        <parent>chassis</parent>
+        <child>rear_right_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit>
+        </axis>
+      </joint>
+    </model>
+  </world>
+</sdf>

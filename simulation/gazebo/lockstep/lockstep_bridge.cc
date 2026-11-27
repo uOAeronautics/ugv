@@ -62,6 +62,14 @@ int main(int argc, char **argv) {
   }
   const std::string world = argv[1];
   model = argv[2];
+  if (model == "payload_car" || world == "payload_lab") {
+    std::cerr << "payload car has no measured mass or motor model "
+                 "(research/tasks/2026-11-27-characterise-payload-car.md); "
+                 "regenerate with `python3 generate.py --car freenove ...` "
+                 "to drive the archived Freenove car"
+              << std::endl;
+    return 2;
+  }
   const double stepS = std::stod(argv[3]);
   gz::transport::Node node;
   auto duty = node.Advertise<gz::msgs::Double_V>("/model/" + model + "/wheel_duty");

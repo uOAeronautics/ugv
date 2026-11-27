@@ -3,6 +3,7 @@ Run with simulation/gazebo/.control-venv/bin/python simulation/gazebo/check_meca
 Does not actuate hardware or establish real-car dynamics calibration.
 """
 
+import argparse
 import json
 import math
 import os
@@ -17,6 +18,12 @@ sys.path.insert(0, str(p))
 import uuid
 
 from build_motor_plugin import plugin_environment
+from drive_guard import require_drivable_car
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--world", type=Path, default=p / "freenove_world.sdf")
+args = parser.parse_args()
+require_drivable_car(world=args.world)
 
 os.environ["GZ_PARTITION"] = "ugv-tt-check-" + uuid.uuid4().hex
 env = plugin_environment()
@@ -56,7 +63,7 @@ n.subscribe(Double_V, "/model/freenove/motor_state", motors)
 (p / ".control-logs").mkdir(exist_ok=True)
 log = (p / ".control-logs/mecanum-car-check.log").open("w")
 proc = subprocess.Popen(
-    ["gz", "sim", "-s", "-r", "-v", "3", str(p / "freenove_world.sdf")],
+    ["gz", "sim", "-s", "-r", "-v", "3", str(args.world)],
     cwd=p,
     env=env,
     stdout=log,
@@ -144,7 +151,7 @@ try:
     assert max_torque <= load_profile()["stall_nm"] + 1e-8
     import xml.etree.ElementTree as E
 
-    calibration = E.parse(p / "freenove_world.sdf").find(
+    calibration = E.parse(args.world).find(
         './/model[@name="freenove"]/plugin[@name="ugv::TTMotorSystem"]'
     )
     report = dict(

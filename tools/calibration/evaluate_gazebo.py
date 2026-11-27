@@ -19,9 +19,12 @@ GAZEBO = ROOT / "simulation/gazebo"
 sys.path.insert(0, str(GAZEBO))
 from build_motor_plugin import plugin_environment
 from commands import wheel_duties
+from drive_guard import require_drivable_car
 
 
 def run(args):
+    world_src = Path(getattr(args, "world", None) or (GAZEBO / "freenove_world.sdf"))
+    require_drivable_car(world=world_src)
     os.environ["GZ_PARTITION"] = "ugv-pwm-fit-" + uuid.uuid4().hex
     from gz.msgs.boolean_pb2 import Boolean
     from gz.msgs.double_v_pb2 import Double_V
@@ -35,7 +38,7 @@ def run(args):
         getattr(args, key, None) is not None for key in ("arc_scale", "forward_tau")
     ):
         raise ValueError("--arc-scale and --forward-tau require --profile")
-    root = E.parse(GAZEBO / "freenove_world.sdf")
+    root = E.parse(world_src)
     plugin = root.find('.//plugin[@name="ugv::TTMotorSystem"]')
     if not args.profile:
         for key in ("empirical_pwm_map", "pwm_rise_tau"):
@@ -338,6 +341,7 @@ def run(args):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
+    p.add_argument("--world", type=Path, default=GAZEBO / "freenove_world.sdf")
     p.add_argument("--left", type=float, default=1.475)
     p.add_argument("--right", type=float, default=1.475)
     p.add_argument("--forward-tau", type=float)

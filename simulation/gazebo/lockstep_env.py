@@ -23,6 +23,7 @@ if str(REPO / "src") not in sys.path:
     sys.path.insert(0, str(REPO / "src"))
 
 from build_motor_plugin import plugin_environment  # noqa: E402
+from drive_guard import require_drivable_car  # noqa: E402
 
 from ugv.staged_baseline import GAZEBO_GEOMETRY, mix  # noqa: E402
 
@@ -200,6 +201,7 @@ class Sensors:
 
 # ---------------- Gazebo process + bridge ----------------
 def headless_world(src: Path, dst: Path):
+    require_drivable_car(world=src)
     root = E.parse(src)
     for world in root.findall("world"):
         for plugin in list(world.findall("plugin")):
@@ -211,7 +213,9 @@ def headless_world(src: Path, dst: Path):
     car = root.find(f".//model[@name='{MODEL}']")
     drive = car.find("plugin[@name='ugv::TTMotorSystem']")
     if drive is None or drive.findtext("mecanum") != "true":
-        raise SystemExit("world must use the physical mecanum motor plugin (generate.py --drone)")
+        raise SystemExit(
+            "world must use the physical mecanum motor plugin (generate.py --car freenove --drone)"
+        )
     # The odometry publisher's TF also uses /model/<name>/pose (odom frame, unstamped);
     # remove it so the topic carries only stamped world poses.
     for plugin in list(car.findall("plugin")):
@@ -237,6 +241,7 @@ def headless_world(src: Path, dst: Path):
 
 class Gazebo:
     def __init__(self, world: Path, log: Path):
+        require_drivable_car(world=world)
         if not BRIDGE.exists():
             raise FileNotFoundError(f"build {BRIDGE} first (see lockstep/CMakeLists.txt)")
         part = "ugv-l6-" + uuid.uuid4().hex

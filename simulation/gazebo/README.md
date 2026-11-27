@@ -1,5 +1,15 @@
 # UGV Gazebo simulation
 
+> **Vehicle swap (2026-11-27):** `generate.py` now defaults to the new compact `payload_car`
+> converted from `Payload Assembly.usdz` (see [CAR_MODEL.md](CAR_MODEL.md) and
+> `payload_dimensions.json`). Because mass, inertia, N20 motor curves, camera intrinsics and
+> BNO055 IMU noise are still unmeasured (`research/tasks/2026-11-27-characterise-payload-car.md`),
+> `payload_car` is emitted as `<static>true</static>` (geometry/visual and collision model only).
+> **Driving, control-panel, lockstep, and physics tools require the archived Freenove car for now**:
+> pass `--car freenove` (e.g. `python3 generate.py --car freenove ...`,
+> `./launch_drone.command --car freenove`, `./launch_lab.command --car freenove`;
+> see `docs/archive/2026-11-27-freenove-car.md`).
+
 ## Reconstructed lab room
 
 `launch_lab.command` opens the combined video-informed **24 × 12m robotics
@@ -11,9 +21,11 @@ Individual furniture collisions preserve the approach corridor to the drone.
 Exact placements beyond the supplied room dimensions are estimates.
 
 ```sh
-./launch_lab.command
+./launch_lab.command                  # static payload_car (visual/collision only)
+./launch_lab.command --car freenove   # archived drivable Freenove car
 # Generate/validate without launching the GUI:
 python3 generate.py --room --drone --output lab_docking_world.sdf
+python3 generate.py --car freenove --room --drone --output lab_docking_world.sdf
 gz sdf -k lab_docking_world.sdf
 # Render a roof-removed overview and a complete interior view:
 blender -b --python render_drone.py -- "$PWD/preview/room" --room
@@ -60,17 +72,19 @@ layout (2026-11-13; fourth -y tag omitted because wires obscure its ID), with
 Open `launch_drone.command` in Finder, or run from this directory:
 
 ```sh
-./launch_drone.command
+./launch_drone.command                # static payload_car (visual/collision only)
+./launch_drone.command --car freenove # archived drivable Freenove car
 ```
 
 This generates `drone_docking_world.sdf` and starts Gazebo with a wider scene
-view. The existing UGV starts at the origin facing +X; the drone is 0.75m ahead,
+view (pass `--car freenove` if you want to drive the car). The existing UGV starts at the origin facing +X; the drone is 0.75m ahead,
 with its skids along X. The center approach is open. The default car-only world
 and control launcher remain available. To generate and validate without opening
 the GUI:
 
 ```sh
 python3 generate.py --drone --output drone_docking_world.sdf
+python3 generate.py --car freenove --drone --output drone_docking_world.sdf
 gz sdf -k drone_docking_world.sdf
 python3 -m unittest discover -s . -p test_drone_model.py
 ```
@@ -146,13 +160,16 @@ Existing `docs/HARDWARE.md` records a 210mm wheelbase and 149mm track from
 2026-09-27. Those cannot fit this new overall envelope and are preserved as
 historical measurements. This model uses the new sketch separately.
 
-## Generate and run
+## Generate and run (drivable archived Freenove model)
+
+> Driving requires `--car freenove` until `payload_car` mass and motor parameters are measured
+> (`research/tasks/2026-11-27-characterise-payload-car.md`).
 
 Edit `dimensions.json`, then use Python 3:
 
 ```sh
 cd simulation/gazebo  # from the repository root
-python3 generate.py
+python3 generate.py --car freenove
 gz sdf -k freenove_world.sdf
 python3 build_motor_plugin.py
 export GZ_SIM_SYSTEM_PLUGIN_PATH="$PWD/plugins/build:$GZ_SIM_SYSTEM_PLUGIN_PATH"

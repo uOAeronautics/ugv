@@ -10,6 +10,7 @@ from pathlib import Path
 from build_motor_plugin import plugin_environment
 from camera_stream import CameraStream
 from control_state import ControlState
+from drive_guard import require_drivable_car
 from gz.msgs.boolean_pb2 import Boolean
 from gz.msgs.double_v_pb2 import Double_V
 from gz.msgs.image_pb2 import Image
@@ -26,7 +27,10 @@ HERE = Path(__file__).resolve().parent
 
 
 class GazeboBridge:
-    def __init__(self):
+    def __init__(self, world_path: Path | None = None):
+        self.world_path = (
+            Path(world_path) if world_path is not None else HERE / "freenove_world.sdf"
+        )
         self.control = ControlState()
         self.camera = CameraStream()
         self.imu = RecordedImu()
@@ -35,6 +39,7 @@ class GazeboBridge:
         )
         self.imu_received_at = 0.0
         self.node = Node()
+        require_drivable_car(world=self.world_path, topics=self.node.topic_list())
         self.publisher = self.node.advertise("/model/freenove/cmd_vel", Twist)
         self.duty_publisher = self.node.advertise("/model/freenove/wheel_duty", Double_V)
         self.lock = threading.Lock()
@@ -156,6 +161,7 @@ class GazeboBridge:
             self.imu.request_calibration()
             return
         if action == "launch":
+            require_drivable_car(world=self.world_path, topics=self.node.topic_list())
             if self.status()["online"] or self.process and self.process.poll() is None:
                 return
             logs = HERE / ".control-logs"
@@ -168,7 +174,7 @@ class GazeboBridge:
                         "-r",
                         "--gui-config",
                         str(HERE / "car_gui.config"),
-                        str(HERE / "freenove_world.sdf"),
+                        str(self.world_path),
                     ],
                     cwd=HERE,
                     stdout=output,

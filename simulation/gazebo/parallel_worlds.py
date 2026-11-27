@@ -35,10 +35,15 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
 RUNNER = HERE / "run_policy_episodes.py"
+
+from drive_guard import require_drivable_car  # noqa: E402
 
 
 def run_shard(sh: dict, out_root: Path, max_time: float) -> dict:
+    require_drivable_car(car=sh.get("car"), world=sh.get("world"))
     name = sh["name"]
     out = out_root / name
     out.mkdir(parents=True, exist_ok=True)
@@ -129,11 +134,14 @@ def aggregate(recs: list[dict]) -> dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--plan", type=Path, default=None)
+    ap.add_argument("--world", type=Path, default=HERE / "drone_docking_world.sdf")
+    ap.add_argument("--car", choices=("freenove", "payload"), default=None)
     ap.add_argument("--out", type=Path, default=REPO / "rl/runs/gazebo_l6/parallel")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--max-time", type=float, default=45.0)
     ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args()
+    require_drivable_car(world=a.world, car=a.car)
     if a.smoke:
         shards = [
             {

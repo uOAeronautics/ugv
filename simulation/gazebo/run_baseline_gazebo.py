@@ -30,6 +30,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path[:0] = [str(HERE), str(REPO / "src")]
 
+from drive_guard import require_drivable_car  # noqa: E402
 from lockstep_env import (  # noqa: E402
     BRIDGE,
     DT,
@@ -128,10 +129,16 @@ def main():
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--max-time", type=float, default=45.0)
     ap.add_argument(
+        "--car",
+        choices=("payload", "freenove"),
+        default=None,
+        help="Vehicle model when auto-generating a missing --world (requires freenove to drive)",
+    )
+    ap.add_argument(
         "--world",
         type=Path,
         default=REPO / "rl/runs/gazebo_l6/world_generated.sdf",
-        help="output of generate.py --drone (regenerated if missing)",
+        help="output of generate.py --car freenove --drone (regenerated if missing)",
     )
     ap.add_argument("--out", type=Path, default=REPO / "rl/runs/gazebo_l6")
     ap.add_argument(
@@ -154,15 +161,28 @@ def main():
         help="per-episode 10-25 deg card roll/pitch randomization on --sensing camera frames",
     )
     a = ap.parse_args()
+    if a.car is not None:
+        require_drivable_car(car=a.car)
     a.out.mkdir(parents=True, exist_ok=True)
     if not BRIDGE.exists():
         raise SystemExit(f"build {BRIDGE} first (see lockstep/CMakeLists.txt)")
     if not a.world.exists():
+        car = a.car or "payload"
+        require_drivable_car(car=car)
         subprocess.run(
-            [sys.executable, str(HERE / "generate.py"), "--drone", "--output", str(a.world)],
+            [
+                sys.executable,
+                str(HERE / "generate.py"),
+                "--car",
+                car,
+                "--drone",
+                "--output",
+                str(a.world),
+            ],
             check=True,
             cwd=HERE,
         )
+    require_drivable_car(world=a.world)
     world = a.out / "world_headless.sdf"
     headless_world(a.world, world)
     name = f"baseline_gazebo_{a.level}"

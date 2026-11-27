@@ -7,12 +7,20 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "tools/calibration"))
+from drive_guard import require_drivable_car
 from evaluate_gazebo import run
+
+cli = argparse.ArgumentParser(description=__doc__)
+cli.add_argument("--world", type=Path, default=HERE / "freenove_world.sdf")
+cli_args = cli.parse_args()
+require_drivable_car(world=cli_args.world)
 
 reference = json.loads((HERE / "lap_reference.json").read_text())
 output = HERE / ".control-logs/lap-regression.json"
 args = argparse.Namespace(
+    world=cli_args.world,
     profile=True,
     reset_between=False,
     keys="",

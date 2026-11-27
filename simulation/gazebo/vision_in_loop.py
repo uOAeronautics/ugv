@@ -32,6 +32,7 @@ if str(HERE) not in sys.path:
 if str(REPO / "src") not in sys.path:
     sys.path.insert(0, str(REPO / "src"))
 
+from drive_guard import require_drivable_car  # noqa: E402
 from lockstep_env import DT, Sensors  # noqa: E402
 
 from ugv.aruco import (  # noqa: E402
@@ -435,7 +436,10 @@ class VisionSensors:
         photometric: bool = True,
         layout: str = DEFAULT_LAYOUT,
         randomize_tilt: bool = False,
+        car: str = "freenove",
+        world: Path | str | None = None,
     ):
+        require_drivable_car(car=car, world=world)
         self.base = Sensors(level, rng, max_time, init_pose=init_pose)
         self.enabled = True
         self.layout = layout
@@ -489,8 +493,15 @@ class VisionSensors:
         return self.base.gyro(w_true)
 
 
-def selftest(layout: str = DEFAULT_LAYOUT, randomize_tilt: bool = False, seed: int = 0) -> dict:
+def selftest(
+    layout: str = DEFAULT_LAYOUT,
+    randomize_tilt: bool = False,
+    seed: int = 0,
+    car: str = "freenove",
+    world: Path | str | None = None,
+) -> dict:
     """Render/decode round-trip at known poses (no DR) + DR decode smoke."""
+    require_drivable_car(car=car, world=world)
     decode_m = marker_world_poses(layout)
     render_m = (
         marker_world_poses(layout, randomize_tilt=True, rng=np.random.default_rng(seed))

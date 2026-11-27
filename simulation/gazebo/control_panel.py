@@ -3,6 +3,7 @@
 import argparse
 import json
 import signal
+import sys
 import threading
 import webbrowser
 from functools import partial
@@ -12,6 +13,10 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from drive_guard import require_drivable_car  # noqa: E402
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -77,7 +82,7 @@ class Handler(SimpleHTTPRequestHandler):
                 self.server.bridge.action(message["action"])
                 return self.reply({"ok": True})
             return self.reply({"error": "Not found"}, 404)
-        except (ValueError, KeyError, TypeError) as error:
+        except (ValueError, KeyError, TypeError, RuntimeError) as error:
             return self.reply({"error": str(error)}, 400)
 
 
@@ -85,7 +90,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8767)
     parser.add_argument("--no-browser", action="store_true")
+    parser.add_argument("--world", type=Path, default=HERE / "freenove_world.sdf")
     args = parser.parse_args()
+    require_drivable_car(world=args.world)
     url = f"http://127.0.0.1:{args.port}"
     try:
         with urlopen(url + "/api/status", timeout=0.3) as response:
@@ -105,7 +112,7 @@ def main():
         server = ThreadingHTTPServer(("127.0.0.1", args.port), handler)
     except OSError as error:
         parser.error(f"Could not open {url}: {error}")
-    bridge = GazeboBridge()
+    bridge = GazeboBridge(world_path=args.world)
     server.bridge = bridge
     signal.signal(signal.SIGTERM, lambda *_: threading.Thread(target=server.shutdown).start())
     print(f"UGV simulation controls: {url}", flush=True)

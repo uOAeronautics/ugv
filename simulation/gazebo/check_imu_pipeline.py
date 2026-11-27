@@ -1,5 +1,6 @@
 """Live headless validation of Gazebo IMU -> recorded noise -> production heading."""
 
+import argparse
 import json
 import math
 import os
@@ -13,13 +14,19 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+from drive_guard import require_drivable_car
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--world", type=Path, default=HERE / "freenove_world.sdf")
+args = parser.parse_args()
+require_drivable_car(world=args.world)
 os.environ["GZ_PARTITION"] = "ugv-imu-check-" + uuid.uuid4().hex
 from build_motor_plugin import plugin_environment
 from gazebo_bridge import GazeboBridge
 from gz.msgs.imu_pb2 import IMU
 from gz.msgs.stringmsg_pb2 import StringMsg
 
-bridge = GazeboBridge()
+bridge = GazeboBridge(world_path=args.world)
 raw = []
 noisy = []
 nano = []
@@ -70,7 +77,7 @@ def drive(keys, duration):
 
 log = (HERE / ".control-logs/imu-pipeline.log").open("w")
 proc = subprocess.Popen(
-    ["gz", "sim", "-s", "-r", str(HERE / "freenove_world.sdf")],
+    ["gz", "sim", "-s", "-r", str(args.world)],
     env=plugin_environment(),
     stdout=log,
     stderr=subprocess.STDOUT,

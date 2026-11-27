@@ -7,6 +7,8 @@ is preserved in the JSON profile; only explicitly supported fields enter SDF.
 import math
 import xml.etree.ElementTree as E
 
+from drive_guard import require_drivable_car
+
 MOTOR_FIELDS = (
     "wheel_duty_exponent",
     "wheel_voltage_gain",
@@ -25,6 +27,7 @@ MOTOR_FIELDS = (
 
 def apply_native_parameters(root, profile):
     """Mutate an ElementTree/Element; return the exact supported parameter set."""
+    require_drivable_car(world=root)
     params = profile.get("gazebo_motor_parameters", profile)
     drive = root.find('.//model[@name="freenove"]/plugin[@name="ugv::TTMotorSystem"]')
     if drive is None:
@@ -99,6 +102,7 @@ def apply_native_parameters(root, profile):
 
 def extract_native_parameters(root):
     """Record explicit native parameters embedded in an existing world."""
+    require_drivable_car(world=root)
     drive = root.find('.//model[@name="freenove"]/plugin[@name="ugv::TTMotorSystem"]')
     if drive is None:
         raise ValueError("Native motor plugin missing")

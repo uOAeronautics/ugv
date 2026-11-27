@@ -1,5 +1,6 @@
 """Isolated live Gazebo regression: requires the control panel Python environment."""
 
+import argparse
 import json
 import math
 import os
@@ -14,6 +15,12 @@ sys.path.insert(0, str(p))
 import uuid
 
 from build_motor_plugin import plugin_environment
+from drive_guard import require_drivable_car
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--world", type=Path, default=p / "freenove_world.sdf")
+args = parser.parse_args()
+require_drivable_car(world=args.world)
 
 os.environ["GZ_PARTITION"] = "ugv-tt-check-" + uuid.uuid4().hex
 env = plugin_environment()
@@ -52,7 +59,7 @@ n.subscribe(Double_V, "/model/freenove/motor_state", motors)
 (p / ".control-logs").mkdir(exist_ok=True)
 log = (p / ".control-logs/physics-check.log").open("w")
 proc = subprocess.Popen(
-    ["gz", "sim", "-s", "-r", "-v", "3", str(p / "freenove_world.sdf")],
+    ["gz", "sim", "-s", "-r", "-v", "3", str(args.world)],
     cwd=p,
     env=env,
     stdout=log,

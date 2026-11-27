@@ -41,8 +41,10 @@ L2 HARDWARE.md + COMMANDS.md + DASHBOARD.md
 - [`docs/L7_FIELD_NOTES.md`](L7_FIELD_NOTES.md) — 2026-11-13 L7 real-car field test results, plant ID, and camera/tag notes.
 - [`docs/STATE_MACHINES.md`](STATE_MACHINES.md) — audit of implicit state machines, what is now an explicit `Machine`, ranked open items.
 - [`docs/archive/STATE_HISTORY.md`](archive/STATE_HISTORY.md) — archived dated state snapshots (`2026-08-29`..`2026-10-17`).
+- [`docs/archive/2026-11-27-freenove-car.md`](archive/2026-11-27-freenove-car.md) — archived Freenove 4WD mecanum car summary and preserved calibration pointers.
 - [`docs/archive/council_2026-11-14/`](archive/council_2026-11-14/) — 2026-11-14 council reports; 03, 06, 07 and 08 are prior analysis for `POSE.md`.
-- [`simulation/gazebo/README.md`](../simulation/gazebo/README.md) — Gazebo Freenove/drone/lab models, Blender previews, and keyboard console.
+- [`simulation/gazebo/README.md`](../simulation/gazebo/README.md) — Gazebo payload/Freenove, drone, and lab models, Blender previews, and keyboard console.
+- [`simulation/gazebo/CAR_MODEL.md`](../simulation/gazebo/CAR_MODEL.md) — payload car CAD conversion, Gazebo frame, measured dimensions, and unmeasured hardware TODOs.
 - [`simulation/gazebo/MECANUM_MECHANICS.md`](../simulation/gazebo/MECANUM_MECHANICS.md) — passive mecanum roller geometry, native plugin params, and replay commands.
 - [`simulation/gazebo/MECANUM_REAL2SIM.md`](../simulation/gazebo/MECANUM_REAL2SIM.md) — native mecanum Gazebo candidate `pilot02_v1` metrics and limitations.
 - [`simulation/gazebo/CAMERA_MODEL.md`](../simulation/gazebo/CAMERA_MODEL.md) — simulated monochrome camera geometry, intrinsics, and browser checks.

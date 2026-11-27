@@ -87,6 +87,7 @@ All run with `uv run --no-project --python 3.12 --with trimesh --with numpy --wi
 | Launch drone docking Gazebo scene | `simulation/gazebo/launch_drone.command` |
 | Launch reconstructed 24×12 m lab Gazebo scene | `simulation/gazebo/launch_lab.command` |
 | Generate SDF world files (`freenove`, `drone`, `room`) | `simulation/gazebo/generate.py` |
+| Convert payload car USDZ CAD to Gazebo meshes + measured dims | `simulation/gazebo/convert_payload_usd.py` |
 | Build native `ugv::TTMotorSystem` C++ Gazebo plugin | `simulation/gazebo/build_motor_plugin.py` |
 | Browser drive console backend (FastAPI + gz-transport) | `simulation/gazebo/control_panel.py` |
 | Bounded simulation-only drive demo | `simulation/gazebo/demo_drive.py` |

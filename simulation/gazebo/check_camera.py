@@ -16,6 +16,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+from drive_guard import require_drivable_car
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--output", type=Path, default=HERE / ".control-logs")
+parser.add_argument("--world", type=Path, default=HERE / "freenove_world.sdf")
+args = parser.parse_args()
+require_drivable_car(world=args.world)
 os.environ["GZ_PARTITION"] = "ugv-camera-check-" + uuid.uuid4().hex
 from build_motor_plugin import plugin_environment
 from camera_model import camera_geometry, load_camera
@@ -24,13 +31,10 @@ from gz.msgs.camera_info_pb2 import CameraInfo
 from gz.msgs.image_pb2 import Image
 from gz.transport import Node
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--output", type=Path, default=HERE / ".control-logs")
-args = parser.parse_args()
 p = load_camera()
 dims = json.loads((HERE / "dimensions.json").read_text())
 g = camera_geometry(dims, p)
-root = E.parse(HERE / "freenove_world.sdf")
+root = E.parse(args.world)
 world = root.find("world")
 model = E.SubElement(world, "model", name="temporary_camera_target")
 E.SubElement(model, "static").text = "true"

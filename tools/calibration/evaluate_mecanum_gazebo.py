@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[2]
 GAZEBO = ROOT / "simulation/gazebo"
 sys.path[:0] = [str(GAZEBO), str(ROOT / "src")]
 from build_motor_plugin import plugin_environment
+from drive_guard import require_drivable_car
 from mecanum_fit import extract, extract_visual_segments
 from native_motor_parameters import apply_native_parameters, extract_native_parameters
 
@@ -131,6 +132,7 @@ def enrich_metrics(output, traces):
 
 
 def run(args):
+    require_drivable_car(world=args.world)
     trials, mount = extract(args.folder)
     visual_segments, _ = extract_visual_segments(args.folder)
     if args.split != "all":

@@ -3,6 +3,7 @@ Run with .control-venv/bin/python check_mecanum_physics.py.
 Uses a simple 550 g rigid probe body to isolate roller handedness/contact.
 """
 
+import argparse
 import json
 import math
 import sys
@@ -12,8 +13,15 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 (HERE / ".control-logs").mkdir(exist_ok=True)
+from drive_guard import require_drivable_car
 from generate import node
 from mecanum_geometry import add_passive_rollers
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--car", choices=("freenove", "payload"), default="freenove")
+parser.add_argument("--world", type=Path, default=None)
+args = parser.parse_args()
+require_drivable_car(car=args.car, world=args.world)
 
 root = E.Element("sdf", version="1.9")
 world = node(root, "world", name="freenove_lab")
@@ -63,6 +71,7 @@ plugin = node(model, "plugin", filename="ugv_tt_motor", name="ugv::TTMotorSystem
 node(plugin, "mecanum", "true")
 node(plugin, "wheelbase", 0.1397)
 node(plugin, "wheel_separation", 0.14)
+require_drivable_car(world=root)
 E.ElementTree(root).write(HERE / ".control-logs/mecanum_probe.sdf")
 
 """Isolated live Gazebo regression: requires the control panel Python environment."""

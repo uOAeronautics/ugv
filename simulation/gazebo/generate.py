@@ -1,4 +1,4 @@
-"""Generate a photo-informed Freenove visual model; stdlib only, SI in SDF."""
+"""Generate Gazebo worlds for the payload car (default) or archived Freenove; stdlib only, SI in SDF."""
 
 import argparse
 import hashlib
@@ -12,6 +12,7 @@ from environment import add_environment
 from mass_properties import properties
 from motor_physics import add_rubber_surface, add_visual_material, load_profile
 from native_motor_parameters import apply_native_parameters
+from payload_car_model import add_payload_car
 
 HERE = Path(__file__).resolve().parent
 
@@ -23,35 +24,7 @@ def node(parent, tag, text=None, **attrs):
     return el
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--drone", action="store_true", help="Add the photo-informed drone docking target"
-    )
-    parser.add_argument(
-        "--marker-layout",
-        choices=("real", "legacy"),
-        default="real",
-        help="Drone ArUco marker layout (real=14/6/3, legacy=9/12/13/14)",
-    )
-    parser.add_argument(
-        "--room", action="store_true", help="Add the photo-informed 24 by 12 metre lab"
-    )
-    default_profile = HERE / "mecanum_native_profile_pilot02_v1.json"
-    motors = parser.add_mutually_exclusive_group()
-    motors.add_argument(
-        "--motor-profile",
-        type=Path,
-        default=default_profile if default_profile.exists() else None,
-        help="Native motor/contact candidate JSON; defaults to pilot02-v1 when available",
-    )
-    motors.add_argument(
-        "--nominal-motors",
-        action="store_true",
-        help="Use reference motor assumptions instead of the candidate calibration",
-    )
-    parser.add_argument("--output", type=Path, default=HERE / "freenove_world.sdf")
-    args = parser.parse_args()
+def _add_freenove_car(world, root, args, room_config):
     p = json.loads((HERE / "dimensions.json").read_text())
     motor = load_profile()
     empirical = json.loads((HERE / "real_robot_profile.json").read_text())
@@ -73,37 +46,7 @@ def main():
     wheelbase = overall - diameter
     groups = assembly(p)
     masses, total = properties(p, groups)
-    root = E.Element("sdf", version="1.9")
-    world = node(root, "world", name="freenove_lab")
-    physics = node(world, "physics", name="default", type="ignored")
-    node(physics, "max_step_size", 0.001)
-    node(physics, "real_time_factor", 1)
-    for name, cls in [
-        ("physics", "Physics"),
-        ("user-commands", "UserCommands"),
-        ("scene-broadcaster", "SceneBroadcaster"),
-        ("imu", "Imu"),
-    ]:
-        node(world, "plugin", filename=f"gz-sim-{name}-system", name=f"gz::sim::systems::{cls}")
-    sensors = node(
-        world, "plugin", filename="gz-sim-sensors-system", name="gz::sim::systems::Sensors"
-    )
-    node(sensors, "render_engine", "ogre2")
-    add_environment(world, node, floor=not args.room)
-    if args.room:
-        from room_model import add_room
 
-        add_room(world, node)
-    room_config = json.loads((HERE / "room_dimensions.json").read_text()) if args.room else {}
-    if args.drone:
-        from drone_model import add_drone
-
-        add_drone(
-            world,
-            node,
-            pose=room_config.get("drone_pose", (0.75, 0, 0, 0, 0, 0)),
-            layout=args.marker_layout,
-        )
     model = node(world, "model", name="freenove")
     node(model, "pose", " ".join(map(str, room_config.get("ugv_pose", (0, 0, 0.001, 0, 0, 0)))))
 
@@ -246,14 +189,132 @@ def main():
         )
     else:
         node(drive, "calibration_status", "NOMINAL_REFERENCE_PARAMETERS_UNCALIBRATED")
+    return total, wheelbase, track, tire
+
+
+def build_world(args) -> tuple[E.Element, str]:
+    root = E.Element("sdf", version="1.9")
+    world_name = "payload_lab" if args.car == "payload" else "freenove_lab"
+    world = node(root, "world", name=world_name)
+    physics = node(world, "physics", name="default", type="ignored")
+    node(physics, "max_step_size", 0.001)
+    node(physics, "real_time_factor", 1)
+    for name, cls in [
+        ("physics", "Physics"),
+        ("user-commands", "UserCommands"),
+        ("scene-broadcaster", "SceneBroadcaster"),
+        ("imu", "Imu"),
+    ]:
+        node(world, "plugin", filename=f"gz-sim-{name}-system", name=f"gz::sim::systems::{cls}")
+    sensors = node(
+        world, "plugin", filename="gz-sim-sensors-system", name="gz::sim::systems::Sensors"
+    )
+    node(sensors, "render_engine", "ogre2")
+    add_environment(world, node, floor=not args.room)
+    if args.room:
+        from room_model import add_room
+
+        add_room(world, node)
+    room_config = json.loads((HERE / "room_dimensions.json").read_text()) if args.room else {}
+    if args.drone:
+        from drone_model import add_drone
+
+        add_drone(
+            world,
+            node,
+            pose=room_config.get("drone_pose", (0.75, 0, 0, 0, 0, 0)),
+            layout=args.marker_layout,
+        )
+    if args.car == "payload":
+        _, dims = add_payload_car(
+            world,
+            node,
+            pose=tuple(room_config.get("ugv_pose", (0, 0, 0.001, 0, 0, 0))),
+            chassis_mass_kg=args.chassis_mass_kg,
+            wheel_mass_kg=args.wheel_mass_kg,
+            require_measured_physics=args.require_measured_physics,
+        )
+        summary = (
+            f"Generated payload_car: L={dims['overall_length_m'] * 1000:.2f}mm, "
+            f"W={dims['overall_width_m'] * 1000:.2f}mm, H={dims['overall_height_m'] * 1000:.2f}mm, "
+            f"wheelbase={dims['wheelbase_m'] * 1000:.2f}mm, track={dims['wheel_track_m'] * 1000:.2f}mm, "
+            f"wheel_d={dims['wheel_diameter_m'] * 1000:.2f}mm"
+        )
+    else:
+        total, wheelbase, track, tire = _add_freenove_car(world, root, args, room_config)
+        summary = (
+            f"Mass: {total['mass'] * 1000:.1f} g; assembly COM (mm): "
+            f"{[round(v * 1000, 3) for v in total['center']]}\n"
+            f"Generated freenove: wheelbase={wheelbase * 1000:.2f}mm, "
+            f"track={track * 1000:.2f}mm, tire width={tire * 1000:.2f}mm"
+        )
+    return root, summary
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--car",
+        choices=("payload", "freenove"),
+        default="payload",
+        help="Vehicle model to place in the world (default: payload)",
+    )
+    parser.add_argument(
+        "--drone", action="store_true", help="Add the photo-informed drone docking target"
+    )
+    parser.add_argument(
+        "--marker-layout",
+        choices=("real", "legacy"),
+        default="real",
+        help="Drone ArUco marker layout (real=14/6/3, legacy=9/12/13/14)",
+    )
+    parser.add_argument(
+        "--room", action="store_true", help="Add the photo-informed 24 by 12 metre lab"
+    )
+    parser.add_argument(
+        "--chassis-mass-kg",
+        type=float,
+        default=None,
+        help="Measured payload car chassis mass in kg (TODO: unmeasured)",
+    )
+    parser.add_argument(
+        "--wheel-mass-kg",
+        type=float,
+        default=None,
+        help="Measured payload car single-wheel mass in kg (TODO: unmeasured)",
+    )
+    parser.add_argument(
+        "--require-measured-physics",
+        action="store_true",
+        help="Fail if payload car mass/inertia have not been measured",
+    )
+    default_profile = HERE / "mecanum_native_profile_pilot02_v1.json"
+    motors = parser.add_mutually_exclusive_group()
+    motors.add_argument(
+        "--motor-profile",
+        type=Path,
+        default=default_profile if default_profile.exists() else None,
+        help="Freenove native motor/contact candidate JSON (--car freenove only)",
+    )
+    motors.add_argument(
+        "--nominal-motors",
+        action="store_true",
+        help="Use Freenove reference motor assumptions (--car freenove only)",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Output SDF path (default: payload_world.sdf or freenove_world.sdf)",
+    )
+    args = parser.parse_args(argv)
+    output = args.output or (
+        HERE / ("payload_world.sdf" if args.car == "payload" else "freenove_world.sdf")
+    )
+    root, summary = build_world(args)
     E.indent(root)
-    E.ElementTree(root).write(args.output, encoding="utf-8", xml_declaration=True)
-    print(
-        f"Mass: {total['mass'] * 1000:.1f} g; assembly COM (mm): {[round(v * 1000, 3) for v in total['center']]}"
-    )
-    print(
-        f"Generated: wheelbase={wheelbase * 1000:.2f}mm, track={track * 1000:.2f}mm, tire width={tire * 1000:.2f}mm"
-    )
+    E.ElementTree(root).write(output, encoding="utf-8", xml_declaration=True)
+    print(summary)
 
 
 if __name__ == "__main__":

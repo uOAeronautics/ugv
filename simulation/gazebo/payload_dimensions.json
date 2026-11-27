@@ -1,0 +1,140 @@
+{
+  "model_name": "payload_car",
+  "frame": {
+    "convention": "+X forward, +Y left, +Z up, metres",
+    "origin": "centre of the four wheel hubs projected to ground contact (z=0 at lowest roller vertex)",
+    "source_usd_meters_per_unit": 0.01,
+    "source_usd_declared_up_axis": "Y",
+    "source_usd_geometric_up_axis": "+Z",
+    "source_usd_forward_axis": "+Y",
+    "source_usd_origin_xy_stage": [
+      -20.0,
+      20.0
+    ],
+    "source_usd_z_ground_stage": -1.174129
+  },
+  "source": {
+    "cad_path": "assets/car/payload_assembly/payload_assembly.usdz",
+    "sha256": "2694510a1e074a20dbdaf9ca40801a286d04770c918ecb6e26b7208e518f8380",
+    "raw_meshes": 1242,
+    "raw_triangles": 1026269,
+    "decimated_triangles": 52000
+  },
+  "overall_length_m": 0.118846,
+  "overall_width_m": 0.149,
+  "overall_height_m": 0.060741,
+  "bbox_min_m": [
+    -0.055246,
+    -0.0745,
+    0.0
+  ],
+  "bbox_max_m": [
+    0.0636,
+    0.0745,
+    0.060741
+  ],
+  "wheel_type": "mecanum_7_roller",
+  "wheel_diameter_m": 0.039899,
+  "wheel_radius_m": 0.01995,
+  "wheel_width_m": 0.0225,
+  "roller_width_m": 0.0195,
+  "wheel_track_m": 0.1265,
+  "wheelbase_m": 0.0708,
+  "wheel_hub_height_m": 0.019941,
+  "wheel_hubs_m": {
+    "front_left_wheel": [
+      0.0354,
+      0.06325,
+      0.019941
+    ],
+    "front_right_wheel": [
+      0.0354,
+      -0.06325,
+      0.019941
+    ],
+    "rear_left_wheel": [
+      -0.0354,
+      0.06325,
+      0.019941
+    ],
+    "rear_right_wheel": [
+      -0.0354,
+      -0.06325,
+      0.019941
+    ]
+  },
+  "ground_clearance_min_m": 0.008741,
+  "fairing": {
+    "center_m": [
+      0.0,
+      0.0,
+      0.037041
+    ],
+    "size_m": [
+      0.1,
+      0.1,
+      0.0474
+    ],
+    "bottom_z_m": 0.013341,
+    "top_z_m": 0.060741
+  },
+  "camera": {
+    "lens_part": "M12_lens__1_",
+    "lens_center_m": [
+      0.0601,
+      0.0,
+      0.038741
+    ],
+    "lens_front_face_m": [
+      0.0636,
+      0.0,
+      0.038741
+    ],
+    "lens_height_m": 0.038741,
+    "lens_diameter_m": 0.012,
+    "lens_length_m": 0.007,
+    "pcb_center_m": [
+      0.0464,
+      0.0,
+      0.038741
+    ],
+    "pcb_size_m": [
+      0.0016,
+      0.04,
+      0.04
+    ]
+  },
+  "imu": {
+    "part": "BNO055__1_",
+    "center_m": [
+      0.008,
+      0.0,
+      0.017491
+    ],
+    "height_m": 0.017491
+  },
+  "battery_envelope": {
+    "part": "_2S_LiPo_72x35x17__envelope_",
+    "center_m": [
+      -0.0265,
+      -0.004,
+      0.046741
+    ],
+    "size_m": [
+      0.035,
+      0.072,
+      0.017
+    ]
+  },
+  "unknown_hardware_parameters": {
+    "total_mass_kg": null,
+    "chassis_mass_kg": null,
+    "wheel_mass_kg": null,
+    "inertia_tensor_kg_m2": null,
+    "motor_gear_ratio_and_torque": "UNKNOWN (N20 gearmotor variant unverified)",
+    "motor_driver_board_and_pinout": "UNKNOWN",
+    "sbc_model_and_os": "UNKNOWN (CAD shows PCB_56x41 with HDMI/RJ45/USB/2x20 GPIO)",
+    "camera_sensor_and_intrinsics": "UNKNOWN (CAD shows M12_lens on 40x40 camera_PCB)",
+    "imu_noise_and_mounting_matrix": "UNKNOWN (CAD shows BNO055 on IMU_PCB)"
+  }
+}
