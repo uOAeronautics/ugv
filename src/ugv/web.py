@@ -30,7 +30,7 @@ from .imu import ImuStream
 from .motion import GyroMotion, MotionFault, ramp_wheels
 from .parking import DockingFeedback, ParkingEstimator, Pose2, gear_obstacles
 from .perf import PerfMonitor
-from .plane_vision import PlaneAutoPark, PlaneDetectorRunner
+from .plane_vision import AutoParkRecorder, PlaneAutoPark, PlaneDetectorRunner
 
 STATIC = Path(__file__).parent / "static"
 WATCHDOG_SECONDS = 0.60
@@ -875,9 +875,11 @@ class RobotController:
     async def _auto_park_loop(self, cid, epoch):
         plane.set_external(True)
         vision_task: asyncio.Task[None] | None = None
+        recorder: AutoParkRecorder | None = None
         try:
+            recorder = AutoParkRecorder(model=plane.model_tag)
             runner = PlaneAutoPark(start_t=time.monotonic())
-            latest_fix: dict[str, Any] = {"seq": -1, "meas": None, "cap": None}
+            latest_fix: dict[str, Any] = {"seq": -1, "meas": None, "cap": None, "det": None}
 
             async def _vision_worker() -> None:
                 last_seq = -1
@@ -889,10 +891,13 @@ class RobotController:
                         continue
                     last_seq = seq
                     prior = runner.prior_for_solver()
-                    _, meas = await asyncio.to_thread(plane.detect_once, frame, prior)
+                    det, meas = await asyncio.to_thread(plane.detect_once, frame, prior)
+                    if recorder is not None:
+                        await asyncio.to_thread(recorder.save_frame, seq, frame, det)
                     latest_fix["seq"] = seq
                     latest_fix["meas"] = meas
                     latest_fix["cap"] = cap
+                    latest_fix["det"] = det
 
             vision_task = asyncio.create_task(_vision_worker(), name="auto-park-vision")
             consumed_seq = -1
@@ -923,11 +928,12 @@ class RobotController:
 
                 plan_t0 = time.perf_counter()
                 # RelativeHeading emits CW+ heading_rate_dps; PlaneAutoPark expects CCW+ rad/s.
+                gyro_ccw = -math.radians(float(self.state.heading_rate_dps))
                 cmd = runner.step(
                     now,
                     imu_age_s=imu_age,
                     frame_age_s=frame_age,
-                    gyro_ccw_rad_s=-math.radians(float(self.state.heading_rate_dps)),
+                    gyro_ccw_rad_s=gyro_ccw,
                     meas=meas,
                     cap_t=cap_used,
                 )
@@ -935,6 +941,31 @@ class RobotController:
                 self.state.auto_park_stage = cmd["stage"]
                 self.state.auto_park_status = cmd["status"]
                 self.state.auto_park_pose = cmd["pose"]
+                if recorder is not None:
+                    recorder.record_tick(
+                        {
+                            "stage": cmd["stage"],
+                            "status": cmd["status"],
+                            "stop": cmd["stop"],
+                            "forward": round(cmd["forward"], 3),
+                            "strafe": round(cmd["strafe"], 3),
+                            "turn": round(cmd["turn"], 3),
+                            "cmd_vel": cmd.get("cmd_vel"),
+                            "duty": cmd.get("duty"),
+                            "yaw_int": cmd.get("yaw_int"),
+                            "gyro_ccw": round(gyro_ccw, 4),
+                            "heading_deg": round(float(self.state.heading_deg), 2),
+                            "imu_age_ms": round(imu_age * 1000) if imu_age is not None else None,
+                            "frame_age_ms": (
+                                round(frame_age * 1000) if frame_age is not None else None
+                            ),
+                            "pose": cmd["pose"],
+                            "meas": (
+                                [round(float(v), 4) for v in meas] if meas is not None else None
+                            ),
+                            "wheels": dict(self.state.wheels),
+                        }
+                    )
                 drive_t0 = time.perf_counter()
                 if cmd["stop"]:
                     await self.stop(cmd["reason"] or "auto-park-stop", release=False)
@@ -967,6 +998,8 @@ class RobotController:
                     await vision_task
                 except asyncio.CancelledError:
                     pass
+            if recorder is not None:
+                recorder.close(self.state.auto_park_stage, self.state.auto_park_status)
             plane.set_external(False)
             if self.auto_park_epoch == epoch:
                 self.state.auto_park = False

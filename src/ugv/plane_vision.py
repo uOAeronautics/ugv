@@ -8,10 +8,13 @@ if `onnxruntime` or the trained `model.onnx` files are missing, it reports the e
 from __future__ import annotations
 
 import asyncio
+import json
 import math
 import os
+import shutil
 import time
 from collections import deque
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -558,4 +561,101 @@ class PlaneAutoPark:
             "strafe": 0.0 if stop else float(np.clip(-duty[1] / DUTY_CAP, -1.0, 1.0)),
             "turn": 0.0 if stop else float(np.clip(duty[2] / DUTY_CAP, -1.0, 1.0)),
             "pose": pose,
+            "cmd_vel": [round(float(v), 4) for v in cmd_vel],
+            "duty": [round(float(v), 4) for v in self.last_duty],
+            "yaw_int": round(float(self._yaw_int), 4),
         }
+
+
+AUTOPARK_RUNS_DIR = TRAIN_DIR.parent / "autopark"
+
+
+class AutoParkRecorder:
+    """Records 50 Hz Auto Park telemetry + sampled real JPEG frames for post-mortem & training.
+
+    Writes `telemetry.jsonl`, `summary.json`, and `frames/<seq>.jpg` under
+    `runs/autopark/<YYYYMMDD-HHMMSS>/`. Auto-prunes oldest runs beyond `max_runs` and caps
+    frames per run so the Pi's SD card never fills up.
+    """
+
+    def __init__(
+        self,
+        root: Path = AUTOPARK_RUNS_DIR,
+        *,
+        model: str = "",
+        max_runs: int = 12,
+        max_frames: int = 180,
+        frame_interval_s: float = 0.35,
+    ) -> None:
+        self.root = root
+        self.max_frames = max_frames
+        self.frame_interval_s = frame_interval_s
+        self.run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.run_dir = root / self.run_id
+        self.frames_dir = self.run_dir / "frames"
+        self.frames_dir.mkdir(parents=True, exist_ok=True)
+        self._prune_old_runs(max_runs)
+        self._fp = (self.run_dir / "telemetry.jsonl").open("w", buffering=1)
+        self._t0 = time.monotonic()
+        self._last_frame_saved = 0.0
+        self.frames_saved = 0
+        self.ticks = 0
+        self.model = model
+        self._closed = False
+
+    def _prune_old_runs(self, max_runs: int) -> None:
+        if not self.root.is_dir():
+            return
+        dirs = sorted(p for p in self.root.iterdir() if p.is_dir())
+        for old in dirs[:-max_runs]:
+            if old != self.run_dir:
+                shutil.rmtree(old, ignore_errors=True)
+
+    def save_frame(self, seq: int, jpeg: bytes, det: dict[str, Any] | None) -> str | None:
+        if self._closed or self.frames_saved >= self.max_frames:
+            return None
+        now = time.monotonic()
+        if self._last_frame_saved and (now - self._last_frame_saved) < self.frame_interval_s:
+            return None
+        self._last_frame_saved = now
+        self.frames_saved += 1
+        rel = f"frames/{seq:06d}.jpg"
+        (self.run_dir / rel).write_bytes(jpeg)
+        if det is not None:
+            meta = {
+                "t": round(now - self._t0, 3),
+                "seq": seq,
+                "frame": rel,
+                "points": det.get("points"),
+                "box": det.get("box"),
+                "pose": det.get("pose"),
+                "ms": det.get("ms"),
+            }
+            self._fp.write(json.dumps({"kind": "vision", **meta}) + "\n")
+        return rel
+
+    def record_tick(self, row: dict[str, Any]) -> None:
+        if self._closed:
+            return
+        self.ticks += 1
+        self._fp.write(
+            json.dumps({"kind": "tick", "t": round(time.monotonic() - self._t0, 3), **row}) + "\n"
+        )
+
+    def close(self, final_stage: str, final_status: str) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self._fp.close()
+        finally:
+            summary = {
+                "run_id": self.run_id,
+                "model": self.model,
+                "duration_s": round(time.monotonic() - self._t0, 2),
+                "ticks": self.ticks,
+                "frames_saved": self.frames_saved,
+                "final_stage": final_stage,
+                "final_status": final_status,
+            }
+            (self.run_dir / "summary.json").write_text(json.dumps(summary, indent=2))

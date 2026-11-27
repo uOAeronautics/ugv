@@ -8,8 +8,23 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ugv.plane_vision import PlaneAutoPark, PlaneDetectorRunner, discover_models
+from ugv.plane_vision import AutoParkRecorder, PlaneAutoPark, PlaneDetectorRunner, discover_models
 from ugv.web import CameraStream, RobotController
+
+
+def test_autopark_recorder_writes_telemetry_frames_and_summary(tmp_path: Path):
+    import json
+
+    rec = AutoParkRecorder(root=tmp_path, model="yolo11n-pose-v1-320-int8", frame_interval_s=0.0)
+    rec.record_tick({"stage": "search", "turn": 0.4, "gyro_ccw": 0.5})
+    rel = rec.save_frame(1, b"\xff\xd8fake\xff\xd9", {"points": [], "box": None, "ms": 80.0})
+    assert rel == "frames/000001.jpg"
+    assert (rec.run_dir / rel).is_file()
+    rec.close("parked", "arrived")
+    summary = json.loads((rec.run_dir / "summary.json").read_text())
+    assert summary["ticks"] == 1
+    assert summary["frames_saved"] == 1
+    assert summary["final_stage"] == "parked"
 
 
 def test_plane_autopark_search_acquire_orbit_and_safety():
