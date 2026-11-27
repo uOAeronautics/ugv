@@ -157,6 +157,23 @@ def load(data: Path):
     return images, kp, vis, pose, Ks, meta
 
 
+def load_dagger(paths: list[Path], crop: bool, shape: tuple[int, int], kp_names: list[str]):
+    """Load one or more DAgger directories (`tools/park/eval.py --dump-frames`), choosing the
+    `crop/` subdir automatically when `--crop` is active."""
+    imgs, kps, viss = [], [], []
+    for raw in paths:
+        p = raw / "crop" if crop and (raw / "crop" / "meta.json").exists() else raw
+        im, kp, vis, _, _, dmeta = load(p)
+        if (im.shape[1], im.shape[2]) != shape:
+            raise ValueError(f"{p} shape {im.shape[1:]} != expected {shape}")
+        if dmeta.get("keypoints") != kp_names:
+            raise ValueError(f"{p} keypoints do not match training target")
+        imgs.append(np.asarray(im))
+        kps.append(kp)
+        viss.append(vis)
+    return np.concatenate(imgs), np.concatenate(kps), np.concatenate(viss)
+
+
 def batches(idx: np.ndarray, bs: int, rng: np.random.Generator | None):
     order = rng.permutation(idx) if rng is not None else idx
     for i in range(0, len(order), bs):
@@ -260,11 +277,29 @@ def main() -> None:
     ap.add_argument("--crop", action="store_true", help="pool: second-stage crops")
     ap.add_argument("--bay", type=float, default=0.0, help="pool: share of bay-range views")
     ap.add_argument("--workers", type=int, default=12, help="pool: generator processes")
+    ap.add_argument(
+        "--dagger",
+        type=Path,
+        nargs="+",
+        default=None,
+        help="closed-loop DAgger dataset dir(s) to mix into training batches",
+    )
+    ap.add_argument(
+        "--dagger-frac",
+        type=float,
+        default=0.25,
+        help="fraction of each training batch drawn from --dagger",
+    )
     args = ap.parse_args()
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
     dev = "cuda"
     images, kp, vis, poses, Ks, meta = load(args.data)
+    d_img = d_kp = d_vis = None
+    if args.dagger:
+        d_img, d_kp, d_vis = load_dagger(
+            args.dagger, args.crop, (meta["height"], meta["width"]), meta["keypoints"]
+        )
     n = len(images)
     perm = np.random.default_rng(123).permutation(n)
     val, tr = np.sort(perm[: max(256, n // 12)]), np.sort(perm[max(256, n // 12) :])
@@ -295,11 +330,17 @@ def main() -> None:
     for epoch in range(args.epochs):
         losses = []
         for b in batches(tr, args.bs, rng):
+            m_dag = int(round(len(b) * args.dagger_frac)) if d_img is not None and len(b) > 1 else 0
+            pb = b[: len(b) - m_dag] if m_dag else b
             if pool is not None:
                 with pool.lock:
-                    x, k, v = to_gpu(pool.images, pool.kp, pool.vis, b, dev, True)
+                    x, k, v = to_gpu(pool.images, pool.kp, pool.vis, pb, dev, True)
             else:
-                x, k, v = to_gpu(images, kp, vis, b, dev, True)
+                x, k, v = to_gpu(images, kp, vis, pb, dev, True)
+            if m_dag:
+                db = np.sort(rng.integers(0, len(d_img), size=m_dag))
+                xd, kd, vd = to_gpu(d_img, d_kp, d_vis, db, dev, True)
+                x, k, v = torch.cat([x, xd]), torch.cat([k, kd]), torch.cat([v, vd])
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 pk, pv, _ = model(x)
             l_kp = ((pk.float() - k).abs().sum(-1) * v).sum() / v.sum().clamp(min=1)
@@ -343,6 +384,9 @@ def main() -> None:
         "train_n": len(tr),
         "pool": args.pool,
         "pool_replaced": pool.replaced if pool is not None else 0,
+        "dagger": [str(p) for p in args.dagger] if args.dagger else None,
+        "dagger_n": len(d_img) if d_img is not None else 0,
+        "dagger_frac": args.dagger_frac if d_img is not None else 0.0,
         "val_n": len(val),
         "epochs": args.epochs,
         "input": [h, w],

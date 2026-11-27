@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 
 from ugv.lab import record
-from ugv.park.episode import DT, Episode, Scenario
+from ugv.park.episode import DT, PRESETS, Episode, Scenario
 from ugv.park.geometry import bay
 from ugv.park.perception import _model_points
 
@@ -51,16 +51,6 @@ ENVIRONMENTS = {
 }
 MAX_SESSIONS = 8
 MAX_TICKS = 25  # per request: 0.5 s of simulation
-
-# Named starts in the airframe frame (x, y, yaw); the awkward ones are near the nose and gear.
-PRESETS = {
-    "tail": (-1.4, 0.0, 0.0),
-    "nose-on": (0.75, 0.0, np.pi),
-    "nose-oblique": (0.6, 0.45, -2.4),
-    "beside-nose-gear": (0.15, 0.42, -np.pi / 2),
-    "under-wingtip": (-0.1, 0.75, np.pi),
-    "side": (-0.1, -1.2, np.pi / 2),
-}
 
 
 @cache

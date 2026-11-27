@@ -38,11 +38,13 @@ class Detection:
 
 
 class _Model:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, threads: int = 2) -> None:
         import onnxruntime as ort  # deferred: the Pi runtime imports this package without it
 
         opts = ort.SessionOptions()
-        opts.intra_op_num_threads = 2
+        opts.intra_op_num_threads = threads
+        if threads == 1:
+            opts.inter_op_num_threads = 1
         self.sess = ort.InferenceSession(
             str(path), sess_options=opts, providers=["CPUExecutionProvider"]
         )
@@ -56,12 +58,14 @@ class _Model:
 
 
 class KeypointDetector:
-    def __init__(self, whole: Path, crop: Path | None, threshold: float = 0.5) -> None:
+    def __init__(
+        self, whole: Path, crop: Path | None, threshold: float = 0.5, threads: int = 2
+    ) -> None:
         for p in (whole, crop):
             if p is not None and not (p / "model.onnx").exists():
                 raise FileNotFoundError(f"{p / 'model.onnx'} is missing (train/pose_kp.py)")
-        self.whole = _Model(whole / "model.onnx")
-        self.crop = _Model(crop / "model.onnx") if crop is not None else None
+        self.whole = _Model(whole / "model.onnx", threads=threads)
+        self.crop = _Model(crop / "model.onnx", threads=threads) if crop is not None else None
         self.threshold = threshold
         self.names = (whole.name, crop.name if crop is not None else None)
 
@@ -139,5 +143,5 @@ def default_runs() -> tuple[Path, Path]:
     return TRAIN_DIR / whole, TRAIN_DIR / crop
 
 
-def load_default() -> KeypointDetector:
-    return KeypointDetector(*default_runs())
+def load_default(threads: int = 2) -> KeypointDetector:
+    return KeypointDetector(*default_runs(), threads=threads)

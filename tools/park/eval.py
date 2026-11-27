@@ -21,8 +21,8 @@ from pathlib import Path
 import numpy as np
 
 from ugv.park.controller import ParkParams
-from ugv.park.episode import Scenario, run
-from ugv.park.evaluate import Conditions, evaluate
+from ugv.park.episode import run
+from ugv.park.evaluate import Conditions, _scenario, evaluate
 from ugv.park.faults import FAMILIES as FAULT_FAMILIES
 from ugv.park.perception import DetectorModel
 from ugv.park.search import load_params
@@ -69,18 +69,69 @@ def main() -> None:
     ap.add_argument(
         "--floor", type=float, default=0.0, help="floor traction severity of the main run"
     )
-    ap.add_argument("--start", choices=["ring", "close"], default="ring")
+    ap.add_argument("--start", choices=["ring", "close", "presets", "mixed"], default="ring")
+    ap.add_argument(
+        "--perception",
+        choices=["model", "network"],
+        default="model",
+        help="sampled DetectorModel or closed-loop rendered frames + ONNX KeypointDetector",
+    )
+    ap.add_argument(
+        "--preset-repeats",
+        type=int,
+        default=0,
+        help="repeats per named preset in --start mixed (0 = ~30%% of n)",
+    )
+    ap.add_argument(
+        "--workers", type=int, default=None, help="worker processes (default: cpu count, <=16)"
+    )
+    ap.add_argument("--dump-frames", type=Path, default=None, help="DAgger dataset output dir")
+    ap.add_argument(
+        "--dump-max", type=int, default=6000, help="max frames written to --dump-frames"
+    )
+    ap.add_argument(
+        "--dump-err-px",
+        type=float,
+        default=10.0,
+        help="keypoint error threshold (px) for DAgger priority",
+    )
+    ap.add_argument(
+        "--failure-overlays",
+        type=Path,
+        default=None,
+        help="dir to save worst-frame PNG overlays for failed episodes",
+    )
     ap.add_argument("--traces", type=int, default=0)
     ap.add_argument("--out", type=Path, default=Path("runs/park_eval"))
     args = ap.parse_args()
     params = load_params(args.params) if args.params else ParkParams()
     args.out.mkdir(parents=True, exist_ok=True)
-    main_cond = Conditions(faults=args.faults, start=args.start, floor=args.floor)
-    main_r = evaluate(params, n=args.n, seed=args.seed, cond=main_cond)
+    main_cond = Conditions(
+        faults=args.faults,
+        start=args.start,
+        floor=args.floor,
+        perception=args.perception,
+        preset_repeats=args.preset_repeats,
+    )
+    main_r = evaluate(
+        params,
+        n=args.n,
+        seed=args.seed,
+        cond=main_cond,
+        workers=args.workers,
+        dump_frames=args.dump_frames,
+        dump_max=args.dump_max,
+        dump_err_px=args.dump_err_px,
+        failure_overlays=args.failure_overlays,
+    )
     print(
         f"full {main_r['success']}/{args.n} wilson95 {main_r['wilson95']} {main_r['outcomes']}",
         flush=True,
     )
+    if "timing" in main_r:
+        print(f"timing {main_r['timing']}", flush=True)
+    if "dagger_dump" in main_r:
+        print(f"dagger_dump {main_r['dagger_dump']}", flush=True)
     summary = {
         "name": args.name,
         "params_file": str(args.params) if args.params else None,
@@ -92,23 +143,30 @@ def main() -> None:
         for label, cond in sweep.items():
             if label == "full":
                 continue
-            r = evaluate(params, n=args.sweep_n, seed=args.seed + 1, cond=cond)
+            c = replace(cond, perception=args.perception)
+            r = evaluate(params, n=args.sweep_n, seed=args.seed + 1, cond=c, workers=args.workers)
             r.pop("episodes")
             summary["sweep"][label] = r
             print(f"{label:18s} {r['success']}/{r['n']} {r['outcomes']}", flush=True)
     (args.out / f"{args.name}.json").write_text(json.dumps(summary))
     if args.traces:
+        net = None
+        if args.perception == "network":
+            from ugv.park.camera import NetworkPerception
+
+            net = NetworkPerception(threads=1)
         traces = []
         for i in range(args.traces):
-            s = args.seed * 100003 + i
-            sc = Scenario.sample(
-                np.random.default_rng(s), 1.0, None, args.faults, None, args.start, args.floor
-            )
-            r = run(sc, params, seed=s, keep_trace=True)
+            s, start_name, sc = _scenario(i, args.n, args.seed, main_cond)
+            if net is not None:
+                net.reset_episode()
+            r = run(sc, params, seed=s, keep_trace=True, perception=net)
             traces.append(
                 {
                     "episode": i,
+                    "start": start_name,
                     "outcome": r.outcome,
+                    "end_state": r.end_state,
                     "final_error": r.final_error,
                     "faults": r.faults,
                     "trace": r.trace,

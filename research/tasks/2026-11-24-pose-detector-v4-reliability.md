@@ -2,9 +2,9 @@
 id: 2026-11-24-pose-detector-v4-reliability
 date: 2026-11-24
 author: fer-claude
-owner: unassigned
-state: open
-updated: 2026-11-24
+owner: agy
+state: claimed
+updated: 2026-11-27
 due: none
 after: []
 check: uv run ruff check . && uv run ruff format --check . && uv run pytest -q
@@ -44,3 +44,6 @@ Take the trained 15-point keypoint detector from "can park" (`v3c`: 4/6 healthy,
 ## Done when
 
 On the `n >= 50` offline closed-loop gate (no stand-ins): `>= 90%` healthy parked with `0` collisions, bad-sensor parked rate and `v3a` under-1m recall clearly above `v3c` (outside the 95% binomial interval), `solve_planar` regression test in `tests/`, and every experiment logged as a `parent`-linked attempt in `research/attempts/`.
+
+## Log
+- 2026-11-27 agy: claim

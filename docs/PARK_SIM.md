@@ -168,10 +168,37 @@ car spread only 95%, worse detector (4 px, 20% misses, 8% outliers) 77%, worse c
 mostly final heading just over 5 deg; with a nominal car the 90th-percentile heading error is
 0.5 deg, so it comes from the car spread, not the camera.
 
+## Closed-loop image evaluation (`--perception network`)
+
+`tools/park/eval.py --perception network` closes the loop in Python without a browser: on each
+10 Hz camera tick it renders the 1280x720 frame from the true plant pose using `ugv.pose.render`
+with the SDF per-part airframe materials (`body` 0.85, control surfaces orange, `nacelle`/`prop`
+0.15) and `room_background`, applies image-level camera faults (radial lens distortion, Gaussian
+blur, exposure stops/spells, sensor noise, occluder) directly to the pixels (`src/ugv/park/camera.py`),
+runs `ugv.pose.detector.KeypointDetector` (`kp-v3c` + `kp-crop-v3c`) on CPU, and feeds the
+detections into `perception.measurement_from_detections`. These numbers are **synthetic renders of
+the real mesh, not real-camera evidence**.
+
+With `config/park_params.json`, seed 11, `--start mixed` (named Challenge starts plus random `ring`
+starts):
+
+| Condition | n | Parked | 95% CI | Collisions | Record |
+|---|---|---|---|---|---|
+| healthy (60 presets + 140 ring) | 200 | 124/200 (62.0%) | 55.1-68.4% | 21 | `runs/park_eval/network-v3c-healthy.json` |
+| bad sensors (`--faults 1`, 36 presets + 84 ring) | 120 | 12/120 (10.0%) | 5.8-16.7% | 17 | `runs/park_eval/network-v3c-bad.json` |
+
+All 76 healthy failures occurred in `ENTER` (`43` `parked-off-target` all exceeding the 5 deg yaw
+bound, `21` `collision`, `12` `abort:misaligned in the bay; out of retries`), driven by vertical
+bias on the dark-rotor hubs (`hub_left` `-8.79 px`, `hub_right` `-4.49 px`). Under `--faults 1`,
+missed airframe views rise from `1.83%` to `25.51%` (`52` timeouts, `33` last active in `SEARCH`,
+and `0/55` parked when fixed-focus defocus is active); see
+`research/attempts/2026-11-27-offline-park-network-eval.md`.
+
 ## Commands
 
 ```sh
 uv run python tools/park/eval.py --name <name> [--params <json>] --sweep --traces 16
+uv run python tools/park/eval.py --name <name> --perception network --params config/park_params.json --start mixed --n 200 --dump-frames runs/pose_data/<name>
 uv run python tools/park/eval.py --name wet --params config/park_params.json --floor 1
 uv run python tools/park/search.py --out runs/park_search/<name>     # failure-guided tuning
 uv run ugv-lab                                                       # dashboard, port 8768

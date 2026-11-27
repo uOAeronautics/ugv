@@ -35,6 +35,16 @@ LATENCY_TICKS = 5  # 0.1 s
 TOL = (0.02, 0.02, np.radians(5))  # x, y, yaw of the parked pose
 ROOM = 2.0  # half-width of the room, m
 
+# Named starts in the airframe frame (x, y, yaw); shared with the Lab challenge.
+PRESETS = {
+    "tail": (-1.4, 0.0, 0.0),
+    "nose-on": (0.75, 0.0, np.pi),
+    "nose-oblique": (0.6, 0.45, -2.4),
+    "beside-nose-gear": (0.15, 0.42, -np.pi / 2),
+    "under-wingtip": (-0.1, 0.75, np.pi),
+    "side": (-0.1, -1.2, np.pi / 2),
+}
+
 
 @dataclass(frozen=True)
 class Scenario:
@@ -94,6 +104,8 @@ class Result:
     states: dict[str, float]  # seconds per state
     trace: list | None = None
     faults: list[str] = field(default_factory=list)
+    end_state: str = ""
+    last_active_state: str = ""
 
 
 class Episode:
@@ -107,12 +119,16 @@ class Episode:
         keep_trace: bool = False,
         engaged: bool = True,
         external_camera: bool = False,
+        perception: object | None = None,
     ) -> None:
         """`external_camera`: the pixels (and the detector's reads of them) arrive from the
         outside through `add_camera_frame` — the challenge's strict mode, where the HUD frame
-        and the pipeline see the same image. The batch simulator leaves this False and samples
-        the detector's statistics instead."""
+        and the pipeline see the same image. `perception`: optional closed-loop camera/network
+        observer replacing the sampled `DetectorModel` inside `_camera`. The batch simulator
+        leaves both unset and samples the detector's statistics instead."""
         self.external = external_camera
+        self.perception = perception
+        self._scene_seed = seed
         self.rng = rng = np.random.default_rng(seed)
         self.b = bay()
         self.scenario = scenario
@@ -134,6 +150,9 @@ class Episode:
             if scenario.overrides:
                 f = replace(f, **dict(scenario.overrides))
             self.faults = FaultState(f, np.random.default_rng([seed, 8]))
+            if self.perception is not None and f.phantom_rate:
+                # Image-in-the-loop perception never hallucinates an impostor absent from the frame.
+                self.faults.f = replace(self.faults.f, phantom_rate=0.0)
             self.plant.faults = self.faults
             if f.lens:
                 fs, cx, cy, k1, k2 = f.lens
@@ -277,8 +296,9 @@ class Episode:
         prior = self.est.predicted_airframe_in_car()
         seen: list = []
         det, cam, occ = self.scenario.detector, self.cam, None
+        rel = compose(inverse(self.plant.pose), self.A)
+        fx: dict | None = None
         if self.faults is not None:
-            rel = compose(inverse(self.plant.pose), self.A)
             fx = self.cam_fx = self.faults.frame(
                 float(self.plant.vel[2]), float(np.hypot(*rel[:2]))
             )
@@ -289,7 +309,26 @@ class Episode:
             )
             cam = replace(cam, yaw=cam.yaw + fx["yaw"], pitch=cam.pitch + fx["pitch"])
             occ = fx["occluder"]
-        m = measure(compose(inverse(self.plant.pose), self.A), self.rng, det, cam, prior, seen, occ)
+        if self.perception is not None:
+            m = self.perception.measure(
+                rel,
+                self.rng,
+                det,
+                cam,
+                prior,
+                seen,
+                occ,
+                fx=fx,
+                noise_px=self.faults.f.noise_px if self.faults is not None else 0.0,
+                scene_seed=self._scene_seed,
+                fsm_state=self.state,
+                t=t,
+            )
+            self.last_kp = detections(seen[0])
+            if m is not None:
+                self.pending.append((k + LATENCY_TICKS, t, m))
+            return
+        m = measure(rel, self.rng, det, cam, prior, seen, occ)
         self.last_kp = detections(seen[0])
         if self.faults is not None:
             ghost = self.faults.phantom(self.est.pitch)
@@ -305,6 +344,9 @@ class Episode:
         if outcome == "parked" and not all(abs(final[i]) <= TOL[i] for i in range(3)):
             outcome = "parked-off-target"
         ctl = self.ctl
+        last_active = self.state
+        if ctl is not None and self.state in ("ABORT", "PARKED") and ctl.fsm.history:
+            last_active = ctl.fsm.history[-1][1]
         return Result(
             success=outcome == "parked",
             outcome=outcome,
@@ -317,6 +359,8 @@ class Episode:
             states={s: round(v, 2) for s, v in self.states.items()},
             trace=self.trace,
             faults=self.faults.f.describe() if self.faults else [],
+            end_state=self.state,
+            last_active_state=last_active,
         )
 
 
@@ -325,8 +369,9 @@ def run(
     params: ParkParams | None = None,
     seed: int = 0,
     keep_trace: bool = False,
+    perception: object | None = None,
 ) -> Result:
-    ep = Episode(scenario, params, seed, keep_trace)
+    ep = Episode(scenario, params, seed, keep_trace, perception=perception)
     while not ep.tick():
         pass
     return ep.result()
