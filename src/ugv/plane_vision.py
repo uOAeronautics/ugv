@@ -72,6 +72,9 @@ def discover_models(train_dir: Path = TRAIN_DIR) -> dict[str, tuple[Path, Path |
 
 def _default_tag(available: dict[str, tuple[Path, Path | None]]) -> str:
     for tag in available:
+        if tag.startswith("yolo") and "int8" in tag:
+            return tag
+    for tag in available:
         if tag.startswith("yolo"):
             return tag
     whole, _ = default_runs()
@@ -128,6 +131,82 @@ class PlaneDetectorRunner:
         self._track_at = 0.0
         self._track_steps = 0
         self._last_seq = -1
+        self._external_active = False
+
+    def set_external(self, active: bool) -> None:
+        """Hand detector execution to an external loop (e.g. Auto Park) without double-running."""
+        self._external_active = bool(active)
+        if not active:
+            self._last_seq = -1
+            self._wake.set()
+
+    def detect_once(
+        self, jpeg: bytes, prior: np.ndarray | None = None
+    ) -> tuple[dict[str, Any] | None, np.ndarray | None]:
+        """Run one frame synchronously (for Auto Park), updating the dashboard overlay."""
+        gray = _decode_gray_1280x720(jpeg)
+        if gray is None:
+            return None, None
+        det = self._ensure_detector()
+        res = det(gray, nose_box_min=NOSE_BOX_MIN_PX)
+        pts = [[idx, u, v, res.prob[idx]] for idx, u, v in res.points]
+        box = [round(float(v), 1) for v in res.box] if res.box is not None else None
+        pose_out, meas = self._solve_pose(res.points, prior=prior)
+
+        now = time.monotonic()
+        self.points = pts
+        self.box = box
+        self.pose = pose_out
+        self.last_ms = round(float(res.ms), 1)
+        self.last_at = now
+        self._times.append(now)
+        self.controller.perf.record("plane_ms", float(res.ms))
+        n = len(self.points)
+        if self.pose is not None:
+            p = self.pose
+            self.status = f"{n} pts · x={p['x_m']:.2f}m y={p['y_m']:+.2f}m yaw={p['yaw_deg']:+.0f}°"
+        elif n > 0:
+            self.status = f"{n} pts · {self.last_ms:.0f} ms"
+        else:
+            self.status = f"no airframe · {self.last_ms:.0f} ms"
+        return {"points": pts, "box": box, "pose": pose_out, "ms": float(res.ms)}, meas
+
+    def _solve_pose(
+        self, res_points: list[list[float]], prior: np.ndarray | None = None
+    ) -> tuple[dict[str, Any] | None, np.ndarray | None]:
+        if len(res_points) < 2:
+            return None, None
+        try:
+            from .park.perception import DetectorModel, model_points, solve
+
+            det_cfg = DetectorModel()
+            all_model = model_points(det_cfg)
+            idxs = [int(p[0]) for p in res_points if int(p[0]) < len(all_model)]
+            if len(idxs) < 2:
+                return None, None
+            m = all_model[idxs]
+            o = np.array([[p[1], p[2]] for p in res_points if int(p[0]) < len(all_model)])
+            now = time.monotonic()
+            use_prior = (
+                prior
+                if prior is not None
+                else (self._prior if (now - self._prior_at) <= PRIOR_TTL_S else None)
+            )
+            sol = solve(m, o, det_cfg, use_prior)
+            if sol is None:
+                return None, None
+            self._prior = sol[:4].copy()
+            self._prior_at = now
+            pose_out = {
+                "x_m": round(float(sol[0]), 3),
+                "y_m": round(float(sol[1]), 3),
+                "yaw_deg": round(math.degrees(float(sol[2])), 1),
+                "pitch_deg": round(math.degrees(float(sol[3])), 1),
+                "used": int(round(float(sol[4]))),
+            }
+            return pose_out, sol
+        except Exception:
+            return None, None
 
     def start(self) -> None:
         if self._task is None:
@@ -255,7 +334,7 @@ class PlaneDetectorRunner:
 
     async def _loop(self) -> None:
         while not self._closed:
-            if not self.enabled:
+            if not self.enabled or self._external_active:
                 self._wake.clear()
                 await self._wake.wait()
                 continue
@@ -313,18 +392,132 @@ class PlaneDetectorRunner:
 
     def metrics(self) -> dict[str, Any]:
         now = time.monotonic()
+        active = self.enabled or self._external_active
         recent = [t for t in self._times if now - t < 3.0]
         fps = (len(recent) - 1) / (recent[-1] - recent[0]) if len(recent) > 1 else 0.0
-        age_ms = round((now - self.last_at) * 1000) if (self.enabled and self.last_at) else None
+        age_ms = round((now - self.last_at) * 1000) if (active and self.last_at) else None
         return {
-            "plane_enabled": self.enabled,
+            "plane_enabled": active,
             "plane_model": self.model_tag,
             "plane_available_models": list(self.available.keys()),
             "plane_status": self.status,
-            "plane_points": self.points if self.enabled else [],
-            "plane_box": self.box if self.enabled else None,
-            "plane_pose": self.pose if self.enabled else None,
-            "plane_ms": self.last_ms if self.enabled else None,
-            "plane_fps": round(fps, 1) if self.enabled else 0.0,
+            "plane_points": self.points if active else [],
+            "plane_box": self.box if active else None,
+            "plane_pose": self.pose if active else None,
+            "plane_ms": self.last_ms if active else None,
+            "plane_fps": round(fps, 1) if active else 0.0,
             "plane_age_ms": age_ms,
+        }
+
+
+class PlaneAutoPark:
+    """Closed-loop Auto Park using `ugv.park` (Estimator + ParkController) on YOLO-pose fixes.
+
+    Sign mapping between `ugv.park` body frame `(vx fwd, vy left, w CCW)` and `web.py`
+    `_apply_vector(forward, turn, limit=1800, strafe=...)`:
+      - `forward = duty[0] / DUTY_CAP`   (+x forward)
+      - `strafe  = -duty[1] / DUTY_CAP`  (+strafe is RIGHT in `_apply_vector`, +y is LEFT in park)
+      - `turn    = duty[2] / DUTY_CAP`   (+turn is LEFT / CCW in both)
+    """
+
+    def __init__(self, start_t: float | None = None) -> None:
+        from .park.controller import ParkController, ParkParams
+        from .park.estimator import Estimator
+        from .park.geometry import bay
+
+        self.t0 = time.monotonic() if start_t is None else float(start_t)
+        self.last_t = self.t0
+        self.est = Estimator(calib_min_points=4)
+        self.ctrl = ParkController(
+            bay=bay(),
+            params=ParkParams(camera_silent_s=1.0),
+        )
+        self.last_duty = np.zeros(3, dtype=float)
+
+    def prior_for_solver(self) -> np.ndarray | None:
+        from .park.geometry import inverse
+
+        q = self.est.car_in_airframe()
+        if q is None:
+            return None
+        rel = inverse(q)
+        return np.array([rel[0], rel[1], rel[2], self.est.pitch], dtype=float)
+
+    def step(
+        self,
+        now: float,
+        *,
+        imu_age_s: float | None,
+        frame_age_s: float | None,
+        gyro_ccw_rad_s: float,
+        meas: np.ndarray | None = None,
+        cap_t: float | None = None,
+    ) -> dict[str, Any]:
+        from .park.plant import DUTY_CAP
+
+        if imu_age_s is None or imu_age_s > 0.25:
+            self.last_duty = np.zeros(3)
+            return {
+                "stage": "error",
+                "status": "imu-stale",
+                "reason": "imu-stale",
+                "stop": True,
+                "done": True,
+                "forward": 0.0,
+                "strafe": 0.0,
+                "turn": 0.0,
+                "pose": None,
+            }
+        if frame_age_s is None or frame_age_s > 0.45:
+            self.last_duty = np.zeros(3)
+            return {
+                "stage": "error",
+                "status": "frame-stale",
+                "reason": "frame-stale",
+                "stop": True,
+                "done": True,
+                "forward": 0.0,
+                "strafe": 0.0,
+                "turn": 0.0,
+                "pose": None,
+            }
+
+        t = max(0.0, float(now) - self.t0)
+        dt = float(np.clip(float(now) - self.last_t, 1e-3, 0.25))
+        self.last_t = float(now)
+
+        self.est.predict(t, self.last_duty, float(gyro_ccw_rad_s), dt)
+        jumped = False
+        if cap_t is not None:
+            t_cap = max(0.0, float(cap_t) - self.t0)
+            self.est.last_frame_t = t_cap
+            if meas is not None:
+                upd = self.est.update(t_cap, meas, t)
+                jumped = upd == "reinit"
+
+        cmd_vel = self.ctrl.step(t, self.est, jumped)
+        duty = self.est.actuator.to_duty(cmd_vel)
+        state = self.ctrl.state
+        if state == "PARKED":
+            stage, done = "parked", True
+        elif state == "ABORT":
+            stage, done = "aborted", True
+        else:
+            stage, done = state.lower(), False
+
+        stop = bool(done or np.allclose(duty, 0.0, atol=1e-4))
+        self.last_duty = np.zeros(3) if stop else duty.copy()
+        q = self.est.car_in_airframe()
+        pose = [round(float(v), 4) for v in q] if q is not None else None
+        status = self.ctrl.reason or stage
+        return {
+            "stage": stage,
+            "status": status,
+            "reason": status,
+            "stop": stop,
+            "done": done,
+            "forward": 0.0 if stop else float(np.clip(duty[0] / DUTY_CAP, -1.0, 1.0)),
+            "strafe": 0.0 if stop else float(np.clip(-duty[1] / DUTY_CAP, -1.0, 1.0)),
+            "turn": 0.0 if stop else float(np.clip(duty[2] / DUTY_CAP, -1.0, 1.0)),
+            "pose": pose,
         }

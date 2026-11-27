@@ -8,8 +8,41 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ugv.plane_vision import PlaneDetectorRunner, discover_models
+from ugv.plane_vision import PlaneAutoPark, PlaneDetectorRunner, discover_models
 from ugv.web import CameraStream, RobotController
+
+
+def test_plane_autopark_search_acquire_orbit_and_safety():
+    import numpy as np
+
+    ap = PlaneAutoPark(start_t=10.0)
+    # 1. No measurement yet -> SEARCH spinning CCW (+turn)
+    c0 = ap.step(10.05, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0)
+    assert c0["stage"] == "search"
+    assert c0["stop"] is False
+    assert c0["turn"] > 0.0
+
+    # 2. Airframe seen at 1.4 m ahead -> transitions to ACQUIRE and stops
+    meas = np.array([1.4, 0.0, 2.8, 0.0, 12.0])
+    c1 = ap.step(
+        10.15, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0, meas=meas, cap_t=10.10
+    )
+    assert c1["stage"] == "acquire"
+    assert c1["stop"] is True
+
+    # 3. After acquire_s + acquire_samples -> transitions to ORBIT
+    for i in range(1, 10):
+        t = 10.15 + i * 0.1
+        c = ap.step(
+            t, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0, meas=meas, cap_t=t - 0.02
+        )
+    assert c["stage"] == "orbit"
+    assert c["pose"] is not None
+
+    # 4. Stale IMU immediately stops with error
+    c_err = ap.step(11.5, imu_age_s=0.5, frame_age_s=0.02, gyro_ccw_rad_s=0.0)
+    assert c_err["stage"] == "error"
+    assert c_err["stop"] is True and c_err["done"] is True
 
 
 def test_discover_models_finds_pairs_and_yolo(tmp_path: Path):

@@ -23,14 +23,14 @@ from smbus2 import SMBus
 
 from . import SERVO_CHANNELS, WHEEL_CHANNELS, _configure_pca9685, _set_pulse, _set_pwm, _stop_wheels
 from .aruco import ArucoFollower
-from .autopark import TERMINAL_STAGES, AutoParkRunner, TagDetector
+from .autopark import TERMINAL_STAGES
 from .dynamics_telemetry import DynamicsTelemetry
 from .heading import RelativeHeading
 from .imu import ImuStream
 from .motion import GyroMotion, MotionFault, ramp_wheels
 from .parking import DockingFeedback, ParkingEstimator, Pose2, gear_obstacles
 from .perf import PerfMonitor
-from .plane_vision import PlaneDetectorRunner
+from .plane_vision import PlaneAutoPark, PlaneDetectorRunner
 
 STATIC = Path(__file__).parent / "static"
 WATCHDOG_SECONDS = 0.60
@@ -850,23 +850,9 @@ class RobotController:
         await self.broadcast()
 
     async def _auto_park_loop(self, cid, epoch):
+        plane.set_external(True)
         try:
-            detector = TagDetector()
-            cfg = self.parking.config
-            veh = cfg["vehicle"]
-            emp = cfg.get("empirical_fit") or {}
-            veh_height = float(veh.get("height_m") or cfg["gear"].get("height_clearance_m") or 0.12)
-            veh_width = float(veh.get("width_m") or emp.get("approx_vehicle_width_m") or 0.16)
-            veh_length = float(veh.get("length_m") or emp.get("approx_vehicle_length_m") or 0.21)
-            obstacles = gear_obstacles(cfg["gear"], veh_height)
-            sigma = float(getattr(self.parking, "sigma", None) or 0.0)
-            inflation = float(cfg.get("clearance_margin_m") or 0.015) + sigma
-            runner = AutoParkRunner(
-                obstacles=obstacles,
-                vehicle_width=veh_width,
-                vehicle_length=veh_length,
-                inflation=inflation,
-            )
+            runner = PlaneAutoPark(start_t=time.monotonic())
             last_seq = -1
             while self.state.auto_park and self.auto_park_epoch == epoch:
                 loop_t0 = time.perf_counter()
@@ -875,18 +861,10 @@ class RobotController:
                     self.state.auto_park_status = "auto-park ownership lost"
                     break
                 now = time.monotonic()
-                imu_age = (
-                    (now - self.imu_sample_at)
-                    if (
-                        self.state.imu_connected
-                        and self.state.heading_calibrated
-                        and self.imu_sample_at is not None
-                    )
-                    else None
-                )
                 frame, seq, cap = camera.latest_sample()
                 frame_age = (now - cap) if (frame is not None and cap) else None
-                rec = None
+                meas = None
+                cap_used = None
                 if (
                     frame is not None
                     and seq != last_seq
@@ -894,9 +872,9 @@ class RobotController:
                     and frame_age <= 0.45
                 ):
                     last_seq = seq
-                    rec = await asyncio.to_thread(detector.detect_jpeg, frame, cap)
-                    for k, v in detector.last_timings.items():
-                        self.perf.record(k, v)
+                    cap_used = cap
+                    prior = runner.prior_for_solver()
+                    _, meas = await asyncio.to_thread(plane.detect_once, frame, prior)
                     if not self.state.auto_park or self.auto_park_epoch != epoch:
                         break
                 now = time.monotonic()
@@ -911,48 +889,46 @@ class RobotController:
                 )
                 frame_age = (now - cap) if (frame is not None and cap) else None
                 plan_t0 = time.perf_counter()
-                # RelativeHeading (heading.py) emits CW+ heading_deg & heading_rate_dps;
-                # AutoParkRunner.step expects CCW+ gyro_yaw_rad & imu_w_dps.
+                # RelativeHeading emits CW+ heading_rate_dps; PlaneAutoPark expects CCW+ rad/s.
                 cmd = runner.step(
                     now,
                     imu_age_s=imu_age,
                     frame_age_s=frame_age,
-                    imu_w_dps=-float(self.state.heading_rate_dps),
-                    gyro_yaw_rad=-math.radians(float(self.state.heading_deg)),
-                    rec=rec,
+                    gyro_ccw_rad_s=-math.radians(float(self.state.heading_rate_dps)),
+                    meas=meas,
+                    cap_t=cap_used,
                 )
                 self.perf.record("plan_ms", (time.perf_counter() - plan_t0) * 1000.0)
-                self.state.auto_park_stage = cmd.stage
-                self.state.auto_park_status = cmd.status
-                self.state.auto_park_pose = (
-                    [round(float(v), 4) for v in cmd.pose] if cmd.pose is not None else None
-                )
+                self.state.auto_park_stage = cmd["stage"]
+                self.state.auto_park_status = cmd["status"]
+                self.state.auto_park_pose = cmd["pose"]
                 drive_t0 = time.perf_counter()
-                if cmd.stop:
-                    await self.stop(cmd.reason or "auto-park-stop", release=False)
+                if cmd["stop"]:
+                    await self.stop(cmd["reason"] or "auto-park-stop", release=False)
                     self.perf.record("drive_ms", (time.perf_counter() - drive_t0) * 1000.0)
                     self.perf.record("autopark_loop_ms", (time.perf_counter() - loop_t0) * 1000.0)
-                    if cmd.done or cmd.stage in TERMINAL_STAGES:
+                    if cmd["done"] or cmd["stage"] in TERMINAL_STAGES:
                         break
                 else:
                     await self.drive(
                         cid,
-                        cmd.forward,
-                        cmd.strafe,
-                        cmd.turn,
+                        cmd["forward"],
+                        cmd["strafe"],
+                        cmd["turn"],
                         1800,
                         autonomous=True,
                         mode="auto-park",
                     )
                     self.perf.record("drive_ms", (time.perf_counter() - drive_t0) * 1000.0)
                     self.perf.record("autopark_loop_ms", (time.perf_counter() - loop_t0) * 1000.0)
-                await asyncio.sleep(0.03)
+                await asyncio.sleep(0.02)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             self.state.auto_park_stage = "error"
             self.state.auto_park_status = f"auto-park-error: {exc}"
         finally:
+            plane.set_external(False)
             if self.auto_park_epoch == epoch:
                 self.state.auto_park = False
                 self.auto_park_owner = None
