@@ -42,6 +42,8 @@ KEYPOINT_NAMES = (
 )
 
 PRIOR_TTL_S = 1.0
+TRACK_REANCHOR_EVERY = 12
+NOSE_BOX_MIN_PX = 750.0
 
 
 def discover_models(train_dir: Path = TRAIN_DIR) -> dict[str, tuple[Path, Path]]:
@@ -112,6 +114,9 @@ class PlaneDetectorRunner:
         self._times: deque[float] = deque(maxlen=30)
         self._prior: np.ndarray | None = None
         self._prior_at = 0.0
+        self._track_box: tuple[float, float, float] | None = None
+        self._track_at = 0.0
+        self._track_steps = 0
         self._last_seq = -1
 
     def start(self) -> None:
@@ -143,6 +148,8 @@ class PlaneDetectorRunner:
                 self._detector = None
                 self._loaded_tag = None
                 self._prior = None
+                self._track_box = None
+                self._track_steps = 0
         if enabled is not None:
             self.enabled = bool(enabled)
             if not self.enabled:
@@ -161,6 +168,8 @@ class PlaneDetectorRunner:
         self.last_ms = None
         self._times.clear()
         self._prior = None
+        self._track_box = None
+        self._track_steps = 0
 
     def _ensure_detector(self) -> KeypointDetector:
         if self._detector is not None and self._loaded_tag == self.model_tag:
@@ -180,7 +189,24 @@ class PlaneDetectorRunner:
         if gray is None:
             return None
         det = self._ensure_detector()
-        res = det(gray)
+        now = time.monotonic()
+        use_prev = (
+            self._track_box is not None
+            and (now - self._track_at) <= PRIOR_TTL_S
+            and self._track_steps < TRACK_REANCHOR_EVERY
+        )
+        res = det(
+            gray,
+            prev_box=self._track_box if use_prev else None,
+            nose_box_min=NOSE_BOX_MIN_PX,
+        )
+        if res.box is not None and len(res.points) >= 3:
+            self._track_box = res.box
+            self._track_at = now
+            self._track_steps = self._track_steps + 1 if use_prev else 1
+        else:
+            self._track_box = None
+            self._track_steps = 0
         pts = [[idx, u, v, res.prob[idx]] for idx, u, v in res.points]
         box = [round(float(v), 1) for v in res.box] if res.box is not None else None
 

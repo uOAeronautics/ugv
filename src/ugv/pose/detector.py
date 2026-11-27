@@ -69,33 +69,74 @@ class KeypointDetector:
         self.threshold = threshold
         self.names = (whole.name, crop.name if crop is not None else None)
 
-    def __call__(self, frame: np.ndarray) -> Detection:
-        """frame: (720, 1280) uint8, the car camera's mono picture."""
+    def _run_crop(
+        self, frame: np.ndarray, box: tuple[float, float, float]
+    ) -> tuple[np.ndarray, np.ndarray]:
+        x0, y0, size = box
+        assert self.crop is not None
+        s = self.crop.w / size
+        M = np.array([[s, 0, -x0 * s], [0, s, -y0 * s]])
+        patch = cv2.warpAffine(
+            frame,
+            M,
+            (self.crop.w, self.crop.h),
+            flags=cv2.INTER_AREA,
+            borderMode=cv2.BORDER_REFLECT,
+        )
+        kp, prob = self.crop(patch)
+        return kp / s + [x0, y0], prob
+
+    @staticmethod
+    def _box_from_kp(
+        kp: np.ndarray, seen: np.ndarray, margin: float = CROP_MARGIN
+    ) -> tuple[float, float, float] | None:
+        if seen.sum() < 2:
+            return None
+        lo, hi = kp[seen].min(0), kp[seen].max(0)
+        size = float(np.clip(max(hi - lo) * margin, CROP_MIN, CROP_MAX))
+        x0, y0 = (lo + hi) / 2 - size / 2
+        return (float(x0), float(y0), size)
+
+    def __call__(
+        self,
+        frame: np.ndarray,
+        prev_box: tuple[float, float, float] | None = None,
+        nose_box_min: float = 400.0,
+    ) -> Detection:
+        """frame: (720, 1280) uint8, the car camera's mono picture.
+
+        When `prev_box` is supplied and a crop model is loaded, stage 1 is skipped and the crop
+        model runs directly on `prev_box`; if fewer than 3 keypoints survive, it falls back to
+        stage 1 + stage 2 on the same frame.
+        """
         if frame.shape != (H, W):
             raise ValueError(f"frame must be {H}x{W} mono, got {frame.shape}")
         t0 = cv2.getTickCount()
-        small = cv2.resize(frame, (self.whole.w, self.whole.h), interpolation=cv2.INTER_AREA)
-        kp, prob = self.whole(small)
-        kp = kp * [W / self.whole.w, H / self.whole.h]
-        box = None
-        if self.crop is not None:
-            seen = prob > self.threshold
-            if seen.sum() >= 2:
-                lo, hi = kp[seen].min(0), kp[seen].max(0)
-                size = float(np.clip(max(hi - lo) * CROP_MARGIN, CROP_MIN, CROP_MAX))
-                x0, y0 = (lo + hi) / 2 - size / 2
-                box = (float(x0), float(y0), size)
-                s = self.crop.w / size
-                M = np.array([[s, 0, -x0 * s], [0, s, -y0 * s]])
-                patch = cv2.warpAffine(
-                    frame,
-                    M,
-                    (self.crop.w, self.crop.h),
-                    flags=cv2.INTER_AREA,
-                    borderMode=cv2.BORDER_REFLECT,
-                )
-                kp, prob = self.crop(patch)
-                kp = kp / s + [x0, y0]
+        box: tuple[float, float, float] | None = None
+        kp = prob = None
+        if prev_box is not None and self.crop is not None:
+            kp, prob = self._run_crop(frame, prev_box)
+            seen = (
+                (prob > self.threshold)
+                & (kp[:, 0] >= 0)
+                & (kp[:, 0] <= W)
+                & (kp[:, 1] >= 0)
+                & (kp[:, 1] <= H)
+            )
+            if seen.sum() >= 3:
+                box = self._box_from_kp(kp, seen, margin=1.45)
+            else:
+                kp = prob = None
+
+        if kp is None or prob is None:
+            small = cv2.resize(frame, (self.whole.w, self.whole.h), interpolation=cv2.INTER_AREA)
+            kp, prob = self.whole(small)
+            kp = kp * [W / self.whole.w, H / self.whole.h]
+            if self.crop is not None:
+                box = self._box_from_kp(kp, prob > self.threshold)
+                if box is not None:
+                    kp, prob = self._run_crop(frame, box)
+
         keep = (
             (prob > self.threshold)
             & (kp[:, 0] >= 0)
@@ -103,27 +144,17 @@ class KeypointDetector:
             & (kp[:, 1] >= 0)
             & (kp[:, 1] <= H)
         )
-        # When the main crop is wide (> 400 px), the 5 cm nose wheel is tiny inside the 256x256
-        # patch; a tight crop around its detected points (indices 9, 12-14) sharpens bay-range
-        # localization from ~7 px to ~3 px.
-        if self.crop is not None and box is not None and box[2] > 400.0 and len(kp) >= 15:
+        # When the main crop is wide (> nose_box_min px), the 5 cm nose wheel is tiny inside the
+        # 256x256 patch; a tight crop around its detected points (indices 9, 12-14) sharpens
+        # bay-range localization from ~7 px to ~3 px.
+        if self.crop is not None and box is not None and box[2] > nose_box_min and len(kp) >= 15:
             nose_ids = [i for i in (9, 12, 13, 14) if keep[i]]
             if len(nose_ids) >= 2:
                 npts = kp[nose_ids]
                 nlo, nhi = npts.min(0), npts.max(0)
                 nsize = float(np.clip(max(nhi - nlo) * 2.5, 96.0, 320.0))
                 nx0, ny0 = (nlo + nhi) / 2 - nsize / 2
-                ns = self.crop.w / nsize
-                nM = np.array([[ns, 0, -nx0 * ns], [0, ns, -ny0 * ns]])
-                npatch = cv2.warpAffine(
-                    frame,
-                    nM,
-                    (self.crop.w, self.crop.h),
-                    flags=cv2.INTER_AREA,
-                    borderMode=cv2.BORDER_REFLECT,
-                )
-                nkp, nprob = self.crop(npatch)
-                nkp = nkp / ns + [nx0, ny0]
+                nkp, nprob = self._run_crop(frame, (float(nx0), float(ny0), nsize))
                 for i in (9, 12, 13, 14):
                     if nprob[i] > self.threshold and 0 <= nkp[i, 0] <= W and 0 <= nkp[i, 1] <= H:
                         kp[i], prob[i], keep[i] = nkp[i], nprob[i], True
