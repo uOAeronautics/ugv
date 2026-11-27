@@ -13,6 +13,7 @@ from mass_properties import properties
 from motor_physics import add_rubber_surface, add_visual_material, load_profile
 from native_motor_parameters import apply_native_parameters
 from payload_car_model import add_payload_car
+from payload_prior import sample_payload_parameters
 
 HERE = Path(__file__).resolve().parent
 
@@ -225,7 +226,17 @@ def build_world(args) -> tuple[E.Element, str]:
             pose=room_config.get("drone_pose", (0.75, 0, 0, 0, 0, 0)),
             layout=args.marker_layout,
         )
+    sample_seed = getattr(args, "sample_seed", None)
+    if sample_seed is not None and args.car != "payload":
+        raise ValueError("--sample-seed is only supported with --car payload")
+    drawn_sample = None
     if args.car == "payload":
+        if sample_seed is not None:
+            drawn_sample = sample_payload_parameters(sample_seed)
+            # Sub-gram 7-roller TPU links have Izz < 1e-8 kg*m^2, which trips DART's
+            # default Dantzig/ODE LCP _dLDLTRemove assertion; PGS solves them cleanly.
+            dart = node(physics, "dart")
+            node(node(dart, "solver"), "solver_type", "pgs")
         _, dims = add_payload_car(
             world,
             node,
@@ -233,6 +244,7 @@ def build_world(args) -> tuple[E.Element, str]:
             chassis_mass_kg=args.chassis_mass_kg,
             wheel_mass_kg=args.wheel_mass_kg,
             require_measured_physics=args.require_measured_physics,
+            sample=drawn_sample,
         )
         summary = (
             f"Generated payload_car: L={dims['overall_length_m'] * 1000:.2f}mm, "
@@ -240,6 +252,13 @@ def build_world(args) -> tuple[E.Element, str]:
             f"wheelbase={dims['wheelbase_m'] * 1000:.2f}mm, track={dims['wheel_track_m'] * 1000:.2f}mm, "
             f"wheel_d={dims['wheel_diameter_m'] * 1000:.2f}mm"
         )
+        if drawn_sample is not None:
+            summary = (
+                f"PRIOR SAMPLE, not measured (seed={drawn_sample['seed']}, "
+                f"mass={drawn_sample['mass']['total_mass_kg'] * 1000:.1f}g, "
+                f"COM_mm={[round(v * 1000, 2) for v in drawn_sample['mass']['assembly_com_m']]}, "
+                f"motor={drawn_sample['motor']['variant_id']})\n" + summary
+            )
     else:
         total, wheelbase, track, tire = _add_freenove_car(world, root, args, room_config)
         summary = (
@@ -248,6 +267,8 @@ def build_world(args) -> tuple[E.Element, str]:
             f"Generated freenove: wheelbase={wheelbase * 1000:.2f}mm, "
             f"track={track * 1000:.2f}mm, tire width={tire * 1000:.2f}mm"
         )
+    if getattr(args, "_return_sample", False):
+        return root, summary, drawn_sample
     return root, summary
 
 
@@ -288,6 +309,15 @@ def main(argv=None):
         action="store_true",
         help="Fail if payload car mass/inertia have not been measured",
     )
+    parser.add_argument(
+        "--sample-seed",
+        type=int,
+        default=None,
+        help=(
+            "Draw a Monte Carlo prior sample (NOT measured) from payload_prior.json "
+            "and write a drivable payload_car world plus sidecar JSON (--car payload only)"
+        ),
+    )
     default_profile = HERE / "mecanum_native_profile_pilot02_v1.json"
     motors = parser.add_mutually_exclusive_group()
     motors.add_argument(
@@ -308,12 +338,19 @@ def main(argv=None):
         help="Output SDF path (default: payload_world.sdf or freenove_world.sdf)",
     )
     args = parser.parse_args(argv)
+    if args.sample_seed is not None and args.car != "payload":
+        parser.error("--sample-seed is only supported with --car payload")
     output = args.output or (
         HERE / ("payload_world.sdf" if args.car == "payload" else "freenove_world.sdf")
     )
-    root, summary = build_world(args)
+    args._return_sample = True
+    root, summary, drawn_sample = build_world(args)
     E.indent(root)
     E.ElementTree(root).write(output, encoding="utf-8", xml_declaration=True)
+    if drawn_sample is not None:
+        sidecar = output.with_suffix(".sample.json")
+        sidecar.write_text(json.dumps(drawn_sample, indent=2) + "\n", encoding="utf-8")
+        summary += f"\nWrote prior sample sidecar: {sidecar}"
     print(summary)
 
 

@@ -27,6 +27,7 @@ def ensure_plugin():
             tinyxml = multiarch / "libtinyxml2.so.10"
             if tinyxml.exists():
                 options += [
+                    f"-DTINYXML2_LIBRARIES={tinyxml}",
                     f"-DTINYXML2_LIBRARY_tinyxml2={tinyxml}",
                     f"-Dpkgcfg_lib_TINYXML2_tinyxml2={tinyxml}",
                 ]

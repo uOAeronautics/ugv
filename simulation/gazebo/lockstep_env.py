@@ -199,10 +199,20 @@ class Sensors:
         return g
 
 
+def _world_and_model(root: E.ElementTree | E.Element) -> tuple[str, str]:
+    el = root.getroot() if isinstance(root, E.ElementTree) else root
+    world_el = el.find("world")
+    world_name = world_el.get("name", WORLD) if world_el is not None else WORLD
+    if el.find('.//model[@name="payload_car"]') is not None:
+        return world_name, "payload_car"
+    return world_name, MODEL
+
+
 # ---------------- Gazebo process + bridge ----------------
 def headless_world(src: Path, dst: Path):
     require_drivable_car(world=src)
     root = E.parse(src)
+    _, model_name = _world_and_model(root)
     for world in root.findall("world"):
         for plugin in list(world.findall("plugin")):
             if "Sensors" in plugin.get("name", ""):
@@ -210,7 +220,7 @@ def headless_world(src: Path, dst: Path):
     for link in root.findall(".//link"):
         for sensor in list(link.findall("sensor")):
             link.remove(sensor)
-    car = root.find(f".//model[@name='{MODEL}']")
+    car = root.find(f".//model[@name='{model_name}']")
     drive = car.find("plugin[@name='ugv::TTMotorSystem']")
     if drive is None or drive.findtext("mecanum") != "true":
         raise SystemExit(
@@ -241,7 +251,8 @@ def headless_world(src: Path, dst: Path):
 
 class Gazebo:
     def __init__(self, world: Path, log: Path):
-        require_drivable_car(world=world)
+        sample_record = require_drivable_car(world=world)
+        world_name, model_name = _world_and_model(E.parse(world))
         if not BRIDGE.exists():
             raise FileNotFoundError(f"build {BRIDGE} first (see lockstep/CMakeLists.txt)")
         part = "ugv-l6-" + uuid.uuid4().hex
@@ -267,8 +278,11 @@ class Gazebo:
             GZ_IP="127.0.0.1",
             LD_LIBRARY_PATH=f"{PREFIX}/lib/x86_64-linux-gnu:{PREFIX}/lib",
         )
+        bridge_cmd = [str(BRIDGE), world_name, model_name, str(PHYS)]
+        if sample_record is not None:
+            bridge_cmd.append("--allow-prior-sample")
         self.bridge = subprocess.Popen(
-            [str(BRIDGE), WORLD, MODEL, str(PHYS)],
+            bridge_cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=self.log,
@@ -329,6 +343,24 @@ class Gazebo:
             raise RuntimeError(f"{r}; see {self.log_path}")
         _, t, x, y, yaw = r.split()
         return float(t), float(x), float(y), float(yaw)
+
+    def full_pose(self) -> tuple[float, float, float, float, float, float, float]:
+        """Return (t, x, y, z, roll, pitch, yaw) from the latest PosePublisher sample."""
+        self._check_alive()
+        r = self.cmd("F")
+        if not r.startswith("F"):
+            self._check_alive()
+            raise RuntimeError(f"{r}; see {self.log_path}")
+        _, t, x, y, z, roll, pitch, yaw = r.split()
+        return (
+            float(t),
+            float(x),
+            float(y),
+            float(z),
+            float(roll),
+            float(pitch),
+            float(yaw),
+        )
 
     def close(self):
         try:

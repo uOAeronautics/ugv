@@ -1,0 +1,1460 @@
+{
+  "schema_version": "1",
+  "status": "PRIOR_NOT_MEASURED",
+  "warning": "Monte Carlo prior for unmeasured payload_car physical parameters. NOT a calibrated or measured vehicle model. Do not trust controllers tuned on these samples on physical hardware.",
+  "allowed_sources": [
+    "owner",
+    "cad-volume",
+    "datasheet-range-prior"
+  ],
+  "cad_path": "assets/car/payload_assembly/payload_assembly.usdz",
+  "cad_sha256": "2694510a1e074a20dbdaf9ca40801a286d04770c918ecb6e26b7208e518f8380",
+  "total_mass_upper_bound_kg": {
+    "value": 0.3,
+    "unit": "kg",
+    "quote": "probably under 300g",
+    "quote_date": "2026-11-27",
+    "source": "owner"
+  },
+  "cad_geometry_summary": {
+    "raw_meshes": 1242,
+    "watertight_meshes": 1241,
+    "convex_hull_fallback_meshes": 1,
+    "wheel_roller_count_per_wheel": 7,
+    "wheel_roller_ring_radius_m": 0.014999,
+    "wheel_roller_cad_radius_m": 0.00479,
+    "wheel_roller_contact_radius_m": 0.004951,
+    "wheel_roller_length_m": 0.0208,
+    "wheel_outer_radius_from_rollers_m": 0.019788,
+    "cad_raw_mecanum_hand_sign": -1,
+    "mecanum_hand_sign": 1,
+    "source": "cad-volume",
+    "notes": "1241/1242 USD mesh prims are watertight; 1 tiny SMD pad (0.0005 cm^3 on sbc_56x41_module) uses convex-hull fallback. Raw USD places A hubs on FL/RR and B hubs on FR/RL (cad_raw_mecanum_hand_sign=-1, O-pattern on top / X-pattern on floor, yaw moment arm only |(track-wheelbase)/2| = 27.9 mm). Drivable prior uses standard top-view X-pattern (mecanum_hand_sign=+1, O-pattern on floor, yaw moment arm (track+wheelbase)/2 = 98.7 mm, matching mecanum_geometry.HANDEDNESS); verify wheel mounting on physical car."
+  },
+  "material_densities_kg_per_m3": {
+    "pla_petg_fdm": {
+      "dist": "uniform",
+      "low": 450.0,
+      "high": 1270.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "FDM PLA (1240 kg/m^3 solid) or PETG (1270 kg/m^3 solid) with unknown slicer infill (20% sparse infill+walls ~450 kg/m^3 up to 100% solid PETG 1270 kg/m^3)."
+    },
+    "tpu_roller_fdm": {
+      "dist": "uniform",
+      "low": 650.0,
+      "high": 1250.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "TPU 95A rollers (35%-100% effective infill; solid TPU 1200-1250 kg/m^3)."
+    },
+    "fr4_pcb": {
+      "dist": "uniform",
+      "low": 1800.0,
+      "high": 2100.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "FR4 glass-epoxy PCB substrate with copper planes (typical 1850-2100 kg/m^3)."
+    },
+    "baseboard_headers_smd": {
+      "dist": "uniform",
+      "low": 1200.0,
+      "high": 2800.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "Baseboard pin headers, JST sockets, inductors, and ICs modeled as solid CAD blocks (hollow plastic housings + metal pins/silicone dies)."
+    },
+    "steel_fasteners_axles": {
+      "dist": "uniform",
+      "low": 7750.0,
+      "high": 8050.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "Carbon or 304 stainless steel screws, nuts, and 2x23 mm roller axles."
+    },
+    "brass_inserts": {
+      "dist": "uniform",
+      "low": 8400.0,
+      "high": 8700.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "C360 brass heat-set inserts and XT30 solder cups."
+    },
+    "copper_wire_insulated": {
+      "dist": "uniform",
+      "low": 2500.0,
+      "high": 5500.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "Stranded copper wire + PVC/silicone insulation effective bulk density."
+    },
+    "plastic_connectors_sleeves": {
+      "dist": "uniform",
+      "low": 900.0,
+      "high": 1420.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "Nylon/PBT/POM connector housings, spacers, and roller bearing sleeves."
+    },
+    "velcro_straps": {
+      "dist": "uniform",
+      "low": 150.0,
+      "high": 450.0,
+      "unit": "kg/m^3",
+      "source": "datasheet-range-prior",
+      "notes": "Woven nylon hook-and-loop battery straps (CAD models solid bounding envelope)."
+    }
+  },
+  "purchased_envelope_masses_kg": {
+    "lipo_2s_72x35x17": {
+      "dist": "uniform",
+      "low": 0.03,
+      "high": 0.078,
+      "unit": "kg",
+      "label": "prior",
+      "source": "datasheet-range-prior",
+      "citation": "Typical 2S 7.4V 450-1300 mAh LiPo pack datasheet mass range fitting inside the 72x35x17 mm CAD tray envelope (e.g. GNB/Tattu/Turnigy 2S packs)."
+    },
+    "n20_gearmotor_each": {
+      "dist": "uniform",
+      "low": 0.009,
+      "high": 0.012,
+      "unit": "kg",
+      "label": "prior",
+      "source": "datasheet-range-prior",
+      "citation": "Typical Pololu / GA12-N20 12x10 mm micro metal gearmotor datasheet range (9.5-10.5 g nominal; 9-12 g across shaft lengths and gearbox ratios)."
+    },
+    "bno055_breakout": {
+      "dist": "uniform",
+      "low": 0.0025,
+      "high": 0.0045,
+      "unit": "kg",
+      "label": "prior",
+      "source": "datasheet-range-prior",
+      "citation": "Typical Adafruit / SparkFun BNO055 STEMMA QT IMU breakout datasheet range (~3 g)."
+    },
+    "camera_module_40x40_m12": {
+      "dist": "uniform",
+      "low": 0.008,
+      "high": 0.022,
+      "unit": "kg",
+      "label": "prior",
+      "source": "datasheet-range-prior",
+      "citation": "Typical 38x38/40x40 board camera PCB + M12 lens holder + M12 lens datasheet range."
+    },
+    "sbc_56x41": {
+      "dist": "uniform",
+      "low": 0.015,
+      "high": 0.042,
+      "unit": "kg",
+      "label": "prior",
+      "source": "datasheet-range-prior",
+      "citation": "Typical compact 56x41 mm SBC / CM4+mini-carrier / Radxa-Zero / Pi-Zero-class assembly with RJ45/HDMI/USB/GPIO ports datasheet range."
+    }
+  },
+  "cad_parts": [
+    {
+      "id": "chassis.baseboard_fr4_pcb",
+      "link": "chassis",
+      "component": "baseboard_fr4_pcb",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 1,
+        "watertight_count": 1,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 1.4921126e-05,
+        "com_m": [
+          -7.7e-05,
+          -2.7e-05,
+          0.012496
+        ],
+        "bbox_size_m": [
+          0.1,
+          0.1,
+          0.00151
+        ],
+        "inertia_per_kg_m2": [
+          0.0008290213,
+          0.0008297904,
+          0.0016584317,
+          -1.46e-08,
+          -0.0,
+          0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "fr4_pcb"
+    },
+    {
+      "id": "chassis.baseboard_headers_smd",
+      "link": "chassis",
+      "component": "baseboard_headers_smd",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 83,
+        "watertight_count": 83,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 5.097829e-06,
+        "com_m": [
+          0.011154,
+          -0.01233,
+          0.017045
+        ],
+        "bbox_size_m": [
+          0.0948,
+          0.090284,
+          0.013505
+        ],
+        "inertia_per_kg_m2": [
+          0.0005513259,
+          0.0004746532,
+          0.0010145855,
+          -1.35631e-05,
+          -2.1545e-06,
+          -7.399e-07
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "baseboard_headers_smd"
+    },
+    {
+      "id": "chassis.bno055_module",
+      "link": "chassis",
+      "component": "bno055_module",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 4,
+        "watertight_count": 4,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 8.6463e-07,
+        "com_m": [
+          0.008,
+          -0.0,
+          0.016571
+        ],
+        "bbox_size_m": [
+          0.0178,
+          0.0254,
+          0.00455
+        ],
+        "inertia_per_kg_m2": [
+          6.20923e-05,
+          2.22732e-05,
+          8.22429e-05,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "bno055_breakout"
+    },
+    {
+      "id": "chassis.brass_inserts",
+      "link": "chassis",
+      "component": "brass_inserts",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 6,
+        "watertight_count": 6,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 2.42009e-07,
+        "com_m": [
+          -0.001727,
+          0.00386,
+          0.01645
+        ],
+        "bbox_size_m": [
+          0.0966,
+          0.0966,
+          0.0064
+        ],
+        "inertia_per_kg_m2": [
+          0.0020376488,
+          0.0019328884,
+          0.0039644178,
+          5.89483e-05,
+          3.9557e-06,
+          -8.8423e-06
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "brass_inserts"
+    },
+    {
+      "id": "chassis.camera_module",
+      "link": "chassis",
+      "component": "camera_module",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 5,
+        "watertight_count": 5,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 5.415457e-06,
+        "com_m": [
+          0.049984,
+          -0.0,
+          0.038092
+        ],
+        "bbox_size_m": [
+          0.0236,
+          0.04,
+          0.04
+        ],
+        "inertia_per_kg_m2": [
+          0.0001485128,
+          0.0001049126,
+          9.71173e-05,
+          0.0,
+          -3.8363e-06,
+          0.0
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "camera_module_40x40_m12"
+    },
+    {
+      "id": "chassis.copper_wires",
+      "link": "chassis",
+      "component": "copper_wires",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 26,
+        "watertight_count": 26,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 9.89024e-07,
+        "com_m": [
+          -0.001651,
+          0.01082,
+          0.027225
+        ],
+        "bbox_size_m": [
+          0.087505,
+          0.094145,
+          0.04035
+        ],
+        "inertia_per_kg_m2": [
+          0.001325501,
+          0.0005406925,
+          0.0016289167,
+          0.0002600121,
+          -9.1763e-06,
+          0.000202158
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "copper_wire_insulated"
+    },
+    {
+      "id": "chassis.lipo_2s_envelope",
+      "link": "chassis",
+      "component": "lipo_2s_envelope",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 1,
+        "watertight_count": 1,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 4.284e-05,
+        "com_m": [
+          -0.0265,
+          -0.004,
+          0.046741
+        ],
+        "bbox_size_m": [
+          0.035,
+          0.072,
+          0.017
+        ],
+        "inertia_per_kg_m2": [
+          0.0004560834,
+          0.0001261667,
+          0.0005340834,
+          -0.0,
+          0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "lipo_2s_72x35x17"
+    },
+    {
+      "id": "chassis.n20_motor_front_left",
+      "link": "chassis",
+      "component": "n20_motor_front_left",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 13,
+        "watertight_count": 13,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 2.292368e-06,
+        "com_m": [
+          0.035443,
+          0.035694,
+          0.019955
+        ],
+        "bbox_size_m": [
+          0.012,
+          0.0365,
+          0.01
+        ],
+        "inertia_per_kg_m2": [
+          6.02023e-05,
+          1.76042e-05,
+          6.3303e-05,
+          -4.83e-07,
+          2.737e-07,
+          -1.943e-07
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "n20_gearmotor_each"
+    },
+    {
+      "id": "chassis.n20_motor_front_right",
+      "link": "chassis",
+      "component": "n20_motor_front_right",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 13,
+        "watertight_count": 13,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 2.292368e-06,
+        "com_m": [
+          0.035443,
+          -0.035694,
+          0.019928
+        ],
+        "bbox_size_m": [
+          0.012,
+          0.0365,
+          0.01
+        ],
+        "inertia_per_kg_m2": [
+          6.02023e-05,
+          1.76042e-05,
+          6.3303e-05,
+          4.83e-07,
+          -2.737e-07,
+          -1.943e-07
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "n20_gearmotor_each"
+    },
+    {
+      "id": "chassis.n20_motor_rear_left",
+      "link": "chassis",
+      "component": "n20_motor_rear_left",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 13,
+        "watertight_count": 13,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 2.292368e-06,
+        "com_m": [
+          -0.035357,
+          0.035694,
+          0.019955
+        ],
+        "bbox_size_m": [
+          0.012,
+          0.0365,
+          0.01
+        ],
+        "inertia_per_kg_m2": [
+          6.02023e-05,
+          1.76042e-05,
+          6.3303e-05,
+          -4.83e-07,
+          2.737e-07,
+          -1.943e-07
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "n20_gearmotor_each"
+    },
+    {
+      "id": "chassis.n20_motor_rear_right",
+      "link": "chassis",
+      "component": "n20_motor_rear_right",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 13,
+        "watertight_count": 13,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 2.292368e-06,
+        "com_m": [
+          -0.035357,
+          -0.035694,
+          0.019928
+        ],
+        "bbox_size_m": [
+          0.012,
+          0.0365,
+          0.01
+        ],
+        "inertia_per_kg_m2": [
+          6.02023e-05,
+          1.76042e-05,
+          6.3303e-05,
+          4.83e-07,
+          -2.737e-07,
+          -1.943e-07
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "n20_gearmotor_each"
+    },
+    {
+      "id": "chassis.plastic_connectors",
+      "link": "chassis",
+      "component": "plastic_connectors",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 14,
+        "watertight_count": 14,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 2.30532e-06,
+        "com_m": [
+          -0.00676,
+          0.009323,
+          0.026813
+        ],
+        "bbox_size_m": [
+          0.0867,
+          0.0886,
+          0.0294
+        ],
+        "inertia_per_kg_m2": [
+          0.0012086518,
+          0.0004708172,
+          0.0015846505,
+          0.000342638,
+          4.62151e-05,
+          -0.0001311023
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "plastic_connectors_sleeves"
+    },
+    {
+      "id": "chassis.printed_pla_petg",
+      "link": "chassis",
+      "component": "printed_pla_petg",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 6,
+        "watertight_count": 6,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 4.5334241e-05,
+        "com_m": [
+          -0.005782,
+          0.000172,
+          0.036141
+        ],
+        "bbox_size_m": [
+          0.1,
+          0.1,
+          0.0474
+        ],
+        "inertia_per_kg_m2": [
+          0.0015838089,
+          0.0015337786,
+          0.0028123313,
+          -3.3411e-06,
+          3.6445e-06,
+          3.5171e-06
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "pla_petg_fdm"
+    },
+    {
+      "id": "chassis.sbc_56x41_module",
+      "link": "chassis",
+      "component": "sbc_56x41_module",
+      "mass_model": "purchased_envelope",
+      "geometry": {
+        "mesh_count": 885,
+        "watertight_count": 884,
+        "convex_hull_count": 1,
+        "volume_method": "watertight+convex_hull",
+        "volume_m3": 1.6869285e-05,
+        "com_m": [
+          0.018597,
+          0.002262,
+          0.031576
+        ],
+        "bbox_size_m": [
+          0.0447,
+          0.0575,
+          0.0374
+        ],
+        "inertia_per_kg_m2": [
+          0.0002817672,
+          0.0001453104,
+          0.0003729262,
+          3.6769e-05,
+          -1.82353e-05,
+          2.05036e-05
+        ],
+        "source": "cad-volume"
+      },
+      "catalogue_part": "sbc_56x41"
+    },
+    {
+      "id": "chassis.steel_fasteners",
+      "link": "chassis",
+      "component": "steel_fasteners",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 21,
+        "watertight_count": 21,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 1.260335e-06,
+        "com_m": [
+          0.007221,
+          0.001383,
+          0.01649
+        ],
+        "bbox_size_m": [
+          0.100744,
+          0.0975,
+          0.048899
+        ],
+        "inertia_per_kg_m2": [
+          0.0014626313,
+          0.0015714016,
+          0.0028050008,
+          7.3474e-06,
+          -0.0001320101,
+          2.5028e-06
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "steel_fasteners_axles"
+    },
+    {
+      "id": "chassis.velcro_straps",
+      "link": "chassis",
+      "component": "velcro_straps",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 2,
+        "watertight_count": 2,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 4.940807e-06,
+        "com_m": [
+          -0.0265,
+          -0.004,
+          0.045491
+        ],
+        "bbox_size_m": [
+          0.0382,
+          0.052,
+          0.0211
+        ],
+        "inertia_per_kg_m2": [
+          0.0003563452,
+          0.0002964714,
+          0.0005187931,
+          0.0,
+          0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "velcro_straps"
+    },
+    {
+      "id": "front_left_wheel.wheel_hub_pla",
+      "link": "front_left_wheel",
+      "component": "wheel_hub_pla",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 2,
+        "watertight_count": 2,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 1.2265156e-05,
+        "com_m": [
+          0.035399,
+          0.06321,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.0384,
+          0.0225,
+          0.0384
+        ],
+        "inertia_per_kg_m2": [
+          0.0001336025,
+          0.0001412923,
+          0.0001335959,
+          -4e-10,
+          8e-10,
+          -2e-10
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "pla_petg_fdm"
+    },
+    {
+      "id": "front_left_wheel.wheel_roller_tpu",
+      "link": "front_left_wheel",
+      "component": "wheel_roller_tpu",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 7,
+        "watertight_count": 7,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.8074e-06,
+        "com_m": [
+          0.0354,
+          0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.039692,
+          0.0195,
+          0.039718
+        ],
+        "inertia_per_kg_m2": [
+          0.0001412685,
+          0.0002481183,
+          0.0001412685,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "tpu_roller_fdm"
+    },
+    {
+      "id": "front_left_wheel.wheel_sleeve_plastic",
+      "link": "front_left_wheel",
+      "component": "wheel_sleeve_plastic",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 14,
+        "watertight_count": 14,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 7.30481e-07,
+        "com_m": [
+          0.0354,
+          0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.038234,
+          0.019515,
+          0.037354
+        ],
+        "inertia_per_kg_m2": [
+          0.0001715022,
+          0.0002653857,
+          0.0001715022,
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "plastic_connectors_sleeves"
+    },
+    {
+      "id": "front_left_wheel.wheel_steel",
+      "link": "front_left_wheel",
+      "component": "wheel_steel",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 11,
+        "watertight_count": 11,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.88472e-07,
+        "com_m": [
+          0.0354,
+          0.063215,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.035384,
+          0.017674,
+          0.034531
+        ],
+        "inertia_per_kg_m2": [
+          0.0001147685,
+          0.0001923685,
+          0.0001147685,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "steel_fasteners_axles"
+    },
+    {
+      "id": "front_right_wheel.wheel_hub_pla",
+      "link": "front_right_wheel",
+      "component": "wheel_hub_pla",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 2,
+        "watertight_count": 2,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 1.2265187e-05,
+        "com_m": [
+          0.035398,
+          -0.06321,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.0384,
+          0.0225,
+          0.0384
+        ],
+        "inertia_per_kg_m2": [
+          0.0001336023,
+          0.0001412927,
+          0.0001335965,
+          -4e-09,
+          1.2e-09,
+          -3e-10
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "pla_petg_fdm"
+    },
+    {
+      "id": "front_right_wheel.wheel_roller_tpu",
+      "link": "front_right_wheel",
+      "component": "wheel_roller_tpu",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 7,
+        "watertight_count": 7,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.8074e-06,
+        "com_m": [
+          0.0354,
+          -0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.039692,
+          0.0195,
+          0.039718
+        ],
+        "inertia_per_kg_m2": [
+          0.0001412685,
+          0.0002481183,
+          0.0001412685,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "tpu_roller_fdm"
+    },
+    {
+      "id": "front_right_wheel.wheel_sleeve_plastic",
+      "link": "front_right_wheel",
+      "component": "wheel_sleeve_plastic",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 14,
+        "watertight_count": 14,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 7.30481e-07,
+        "com_m": [
+          0.0354,
+          -0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.038234,
+          0.019515,
+          0.037354
+        ],
+        "inertia_per_kg_m2": [
+          0.0001715022,
+          0.0002653857,
+          0.0001715022,
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "plastic_connectors_sleeves"
+    },
+    {
+      "id": "front_right_wheel.wheel_steel",
+      "link": "front_right_wheel",
+      "component": "wheel_steel",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 11,
+        "watertight_count": 11,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.88472e-07,
+        "com_m": [
+          0.0354,
+          -0.063215,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.035384,
+          0.017674,
+          0.034531
+        ],
+        "inertia_per_kg_m2": [
+          0.0001147685,
+          0.0001923685,
+          0.0001147685,
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "steel_fasteners_axles"
+    },
+    {
+      "id": "rear_left_wheel.wheel_hub_pla",
+      "link": "rear_left_wheel",
+      "component": "wheel_hub_pla",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 2,
+        "watertight_count": 2,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 1.2265187e-05,
+        "com_m": [
+          -0.035402,
+          0.06321,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.0384,
+          0.0225,
+          0.0384
+        ],
+        "inertia_per_kg_m2": [
+          0.0001336023,
+          0.0001412927,
+          0.0001335965,
+          4e-09,
+          -1.2e-09,
+          -3e-10
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "pla_petg_fdm"
+    },
+    {
+      "id": "rear_left_wheel.wheel_roller_tpu",
+      "link": "rear_left_wheel",
+      "component": "wheel_roller_tpu",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 7,
+        "watertight_count": 7,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.8074e-06,
+        "com_m": [
+          -0.0354,
+          0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.039692,
+          0.0195,
+          0.039718
+        ],
+        "inertia_per_kg_m2": [
+          0.0001412685,
+          0.0002481183,
+          0.0001412685,
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "tpu_roller_fdm"
+    },
+    {
+      "id": "rear_left_wheel.wheel_sleeve_plastic",
+      "link": "rear_left_wheel",
+      "component": "wheel_sleeve_plastic",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 14,
+        "watertight_count": 14,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 7.30481e-07,
+        "com_m": [
+          -0.0354,
+          0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.038234,
+          0.019515,
+          0.037354
+        ],
+        "inertia_per_kg_m2": [
+          0.0001715022,
+          0.0002653857,
+          0.0001715022,
+          0.0,
+          0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "plastic_connectors_sleeves"
+    },
+    {
+      "id": "rear_left_wheel.wheel_steel",
+      "link": "rear_left_wheel",
+      "component": "wheel_steel",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 11,
+        "watertight_count": 11,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.88472e-07,
+        "com_m": [
+          -0.0354,
+          0.063215,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.035384,
+          0.017674,
+          0.034531
+        ],
+        "inertia_per_kg_m2": [
+          0.0001147685,
+          0.0001923685,
+          0.0001147685,
+          0.0,
+          0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "steel_fasteners_axles"
+    },
+    {
+      "id": "rear_right_wheel.wheel_hub_pla",
+      "link": "rear_right_wheel",
+      "component": "wheel_hub_pla",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 2,
+        "watertight_count": 2,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 1.2265156e-05,
+        "com_m": [
+          -0.035401,
+          -0.06321,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.0384,
+          0.0225,
+          0.0384
+        ],
+        "inertia_per_kg_m2": [
+          0.0001336025,
+          0.0001412923,
+          0.0001335959,
+          4e-10,
+          -8e-10,
+          -2e-10
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "pla_petg_fdm"
+    },
+    {
+      "id": "rear_right_wheel.wheel_roller_tpu",
+      "link": "rear_right_wheel",
+      "component": "wheel_roller_tpu",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 7,
+        "watertight_count": 7,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.8074e-06,
+        "com_m": [
+          -0.0354,
+          -0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.039692,
+          0.0195,
+          0.039718
+        ],
+        "inertia_per_kg_m2": [
+          0.0001412685,
+          0.0002481183,
+          0.0001412685,
+          -0.0,
+          0.0,
+          0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "tpu_roller_fdm"
+    },
+    {
+      "id": "rear_right_wheel.wheel_sleeve_plastic",
+      "link": "rear_right_wheel",
+      "component": "wheel_sleeve_plastic",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 14,
+        "watertight_count": 14,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 7.30481e-07,
+        "com_m": [
+          -0.0354,
+          -0.06325,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.038234,
+          0.019515,
+          0.037354
+        ],
+        "inertia_per_kg_m2": [
+          0.0001715022,
+          0.0002653857,
+          0.0001715022,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "plastic_connectors_sleeves"
+    },
+    {
+      "id": "rear_right_wheel.wheel_steel",
+      "link": "rear_right_wheel",
+      "component": "wheel_steel",
+      "mass_model": "cad_volume_density",
+      "geometry": {
+        "mesh_count": 11,
+        "watertight_count": 11,
+        "convex_hull_count": 0,
+        "volume_method": "watertight",
+        "volume_m3": 6.88472e-07,
+        "com_m": [
+          -0.0354,
+          -0.063215,
+          0.019941
+        ],
+        "bbox_size_m": [
+          0.035384,
+          0.017674,
+          0.034531
+        ],
+        "inertia_per_kg_m2": [
+          0.0001147685,
+          0.0001923685,
+          0.0001147685,
+          -0.0,
+          0.0,
+          0.0
+        ],
+        "source": "cad-volume"
+      },
+      "material_class": "steel_fasteners_axles"
+    }
+  ],
+  "bottom_up_mass_estimate_kg": {
+    "untruncated": {
+      "n_draws": 50000,
+      "p05": 0.287842,
+      "p50": 0.334798,
+      "p95": 0.381601,
+      "fraction_le_upper_bound": 0.12158,
+      "unit": "kg",
+      "source": "cad-volume",
+      "notes": "Bottom-up CAD part volumes x datasheet density ranges + purchased envelope datasheet mass ranges."
+    },
+    "truncated_at_owner_bound": {
+      "n_accepted": 6079,
+      "p05": 0.270155,
+      "p50": 0.290132,
+      "p95": 0.299118,
+      "max": 0.299998,
+      "unit": "kg",
+      "source": "owner",
+      "notes": "Bottom-up distribution truncated to total_mass_kg <= 0.300 kg per owner statement."
+    }
+  },
+  "n20_motor_variants": [
+    {
+      "id": "n20_50_1_6v",
+      "gear_ratio": 50,
+      "rated_voltage_v": 6.0,
+      "no_load_rpm_low": 500.0,
+      "no_load_rpm_high": 650.0,
+      "stall_torque_kgf_cm_low": 0.35,
+      "stall_torque_kgf_cm_high": 0.8,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 50:1 LP/MP/HP 6V & generic GA12-N20 6V 50:1 datasheet range."
+    },
+    {
+      "id": "n20_100_1_6v",
+      "gear_ratio": 100,
+      "rated_voltage_v": 6.0,
+      "no_load_rpm_low": 250.0,
+      "no_load_rpm_high": 330.0,
+      "stall_torque_kgf_cm_low": 0.7,
+      "stall_torque_kgf_cm_high": 1.5,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 100:1 LP/MP/HP 6V & generic GA12-N20 6V 100:1 datasheet range."
+    },
+    {
+      "id": "n20_150_1_6v",
+      "gear_ratio": 150,
+      "rated_voltage_v": 6.0,
+      "no_load_rpm_low": 170.0,
+      "no_load_rpm_high": 220.0,
+      "stall_torque_kgf_cm_low": 1.0,
+      "stall_torque_kgf_cm_high": 2.2,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 150:1 LP/MP/HP 6V & generic GA12-N20 6V 150:1 datasheet range."
+    },
+    {
+      "id": "n20_210_1_6v",
+      "gear_ratio": 210,
+      "rated_voltage_v": 6.0,
+      "no_load_rpm_low": 120.0,
+      "no_load_rpm_high": 160.0,
+      "stall_torque_kgf_cm_low": 1.4,
+      "stall_torque_kgf_cm_high": 2.8,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 210:1 / generic 200:1 6V GA12-N20 datasheet range."
+    },
+    {
+      "id": "n20_298_1_6v",
+      "gear_ratio": 298,
+      "rated_voltage_v": 6.0,
+      "no_load_rpm_low": 80.0,
+      "no_load_rpm_high": 115.0,
+      "stall_torque_kgf_cm_low": 2.0,
+      "stall_torque_kgf_cm_high": 4.0,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 298:1 / generic 300:1 6V GA12-N20 datasheet range."
+    },
+    {
+      "id": "n20_50_1_12v",
+      "gear_ratio": 50,
+      "rated_voltage_v": 12.0,
+      "no_load_rpm_low": 500.0,
+      "no_load_rpm_high": 650.0,
+      "stall_torque_kgf_cm_low": 0.4,
+      "stall_torque_kgf_cm_high": 0.9,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 50:1 12V & generic GA12-N20 12V 50:1 datasheet range (derated to 2S pack)."
+    },
+    {
+      "id": "n20_100_1_12v",
+      "gear_ratio": 100,
+      "rated_voltage_v": 12.0,
+      "no_load_rpm_low": 250.0,
+      "no_load_rpm_high": 330.0,
+      "stall_torque_kgf_cm_low": 0.8,
+      "stall_torque_kgf_cm_high": 1.8,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 100:1 12V & generic GA12-N20 12V 100:1 datasheet range (derated to 2S pack)."
+    },
+    {
+      "id": "n20_150_1_12v",
+      "gear_ratio": 150,
+      "rated_voltage_v": 12.0,
+      "no_load_rpm_low": 170.0,
+      "no_load_rpm_high": 220.0,
+      "stall_torque_kgf_cm_low": 1.2,
+      "stall_torque_kgf_cm_high": 2.5,
+      "weight": 1.0,
+      "source": "datasheet-range-prior",
+      "citation": "Pololu 150:1 12V & generic GA12-N20 12V 150:1 datasheet range (derated to 2S pack)."
+    }
+  ],
+  "supply_and_drivetrain": {
+    "battery_pack_voltage_v": {
+      "dist": "uniform",
+      "low": 7.0,
+      "high": 8.2,
+      "nominal_v": 7.4,
+      "unit": "V",
+      "source": "datasheet-range-prior",
+      "notes": "2S LiPo operating voltage range around 7.4 V nominal."
+    },
+    "supply_efficiency": {
+      "dist": "uniform",
+      "low": 0.65,
+      "high": 0.95,
+      "unit": "ratio",
+      "source": "datasheet-range-prior",
+      "notes": "Unknown H-bridge voltage drop (BJT vs MOSFET), wiring loss, and battery sag."
+    },
+    "roller_mu": {
+      "dist": "uniform",
+      "low": 0.35,
+      "high": 1.1,
+      "unit": "1",
+      "source": "datasheet-range-prior",
+      "notes": "TPU roller-to-floor friction coefficient; spans low-grip dusty indoor floor to tacky TPU and covers Freenove Gazebo reference (0.80-0.85)."
+    },
+    "roller_bearing_damping_nm_s_per_rad": {
+      "dist": "log_uniform",
+      "low": 1e-06,
+      "high": 0.0001,
+      "unit": "N*m*s/rad",
+      "source": "datasheet-range-prior",
+      "notes": "Passive roller bearing viscous drag; covers Freenove mecanum_geometry default (2e-6) and pilot02 fitted value (3.19e-5)."
+    },
+    "roller_bearing_friction_nm": {
+      "dist": "log_uniform",
+      "low": 5e-07,
+      "high": 2e-05,
+      "unit": "N*m",
+      "source": "datasheet-range-prior",
+      "notes": "Passive roller bearing Coulomb friction; covers Freenove value (1e-6)."
+    },
+    "wheel_deadzone": {
+      "dist": "uniform",
+      "low": 0.0,
+      "high": 0.2,
+      "unit": "duty",
+      "source": "datasheet-range-prior",
+      "notes": "Motor stiction/PWM deadband; covers Freenove measured L7 floor deadbands (20261113-181040-probe-axes: fwd 0.05, strafe 0.13, yaw 0.10-0.16; pilot02 0.0)."
+    },
+    "wheel_duty_exponent": {
+      "dist": "uniform",
+      "low": 0.6,
+      "high": 1.15,
+      "unit": "1",
+      "source": "datasheet-range-prior",
+      "notes": "Nonlinear PWM-to-effort exponent; covers Freenove pilot02 (0.596) through linear (1.0)."
+    },
+    "wheel_gain_spread": {
+      "dist": "uniform",
+      "low": 0.92,
+      "high": 1.08,
+      "unit": "ratio",
+      "source": "datasheet-range-prior",
+      "notes": "Per-wheel motor/gearbox manufacturing spread around nominal gain."
+    },
+    "wheel_drive_tau_s": {
+      "dist": "uniform",
+      "low": 0.03,
+      "high": 0.28,
+      "unit": "s",
+      "source": "datasheet-range-prior",
+      "notes": "First-order drive response lag; covers Freenove pilot02 (0.218 s) and L7 onset (0.07-0.37 s)."
+    },
+    "wheel_brake_tau_s": {
+      "dist": "uniform",
+      "low": 0.02,
+      "high": 0.18,
+      "unit": "s",
+      "source": "datasheet-range-prior",
+      "notes": "Zero-duty brake take-up lag; covers Freenove pilot02 (0.12 s)."
+    },
+    "brake_damping_nm_s_per_rad": {
+      "dist": "log_uniform",
+      "low": 0.0005,
+      "high": 0.005,
+      "unit": "N*m*s/rad",
+      "source": "datasheet-range-prior",
+      "notes": "Shorted-terminal dynamic braking damping; covers Freenove (0.003)."
+    },
+    "brake_resistance_stall_fraction": {
+      "dist": "uniform",
+      "low": 0.01,
+      "high": 0.08,
+      "unit": "ratio",
+      "source": "datasheet-range-prior",
+      "notes": "Dry gearbox/brake drag as fraction of stall torque; covers Freenove (0.002/0.0785 = 0.025)."
+    },
+    "carrier_mass_kg": {
+      "value": 0.0005,
+      "unit": "kg",
+      "source": "datasheet-range-prior",
+      "notes": "Virtual radial-compliance carrier mass per wheel (subtracted from chassis to preserve total mass)."
+    },
+    "tire_radial_stiffness_n_per_m": {
+      "dist": "uniform",
+      "low": 1500.0,
+      "high": 5000.0,
+      "unit": "N/m",
+      "source": "datasheet-range-prior",
+      "notes": "Equivalent radial compliance stiffness for 4-wheel contact load sharing (Freenove uses 5000 N/m)."
+    },
+    "tire_radial_damping_ns_per_m": {
+      "dist": "uniform",
+      "low": 8.0,
+      "high": 25.0,
+      "unit": "N*s/m",
+      "source": "datasheet-range-prior",
+      "notes": "Equivalent radial compliance damping (Freenove uses 10 N*s/m)."
+    },
+    "tire_radial_travel_m": {
+      "value": 0.0015,
+      "unit": "m",
+      "source": "datasheet-range-prior",
+      "notes": "Radial compliance prismatic travel limit (+/-1.5 mm)."
+    }
+  }
+}

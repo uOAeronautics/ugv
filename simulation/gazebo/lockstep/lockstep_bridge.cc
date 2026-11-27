@@ -16,6 +16,7 @@
 #include <gz/msgs/world_control.pb.h>
 #include <gz/transport/Node.hh>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -28,7 +29,7 @@
 namespace {
 std::mutex mtx;
 std::condition_variable cv;
-double poseT = -1, poseX = 0, poseY = 0, poseYaw = 0;
+double poseT = -1, poseX = 0, poseY = 0, poseZ = 0, poseRoll = 0, posePitch = 0, poseYaw = 0;
 std::string model;
 
 void OnPose(const gz::msgs::Pose_V &msg) {
@@ -41,6 +42,12 @@ void OnPose(const gz::msgs::Pose_V &msg) {
     poseT = st.sec() + st.nsec() * 1e-9;
     poseX = p.position().x();
     poseY = p.position().y();
+    poseZ = p.position().z();
+    const double sinr = 2.0 * (q.w() * q.x() + q.y() * q.z());
+    const double cosr = 1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y());
+    poseRoll = std::atan2(sinr, cosr);
+    const double sinp = std::clamp(2.0 * (q.w() * q.y() - q.z() * q.x()), -1.0, 1.0);
+    posePitch = std::asin(sinp);
     poseYaw = std::atan2(2 * (q.w() * q.z() + q.x() * q.y()),
                          1 - 2 * (q.y() * q.y() + q.z() * q.z()));
     cv.notify_all();
@@ -53,6 +60,13 @@ void PrintPose() {
   std::cout.precision(9);
   std::cout << "P " << poseT << " " << poseX << " " << poseY << " " << poseYaw << std::endl;
 }
+
+void PrintFullPose() {
+  std::lock_guard<std::mutex> lk(mtx);
+  std::cout.precision(9);
+  std::cout << "F " << poseT << " " << poseX << " " << poseY << " " << poseZ << " "
+            << poseRoll << " " << posePitch << " " << poseYaw << std::endl;
+}
 }  // namespace
 
 int main(int argc, char **argv) {
@@ -62,13 +76,18 @@ int main(int argc, char **argv) {
   }
   const std::string world = argv[1];
   model = argv[2];
+  const bool allowPriorSample =
+      (argc >= 5 && std::string(argv[4]) == "--allow-prior-sample");
   if (model == "payload_car" || world == "payload_lab") {
-    std::cerr << "payload car has no measured mass or motor model "
-                 "(research/tasks/2026-11-27-characterise-payload-car.md); "
-                 "regenerate with `python3 generate.py --car freenove ...` "
-                 "to drive the archived Freenove car"
-              << std::endl;
-    return 2;
+    if (!allowPriorSample) {
+      std::cerr << "payload car has no measured mass or motor model "
+                   "(research/tasks/2026-11-27-characterise-payload-car.md); "
+                   "regenerate with `python3 generate.py --car freenove ...` "
+                   "to drive the archived Freenove car"
+                << std::endl;
+      return 2;
+    }
+    std::cerr << "PRIOR SAMPLE, not measured (driving sampled payload_car world)" << std::endl;
   }
   const double stepS = std::stod(argv[3]);
   gz::transport::Node node;
@@ -84,6 +103,7 @@ int main(int argc, char **argv) {
     if (!(in >> c)) continue;
     if (c == 'Q') break;
     if (c == 'G') { PrintPose(); continue; }
+    if (c == 'F') { PrintFullPose(); continue; }
     if (c == 'D') {
       gz::msgs::Double_V d;
       for (int i = 0; i < 4; ++i) { double v; in >> v; d.add_data(v); }

@@ -7,6 +7,14 @@ if(gz-sim10_FOUND)
   set(PLUGIN_TARGET gz-plugin4::register)
 else()
   # Gazebo Harmonic (Sim 8) exports versioned package names.
+  # On relocated Harmonic installs without Qt5 QML dev packages, gz-gui8's
+  # exported target interface still references Qt5::Qml/Quick/QuickControls2 even
+  # though this headless physics system never uses GUI libraries (--as-needed drops them).
+  foreach(_qt_stub Qt5::Qml Qt5::Quick Qt5::QuickControls2)
+    if(NOT TARGET ${_qt_stub})
+      add_library(${_qt_stub} INTERFACE IMPORTED)
+    endif()
+  endforeach()
   find_package(gz-sim8 QUIET)
 endif()
 if(gz-sim10_FOUND)
@@ -22,6 +30,13 @@ else()
 endif()
 add_library(ugv_tt_motor SHARED TTMotorSystem.cc)
 target_compile_features(ugv_tt_motor PRIVATE cxx_std_17)
+# gz-msgs10 headers include <tinyxml2.h> via FuelMetadata.hh even when XML
+# conversion is unused; skip that unused inline header if tinyxml2.h is absent.
+include(CheckIncludeFileCXX)
+check_include_file_cxx("tinyxml2.h" HAVE_TINYXML2_H)
+if(NOT HAVE_TINYXML2_H)
+  target_compile_definitions(ugv_tt_motor PRIVATE GZ_MSGS_CONVERT_FUELMETADATA_HH_)
+endif()
 target_link_libraries(ugv_tt_motor PRIVATE ${SIM_TARGET} ${PLUGIN_TARGET})
 if(UNIX AND NOT APPLE)
   # gz-sim exports GUI/AV/XML link dependencies the plugin never uses; on mixed

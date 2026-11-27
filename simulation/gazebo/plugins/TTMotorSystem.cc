@@ -30,7 +30,7 @@ class TTMotorSystem final : public gz::sim::System,
   const std::array<std::string,4> names{{"front_left_wheel_joint",
       "front_right_wheel_joint", "rear_left_wheel_joint", "rear_right_wheel_joint"}};
   std::mutex mutex;
-  double lateral{0}, wheelbase{.1397};
+  double lateral{0}, wheelbase{.1397}, mecanumHandSign{1.};
   std::array<double,4> wheelDuty{};
   bool mecanum{false}, fourDuty{false};
   std::array<double,4> wheelGain{{1,1,1,1}}, wheelReverseGain{{1,1,1,1}};
@@ -79,6 +79,7 @@ class TTMotorSystem final : public gz::sim::System,
   {
     model = gz::sim::Model(entity);
     mecanum=sdf->Get<bool>("mecanum",false).first;
+    mecanumHandSign=sdf->Get<double>("mecanum_hand_sign",1.).first;
     wheelbase=sdf->Get<double>("wheelbase",wheelbase).first;
     ReadFour(sdf,"wheel_voltage_gain",wheelGain,5.);
     ReadFour(sdf,"wheel_reverse_voltage_gain",wheelReverseGain,5.);
@@ -126,9 +127,10 @@ class TTMotorSystem final : public gz::sim::System,
         riseTau[(f+1)*3+t+1]=tau;
       }
     }
-    node.Subscribe("/model/freenove/wheel_duty", &TTMotorSystem::PWM, this);
-    node.Subscribe("/model/freenove/cmd_vel", &TTMotorSystem::Command, this);
-    telemetry = node.Advertise<gz::msgs::Double_V>("/model/freenove/motor_state");
+    std::string topicPrefix = sdf->Get<std::string>("topic_prefix", "/model/freenove").first;
+    node.Subscribe(topicPrefix + "/wheel_duty", &TTMotorSystem::PWM, this);
+    node.Subscribe(topicPrefix + "/cmd_vel", &TTMotorSystem::Command, this);
+    telemetry = node.Advertise<gz::msgs::Double_V>(topicPrefix + "/motor_state");
   }
 
   double EffectiveDuty(double left,double right)
@@ -226,7 +228,7 @@ class TTMotorSystem final : public gz::sim::System,
       }
       double omega = velocity->Data()[0];
       double side = i % 2 == 0 ? -1 : 1;
-      double hand=(i==0 || i==3)?1:-1;
+      double hand=((i==0 || i==3)?1:-1) * mecanumHandSign;
       double target = std::clamp((v - (mecanum?hand*vy:0) + side*w*(track+(mecanum?wheelbase:0))/2)/radius, -omega0, omega0);
       // A velocity servo chooses effective voltage. The DC back-EMF relation
       // then produces finite output torque, decreasing with shaft speed.

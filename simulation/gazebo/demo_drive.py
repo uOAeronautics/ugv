@@ -28,11 +28,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 0 < args.seconds <= 300:
         parser.error("--seconds must be between 0 and 300")
-    require_drivable_car(world=args.world, car=args.car)
+    sample_record = require_drivable_car(world=args.world, car=args.car)
     gz = shutil.which("gz")
     if not gz:
         parser.error("gz is not installed or on PATH")
     require_drivable_car(world=args.world, car=args.car, topics=_live_topics(gz))
+    model_name = "payload_car" if sample_record is not None else "freenove"
 
     def publish(speed, turn):
         subprocess.run(
@@ -40,7 +41,7 @@ def main(argv=None):
                 gz,
                 "topic",
                 "-t",
-                "/model/freenove/cmd_vel",
+                f"/model/{model_name}/cmd_vel",
                 "-m",
                 "gz.msgs.Twist",
                 "-p",

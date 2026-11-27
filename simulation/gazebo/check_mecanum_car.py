@@ -16,6 +16,7 @@ from pathlib import Path
 p = Path(__file__).resolve().parent
 sys.path.insert(0, str(p))
 import uuid
+import xml.etree.ElementTree as E
 
 from build_motor_plugin import plugin_environment
 from drive_guard import require_drivable_car
@@ -24,6 +25,12 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--world", type=Path, default=p / "freenove_world.sdf")
 args = parser.parse_args()
 require_drivable_car(world=args.world)
+_world_root = E.parse(args.world).getroot()
+_world_el = _world_root.find("world")
+WORLD_NAME = _world_el.get("name", "freenove_lab") if _world_el is not None else "freenove_lab"
+MODEL_NAME = (
+    "payload_car" if _world_root.find('.//model[@name="payload_car"]') is not None else "freenove"
+)
 
 os.environ["GZ_PARTITION"] = "ugv-tt-check-" + uuid.uuid4().hex
 env = plugin_environment()
@@ -34,15 +41,15 @@ from gz.msgs.twist_pb2 import Twist
 from gz.transport import Node
 
 n = Node()
-pub = n.advertise("/model/freenove/cmd_vel", Twist)
-duty_pub = n.advertise("/model/freenove/wheel_duty", Double_V)
+pub = n.advertise(f"/model/{MODEL_NAME}/cmd_vel", Twist)
+duty_pub = n.advertise(f"/model/{MODEL_NAME}/wheel_duty", Double_V)
 pose = {}
 samples = []
 
 
 def poses(m):
     for q in m.pose:
-        if q.name == "freenove":
+        if q.name == MODEL_NAME:
             pose.update(
                 t=m.header.stamp.sec + m.header.stamp.nsec * 1e-9,
                 x=q.position.x,
@@ -58,8 +65,8 @@ def motors(m):
     samples.append(list(m.data))
 
 
-n.subscribe(Pose_V, "/world/freenove_lab/dynamic_pose/info", poses)
-n.subscribe(Double_V, "/model/freenove/motor_state", motors)
+n.subscribe(Pose_V, f"/world/{WORLD_NAME}/dynamic_pose/info", poses)
+n.subscribe(Double_V, f"/model/{MODEL_NAME}/motor_state", motors)
 (p / ".control-logs").mkdir(exist_ok=True)
 log = (p / ".control-logs/mecanum-car-check.log").open("w")
 proc = subprocess.Popen(
