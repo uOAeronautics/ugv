@@ -12,13 +12,14 @@ from ugv.plane_vision import PlaneDetectorRunner, discover_models
 from ugv.web import CameraStream, RobotController
 
 
-def test_discover_models_finds_pairs(tmp_path: Path):
-    for name in ("kp-v3c", "kp-crop-v3c", "kp-v4", "kp-crop-v4", "kp-orphan"):
+def test_discover_models_finds_pairs_and_yolo(tmp_path: Path):
+    for name in ("yolo11n-pose-v1", "kp-v3c", "kp-crop-v3c", "kp-v4", "kp-crop-v4", "kp-orphan"):
         d = tmp_path / name
         d.mkdir()
         (d / "model.onnx").write_bytes(b"fake")
     found = discover_models(tmp_path)
-    assert list(found.keys()) == ["v3c", "v4"]
+    assert list(found.keys()) == ["yolo11n-pose-v1", "v3c", "v4"]
+    assert found["yolo11n-pose-v1"] == (tmp_path / "yolo11n-pose-v1", None)
     assert found["v4"] == (tmp_path / "kp-v4", tmp_path / "kp-crop-v4")
 
 

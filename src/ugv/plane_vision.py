@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 import cv2
 import numpy as np
 
-from .pose.detector import TRAIN_DIR, KeypointDetector, default_runs
+from .pose.detector import TRAIN_DIR, KeypointDetector, YoloPoseDetector, default_runs
 
 if TYPE_CHECKING:
     from .web import CameraStream, RobotController
@@ -46,11 +46,18 @@ TRACK_REANCHOR_EVERY = 12
 NOSE_BOX_MIN_PX = 750.0
 
 
-def discover_models(train_dir: Path = TRAIN_DIR) -> dict[str, tuple[Path, Path]]:
-    """Return `{tag: (whole_dir, crop_dir)}` for trained two-stage pairs present on disk."""
-    found: dict[str, tuple[Path, Path]] = {}
+def discover_models(train_dir: Path = TRAIN_DIR) -> dict[str, tuple[Path, Path | None]]:
+    """Return `{tag: (primary_dir, crop_dir_or_None)}` for trained models present on disk.
+
+    Discovers single-stage YOLO-pose models (`yolo*/model.onnx`, listed first) and two-stage
+    keypoint models (`kp-<tag>` + `kp-crop-<tag>`).
+    """
+    found: dict[str, tuple[Path, Path | None]] = {}
     if not train_dir.is_dir():
         return found
+    for d in sorted(train_dir.iterdir()):
+        if d.is_dir() and d.name.startswith("yolo") and (d / "model.onnx").is_file():
+            found[d.name] = (d, None)
     for whole in sorted(train_dir.iterdir()):
         if not whole.is_dir() or not whole.name.startswith("kp-"):
             continue
@@ -63,7 +70,10 @@ def discover_models(train_dir: Path = TRAIN_DIR) -> dict[str, tuple[Path, Path]]
     return found
 
 
-def _default_tag(available: dict[str, tuple[Path, Path]]) -> str:
+def _default_tag(available: dict[str, tuple[Path, Path | None]]) -> str:
+    for tag in available:
+        if tag.startswith("yolo"):
+            return tag
     whole, _ = default_runs()
     tag = whole.name[len("kp-") :] if whole.name.startswith("kp-") else whole.name
     if tag in available:
@@ -171,7 +181,7 @@ class PlaneDetectorRunner:
         self._track_box = None
         self._track_steps = 0
 
-    def _ensure_detector(self) -> KeypointDetector:
+    def _ensure_detector(self) -> KeypointDetector | YoloPoseDetector:
         if self._detector is not None and self._loaded_tag == self.model_tag:
             return self._detector
         self.available = discover_models(self.train_dir)
@@ -179,7 +189,11 @@ class PlaneDetectorRunner:
             whole, crop = self.available[self.model_tag]
         else:
             whole, crop = default_runs()
-        det = KeypointDetector(whole, crop, threads=self.threads)
+        det: KeypointDetector | YoloPoseDetector = (
+            YoloPoseDetector(whole, threads=self.threads)
+            if crop is None
+            else KeypointDetector(whole, crop, threads=self.threads)
+        )
         self._detector = det
         self._loaded_tag = self.model_tag
         return det
@@ -200,8 +214,8 @@ class PlaneDetectorRunner:
             prev_box=self._track_box if use_prev else None,
             nose_box_min=NOSE_BOX_MIN_PX,
         )
-        if res.box is not None and len(res.points) >= 3:
-            self._track_box = res.box
+        if res.box is not None and len(res.box) == 3 and len(res.points) >= 3:
+            self._track_box = (res.box[0], res.box[1], res.box[2])
             self._track_at = now
             self._track_steps = self._track_steps + 1 if use_prev else 1
         else:

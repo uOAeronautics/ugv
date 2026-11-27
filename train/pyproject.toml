@@ -11,6 +11,7 @@ dependencies = [
     "opencv-contrib-python-headless>=4.13",
     "onnx",
     "onnxruntime",
+    "ultralytics>=8.4.220",
 ]
 
 [tool.uv]

@@ -43,13 +43,15 @@ function drawPlane(next, x0, y0, scale) {
     byIdx.set(pt[0], [x0 + pt[1] * scale, y0 + pt[2] * scale, pt[3] ?? 1]);
   }
 
-  if (Array.isArray(next.plane_box) && next.plane_box.length === 3) {
-    const [bx, by, bsize] = next.plane_box;
+  if (Array.isArray(next.plane_box) && (next.plane_box.length === 3 || next.plane_box.length === 4)) {
+    const [bx, by, b2, b3] = next.plane_box;
+    const bw = next.plane_box.length === 4 ? b2 - bx : b2;
+    const bh = next.plane_box.length === 4 ? b3 - by : b2;
     arucoContext.save();
-    arucoContext.setLineDash([6, 4]);
-    arucoContext.strokeStyle = "rgba(52, 211, 153, 0.75)";
-    arucoContext.lineWidth = 1.5;
-    arucoContext.strokeRect(x0 + bx * scale, y0 + by * scale, bsize * scale, bsize * scale);
+    arucoContext.setLineDash(next.plane_box.length === 4 ? [] : [6, 4]);
+    arucoContext.strokeStyle = "rgba(52, 211, 153, 0.85)";
+    arucoContext.lineWidth = next.plane_box.length === 4 ? 2 : 1.5;
+    arucoContext.strokeRect(x0 + bx * scale, y0 + by * scale, bw * scale, bh * scale);
     arucoContext.restore();
   }
 
