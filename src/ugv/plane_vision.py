@@ -144,14 +144,17 @@ class PlaneDetectorRunner:
             self._wake.set()
 
     def detect_once(
-        self, jpeg: bytes, prior: np.ndarray | None = None
+        self, jpeg: bytes, prior: np.ndarray | None = None, *, close_range: bool = False
     ) -> tuple[dict[str, Any] | None, np.ndarray | None]:
         """Run one frame synchronously (for Auto Park), updating the dashboard overlay."""
         gray = _decode_gray_1280x720(jpeg)
         if gray is None:
             return None, None
         det = self._ensure_detector()
-        res = det(gray, nose_box_min=NOSE_BOX_MIN_PX)
+        if isinstance(det, YoloPoseDetector):
+            res = det(gray, close_range=close_range)
+        else:
+            res = det(gray, nose_box_min=NOSE_BOX_MIN_PX)
         pts = [[idx, u, v, res.prob[idx]] for idx, u, v in res.points]
         box = [round(float(v), 1) for v in res.box] if res.box is not None else None
         pose_out, meas = self._solve_pose(res.points, prior=prior)
@@ -434,7 +437,7 @@ class PlaneAutoPark:
         self.ctrl = ParkController(
             bay=bay(),
             params=ParkParams(
-                search_w=0.55,
+                search_w=0.42,
                 orbit_r=1.15,
                 orbit_v=0.14,
                 k_radial=0.8,
@@ -522,10 +525,11 @@ class PlaneAutoPark:
             dtype=float,
         )
         duty = self.est.actuator.to_duty(cmd_vel)
-        # Closed-loop IMU gyro PI yaw-rate controller: ramps through static friction / low
-        # battery if the car stalls in SEARCH/ORBIT, and damps overshoot at 50 Hz.
+        # Closed-loop IMU gyro PI yaw-rate controller with deadband & smooth deadzone taper:
+        # eliminates bang-bang yaw chatter around 0, ramps through static friction when stalled,
+        # and damps overshoot at 50 Hz.
         w_cmd = float(cmd_vel[2])
-        if abs(w_cmd) < 1e-3:
+        if abs(w_cmd) < 0.08:
             self._yaw_int = 0.0
             self._yaw_sign = 0.0
             duty[2] = 0.0
@@ -534,9 +538,12 @@ class PlaneAutoPark:
             if self._yaw_sign != 0.0 and sgn != self._yaw_sign:
                 self._yaw_int = 0.0
             self._yaw_sign = sgn
+            ax_w = self.est.actuator.axes[2]
+            dz_taper = min(1.0, abs(w_cmd) / 0.25)
+            d_ff = sgn * (ax_w.deadzone * dz_taper + abs(w_cmd) / ax_w.gain)
             err_w = w_cmd - float(gyro_ccw_rad_s)
             self._yaw_int = float(np.clip(self._yaw_int + 0.35 * err_w * dt, -0.25, 0.25))
-            d_w = float(duty[2]) + 0.08 * err_w + self._yaw_int
+            d_w = d_ff + 0.08 * err_w + self._yaw_int
             duty[2] = float(np.clip(d_w, -DUTY_CAP, DUTY_CAP))
         state = self.ctrl.state
         if state == "PARKED":

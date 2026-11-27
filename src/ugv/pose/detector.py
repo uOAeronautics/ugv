@@ -206,6 +206,7 @@ class YoloPoseDetector:
         frame: np.ndarray,
         prev_box: tuple[float, ...] | None = None,
         nose_box_min: float = 400.0,
+        close_range: bool = False,
     ) -> Detection:
         """frame: (720, 1280) uint8 mono. Extra kwargs accepted for interface parity."""
         del prev_box, nose_box_min
@@ -227,7 +228,8 @@ class YoloPoseDetector:
         best_score = float(scores[best])
         n_kp = (out.shape[0] - 5) // 3
         ms = 1000.0 * (cv2.getTickCount() - t0) / cv2.getTickFrequency()
-        if best_score < self.conf_threshold:
+        conf_thr = 0.30 if close_range else self.conf_threshold
+        if best_score < conf_thr:
             return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
 
         cx, cy, bw, bh = out[0:4, best]
@@ -240,14 +242,17 @@ class YoloPoseDetector:
         ku = (kpts[:, 0] - pad_x) / scale
         kv = (kpts[:, 1] - pad_y) / scale
         kc = kpts[:, 2]
+        kpt_thr = 0.40 if close_range else self.kpt_threshold
         pts = [
             [int(i), round(float(ku[i]), 1), round(float(kv[i]), 1)]
             for i in range(n_kp)
-            if kc[i] >= self.kpt_threshold and 0.0 <= ku[i] <= W and 0.0 <= kv[i] <= H
+            if kc[i] >= kpt_thr and 0.0 <= ku[i] <= W and 0.0 <= kv[i] <= H
         ]
         # Reject weak clutter false positives (e.g. rolling chair/table casters with 2-4 stray pts)
-        # while still keeping close-range bay views (3-4 nose-tyre pts at high object confidence).
-        if len(pts) < 5 and best_score < 0.65:
+        # while still keeping close-range bay views (3-4 nose-tyre pts during ENTER).
+        if not close_range and len(pts) < 5 and best_score < 0.65:
+            return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
+        if close_range and len(pts) < 3:
             return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
         return Detection(
             pts,

@@ -891,7 +891,10 @@ class RobotController:
                         continue
                     last_seq = seq
                     prior = runner.prior_for_solver()
-                    det, meas = await asyncio.to_thread(plane.detect_once, frame, prior)
+                    close_range = runner.ctrl.state == "ENTER"
+                    det, meas = await asyncio.to_thread(
+                        plane.detect_once, frame, prior, close_range=close_range
+                    )
                     if recorder is not None:
                         await asyncio.to_thread(recorder.save_frame, seq, frame, det)
                     latest_fix["seq"] = seq
@@ -985,7 +988,8 @@ class RobotController:
                     )
                     self.perf.record("drive_ms", (time.perf_counter() - drive_t0) * 1000.0)
                     self.perf.record("autopark_loop_ms", (time.perf_counter() - loop_t0) * 1000.0)
-                await asyncio.sleep(0.02)
+                rem = 0.02 - (time.perf_counter() - loop_t0)
+                await asyncio.sleep(max(0.002, rem))
         except asyncio.CancelledError:
             raise
         except Exception as exc:
@@ -1071,7 +1075,10 @@ class RobotController:
                     self.state.motion_mode = "manual"
                     self.state.turn_target_dps = 0
                     self._apply_vector(forward, turn, limit, strafe=strafe)
-        await self.broadcast()
+        now_b = time.monotonic()
+        if not autonomous or (now_b - getattr(self, "_last_auto_broadcast", 0.0)) >= 0.065:
+            self._last_auto_broadcast = now_b
+            await self.broadcast()
 
     async def stop(self, reason, release=False):
         if release and self.state.auto_park and self.auto_park_task is not asyncio.current_task():
