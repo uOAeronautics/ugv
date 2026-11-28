@@ -84,6 +84,9 @@ class ParkParams:
         0.0  # ENTER moves: hold the heading the move started with, by the gyro (0 = off)
     )
     shield_backoff: bool = False  # also shield the reverse out of the bay
+    backoff_extra_m: float = 0.25  # distance behind stage_x to reverse to in BACKOFF
+    backoff_straight_in_bay: bool = False  # while x > stage_x, reverse straight out (no strafe/yaw)
+    approach_align_first: bool = False  # pause forward advance in APPROACH while misaligned
     calib_min_points: int = 0  # estimator: keypoints a fix needs to calibrate gains and gyro bias
     blind_max_m: float = 1.0  # ENTER: farther than this from the target, never move unseen
     blind_waits: int = 3  # ENTER: empty measure windows to wait out before backing off
@@ -200,6 +203,7 @@ class ParkController:
             vx = (
                 0.0
                 if x >= stage_x
+                or (p.approach_align_first and (abs(y) > 0.08 or abs(yaw) > np.radians(10.0)))
                 else p.approach_v * float(np.clip((stage_x - x) / 0.25, 0.25, 1))
             )
             v_air = np.array([vx, float(np.clip(-p.k_lat * y, -0.12, 0.12))])
@@ -211,14 +215,18 @@ class ParkController:
 
         if s == "BACKOFF":
             self._step = None
-            if x < xt - p.enter_d - 0.25:
+            stage_x = xt - p.enter_d
+            if x < stage_x - p.backoff_extra_m:
                 if not fresh:
                     self._go("SEARCH", "lost after backing off")
                 else:
                     self._go("APPROACH", "backed off, retry")
                 return np.zeros(3)
-            v_air = np.array([-p.approach_v, float(np.clip(-p.k_lat * y, -0.05, 0.05))])
-            cmd = np.array([*_body(v_air, yaw), p.k_head * wrap(-yaw)])
+            if p.backoff_straight_in_bay and x > stage_x:
+                cmd = np.array([-p.approach_v, 0.0, 0.0])
+            else:
+                v_air = np.array([-p.approach_v, float(np.clip(-p.k_lat * y, -0.05, 0.05))])
+                cmd = np.array([*_body(v_air, yaw), p.k_head * wrap(-yaw)])
             if p.shield_backoff and self._would_hit(q, cmd):
                 self.shield_hits += 1
                 return np.array([0.0, 0.0, cmd[2]])  # turn in place to straighten, no translation

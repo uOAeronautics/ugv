@@ -447,6 +447,12 @@ class PlaneAutoPark:
                 k_head=1.5,
                 step_v=0.06,
                 step_w=0.35,
+                k_hold=1.5,
+                shield_backoff=True,
+                backoff_extra_m=0.40,
+                backoff_straight_in_bay=True,
+                approach_align_first=True,
+                misalign_confirm=2,
                 camera_silent_s=1.0,
             ),
         )
