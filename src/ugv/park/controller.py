@@ -165,18 +165,17 @@ class ParkController:
                 return np.zeros(3)
             if q is None and self.fsm.age() < 0.40:
                 return np.zeros(3)  # let the first camera frame land before spinning
-            if q is not None and self.fsm.age() < 3.0:
+            if q is not None and self.fsm.age() < 1.8:
                 bearing = wrap(np.arctan2(-q[1], -q[0]) - q[2])
                 r = float(np.hypot(q[0], q[1]))
                 if abs(bearing) > np.radians(12.0):
                     w_mag = float(np.clip(p.k_face * abs(bearing), 0.25, p.search_w))
                     return np.array([0.0, 0.0, float(np.sign(bearing)) * w_mag])
-                if r < 0.60 and self.fsm.age() > 0.8:
+                if r < 0.60 and self.fsm.age() > 0.7:
                     away = np.array([-0.10, 0.0, 0.0])
                     if not self._would_hit(q, away):
                         return away
-                if self.fsm.age() < 1.8:
-                    return np.zeros(3)  # facing the plane: pause briefly for a blur-free lock
+                return np.zeros(3)  # facing the plane: pause briefly for a blur-free lock
             return np.array([0.0, 0.0, p.search_w])
 
         if s == "ACQUIRE":
@@ -214,7 +213,15 @@ class ParkController:
                 diff = goal - np.array([x, y])
                 d = float(np.hypot(diff[0], diff[1]))
                 v_air = (diff / d) * min(p.orbit_v, max(0.05, 0.8 * d)) if d > 1e-3 else np.zeros(2)
-                w = p.k_face * wrap(np.arctan2(-y, -x) - yaw)
+                # Keep the camera locked on the airframe center with orbital feedforward so
+                # sideways translation never lets the plane slide out of the camera FOV.
+                r2 = max(0.09, x * x + y * y)
+                w_ff = (x * v_air[1] - y * v_air[0]) / r2
+                err_face = wrap(np.arctan2(-y, -x) - yaw)
+                w = float(p.k_face * err_face + w_ff)
+                if abs(err_face) > np.radians(18.0):
+                    # Plane drifting toward edge of FOV: slow translation and turn back first
+                    v_air = v_air * 0.35
                 cmd = np.array([*_body(v_air, yaw), w])
                 if self._would_hit(q, cmd):
                     # Back straight out away from the main gear instead of deadlocking at 0,0,0

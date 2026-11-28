@@ -337,10 +337,10 @@ class PlaneAutoPark:
                 acquire_samples=2,
                 lost_s=2.5,
                 orbit_r=0.52,
-                orbit_v=0.11,
+                orbit_v=0.10,
                 orbit_tol_deg=16.0,
                 k_radial=0.8,
-                k_face=1.4,
+                k_face=2.6,
                 approach_v=0.08,
                 k_lat=1.4,
                 k_head=1.5,
@@ -477,8 +477,8 @@ class PlaneAutoPark:
         # and bay centering enough strafe authority to break static friction on concrete.
         in_bay = self.ctrl.state in ("APPROACH", "ENTER", "BACKOFF")
         for idx, ramp_v, max_d in (
-            (0, 0.08, 0.17 if in_bay else 0.22),
-            (1, 0.08, 0.25 if in_bay else 0.26),
+            (0, 0.08, 0.17 if in_bay else 0.18),
+            (1, 0.08, 0.25 if in_bay else 0.21),
         ):
             v_i = float(cmd_vel[idx])
             if abs(v_i) < 1e-4:
