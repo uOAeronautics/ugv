@@ -205,23 +205,18 @@ class ParkController:
                 self._go("SEARCH", "lost in orbit")
                 return np.zeros(3)
             if p.hub_rear_entry:
-                # Route around the low V-tail (x ~ -0.65, y ~ 0) via the side of hub_rear
-                # (-0.38, +-0.45), then slide under the high hub_rear boom (-0.38, 0).
-                hub_x = (
-                    xt - p.enter_d - 0.01
-                )  # ~ -0.38 m (right under hub_rear, 27 cm clear of tail)
-                if hub_x - 0.14 <= x <= hub_x + 0.08 and abs(y) < 0.24:
-                    self._go("APPROACH", "under hub_rear")
+                # From front/side of the plane, swing wide (+-0.68 m) around hubL/hubR & main gear;
+                # anywhere behind the main gear (x <= hub_x + 0.08), slide straight to the centerline.
+                hub_x = xt - p.enter_d - 0.01  # ~ -0.38 m
+                if x <= hub_x + 0.08 and abs(y) < 0.24:
+                    self._go("APPROACH", "on rear centerline")
                     return np.zeros(3)
                 side = 1.0 if y >= 0.0 else -1.0
-                if x < hub_x - 0.10:
-                    # Behind the V-tail: aim for the side waypoint (-0.40, +-0.45) to clear tail
-                    goal = np.array([hub_x, side * 0.45])
-                elif x > hub_x + 0.06:
+                if x > hub_x + 0.08:
                     # Front/side of plane: swing wide (+-0.68 m) to clear hubL/hubR props & main gear
                     goal = np.array([hub_x, side * 0.68])
                 else:
-                    # Clear of both V-tail and main gear: slide straight under hub_rear
+                    # Behind main gear: slide straight onto the centerline
                     goal = np.array([hub_x, 0.0])
                 self.last_goal = (float(goal[0]), float(goal[1]))
                 diff = goal - np.array([x, y])
