@@ -434,9 +434,9 @@ class PlaneAutoPark:
         self.t0 = time.monotonic() if start_t is None else float(start_t)
         self.last_t = self.t0
         self.est = Estimator(calib_min_points=4)
-        # Real-floor breakaway deadzones (concrete + current battery): NOMINAL (0.05, 0.13, 0.10)
-        # stalls around PWM 350-450 during slow APPROACH/ENTER creep.
-        for ax, dz in zip(self.est.actuator.axes, (0.14, 0.20, 0.12), strict=True):
+        # Real-floor breakaway deadzones (concrete + current battery), smoothly tapered below
+        # small commanded velocities so tiny lateral corrections never slam the wheels.
+        for ax, dz in zip(self.est.actuator.axes, (0.11, 0.14, 0.11), strict=True):
             ax.deadzone = dz
             ax.stall_floor = dz
             ax._theta = np.array([ax.gain, -ax.gain * dz])
@@ -539,13 +539,24 @@ class PlaneAutoPark:
         cmd_vel = self.ctrl.step(t, self.est, jumped)
         cmd_vel = np.array(
             [
-                0.0 if abs(cmd_vel[0]) < 0.015 else float(np.clip(cmd_vel[0], -0.22, 0.22)),
-                0.0 if abs(cmd_vel[1]) < 0.015 else float(np.clip(cmd_vel[1], -0.18, 0.18)),
+                0.0 if abs(cmd_vel[0]) < 0.02 else float(np.clip(cmd_vel[0], -0.18, 0.18)),
+                0.0 if abs(cmd_vel[1]) < 0.025 else float(np.clip(cmd_vel[1], -0.14, 0.14)),
                 float(np.clip(cmd_vel[2], -0.65, 0.65)),
             ],
             dtype=float,
         )
         duty = self.est.actuator.to_duty(cmd_vel)
+        # Smooth deadzone taper on forward & strafe so small corrections never slam to full
+        # deadzone (prevents diagonal PWM spikes into the main gear).
+        for idx, ramp_v, max_d in ((0, 0.08, 0.24), (1, 0.10, 0.22)):
+            v_i = float(cmd_vel[idx])
+            if abs(v_i) < 1e-4:
+                duty[idx] = 0.0
+            else:
+                ax_i = self.est.actuator.axes[idx]
+                taper = min(1.0, abs(v_i) / ramp_v)
+                d_i = np.sign(v_i) * (ax_i.deadzone * taper + abs(v_i) / ax_i.gain)
+                duty[idx] = float(np.clip(d_i, -max_d, max_d))
         # Closed-loop IMU gyro PI yaw-rate controller with deadband & smooth deadzone taper:
         # eliminates bang-bang yaw chatter around 0, ramps through static friction when stalled,
         # and damps overshoot at 50 Hz.
