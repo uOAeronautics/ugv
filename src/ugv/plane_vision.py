@@ -451,11 +451,11 @@ class PlaneAutoPark:
             params=ParkParams(
                 search_w=0.42,
                 orbit_r=0.52,
-                orbit_v=0.13,
+                orbit_v=0.11,
                 orbit_tol_deg=16.0,
                 k_radial=0.8,
                 k_face=1.4,
-                approach_v=0.12,
+                approach_v=0.08,
                 k_lat=1.2,
                 k_head=1.5,
                 align_lat_m=0.05,
@@ -464,8 +464,8 @@ class PlaneAutoPark:
                 abort_yaw_deg=16.0,
                 settle_s=0.15,
                 measure_s=0.25,
-                step_v=0.12,
-                step_w=0.40,
+                step_v=0.08,
+                step_w=0.35,
                 lat_tol_m=0.025,
                 yaw_tol_deg=4.0,
                 stop_tol_m=0.025,
@@ -556,7 +556,7 @@ class PlaneAutoPark:
         duty = self.est.actuator.to_duty(cmd_vel)
         # Smooth deadzone taper on forward & strafe so small corrections never slam to full
         # deadzone (prevents diagonal PWM spikes into the main gear).
-        for idx, ramp_v, max_d in ((0, 0.08, 0.24), (1, 0.10, 0.22)):
+        for idx, ramp_v, max_d in ((0, 0.08, 0.17), (1, 0.10, 0.18)):
             v_i = float(cmd_vel[idx])
             if abs(v_i) < 1e-4:
                 duty[idx] = 0.0

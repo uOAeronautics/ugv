@@ -21,8 +21,8 @@ LOCAL_ROOT = REPO / "runs" / "autopark_pulled"
 
 def pull_latest(run_id: str | None, with_frames: bool) -> Path:
     LOCAL_ROOT.mkdir(parents=True, exist_ok=True)
-    pick = f"'{run_id}'" if run_id else "$(ls -1 | sort | tail -n 1)"
-    what = "$R" if with_frames else "$R/summary.json $R/telemetry.jsonl"
+    pick = f"'{run_id}'" if run_id else "\\$(ls -1 | sort | tail -n 1)"
+    what = "\\$R" if with_frames else "\\$R/summary.json \\$R/telemetry.jsonl"
     remote = f"cd ~/ugv/runs/autopark && R={pick} && tar -czf - {what}"
     cmd = [
         "ssh",
