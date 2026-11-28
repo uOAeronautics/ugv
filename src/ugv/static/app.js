@@ -34,34 +34,122 @@ const PLANE_BONES = [
   [1, 7], [1, 8], [10, 11], [9, 10], [9, 11], [12, 14], [14, 13],
 ];
 
-function drawPlane(next, x0, y0, scale) {
-  if (!next.plane_enabled) return;
-  const pts = next.plane_points || [];
-  const byIdx = new Map();
-  for (const pt of pts) {
-    if (!Array.isArray(pt) || pt.length < 3) continue;
-    byIdx.set(pt[0], [x0 + pt[1] * scale, y0 + pt[2] * scale, pt[3] ?? 1]);
+// 60 FPS smoothed overlay state (interpolates YOLO ~8-12 Hz updates + gyro yaw lead)
+const planeAnim = {
+  box: null,          // current smoothed [x0, y0, x1, y1] or [x0, y0, size]
+  targetBox: null,
+  pts: new Map(),     // idx -> { u, v, tu, tv, seenAt }
+  lastRaf: 0,
+  rafId: 0,
+  lastSeenAt: 0,
+};
+
+function updatePlaneTargets(next) {
+  const now = performance.now();
+  if (!next.plane_enabled) {
+    planeAnim.box = null;
+    planeAnim.targetBox = null;
+    planeAnim.pts.clear();
+    return;
+  }
+  const rawPts = next.plane_points || [];
+  // Gyro yaw-rate lead compensation: heading_rate_dps is CW+ (right turn shifts image left).
+  const rateRad = ((Number(next.heading_rate_dps) || 0) * Math.PI) / 180;
+  const lagS = Math.min(0.25, Math.max(0.04, ((Number(next.plane_ms) || 100) + 20) / 1000));
+  const duLead = Math.max(-160, Math.min(160, -968 * rateRad * lagS * 0.7));
+
+  if (rawPts.length > 0) {
+    planeAnim.lastSeenAt = now;
+    for (const pt of rawPts) {
+      if (!Array.isArray(pt) || pt.length < 3) continue;
+      const idx = pt[0];
+      const tu = pt[1] + duLead;
+      const tv = pt[2];
+      const cur = planeAnim.pts.get(idx);
+      if (cur) {
+        cur.tu = tu;
+        cur.tv = tv;
+        cur.seenAt = now;
+      } else {
+        planeAnim.pts.set(idx, { u: tu, v: tv, tu, tv, seenAt: now });
+      }
+    }
+    if (Array.isArray(next.plane_box) && (next.plane_box.length === 3 || next.plane_box.length === 4)) {
+      const b = next.plane_box.slice();
+      b[0] += duLead;
+      if (b.length === 4) b[2] += duLead;
+      planeAnim.targetBox = b;
+      if (!planeAnim.box || planeAnim.box.length !== b.length) {
+        planeAnim.box = b.slice();
+      }
+    }
+  } else if (now - planeAnim.lastSeenAt > 260) {
+    planeAnim.box = null;
+    planeAnim.targetBox = null;
+    planeAnim.pts.clear();
+  }
+  if (!planeAnim.rafId && (planeAnim.pts.size > 0 || planeAnim.box)) {
+    planeAnim.lastRaf = now;
+    planeAnim.rafId = requestAnimationFrame(stepPlaneAnim);
+  }
+}
+
+function stepPlaneAnim(now) {
+  planeAnim.rafId = 0;
+  const dt = Math.min(0.1, Math.max(0.001, (now - planeAnim.lastRaf) / 1000));
+  planeAnim.lastRaf = now;
+  const alpha = 1 - Math.exp(-dt / 0.065);
+
+  if (planeAnim.box && planeAnim.targetBox && planeAnim.box.length === planeAnim.targetBox.length) {
+    for (let i = 0; i < planeAnim.box.length; i++) {
+      planeAnim.box[i] += (planeAnim.targetBox[i] - planeAnim.box[i]) * alpha;
+    }
+  }
+  for (const [idx, p] of planeAnim.pts.entries()) {
+    if (now - p.seenAt > 220) {
+      planeAnim.pts.delete(idx);
+      continue;
+    }
+    p.u += (p.tu - p.u) * alpha;
+    p.v += (p.tv - p.v) * alpha;
   }
 
-  if (Array.isArray(next.plane_box) && (next.plane_box.length === 3 || next.plane_box.length === 4)) {
-    const [bx, by, b2, b3] = next.plane_box;
-    const bw = next.plane_box.length === 4 ? b2 - bx : b2;
-    const bh = next.plane_box.length === 4 ? b3 - by : b2;
+  drawAruco(state);
+  if (state.plane_enabled && (planeAnim.pts.size > 0 || planeAnim.box)) {
+    planeAnim.rafId = requestAnimationFrame(stepPlaneAnim);
+  }
+}
+
+function drawPlane(next, x0, y0, scale) {
+  if (!next.plane_enabled) return;
+  const now = performance.now();
+  const byIdx = new Map();
+  for (const [idx, p] of planeAnim.pts.entries()) {
+    const fade = Math.max(0, Math.min(1, 1 - (now - p.seenAt) / 220));
+    byIdx.set(idx, [x0 + p.u * scale, y0 + p.v * scale, fade]);
+  }
+  const box = planeAnim.box;
+
+  if (Array.isArray(box) && (box.length === 3 || box.length === 4)) {
+    const [bx, by, b2, b3] = box;
+    const bw = box.length === 4 ? b2 - bx : b2;
+    const bh = box.length === 4 ? b3 - by : b2;
     arucoContext.save();
-    arucoContext.setLineDash(next.plane_box.length === 4 ? [] : [6, 4]);
+    arucoContext.setLineDash(box.length === 4 ? [] : [6, 4]);
     arucoContext.strokeStyle = "rgba(52, 211, 153, 0.85)";
-    arucoContext.lineWidth = next.plane_box.length === 4 ? 2 : 1.5;
+    arucoContext.lineWidth = box.length === 4 ? 2 : 1.5;
     arucoContext.strokeRect(x0 + bx * scale, y0 + by * scale, bw * scale, bh * scale);
     arucoContext.restore();
   }
 
   arucoContext.save();
-  arucoContext.strokeStyle = "rgba(52, 211, 153, 0.9)";
   arucoContext.lineWidth = 2;
   for (const [a, b] of PLANE_BONES) {
     const pa = byIdx.get(a);
     const pb = byIdx.get(b);
     if (!pa || !pb) continue;
+    const op = Math.min(pa[2], pb[2]) * 0.9;
+    arucoContext.strokeStyle = `rgba(52, 211, 153, ${op.toFixed(2)})`;
     arucoContext.beginPath();
     arucoContext.moveTo(pa[0], pa[1]);
     arucoContext.lineTo(pb[0], pb[1]);
@@ -69,8 +157,9 @@ function drawPlane(next, x0, y0, scale) {
   }
 
   arucoContext.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
-  for (const [idx, [px, py]] of byIdx.entries()) {
+  for (const [idx, [px, py, fade]] of byIdx.entries()) {
     const isNear = idx >= 12;
+    arucoContext.globalAlpha = fade;
     arucoContext.fillStyle = isNear ? "#fbbf24" : "#34d399";
     arucoContext.beginPath();
     arucoContext.arc(px, py, isNear ? 3.5 : 4.5, 0, Math.PI * 2);
@@ -82,15 +171,16 @@ function drawPlane(next, x0, y0, scale) {
     arucoContext.fillStyle = "#ecfdf5";
     arucoContext.fillText(label, px + 6, py - 5);
   }
+  arucoContext.globalAlpha = 1;
 
-  if (next.plane_pose && Array.isArray(next.plane_box)) {
+  if (next.plane_pose && Array.isArray(box)) {
     const p = next.plane_pose;
-    const tx = Math.max(12, x0 + next.plane_box[0] * scale);
-    const ty = Math.max(20, y0 + next.plane_box[1] * scale - 8);
+    const tx = Math.max(12, x0 + box[0] * scale);
+    const ty = Math.max(20, y0 + box[1] * scale - 8);
     arucoContext.fillStyle = "#34d399";
     arucoContext.font = "700 12px ui-monospace, SFMono-Regular, Menlo, monospace";
     arucoContext.fillText(
-      `PLANE (${next.plane_model || ""}) x=${p.x_m.toFixed(2)}m y=${p.y_m >= 0 ? "+" : ""}${p.y_m.toFixed(2)}m yaw=${p.yaw_deg >= 0 ? "+" : ""}${p.yaw_deg.toFixed(0)}° · ${pts.length}pts · ${next.plane_ms ?? "—"}ms`,
+      `PLANE (${next.plane_model || ""}) x=${p.x_m.toFixed(2)}m y=${p.y_m >= 0 ? "+" : ""}${p.y_m.toFixed(2)}m yaw=${p.yaw_deg >= 0 ? "+" : ""}${p.yaw_deg.toFixed(0)}° · ${byIdx.size}pts · ${next.plane_ms ?? "—"}ms`,
       tx,
       ty
     );
@@ -296,6 +386,7 @@ function render(next) {
   $("#heading-widget").classList.toggle("uncalibrated", !next.heading_calibrated);
   $("#heading-widget").classList.toggle("moving", !next.heading_stationary && next.heading_calibrated);
 
+  updatePlaneTargets(next);
   drawAruco(next);
   window.renderParking?.(next.parking, next);
   schedulePerfDraw();
