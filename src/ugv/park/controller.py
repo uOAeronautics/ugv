@@ -87,7 +87,7 @@ class ParkParams:
     backoff_extra_m: float = 0.25  # distance behind stage_x to reverse to in BACKOFF
     backoff_straight_in_bay: bool = False  # while x > stage_x, reverse straight out (no strafe/yaw)
     approach_align_first: bool = False  # pause forward advance in APPROACH while misaligned
-    hub_rear_entry: bool = False  # route around low V-tail (-0.65, 0) into hub_rear (-0.40, 0)
+    hub_rear_entry: bool = True  # route around low V-tail (-0.65, 0) into hub_rear (-0.40, 0)
     calib_min_points: int = 0  # estimator: keypoints a fix needs to calibrate gains and gyro bias
     blind_max_m: float = 1.0  # ENTER: farther than this from the target, never move unseen
     blind_waits: int = 3  # ENTER: empty measure windows to wait out before backing off
@@ -188,11 +188,11 @@ class ParkController:
                     return np.zeros(3)
                 side = 1.0 if y >= 0.0 else -1.0
                 if x < hub_x - 0.10:
-                    # Behind the V-tail: aim for the side waypoint (-0.40, +-0.42) to clear tail
-                    goal = np.array([hub_x, side * 0.42])
-                elif x > -0.20 and abs(y) < 0.40:
-                    # In front of / beside main gear: swing out to the side first
+                    # Behind the V-tail: aim for the side waypoint (-0.40, +-0.45) to clear tail
                     goal = np.array([hub_x, side * 0.45])
+                elif x > hub_x + 0.06:
+                    # Front/side of plane: swing wide (+-0.68 m) to clear hubL/hubR props & main gear
+                    goal = np.array([hub_x, side * 0.68])
                 else:
                     # Clear of both V-tail and main gear: slide straight under hub_rear
                     goal = np.array([hub_x, 0.0])

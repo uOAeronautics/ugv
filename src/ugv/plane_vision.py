@@ -556,8 +556,13 @@ class PlaneAutoPark:
         )
         duty = self.est.actuator.to_duty(cmd_vel)
         # Smooth deadzone taper on forward & strafe so small corrections never slam to full
-        # deadzone (prevents diagonal PWM spikes into the main gear).
-        for idx, ramp_v, max_d in ((0, 0.08, 0.17), (1, 0.10, 0.18)):
+        # deadzone (prevents diagonal PWM spikes into the main gear), while giving ORBIT
+        # enough strafe authority to break static friction on concrete.
+        in_bay = self.ctrl.state in ("APPROACH", "ENTER", "BACKOFF")
+        for idx, ramp_v, max_d in (
+            (0, 0.08, 0.17 if in_bay else 0.22),
+            (1, 0.10, 0.18 if in_bay else 0.26),
+        ):
             v_i = float(cmd_vel[idx])
             if abs(v_i) < 1e-4:
                 duty[idx] = 0.0

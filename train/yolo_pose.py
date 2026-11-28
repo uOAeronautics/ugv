@@ -374,6 +374,7 @@ def main() -> None:
         translate=0.15,
         scale=0.35,
         fliplr=0.5,
+        pose=18.0,
         verbose=True,
     )
     best_pt = Path(results.save_dir) / "weights" / "best.pt"
