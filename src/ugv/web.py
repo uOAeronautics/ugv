@@ -1359,10 +1359,11 @@ async def websocket_endpoint(ws: WebSocket):
                 elif kind == "heartbeat":
                     await ws.send_json(controller.payload(cid))
                 elif kind == "stop" and controller.state.owner in (None, cid):
-                    await controller.cancel_auto_park("client-stop")
-                    await controller.cancel_parking("client-stop")
-                    await aruco.disable_follow("client-stop")
-                    await controller.stop("client-stop", m.get("reason") == "disarm")
+                    stop_reason = str(m.get("reason") or "client-stop").strip() or "client-stop"
+                    await controller.cancel_auto_park(stop_reason)
+                    await controller.cancel_parking(stop_reason)
+                    await aruco.disable_follow(stop_reason)
+                    await controller.stop(stop_reason, stop_reason == "disarm")
                 else:
                     await ws.send_json({"type": "error", "error": "unknown message"})
             except PermissionError as e:

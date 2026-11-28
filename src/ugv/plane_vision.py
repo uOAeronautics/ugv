@@ -368,6 +368,7 @@ class PlaneAutoPark:
         self._yaw_int = 0.0
         self._yaw_sign = 0.0
         self._trans_boost = 1.0
+        self._trans_sign = (0.0, 0.0)
         self._move_anchor: tuple[float, np.ndarray] | None = None
         self._last_stage = ""
         self._gear_nose_u: float | None = None
@@ -473,12 +474,13 @@ class PlaneAutoPark:
         )
         duty = self.est.actuator.to_duty(cmd_vel)
         # Smooth deadzone taper on forward & strafe so small corrections never slam to full
-        # deadzone (prevents diagonal PWM spikes into the main gear), while giving ORBIT
-        # and bay centering enough strafe authority to break static friction on concrete.
+        # deadzone, while keeping ORBIT and bay speeds calm and controllable on concrete.
         in_bay = self.ctrl.state in ("APPROACH", "ENTER", "BACKOFF")
+        max_fwd = 0.16 if in_bay else 0.17
+        max_str = 0.21 if in_bay else 0.20
         for idx, ramp_v, max_d in (
-            (0, 0.08, 0.17 if in_bay else 0.18),
-            (1, 0.08, 0.25 if in_bay else 0.21),
+            (0, 0.08, max_fwd),
+            (1, 0.08, max_str),
         ):
             v_i = float(cmd_vel[idx])
             if abs(v_i) < 1e-4:
@@ -488,36 +490,48 @@ class PlaneAutoPark:
                 taper = min(1.0, abs(v_i) / ramp_v)
                 d_i = np.sign(v_i) * (ax_i.deadzone * taper + abs(v_i) / ax_i.gain)
                 duty[idx] = float(np.clip(d_i, -max_d, max_d))
-        # Closed-loop translation stall booster: if we command forward/strafe (especially a
-        # 2-wheel diagonal with a heavy battery) and the pose moves < 1.5 cm in 0.25 s, ramp
-        # duty up smoothly until friction breaks, then decay back to 1.0 once rolling.
+        # Closed-loop translation stall booster: gently ramps up to 1.35x if stalled for >0.25 s,
+        # resets immediately on direction reversal or stage change so it never overshoots.
         q_now = self.est.car_in_airframe()
         trans_mag = float(np.hypot(duty[0], duty[1]))
-        if self.ctrl.state != self._last_stage or trans_mag < 1e-3 or q_now is None:
+        cur_sign = (float(np.sign(duty[0])), float(np.sign(duty[1])))
+        reversed_dir = (cur_sign[0] != 0.0 and cur_sign[0] == -self._trans_sign[0]) or (
+            cur_sign[1] != 0.0 and cur_sign[1] == -self._trans_sign[1]
+        )
+        if self.ctrl.state != self._last_stage or trans_mag < 1e-3 or q_now is None or reversed_dir:
             self._trans_boost = 1.0
             self._move_anchor = (t, q_now[:2].copy()) if q_now is not None else None
             self._last_stage = self.ctrl.state
+            self._trans_sign = cur_sign
         else:
             if self._move_anchor is None:
                 self._move_anchor = (t, q_now[:2].copy())
             dt_a = t - self._move_anchor[0]
             moved = float(np.hypot(*(q_now[:2] - self._move_anchor[1])))
             if moved >= 0.015:
-                self._trans_boost = max(1.0, self._trans_boost - 0.6 * dt)
+                self._trans_boost = max(1.0, self._trans_boost - 2.0 * dt)
                 self._move_anchor = (t, q_now[:2].copy())
             elif dt_a >= 0.25:
-                self._trans_boost = min(1.85, self._trans_boost + 1.1 * dt)
-            duty[0] = float(np.clip(duty[0] * self._trans_boost, -DUTY_CAP, DUTY_CAP))
-            duty[1] = float(np.clip(duty[1] * self._trans_boost, -DUTY_CAP, DUTY_CAP))
+                self._trans_boost = min(1.35, self._trans_boost + 0.8 * dt)
+            self._trans_sign = cur_sign
+            duty[0] = float(np.clip(duty[0] * self._trans_boost, -max_fwd * 1.25, max_fwd * 1.25))
+            duty[1] = float(np.clip(duty[1] * self._trans_boost, -max_str * 1.25, max_str * 1.25))
 
-        # Closed-loop IMU gyro PI yaw-rate controller with deadband & smooth deadzone taper:
-        # eliminates bang-bang yaw chatter around 0, ramps through static friction when stalled,
-        # and damps overshoot at 50 Hz.
+        # Closed-loop 50 Hz IMU gyro PI yaw-rate controller:
+        # - When turning (|w_cmd| >= 0.08): feedforward + deadzone taper + PI tracks w_cmd.
+        # - When translating with w_cmd ~ 0: always-on smooth anti-veer PI cancels wheel
+        #   misalignment / off-center battery twist (wheels are already rolling, so no deadzone).
         w_cmd = float(cmd_vel[2])
         if abs(w_cmd) < 0.08:
-            self._yaw_int = 0.0
-            self._yaw_sign = 0.0
-            duty[2] = 0.0
+            if trans_mag > 1e-3:
+                err_w = w_cmd - float(gyro_ccw_rad_s)
+                self._yaw_int = float(np.clip(self._yaw_int + 0.25 * err_w * dt, -0.14, 0.14))
+                self._yaw_sign = 0.0
+                duty[2] = float(np.clip(0.14 * err_w + self._yaw_int, -0.22, 0.22))
+            else:
+                self._yaw_int = 0.0
+                self._yaw_sign = 0.0
+                duty[2] = 0.0
         else:
             sgn = 1.0 if w_cmd > 0 else -1.0
             if self._yaw_sign != 0.0 and sgn != self._yaw_sign:
@@ -527,8 +541,8 @@ class PlaneAutoPark:
             dz_taper = min(1.0, abs(w_cmd) / 0.25)
             d_ff = sgn * (ax_w.deadzone * dz_taper + abs(w_cmd) / ax_w.gain)
             err_w = w_cmd - float(gyro_ccw_rad_s)
-            self._yaw_int = float(np.clip(self._yaw_int + 0.35 * err_w * dt, -0.25, 0.25))
-            d_w = d_ff + 0.08 * err_w + self._yaw_int
+            self._yaw_int = float(np.clip(self._yaw_int + 0.35 * err_w * dt, -0.22, 0.22))
+            d_w = d_ff + 0.10 * err_w + self._yaw_int
             duty[2] = float(np.clip(d_w, -DUTY_CAP, DUTY_CAP))
         state = self.ctrl.state
         if state == "PARKED":
