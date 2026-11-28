@@ -956,7 +956,11 @@ class RobotController:
                             "cmd_vel": cmd.get("cmd_vel"),
                             "duty": cmd.get("duty"),
                             "yaw_int": cmd.get("yaw_int"),
+                            "upd_status": cmd.get("upd_status"),
+                            "est_innov": cmd.get("est_innov"),
+                            "shield_hits": cmd.get("shield_hits"),
                             "gyro_ccw": round(gyro_ccw, 4),
+                            "accel_g": dict(self.state.imu_accel_g),
                             "heading_deg": round(float(self.state.heading_deg), 2),
                             "imu_age_ms": round(imu_age * 1000) if imu_age is not None else None,
                             "frame_age_ms": (

@@ -175,7 +175,13 @@ class PlaneDetectorRunner:
             self.status = f"{n} pts · {self.last_ms:.0f} ms"
         else:
             self.status = f"no airframe · {self.last_ms:.0f} ms"
-        return {"points": pts, "box": box, "pose": pose_out, "ms": float(res.ms)}, meas
+        return {
+            "points": pts,
+            "box": box,
+            "pose": pose_out,
+            "ms": float(res.ms),
+            "score": res.score,
+        }, meas
 
     def _solve_pose(
         self, res_points: list[list[float]], prior: np.ndarray | None = None
@@ -444,8 +450,9 @@ class PlaneAutoPark:
             bay=bay(),
             params=ParkParams(
                 search_w=0.42,
-                orbit_r=1.15,
-                orbit_v=0.14,
+                orbit_r=0.52,
+                orbit_v=0.13,
+                orbit_tol_deg=16.0,
                 k_radial=0.8,
                 k_face=1.4,
                 approach_v=0.12,
@@ -464,7 +471,7 @@ class PlaneAutoPark:
                 stop_tol_m=0.025,
                 k_hold=1.5,
                 shield_backoff=True,
-                backoff_extra_m=0.40,
+                backoff_extra_m=0.16,
                 backoff_straight_in_bay=True,
                 approach_align_first=True,
                 misalign_confirm=2,
@@ -529,12 +536,13 @@ class PlaneAutoPark:
 
         self.est.predict(t, self.last_duty, float(gyro_ccw_rad_s), dt)
         jumped = False
+        upd_status: str | None = None
         if cap_t is not None:
             t_cap = max(0.0, float(cap_t) - self.t0)
             self.est.last_frame_t = t_cap
             if meas is not None:
-                upd = self.est.update(t_cap, meas, t)
-                jumped = upd == "reinit"
+                upd_status = self.est.update(t_cap, meas, t)
+                jumped = upd_status == "reinit"
 
         cmd_vel = self.ctrl.step(t, self.est, jumped)
         cmd_vel = np.array(
@@ -603,6 +611,9 @@ class PlaneAutoPark:
             "cmd_vel": [round(float(v), 4) for v in cmd_vel],
             "duty": [round(float(v), 4) for v in self.last_duty],
             "yaw_int": round(float(self._yaw_int), 4),
+            "upd_status": upd_status,
+            "est_innov": round(float(self.est.innov), 4),
+            "shield_hits": int(self.ctrl.shield_hits),
         }
 
 
@@ -669,6 +680,7 @@ class AutoParkRecorder:
                 "box": det.get("box"),
                 "pose": det.get("pose"),
                 "ms": det.get("ms"),
+                "score": det.get("score"),
             }
             self._fp.write(json.dumps({"kind": "vision", **meta}) + "\n")
         return rel

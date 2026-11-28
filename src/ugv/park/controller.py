@@ -180,7 +180,10 @@ class ParkController:
                 return np.zeros(3)
             r, phi = np.hypot(x, y), np.arctan2(y, x)
             e_phi = wrap(np.pi - phi)
-            if abs(e_phi) < np.radians(p.orbit_tol_deg) and abs(p.orbit_r - r) < 0.08:
+            in_rear_corridor = x < xt - p.enter_d and abs(y) < 0.25 and r < p.orbit_r + 0.18
+            if in_rear_corridor or (
+                abs(e_phi) < np.radians(p.orbit_tol_deg) and abs(p.orbit_r - r) < 0.08
+            ):
                 self._go("APPROACH", "on the fuselage line")
             rhat = np.array([np.cos(phi), np.sin(phi)])
             that = np.array([-np.sin(phi), np.cos(phi)])
