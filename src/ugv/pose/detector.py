@@ -221,24 +221,39 @@ class YoloPoseDetector:
         canvas = np.full((self.h, self.w), 114, dtype=np.uint8)
         canvas[pad_y : pad_y + rh, pad_x : pad_x + rw] = resized
         x = np.broadcast_to((canvas.astype(np.float32) / 255.0)[None, None], (1, 3, self.h, self.w))
-        out = self.sess.run(None, {self.input_name: np.ascontiguousarray(x)})[0][0]  # (C, N)
-
-        scores = out[4]
-        best = int(np.argmax(scores))
-        best_score = float(scores[best])
-        n_kp = (out.shape[0] - 5) // 3
+        out = self.sess.run(None, {self.input_name: np.ascontiguousarray(x)})[0][0]
         ms = 1000.0 * (cv2.getTickCount() - t0) / cv2.getTickFrequency()
         conf_thr = 0.30 if close_range else self.conf_threshold
-        if best_score < conf_thr:
-            return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
 
-        cx, cy, bw, bh = out[0:4, best]
-        x0 = float(np.clip((cx - bw / 2 - pad_x) / scale, 0.0, W))
-        y0 = float(np.clip((cy - bh / 2 - pad_y) / scale, 0.0, H))
-        x1 = float(np.clip((cx + bw / 2 - pad_x) / scale, 0.0, W))
-        y1 = float(np.clip((cy + bh / 2 - pad_y) / scale, 0.0, H))
-
-        kpts = out[5:, best].reshape(n_kp, 3)
+        # Support both YOLO11/v8 `(50, N)` [cx,cy,w,h,score,kp...] and YOLO26 end-to-end
+        # `(300, 51)` [x1,y1,x2,y2,score,cls,kp...] ONNX layouts.
+        if out.ndim == 2 and out.shape[0] > out.shape[1] and out.shape[1] >= 6:
+            # End-to-end (max_det, 6 + 3*n_kp)
+            scores = out[:, 4]
+            best = int(np.argmax(scores))
+            best_score = float(scores[best])
+            n_kp = (out.shape[1] - 6) // 3
+            if best_score < conf_thr:
+                return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
+            bx0, by0, bx1, by1 = out[best, 0:4]
+            x0 = float(np.clip((bx0 - pad_x) / scale, 0.0, W))
+            y0 = float(np.clip((by0 - pad_y) / scale, 0.0, H))
+            x1 = float(np.clip((bx1 - pad_x) / scale, 0.0, W))
+            y1 = float(np.clip((by1 - pad_y) / scale, 0.0, H))
+            kpts = out[best, 6:].reshape(n_kp, 3)
+        else:
+            scores = out[4]
+            best = int(np.argmax(scores))
+            best_score = float(scores[best])
+            n_kp = (out.shape[0] - 5) // 3
+            if best_score < conf_thr:
+                return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
+            cx, cy, bw, bh = out[0:4, best]
+            x0 = float(np.clip((cx - bw / 2 - pad_x) / scale, 0.0, W))
+            y0 = float(np.clip((cy - bh / 2 - pad_y) / scale, 0.0, H))
+            x1 = float(np.clip((cx + bw / 2 - pad_x) / scale, 0.0, W))
+            y1 = float(np.clip((cy + bh / 2 - pad_y) / scale, 0.0, H))
+            kpts = out[5:, best].reshape(n_kp, 3)
         ku = (kpts[:, 0] - pad_x) / scale
         kv = (kpts[:, 1] - pad_y) / scale
         kc = kpts[:, 2]
