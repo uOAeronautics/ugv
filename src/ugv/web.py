@@ -100,6 +100,7 @@ class RobotState:
     auto_park_stage: str = "idle"
     auto_park_status: str = ""
     auto_park_pose: list[float] | None = None
+    auto_park_debug: dict[str, Any] | None = None
     perf: dict[str, Any] = field(default_factory=dict)
 
 
@@ -952,6 +953,8 @@ class RobotController:
                 self.state.auto_park_stage = cmd["stage"]
                 self.state.auto_park_status = cmd["status"]
                 self.state.auto_park_pose = cmd["pose"]
+                if cmd.get("debug") is not None:
+                    self.state.auto_park_debug = cmd["debug"]
                 if recorder is not None:
                     recorder.record_tick(
                         {
@@ -1202,6 +1205,9 @@ plane = PlaneDetectorRunner(camera, controller)
 imu = ImuStream(controller.imu_sample, controller.imu_status)
 app = FastAPI(title="UGV Control", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+_LAB_FONTS = Path(__file__).parent / "lab" / "static" / "fonts"
+if _LAB_FONTS.is_dir():
+    app.mount("/fonts", StaticFiles(directory=_LAB_FONTS), name="fonts")
 
 
 @app.on_event("startup")

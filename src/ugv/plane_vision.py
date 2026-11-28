@@ -557,6 +557,170 @@ class PlaneAutoPark:
         q = self.est.car_in_airframe()
         pose = [round(float(v), 4) for v in q] if q is not None else None
         status = self.ctrl.reason or stage
+        p = self.ctrl.params
+        xt = float(self.ctrl.bay.target[0])
+        stage_x = xt - p.enter_d
+        fix_age = max(0.0, t - self.est.last_fix_t) if self.est.samples > 0 else None
+        gear_err = (
+            round(self._gear_nose_u - 640.0, 1)
+            if (self._gear_nose_u is not None and (t - self._gear_nose_t) < 0.8)
+            else None
+        )
+        gates: list[dict[str, Any]] = []
+        if q is not None:
+            qx, qy, qyaw = float(q[0]), float(q[1]), math.degrees(float(q[2]))
+            if state == "ACQUIRE":
+                gates = [
+                    {
+                        "label": "Settle time",
+                        "val": f"{self.ctrl.fsm.age():.2f}s",
+                        "limit": f"≥{p.acquire_s:.2f}s",
+                        "ok": self.ctrl.fsm.age() >= p.acquire_s,
+                        "frac": min(1.0, self.ctrl.fsm.age() / max(0.05, p.acquire_s)),
+                    },
+                    {
+                        "label": "Pose fixes",
+                        "val": str(self.est.samples),
+                        "limit": f"≥{p.acquire_samples}",
+                        "ok": self.est.samples >= p.acquire_samples,
+                        "frac": min(1.0, self.est.samples / max(1, p.acquire_samples)),
+                    },
+                ]
+            elif state == "ORBIT":
+                hub_x = stage_x - 0.03
+                err_face = abs(math.degrees(math.atan2(-qy, -qx) - float(q[2])))
+                err_face = min(err_face, abs(360.0 - err_face))
+                in_x = hub_x - 0.12 <= qx <= hub_x + 0.06
+                gates = [
+                    {
+                        "label": "Hub X band",
+                        "val": f"{qx:+.2f}m",
+                        "limit": f"{hub_x - 0.12:.2f}..{hub_x + 0.06:.2f}m",
+                        "ok": in_x,
+                        "frac": max(0.0, min(1.0, 1.0 - abs(qx - hub_x) / 0.6)),
+                    },
+                    {
+                        "label": "Hub |y|",
+                        "val": f"{abs(qy) * 100:.1f}cm",
+                        "limit": "<20cm",
+                        "ok": abs(qy) < 0.20,
+                        "frac": min(1.0, abs(qy) / 0.20),
+                    },
+                    {
+                        "label": "Face error",
+                        "val": f"{err_face:.0f}°",
+                        "limit": "<18°",
+                        "ok": err_face <= 18.0,
+                        "frac": min(1.0, err_face / 30.0),
+                    },
+                ]
+            elif state == "APPROACH":
+                gates = [
+                    {
+                        "label": "Stage X",
+                        "val": f"{qx:+.2f}m",
+                        "limit": f"≥{stage_x - 0.01:.2f}m",
+                        "ok": qx >= stage_x - 0.01,
+                        "frac": max(0.0, min(1.0, 1.0 - max(0.0, stage_x - qx) / 0.35)),
+                    },
+                    {
+                        "label": "Lateral |y|",
+                        "val": f"{abs(qy) * 100:.1f}cm",
+                        "limit": f"<{p.align_lat_m * 100:.1f}cm",
+                        "ok": abs(qy) < p.align_lat_m,
+                        "frac": min(1.0, abs(qy) / max(0.01, p.align_lat_m * 2)),
+                    },
+                    {
+                        "label": "Yaw |θ|",
+                        "val": f"{abs(qyaw):.1f}°",
+                        "limit": f"<{p.align_yaw_deg:.0f}°",
+                        "ok": abs(qyaw) < p.align_yaw_deg,
+                        "frac": min(1.0, abs(qyaw) / max(1.0, p.align_yaw_deg * 2)),
+                    },
+                ]
+            elif state == "ENTER":
+                rem_cm = max(0.0, (xt - qx) * 100.0)
+                gates = [
+                    {
+                        "label": "Remaining X",
+                        "val": f"{rem_cm:.1f}cm",
+                        "limit": f"≤{p.stop_tol_m * 100:.1f}cm",
+                        "ok": rem_cm <= p.stop_tol_m * 100.0,
+                        "frac": max(0.0, min(1.0, 1.0 - rem_cm / 35.0)),
+                    },
+                    {
+                        "label": "Lateral |y|",
+                        "val": f"{abs(qy) * 100:.1f}cm",
+                        "limit": f"<{p.lat_tol_m * 100:.1f}cm",
+                        "ok": abs(qy) < p.lat_tol_m,
+                        "frac": min(1.0, abs(qy) / max(0.01, p.abort_lat_m)),
+                    },
+                    {
+                        "label": "Yaw |θ|",
+                        "val": f"{abs(qyaw):.1f}°",
+                        "limit": f"<{p.yaw_tol_deg:.1f}°",
+                        "ok": abs(qyaw) < p.yaw_tol_deg,
+                        "frac": min(1.0, abs(qyaw) / max(1.0, p.abort_yaw_deg)),
+                    },
+                ]
+        if gear_err is not None and state in ("APPROACH", "ENTER"):
+            gates.append(
+                {
+                    "label": "gearN center",
+                    "val": f"{gear_err:+.0f}px",
+                    "limit": "±40px",
+                    "ok": abs(gear_err) <= 40.0,
+                    "frac": min(1.0, abs(gear_err) / 80.0),
+                }
+            )
+        if fix_age is not None:
+            gates.append(
+                {
+                    "label": "Fix age",
+                    "val": f"{fix_age:.2f}s",
+                    "limit": f"<{p.lost_s:.1f}s",
+                    "ok": fix_age < p.lost_s,
+                    "frac": min(1.0, fix_age / max(0.1, p.lost_s)),
+                }
+            )
+        debug = {
+            "t": round(t, 2),
+            "stage": state,
+            "stage_age_s": round(self.ctrl.fsm.age(), 2),
+            "reason": status,
+            "pose": pose,
+            "goal": [round(v, 3) for v in self.ctrl.last_goal] if self.ctrl.last_goal else None,
+            "cmd_vel": [round(float(v), 3) for v in cmd_vel],
+            "duty": [round(float(v), 3) for v in self.last_duty],
+            "gyro_ccw": round(float(gyro_ccw_rad_s), 3),
+            "yaw_int": round(float(self._yaw_int), 3),
+            "trans_boost": round(float(self._trans_boost), 2),
+            "gear_nose_u": round(float(self._gear_nose_u), 1)
+            if (self._gear_nose_u is not None and (t - self._gear_nose_t) < 0.8)
+            else None,
+            "gear_err_px": gear_err,
+            "fix_age_s": round(fix_age, 2) if fix_age is not None else None,
+            "samples": int(self.est.samples),
+            "est_innov": round(float(self.est.innov), 3),
+            "shield_hits": int(self.ctrl.shield_hits),
+            "retries": int(self.ctrl.retries),
+            "thresholds": {
+                "lost_s": p.lost_s,
+                "align_lat_m": p.align_lat_m,
+                "align_yaw_deg": p.align_yaw_deg,
+                "lat_tol_m": p.lat_tol_m,
+                "yaw_tol_deg": p.yaw_tol_deg,
+                "abort_lat_m": p.abort_lat_m,
+                "abort_yaw_deg": p.abort_yaw_deg,
+                "stop_tol_m": p.stop_tol_m,
+                "target_x": round(xt, 3),
+                "stage_x": round(stage_x, 3),
+                "gear_pause_px": 40,
+                "gear_blend_px": 18,
+            },
+            "gates": gates,
+            "transitions": self.ctrl.transitions[-12:],
+        }
         return {
             "stage": stage,
             "status": status,
@@ -573,6 +737,7 @@ class PlaneAutoPark:
             "upd_status": upd_status,
             "est_innov": round(float(self.est.innov), 4),
             "shield_hits": int(self.ctrl.shield_hits),
+            "debug": debug,
         }
 
 

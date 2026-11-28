@@ -177,13 +177,36 @@ function drawPlane(next, x0, y0, scale) {
     const p = next.plane_pose;
     const tx = Math.max(12, x0 + box[0] * scale);
     const ty = Math.max(20, y0 + box[1] * scale - 8);
-    arucoContext.fillStyle = "#34d399";
-    arucoContext.font = "700 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+    arucoContext.fillStyle = "#2fd67b";
+    arucoContext.font = '700 12px "JetBrains Mono", monospace';
     arucoContext.fillText(
-      `PLANE (${next.plane_model || ""}) x=${p.x_m.toFixed(2)}m y=${p.y_m >= 0 ? "+" : ""}${p.y_m.toFixed(2)}m yaw=${p.yaw_deg >= 0 ? "+" : ""}${p.yaw_deg.toFixed(0)}° · ${byIdx.size}pts · ${next.plane_ms ?? "—"}ms`,
+      `PLANE x=${p.x_m.toFixed(2)}m y=${p.y_m >= 0 ? "+" : ""}${p.y_m.toFixed(2)}m yaw=${p.yaw_deg >= 0 ? "+" : ""}${p.yaw_deg.toFixed(0)}°  ${byIdx.size}pts  ${next.plane_ms ?? "—"}ms`,
       tx,
       ty
     );
+  }
+  // Visual-servo gearN centering corridor overlay during APPROACH / ENTER
+  const stg = String(next.auto_park_stage || "").toLowerCase();
+  if (next.auto_park && (stg === "approach" || stg === "enter")) {
+    const cx = x0 + 640 * scale;
+    const b18 = 18 * scale;
+    const b40 = 40 * scale;
+    const yTop = y0 + 180 * scale;
+    const yBot = y0 + 660 * scale;
+    arucoContext.fillStyle = "rgba(47, 214, 123, 0.08)";
+    arucoContext.fillRect(cx - b18, yTop, b18 * 2, yBot - yTop);
+    arucoContext.strokeStyle = "rgba(47, 214, 123, 0.55)";
+    arucoContext.lineWidth = 1;
+    arucoContext.setLineDash([4, 4]);
+    arucoContext.beginPath();
+    arucoContext.moveTo(cx, yTop); arucoContext.lineTo(cx, yBot);
+    arucoContext.stroke();
+    arucoContext.strokeStyle = "rgba(245, 166, 35, 0.55)";
+    arucoContext.beginPath();
+    arucoContext.moveTo(cx - b40, yTop); arucoContext.lineTo(cx - b40, yBot);
+    arucoContext.moveTo(cx + b40, yTop); arucoContext.lineTo(cx + b40, yBot);
+    arucoContext.stroke();
+    arucoContext.setLineDash([]);
   }
   arucoContext.restore();
 }
@@ -389,6 +412,7 @@ function render(next) {
   updatePlaneTargets(next);
   drawAruco(next);
   window.renderParking?.(next.parking, next);
+  window.renderAudit?.(next);
   schedulePerfDraw();
 }
 

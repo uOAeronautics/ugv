@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UGV Rover Control</title>
+  <title>STRL-001 Ground Station</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
@@ -13,13 +13,26 @@
     <canvas id="aruco-overlay"></canvas>
   </div>
 
-  <header class="glass pill feed-label">
-    <span id="feed-stats" class="mono">CONNECTING</span>
-    <span id="connection" class="connection offline"><span class="dot"></span><span class="conn-text">Offline</span></span>
-    <span id="auto-park-pill" class="park-pill" hidden>AUTO PARK</span>
+  <header class="top-bar">
+    <div class="tile feed-strip">
+      <span id="connection" class="connection offline"><span class="dot"></span><span class="conn-text">Offline</span></span>
+      <span id="feed-stats" class="mono">CONNECTING</span>
+      <span id="auto-park-pill" class="park-pill" hidden>AUTO PARK</span>
+    </div>
+    <div id="fsm-bar" class="tile fsm-bar" aria-label="Parking state machine">
+      <div class="fsm-steps">
+        <span class="fsm-node" data-stage="search">Search</span>
+        <span class="fsm-node" data-stage="acquire">Acquire</span>
+        <span class="fsm-node" data-stage="orbit">Orbit</span>
+        <span class="fsm-node" data-stage="approach">Approach</span>
+        <span class="fsm-node" data-stage="enter">Enter</span>
+        <span class="fsm-node" data-stage="parked">Parked</span>
+      </div>
+      <span id="fsm-meta" class="mono fsm-meta">Idle</span>
+    </div>
   </header>
 
-  <aside class="glass status" aria-label="Rover telemetry">
+  <aside class="tile status" aria-label="Rover telemetry">
     <div id="heading-widget" class="heading-widget uncalibrated">
       <div class="compass-ring" aria-hidden="true">
         <span class="compass-n">N</span>
@@ -27,7 +40,7 @@
         <span id="heading-degrees" class="mono compass-deg">—</span>
       </div>
       <div class="heading-meta">
-        <div id="heading-status" class="heading-status mono">HOLD STILL · ZEROING</div>
+        <div id="heading-status" class="heading-status mono">HOLD STILL</div>
         <button id="heading-calibrate" type="button" class="mini-btn" title="Zero heading gyro">Zero Yaw</button>
       </div>
     </div>
@@ -37,20 +50,20 @@
       <div><dt>Pose</dt><dd id="pose-tag" class="mono">—</dd></div>
       <div><dt>IMU</dt><dd id="imu-status" class="mono">—</dd></div>
       <div><dt>Cmd F/S/T</dt><dd class="mono"><span id="forward">0.00</span> / <span id="strafe">0.00</span> / <span id="turn">0.00</span></dd></div>
+      <div><dt>Stop reason</dt><dd id="reason" class="mono">startup</dd></div>
     </dl>
 
     <details class="hud-more">
-      <summary>Telemetry</summary>
+      <summary>Hardware &amp; model</summary>
       <dl class="hud-rows sub">
-        <div><dt>Reason</dt><dd id="reason" class="mono">startup</dd></div>
-        <div><dt>Turn Rate</dt><dd id="turn-feedback" class="mono">—</dd></div>
+        <div><dt>Turn rate</dt><dd id="turn-feedback" class="mono">—</dd></div>
         <div><dt>Owner</dt><dd id="ownership" class="mono">available</dd></div>
         <div><dt>Clients</dt><dd id="clients" class="mono">0</dd></div>
         <div><dt>Watchdog</dt><dd id="watchdog" class="mono">600 ms</dd></div>
-        <div><dt>Pan / Tilt</dt><dd class="mono"><span id="pan">1500 µs</span> · <span id="tilt">1500 µs</span></dd></div>
+        <div><dt>Pan / Tilt</dt><dd class="mono"><span id="pan">1500 µs</span> / <span id="tilt">1500 µs</span></dd></div>
         <div><dt>Plane</dt><dd id="plane-readout" class="mono">—</dd></div>
         <div>
-          <dt>Plane Model</dt>
+          <dt>Model</dt>
           <dd><select id="plane-model-select" class="hud-select"></select></dd>
         </div>
         <div><dt>Accel (g)</dt><dd id="imu-accel" class="mono">—</dd></div>
@@ -68,20 +81,57 @@
     </details>
   </aside>
 
-  <div class="glass pill keys-hint mono" aria-hidden="true"><span data-key="KeyW">WASD</span> · QE · Arrows · Space Stop</div>
+  <section id="audit-panel" class="tile audit-panel" hidden aria-label="State machine inspector">
+    <div class="panel-head">
+      <strong>FSM Inspector</strong>
+      <span id="audit-head-meta" class="mono muted">Idle</span>
+      <button id="audit-close" type="button" class="mini-btn" aria-label="Close inspector">×</button>
+    </div>
 
-  <div id="joystick" class="glass joystick" aria-label="Drive joystick">
+    <div class="audit-section">
+      <div class="section-row">
+        <span class="section-title">Active triggers &amp; thresholds</span>
+        <span id="audit-scalars" class="mono muted">boost 1.00×</span>
+      </div>
+      <div id="audit-gates" class="audit-gates"></div>
+    </div>
+
+    <div class="audit-section">
+      <div class="section-row">
+        <span class="section-title">Live control curves (12 s)</span>
+        <span class="scope-legend mono">
+          <span class="lg-wcmd">w_cmd</span>
+          <span class="lg-gyro">gyro</span>
+          <span class="lg-lat">y cm</span>
+          <span class="lg-duty">duty</span>
+        </span>
+      </div>
+      <canvas id="audit-scope" width="336" height="164"></canvas>
+    </div>
+
+    <div class="audit-section">
+      <div class="section-row">
+        <span class="section-title">Transition audit log</span>
+        <span id="audit-counts" class="mono muted">0 events</span>
+      </div>
+      <div id="audit-log" class="audit-log mono"></div>
+    </div>
+  </section>
+
+  <div class="tile keys-hint mono" aria-hidden="true"><span data-key="KeyW">WASD</span> QE Space</div>
+
+  <div id="joystick" class="tile joystick" aria-label="Drive joystick">
     <div id="joystick-knob" class="joystick-knob"></div>
   </div>
 
-  <nav class="glass control-bar" aria-label="Rover controls">
+  <nav class="tile control-bar" aria-label="Rover controls">
     <div class="btn-group">
       <button id="arm" type="button" class="btn btn-primary">Arm</button>
       <button id="auto-park-toggle" type="button" class="btn btn-park" aria-pressed="false" disabled title="Arm controls to Auto Park">Auto Park</button>
       <button id="stop" type="button" class="btn btn-stop">Stop</button>
     </div>
     <label class="speed-wrap" title="Speed limit">
-      <span class="speed-lbl">SPD</span>
+      <span class="speed-lbl">Limit</span>
       <input id="speed" type="range" min="500" max="1800" step="50" value="1800">
       <span id="speed-value" class="mono">1800</span>
     </label>
@@ -89,26 +139,27 @@
       <button id="camera-toggle" type="button" class="btn" aria-pressed="true" title="Toggle camera stream">Cam</button>
       <button id="plane-toggle" type="button" class="btn" aria-pressed="false" title="Toggle airframe keypoint detection">Plane</button>
       <button id="view-fit-toggle" type="button" class="btn active" aria-pressed="true" title="Fit: Cover (click for Contain)">Fit</button>
-      <button id="map-toggle" type="button" class="btn" aria-pressed="false" title="Toggle parking map">Map</button>
+      <button id="map-toggle" type="button" class="btn" aria-pressed="false" title="Toggle top-down map">Map</button>
+      <button id="audit-toggle" type="button" class="btn" aria-pressed="false" title="Inspect state machine triggers &amp; curves">Audit</button>
       <button id="perf-toggle" class="btn" type="button" aria-pressed="false" title="Live Pi profiler">Perf</button>
     </div>
   </nav>
 
-  <section id="parking-panel" class="glass parking-panel map-panel" hidden aria-label="Top-down map">
-    <div class="parking-head">
-      <strong>Map</strong>
+  <section id="parking-panel" class="tile parking-panel map-panel" hidden aria-label="Top-down map">
+    <div class="panel-head">
+      <strong>Top-down Map</strong>
       <span id="parking-status" class="mono muted">—</span>
       <button id="map-close" type="button" class="mini-btn" aria-label="Close map">×</button>
     </div>
-    <canvas id="parking-map" width="260" height="220"></canvas>
-    <div id="parking-readout" class="mono map-readout">Waiting for airframe…</div>
+    <canvas id="parking-map" width="276" height="228"></canvas>
+    <div id="parking-readout" class="mono map-readout">Waiting for airframe</div>
   </section>
 
-  <section id="perf-panel" class="glass parking-panel perf-panel" hidden aria-label="Pi live profiler">
-    <div class="parking-head">
-      <strong>Pi Live Profiler</strong>
+  <section id="perf-panel" class="tile parking-panel perf-panel" hidden aria-label="Pi live profiler">
+    <div class="panel-head">
+      <strong>Pi Profiler</strong>
       <span id="perf-summary" class="mono muted">—</span>
-      <button id="perf-close" class="mini-btn" type="button">Close</button>
+      <button id="perf-close" class="mini-btn" type="button">×</button>
     </div>
     <canvas id="perf-chart" width="380" height="176"></canvas>
     <div id="perf-legend" class="perf-legend mono"></div>
@@ -127,6 +178,7 @@
   </div>
 
   <script src="/static/parking.js"></script>
+  <script src="/static/inspector.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

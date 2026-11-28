@@ -96,11 +96,43 @@
     // Target bay box between main gear (-0.165) and nose wheel (+0.137)
     const [bx0, by0] = toPx(0.08, 0.08);
     const [bx1, by1] = toPx(-0.13, -0.08);
-    ctx.fillStyle = "rgba(52, 211, 153, 0.16)";
-    ctx.strokeStyle = "rgba(52, 211, 153, 0.7)";
+    ctx.fillStyle = "rgba(47, 214, 123, 0.16)";
+    ctx.strokeStyle = "rgba(47, 214, 123, 0.78)";
     ctx.lineWidth = 1.25;
     ctx.fillRect(bx0, by0, bx1 - bx0, by1 - by0);
     ctx.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
+
+    // hub_rear entry corridor box (x = -0.52..-0.34, |y| < 0.20)
+    const [hx0, hy0] = toPx(-0.34, 0.20);
+    const [hx1, hy1] = toPx(-0.52, -0.20);
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = "rgba(245, 166, 35, 0.45)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(hx0, hy0, hx1 - hx0, hy1 - hy0);
+    ctx.restore();
+
+    // Live controller goal waypoint + vector from car
+    const goal = next.auto_park_debug && next.auto_park_debug.goal;
+    if (Array.isArray(goal) && goal.length >= 2) {
+      const [gx, gy] = toPx(goal[0], goal[1]);
+      if (pose) {
+        const [px, py] = toPx(pose[0], pose[1]);
+        ctx.save();
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = "rgba(245, 166, 35, 0.7)";
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(gx, gy);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.fillStyle = "#f5a623";
+      ctx.beginPath();
+      ctx.arc(gx, gy, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // STRL-001 airframe silhouette (metres in model frame)
     ctx.strokeStyle = "rgba(226, 232, 240, 0.72)";

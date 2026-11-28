@@ -121,6 +121,8 @@ class ParkController:
     steps: int = 0
     _unseen: int = 0
     _misaligned: int = 0
+    last_goal: tuple[float, float] | None = None
+    transitions: list[dict] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.fsm = Machine("park", "SEARCH", TABLE, clock=lambda: self.clock_t)
@@ -130,8 +132,14 @@ class ParkController:
         return self.fsm.state
 
     def _go(self, state: str, why: str) -> None:
+        prev = self.fsm.state
         self.fsm.go(state, why)
         self.reason = why
+        self.transitions.append(
+            {"t": round(float(self.clock_t), 2), "from": prev, "to": state, "why": why}
+        )
+        if len(self.transitions) > 20:
+            self.transitions = self.transitions[-20:]
 
     def step(self, t: float, est: Estimator, jumped: bool) -> np.ndarray:
         """Body velocity command (vx, vy, w) for this tick; also advances the state machine."""
@@ -210,6 +218,7 @@ class ParkController:
                 else:
                     # Clear of both V-tail and main gear: slide straight under hub_rear
                     goal = np.array([hub_x, 0.0])
+                self.last_goal = (float(goal[0]), float(goal[1]))
                 diff = goal - np.array([x, y])
                 d = float(np.hypot(diff[0], diff[1]))
                 v_air = (diff / d) * min(p.orbit_v, max(0.05, 0.8 * d)) if d > 1e-3 else np.zeros(2)
@@ -247,6 +256,7 @@ class ParkController:
 
         if s == "APPROACH":
             stage_x = xt - p.enter_d
+            self.last_goal = (float(stage_x), 0.0)
             if not fresh and x < stage_x - 0.1:
                 self._go("SEARCH", "lost on approach")
                 return np.zeros(3)
@@ -271,6 +281,7 @@ class ParkController:
             return self._shielded(q, np.array([*_body(v_air, yaw), w]))
 
         if s == "ENTER":
+            self.last_goal = (float(xt), 0.0)
             return (
                 self._enter_continuous(t, est, q) if p.continuous_enter else self._enter(t, est, q)
             )
