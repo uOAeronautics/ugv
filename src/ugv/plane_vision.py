@@ -482,6 +482,9 @@ class PlaneAutoPark:
         self.last_duty = np.zeros(3, dtype=float)
         self._yaw_int = 0.0
         self._yaw_sign = 0.0
+        self._trans_boost = 1.0
+        self._move_anchor: tuple[float, np.ndarray] | None = None
+        self._last_stage = ""
 
     def prior_for_solver(self) -> np.ndarray | None:
         from .park.geometry import inverse
@@ -571,6 +574,28 @@ class PlaneAutoPark:
                 taper = min(1.0, abs(v_i) / ramp_v)
                 d_i = np.sign(v_i) * (ax_i.deadzone * taper + abs(v_i) / ax_i.gain)
                 duty[idx] = float(np.clip(d_i, -max_d, max_d))
+        # Closed-loop translation stall booster: if we command forward/strafe (especially a
+        # 2-wheel diagonal with a heavy battery) and the pose moves < 1.2 cm in 0.45 s, ramp
+        # duty up smoothly until friction breaks, then decay back to 1.0 once rolling.
+        q_now = self.est.car_in_airframe()
+        trans_mag = float(np.hypot(duty[0], duty[1]))
+        if self.ctrl.state != self._last_stage or trans_mag < 1e-3 or q_now is None:
+            self._trans_boost = 1.0
+            self._move_anchor = (t, q_now[:2].copy()) if q_now is not None else None
+            self._last_stage = self.ctrl.state
+        else:
+            if self._move_anchor is None:
+                self._move_anchor = (t, q_now[:2].copy())
+            dt_a = t - self._move_anchor[0]
+            moved = float(np.hypot(*(q_now[:2] - self._move_anchor[1])))
+            if moved >= 0.015:
+                self._trans_boost = max(1.0, self._trans_boost - 0.6 * dt)
+                self._move_anchor = (t, q_now[:2].copy())
+            elif dt_a >= 0.40:
+                self._trans_boost = min(1.85, self._trans_boost + 0.9 * dt)
+            duty[0] = float(np.clip(duty[0] * self._trans_boost, -DUTY_CAP, DUTY_CAP))
+            duty[1] = float(np.clip(duty[1] * self._trans_boost, -DUTY_CAP, DUTY_CAP))
+
         # Closed-loop IMU gyro PI yaw-rate controller with deadband & smooth deadzone taper:
         # eliminates bang-bang yaw chatter around 0, ramps through static friction when stalled,
         # and damps overshoot at 50 Hz.

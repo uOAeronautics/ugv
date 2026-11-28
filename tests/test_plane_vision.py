@@ -74,6 +74,24 @@ def test_plane_autopark_gyro_pi_ramps_on_stall_and_damps_overshoot():
     assert c_over["turn"] < turns[-1]
 
 
+def test_plane_autopark_translation_stall_booster():
+    import numpy as np
+
+    ap = PlaneAutoPark(start_t=0.0)
+    # Lock onto airframe at side so ORBIT commands translation, then hold pose stationary
+    meas = np.array([0.60, 0.0, -1.0, 0.0, 10.0])
+    for i in range(1, 20):
+        t = i * 0.05
+        ap.step(t, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0, meas=meas, cap_t=t - 0.01)
+    assert ap.ctrl.state == "ORBIT"
+    b0 = ap._trans_boost
+    # Keep pose frozen for 0.8 s -> trans_boost must ramp up to break friction
+    for i in range(20, 60):
+        t = i * 0.02 + 1.0
+        ap.step(t, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0, meas=meas, cap_t=t - 0.01)
+    assert ap._trans_boost > b0 + 0.1
+
+
 def test_discover_models_finds_pairs_and_yolo(tmp_path: Path):
     for name in ("yolo11n-pose-v1", "kp-v3c", "kp-crop-v3c", "kp-v4", "kp-crop-v4", "kp-orphan"):
         d = tmp_path / name

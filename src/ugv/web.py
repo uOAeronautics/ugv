@@ -981,7 +981,7 @@ class RobotController:
                     if cmd["done"] or cmd["stage"] in TERMINAL_STAGES:
                         break
                 else:
-                    pwm_limit = 1100 if cmd["stage"] in ("approach", "enter", "backoff") else 1350
+                    pwm_limit = 1250 if cmd["stage"] in ("approach", "enter", "backoff") else 1550
                     await self.drive(
                         cid,
                         cmd["forward"],
