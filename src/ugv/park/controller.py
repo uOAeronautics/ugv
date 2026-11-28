@@ -200,7 +200,13 @@ class ParkController:
                 d = float(np.hypot(diff[0], diff[1]))
                 v_air = (diff / d) * min(p.orbit_v, max(0.05, 0.8 * d)) if d > 1e-3 else np.zeros(2)
                 w = p.k_face * wrap(np.arctan2(-y, -x) - yaw)
-                return self._shielded(q, np.array([*_body(v_air, yaw), w]))
+                cmd = np.array([*_body(v_air, yaw), w])
+                if self._would_hit(q, cmd):
+                    # Back straight out away from the main gear instead of deadlocking at 0,0,0
+                    self.shield_hits += 1
+                    away = np.array([-0.10, 0.0, 0.0])
+                    return away if not self._would_hit(q, away) else np.array([0.0, 0.0, w])
+                return cmd
             r, phi = np.hypot(x, y), np.arctan2(y, x)
             e_phi = wrap(np.pi - phi)
             in_rear_corridor = x < xt - p.enter_d and abs(y) < 0.25 and r < p.orbit_r + 0.18
