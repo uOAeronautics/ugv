@@ -473,24 +473,24 @@ class PlaneAutoPark:
             dtype=float,
         )
         duty = self.est.actuator.to_duty(cmd_vel)
-        # Smooth deadzone taper on forward & strafe so small corrections never slam to full
-        # deadzone, while keeping ORBIT and bay speeds calm and controllable on concrete.
+        # Deadzone + gentle ramp on forward & strafe: keep minimum duty high enough to break
+        # concrete static friction (~0.13 fwd / ~0.16 strafe) without slamming in the bay.
         in_bay = self.ctrl.state in ("APPROACH", "ENTER", "BACKOFF")
-        max_fwd = 0.16 if in_bay else 0.17
+        max_fwd = 0.18 if in_bay else 0.19
         max_str = 0.21 if in_bay else 0.20
-        for idx, ramp_v, max_d in (
-            (0, 0.08, max_fwd),
-            (1, 0.08, max_str),
+        for idx, ramp_v, min_taper, max_d in (
+            (0, 0.06, 0.85, max_fwd),
+            (1, 0.08, 0.70, max_str),
         ):
             v_i = float(cmd_vel[idx])
             if abs(v_i) < 1e-4:
                 duty[idx] = 0.0
             else:
                 ax_i = self.est.actuator.axes[idx]
-                taper = min(1.0, abs(v_i) / ramp_v)
+                taper = max(min_taper, min(1.0, abs(v_i) / ramp_v))
                 d_i = np.sign(v_i) * (ax_i.deadzone * taper + abs(v_i) / ax_i.gain)
                 duty[idx] = float(np.clip(d_i, -max_d, max_d))
-        # Closed-loop translation stall booster: gently ramps up to 1.35x if stalled for >0.25 s,
+        # Closed-loop translation stall booster: ramps up to 1.65x if stalled for >0.25 s,
         # resets immediately on direction reversal or stage change so it never overshoots.
         q_now = self.est.car_in_airframe()
         trans_mag = float(np.hypot(duty[0], duty[1]))
@@ -512,10 +512,10 @@ class PlaneAutoPark:
                 self._trans_boost = max(1.0, self._trans_boost - 2.0 * dt)
                 self._move_anchor = (t, q_now[:2].copy())
             elif dt_a >= 0.25:
-                self._trans_boost = min(1.35, self._trans_boost + 0.8 * dt)
+                self._trans_boost = min(1.65, self._trans_boost + 0.9 * dt)
             self._trans_sign = cur_sign
-            duty[0] = float(np.clip(duty[0] * self._trans_boost, -max_fwd * 1.25, max_fwd * 1.25))
-            duty[1] = float(np.clip(duty[1] * self._trans_boost, -max_str * 1.25, max_str * 1.25))
+            duty[0] = float(np.clip(duty[0] * self._trans_boost, -0.25, 0.25))
+            duty[1] = float(np.clip(duty[1] * self._trans_boost, -0.26, 0.26))
 
         # Closed-loop 50 Hz IMU gyro PI yaw-rate controller:
         # - When turning (|w_cmd| >= 0.08): feedforward + deadzone taper + PI tracks w_cmd.

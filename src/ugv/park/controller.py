@@ -277,7 +277,7 @@ class ParkController:
                         or abs(yaw) > max(np.radians(6.0), np.radians(p.align_yaw_deg))
                     )
                 )
-                else p.approach_v * float(np.clip((stage_x - x) / 0.25, 0.25, 1))
+                else p.approach_v * float(np.clip((stage_x - x) / 0.25, 0.65, 1.0))
             )
             v_air = np.array([vx, float(np.clip(-p.k_lat * y, -0.12, 0.12))])
             w = p.k_head * wrap(-yaw)
