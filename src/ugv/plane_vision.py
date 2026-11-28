@@ -434,6 +434,12 @@ class PlaneAutoPark:
         self.t0 = time.monotonic() if start_t is None else float(start_t)
         self.last_t = self.t0
         self.est = Estimator(calib_min_points=4)
+        # Real-floor breakaway deadzones (concrete + current battery): NOMINAL (0.05, 0.13, 0.10)
+        # stalls around PWM 350-450 during slow APPROACH/ENTER creep.
+        for ax, dz in zip(self.est.actuator.axes, (0.14, 0.20, 0.12), strict=True):
+            ax.deadzone = dz
+            ax.stall_floor = dz
+            ax._theta = np.array([ax.gain, -ax.gain * dz])
         self.ctrl = ParkController(
             bay=bay(),
             params=ParkParams(
@@ -533,8 +539,8 @@ class PlaneAutoPark:
         cmd_vel = self.ctrl.step(t, self.est, jumped)
         cmd_vel = np.array(
             [
-                float(np.clip(cmd_vel[0], -0.22, 0.22)),
-                float(np.clip(cmd_vel[1], -0.18, 0.18)),
+                0.0 if abs(cmd_vel[0]) < 0.015 else float(np.clip(cmd_vel[0], -0.22, 0.22)),
+                0.0 if abs(cmd_vel[1]) < 0.015 else float(np.clip(cmd_vel[1], -0.18, 0.18)),
                 float(np.clip(cmd_vel[2], -0.65, 0.65)),
             ],
             dtype=float,
