@@ -119,15 +119,16 @@ html, body {
 #speed-value { min-width: 34px; text-align: right; font-size: 11px; }
 
 .parking-panel {
-  position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 30;
-  width: min(380px, calc(100vw - 28px)); max-height: calc(100vh - 110px); overflow-y: auto;
-  padding: 12px; display: flex; flex-direction: column; gap: 8px; background: rgba(10, 14, 22, 0.78);
+  position: fixed; left: 16px; bottom: 76px; z-index: 30;
+  width: min(276px, calc(100vw - 28px));
+  padding: 10px; display: flex; flex-direction: column; gap: 6px; background: rgba(10, 14, 22, 0.72);
 }
+.parking-panel[hidden] { display: none; }
 .parking-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-#parking-map { width: 100%; height: auto; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(4, 7, 12, 0.65); }
-.parking-panel .mono { font-size: 11px; color: #cbd5e1; white-space: pre-wrap; word-break: break-word; }
+#parking-map { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(4, 7, 12, 0.68); }
+.map-readout { font-size: 11px; color: #cbd5e1; text-align: center; }
 
-.perf-panel { width: min(420px, calc(100vw - 28px)); }
+.perf-panel { left: 50%; transform: translateX(-50%); bottom: 84px; width: min(420px, calc(100vw - 28px)); }
 .perf-panel[hidden] { display: none; }
 #perf-chart {
   width: 100%; height: auto; display: block;

@@ -1,58 +1,170 @@
 (() => {
-  const panel = document.querySelector('#parking-panel');
-  const canvas = document.querySelector('#parking-map');
-  const context = canvas.getContext('2d');
-  let path = [];
-  const mapToggle = document.querySelector('#map-toggle');
-  mapToggle.onclick = () => {
-    panel.hidden = !panel.hidden;
-    const open = !panel.hidden;
-    mapToggle.setAttribute('aria-pressed', String(open));
-    mapToggle.classList.toggle('active', open);
-    if (open) send({type:"aruco",enabled:true});
-  };
-  document.querySelector('#park-start').onclick = () => send({type:'parking',action:'start'});
-  document.querySelector('#park-stop').onclick = () => send({type:'parking',action:'stop'});
-  document.querySelector('#park-preview').onclick = async () => {
-    try {
-      const result = await (await fetch('/api/parking/plan')).json();
-      path = result.path || [];
-      document.querySelector('#parking-plan-result').textContent = result.ok ? 'Route checked against full footprint' : (result.blockers || []).join('; ');
-    } catch { document.querySelector('#parking-plan-result').textContent = 'Preview unavailable'; }
-  };
-  window.renderParking = (p, state) => {
-    if (!p) return;
-    document.querySelector('#parking-status').textContent = p.active ? p.execution_status : p.status;
-    const seenTags = p.seen_tag_ids || [];
-    const odom = p.odometry || {};
-    const blockers = p.blockers || [];
-    const tags = p.tags || [];
-    document.querySelector('#parking-detail').textContent = `Tags ${seenTags.join(', ') || '—'} · ${p.pose_source ?? '—'} · age ${p.pose_age_ms ?? '—'} ms\nEstimated position uncertainty ±${p.position_sigma_m == null ? '—' : Math.round(p.position_sigma_m*100)} cm\nScene: ${odom.mapped_features ?? 0} points / ${odom.inliers ?? 0} pose inliers`;
-    document.querySelector('#parking-blockers').textContent = p.entry_ready ? 'Clearance and localization verified' : 'Entry needs measured car dimensions, gear clearance and calibrated camera/parking position.';
-    document.querySelector('#parking-calibration-details').textContent = blockers.join('; ');
-    document.querySelector('#park-start').disabled = !p.entry_ready || !state.you_are_owner || !state.armed || p.active;
-    document.querySelector('#park-preview').disabled = !p.entry_ready;
-    document.querySelector('#park-stop').disabled = !p.active || !state.you_are_owner;
-    context.clearRect(0,0,canvas.width,canvas.height);
-    const pose=p.car_pose || p.camera_pose;
-    const points = [...tags.map(t=>[t.x_m,t.z_m]), ...(pose ? [[pose.x_m,pose.z_m]] : [])];
-    const extent=Math.max(.5,...points.flatMap(q=>q.map(Math.abs)))+Math.max(.25,p.position_sigma_m || 0);
-    const scale=canvas.height/(2*extent);
-    const xy=(x,z)=>[canvas.width/2+x*scale,canvas.height/2-z*scale];
-    context.strokeStyle='#cbd5e1';context.lineWidth=1;
-    context.beginPath();context.moveTo(canvas.width/2,0);context.lineTo(canvas.width/2,canvas.height);context.moveTo(0,canvas.height/2);context.lineTo(canvas.width,canvas.height/2);context.stroke();
-    context.font='11px system-ui';context.fillStyle='#475569';context.fillText(`${extent.toFixed(1)} m from origin`,8,14);
-    // Gear and route are only drawn in a calibrated drone/body frame.
-    if(p.car_pose) {
-      const g=p.gear;if(g){context.strokeStyle='#334155';context.lineWidth=Math.max(2,g.bar_radius_m*2*scale);
-      [-1,1].forEach(sign=>{const x=sign*(g.clear_width_m/2+g.bar_radius_m);context.beginPath();context.moveTo(...xy(x,-g.bar_length_m/2));context.lineTo(...xy(x,g.bar_length_m/2));context.stroke();});}
-      context.strokeStyle='#059669';context.lineWidth=2;context.beginPath();path.forEach((q,i)=>context[i?'lineTo':'moveTo'](...xy(q.x,q.z)));context.stroke();
-    } else tags.forEach(t=>{const [x,y]=xy(t.x_m,t.z_m);context.fillStyle='#e11d48';context.fillRect(x-4,y-4,8,8);context.fillText(`Tag ${t.id}`,x+7,y);});
-    if(pose) {
-      const [x,y]=xy(pose.x_m,pose.z_m);context.fillStyle='#2563eb';context.beginPath();context.arc(x,y,5,0,Math.PI*2);context.fill();
-      if(p.position_sigma_m!=null){context.strokeStyle='#93c5fd';context.lineWidth=1;context.beginPath();context.arc(x,y,p.position_sigma_m*scale,0,Math.PI*2);context.stroke();}
-      context.fillText(p.car_pose?'Car centre':'Camera estimate',x+8,y-8);
+  const panel = document.querySelector("#parking-panel");
+  const canvas = document.querySelector("#parking-map");
+  const statusEl = document.querySelector("#parking-status");
+  const readoutEl = document.querySelector("#parking-readout");
+  const mapToggle = document.querySelector("#map-toggle");
+  const mapClose = document.querySelector("#map-close");
+  if (!panel || !canvas || !mapToggle) return;
+  const ctx = canvas.getContext("2d");
+
+  const trail = [];
+  const MAX_TRAIL = 80;
+
+  function setMapOpen(open) {
+    panel.hidden = !open;
+    mapToggle.setAttribute("aria-pressed", String(open));
+    mapToggle.classList.toggle("active", open);
+    if (open && typeof send === "function" && typeof state === "object" && !state.plane_enabled && !state.auto_park) {
+      send({ type: "plane", enabled: true });
     }
-    document.querySelector('#parking-reference').textContent = p.car_pose ? 'Drone frame · full car footprint planning' : p.map_reference;
+  }
+
+  mapToggle.addEventListener("click", () => setMapOpen(panel.hidden));
+  mapClose?.addEventListener("click", () => setMapOpen(false));
+
+  // Invert airframe-in-car pose (x, y, yaw_rad) -> car-in-airframe pose (x, y, yaw_rad).
+  function carInAirframe(next) {
+    if (Array.isArray(next.auto_park_pose) && next.auto_park_pose.length >= 3) {
+      return next.auto_park_pose;
+    }
+    const p = next.plane_pose;
+    if (p && Number.isFinite(p.x_m) && Number.isFinite(p.y_m) && Number.isFinite(p.yaw_deg)) {
+      const yaw = (p.yaw_deg * Math.PI) / 180;
+      const c = Math.cos(yaw);
+      const s = Math.sin(yaw);
+      return [-c * p.x_m - s * p.y_m, s * p.x_m - c * p.y_m, -yaw];
+    }
+    return null;
+  }
+
+  window.renderParking = (_legacy, next) => {
+    if (!next || panel.hidden) return;
+    const pose = carInAirframe(next);
+    const stage = next.auto_park && next.auto_park_stage && next.auto_park_stage !== "idle"
+      ? next.auto_park_stage.toUpperCase()
+      : (pose ? "LIVE" : "NO LOCK");
+    if (statusEl) statusEl.textContent = stage;
+
+    if (pose) {
+      const last = trail[trail.length - 1];
+      if (!last || Math.hypot(pose[0] - last[0], pose[1] - last[1]) > 0.015) {
+        trail.push([pose[0], pose[1]]);
+        if (trail.length > MAX_TRAIL) trail.shift();
+      }
+      const deg = (((pose[2] * 180) / Math.PI + 540) % 360) - 180;
+      if (readoutEl) {
+        readoutEl.textContent = `x ${pose[0] >= 0 ? "+" : ""}${pose[0].toFixed(2)} m · y ${pose[1] >= 0 ? "+" : ""}${pose[1].toFixed(2)} m · ${deg >= 0 ? "+" : ""}${deg.toFixed(0)}°`;
+      }
+    } else if (readoutEl) {
+      readoutEl.textContent = "Waiting for airframe…";
+    }
+
+    const dpr = devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || 260;
+    const cssH = Math.round(cssW * (220 / 260));
+    if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    // Airframe frame: +x nose UP, +y left LEFT. Center slightly up so rear hub/approach fits nicely.
+    const dist = pose ? Math.hypot(pose[0], pose[1]) : 0.8;
+    const spanM = Math.max(1.15, Math.min(2.4, dist + 0.45));
+    const scale = Math.min(cssW, cssH) / (2 * spanM);
+    const cx = cssW * 0.5;
+    const cy = cssH * 0.44;
+    const toPx = (ax, ay) => [cx - ay * scale, cy - ax * scale];
+
+    // Range rings (0.5 m, 1.0 m) + hub_rear orbit ring (0.52 m)
+    ctx.save();
+    for (const [r, dash, color] of [
+      [1.0, [2, 4], "rgba(148, 163, 184, 0.16)"],
+      [0.52, [4, 4], "rgba(56, 189, 248, 0.28)"],
+    ]) {
+      ctx.beginPath();
+      ctx.setLineDash(dash);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.arc(cx, cy, r * scale, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Target bay box between main gear (-0.165) and nose wheel (+0.137)
+    const [bx0, by0] = toPx(0.08, 0.08);
+    const [bx1, by1] = toPx(-0.13, -0.08);
+    ctx.fillStyle = "rgba(52, 211, 153, 0.16)";
+    ctx.strokeStyle = "rgba(52, 211, 153, 0.7)";
+    ctx.lineWidth = 1.25;
+    ctx.fillRect(bx0, by0, bx1 - bx0, by1 - by0);
+    ctx.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
+
+    // STRL-001 airframe silhouette (metres in model frame)
+    ctx.strokeStyle = "rgba(226, 232, 240, 0.72)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Fuselage nose (+0.19) to tail (-0.65)
+    ctx.moveTo(...toPx(0.19, 0));
+    ctx.lineTo(...toPx(-0.65, 0));
+    // Wingspan (-0.61 to +0.61 at x=-0.05)
+    ctx.moveTo(...toPx(-0.05, 0.61));
+    ctx.lineTo(...toPx(-0.05, -0.61));
+    // V-tail tips
+    ctx.moveTo(...toPx(-0.65, 0));
+    ctx.lineTo(...toPx(-0.70, 0.16));
+    ctx.moveTo(...toPx(-0.65, 0));
+    ctx.lineTo(...toPx(-0.70, -0.16));
+    ctx.stroke();
+
+    // Landing gear wheels (nose + main left/right)
+    for (const [gx, gy] of [[0.137, 0], [-0.165, 0.131], [-0.164, -0.136]]) {
+      const [px, py] = toPx(gx, gy);
+      ctx.fillStyle = "#f8fafc";
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Trail
+    if (trail.length > 1) {
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      trail.forEach(([tx, ty], i) => {
+        const [px, py] = toPx(tx, ty);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+    }
+
+    // Live car footprint (0.203 m L x 0.146 m W)
+    if (pose) {
+      const [px, py] = toPx(pose[0], pose[1]);
+      ctx.save();
+      ctx.translate(px, py);
+      // In canvas: +x is up (-Y), +y is left (-X), so CCW yaw rotates by -pose[2].
+      ctx.rotate(-pose[2]);
+      const cw = 0.146 * scale;
+      const cl = 0.203 * scale;
+      ctx.fillStyle = "rgba(56, 189, 248, 0.30)";
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 1.8;
+      ctx.fillRect(-cw / 2, -cl / 2, cw, cl);
+      ctx.strokeRect(-cw / 2, -cl / 2, cw, cl);
+      // Front heading triangle
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath();
+      ctx.moveTo(0, -cl / 2 - 4);
+      ctx.lineTo(-4, -cl / 2 + 2);
+      ctx.lineTo(4, -cl / 2 + 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
   };
 })();

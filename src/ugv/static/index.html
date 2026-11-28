@@ -94,22 +94,14 @@
     </div>
   </nav>
 
-  <section id="parking-panel" class="glass parking-panel" hidden aria-label="Parking planner">
+  <section id="parking-panel" class="glass parking-panel map-panel" hidden aria-label="Top-down map">
     <div class="parking-head">
-      <strong>Parking Map</strong>
-      <span id="parking-status" class="mono">—</span>
-      <div class="btn-group">
-        <button id="park-preview" type="button" class="mini-btn">Preview</button>
-        <button id="park-start" type="button" class="mini-btn btn-park">Start</button>
-        <button id="park-stop" type="button" class="mini-btn btn-stop">Stop</button>
-      </div>
+      <strong>Map</strong>
+      <span id="parking-status" class="mono muted">—</span>
+      <button id="map-close" type="button" class="mini-btn" aria-label="Close map">×</button>
     </div>
-    <canvas id="parking-map" width="320" height="220"></canvas>
-    <div id="parking-reference" class="mono"></div>
-    <div id="parking-detail" class="mono"></div>
-    <div id="parking-blockers" class="mono"></div>
-    <div id="parking-plan-result" class="mono"></div>
-    <details><summary>Calibration</summary><small id="parking-calibration-details"></small></details>
+    <canvas id="parking-map" width="260" height="220"></canvas>
+    <div id="parking-readout" class="mono map-readout">Waiting for airframe…</div>
   </section>
 
   <section id="perf-panel" class="glass parking-panel perf-panel" hidden aria-label="Pi live profiler">
