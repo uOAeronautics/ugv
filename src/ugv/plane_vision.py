@@ -340,7 +340,7 @@ class PlaneAutoPark:
                 orbit_v=0.10,
                 orbit_tol_deg=16.0,
                 k_radial=0.8,
-                k_face=2.6,
+                k_face=1.3,
                 approach_v=0.08,
                 k_lat=1.4,
                 k_head=1.5,
@@ -540,12 +540,12 @@ class PlaneAutoPark:
                 self._yaw_int = 0.0
             self._yaw_sign = sgn
             ax_w = self.est.actuator.axes[2]
-            dz_taper = min(1.0, abs(w_cmd) / 0.25)
+            dz_taper = min(1.0, abs(w_cmd) / 0.30)
             d_ff = sgn * (ax_w.deadzone * dz_taper + abs(w_cmd) / ax_w.gain)
             err_w = w_cmd - float(gyro_ccw_rad_s)
-            self._yaw_int = float(np.clip(self._yaw_int + 0.35 * err_w * dt, -0.22, 0.22))
-            d_w = d_ff + 0.10 * err_w + self._yaw_int
-            duty[2] = float(np.clip(d_w, -DUTY_CAP, DUTY_CAP))
+            self._yaw_int = float(np.clip(self._yaw_int + 0.18 * err_w * dt, -0.14, 0.14))
+            d_w = d_ff + 0.05 * err_w + self._yaw_int
+            duty[2] = float(np.clip(d_w, -0.28, 0.28))
         state = self.ctrl.state
         if state == "PARKED":
             stage, done = "parked", True

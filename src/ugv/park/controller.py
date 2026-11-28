@@ -206,9 +206,11 @@ class ParkController:
                 return np.zeros(3)
             if p.hub_rear_entry:
                 # Route around the low V-tail (x ~ -0.65, y ~ 0) via the side of hub_rear
-                # (-0.40, +-0.42), then slide under the high hub_rear boom (-0.40, 0).
-                hub_x = xt - p.enter_d - 0.03  # ~ -0.40 m (right under hub_rear, clear of V-tail)
-                if hub_x - 0.12 <= x <= hub_x + 0.06 and abs(y) < 0.20:
+                # (-0.38, +-0.45), then slide under the high hub_rear boom (-0.38, 0).
+                hub_x = (
+                    xt - p.enter_d - 0.01
+                )  # ~ -0.38 m (right under hub_rear, 27 cm clear of tail)
+                if hub_x - 0.14 <= x <= hub_x + 0.08 and abs(y) < 0.24:
                     self._go("APPROACH", "under hub_rear")
                     return np.zeros(3)
                 side = 1.0 if y >= 0.0 else -1.0

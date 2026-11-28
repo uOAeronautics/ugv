@@ -72,7 +72,7 @@ def test_plane_autopark_gyro_pi_ramps_on_stall_and_damps_overshoot():
     for i in range(22, 42):
         c = ap.step(i * 0.02, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0)
         turns.append(c["turn"])
-    assert turns[-1] > turns[0] + 0.1
+    assert turns[-1] > turns[0] + 0.05
 
     # Overshooting target rate (gyro=1.5 rad/s >> 0.42 rad/s): turn command should drop
     c_over = ap.step(0.86, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=1.5)
@@ -84,7 +84,7 @@ def test_plane_autopark_translation_stall_booster():
 
     ap = PlaneAutoPark(start_t=0.0)
     # Lock onto airframe at side so ORBIT commands translation, then hold pose stationary
-    meas = np.array([0.60, 0.0, -1.0, 0.0, 10.0])
+    meas = np.array([0.90, 0.0, -1.0, 0.0, 10.0])
     for i in range(1, 20):
         t = i * 0.05
         ap.step(t, imu_age_s=0.01, frame_age_s=0.02, gyro_ccw_rad_s=0.0, meas=meas, cap_t=t - 0.01)
