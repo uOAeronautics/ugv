@@ -119,6 +119,8 @@ Project skills live in `.agents/skills/` (`.claude/skills` and `.opencode/skills
   each phase at a commit), log-first diagnosis and sim-to-real release gates.
 - `mesh-optimization`: simplify heavy meshes into game-ready ones behind a camera-truth gate.
 - `ui-taste`: build and review web UI without AI-slop tells; screenshot-and-verify loop with reviewer subagents.
+- `pi-live-park-tuning`: deploy, pull telemetry and tune live Auto Park on `adv034` (sign conventions, measured deadzones, yaw PI limits, log-first diagnosis).
+- `yolo-pose-pi`: train, INT8-quantize, real-frame gate and deploy the airframe YOLO-pose detector on the Pi.
 
 Skills follow the Agent Skills spec (agentskills.io): a directory with `SKILL.md`, `name`
 matching the directory, and a `description` that says when to use it. Keep them under
