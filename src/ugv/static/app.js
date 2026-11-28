@@ -533,7 +533,15 @@ function releaseStick(event) {
 joystick.addEventListener("pointerup", releaseStick);
 joystick.addEventListener("pointercancel", releaseStick);
 
-window.addEventListener("blur", () => stop("window-blur"));
+window.addEventListener("blur", () => {
+  if (state.auto_park) {
+    keys.clear();
+    stick = { forward: 0, strafe: 0 };
+    joystickKnob.style.transform = "translate(0, 0)";
+    return;
+  }
+  stop("window-blur");
+});
 document.addEventListener("visibilitychange", () => { if (document.hidden) stop("hidden"); });
 window.addEventListener("pagehide", () => stop("pagehide"));
 

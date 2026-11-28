@@ -525,9 +525,11 @@ class PlaneAutoPark:
         if abs(w_cmd) < 0.08:
             if trans_mag > 1e-3:
                 err_w = w_cmd - float(gyro_ccw_rad_s)
-                self._yaw_int = float(np.clip(self._yaw_int + 0.25 * err_w * dt, -0.14, 0.14))
+                if abs(err_w) < 0.15:
+                    err_w = 0.0
+                self._yaw_int = float(np.clip(self._yaw_int + 0.06 * err_w * dt, -0.08, 0.08))
                 self._yaw_sign = 0.0
-                duty[2] = float(np.clip(0.14 * err_w + self._yaw_int, -0.22, 0.22))
+                duty[2] = float(np.clip(0.04 * err_w + self._yaw_int, -0.12, 0.12))
             else:
                 self._yaw_int = 0.0
                 self._yaw_sign = 0.0
