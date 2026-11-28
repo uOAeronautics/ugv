@@ -6,7 +6,7 @@ question: Does a second stage on a zoomed crop (256x256 of the full 1280x720 cam
 parent: 2026-11-17-pose-kp-v1-synthetic
 outcome: kept
 failure_mode: synthetic-data
-refs: [train/pose_kp.py, tools/pose/make_dataset.py]
+refs: [28c46f7, 28c46f7]
 tags: [pose, learning]
 ---
 

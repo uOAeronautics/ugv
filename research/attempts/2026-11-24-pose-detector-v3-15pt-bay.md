@@ -6,7 +6,7 @@ question: Do the 3 nose-tyre keypoints (15-pt skeleton) and bay-range truncated 
 parent: 2026-11-24-pose-network-in-challenge-loop
 outcome: kept
 failure_mode: none
-refs: [src/ugv/pose/mesh.py, src/ugv/pose/render.py, src/ugv/pose/dataset.py, src/ugv/lab/record.py, src/ugv/pose/frame_eval.py, train/pose_kp.py, tools/pose/make_dataset.py, tools/pose/eval_frames.py]
+refs: [src/ugv/pose/mesh.py, src/ugv/pose/render.py, src/ugv/pose/dataset.py, src/ugv/lab/record.py, src/ugv/pose/frame_eval.py, 28c46f7, 28c46f7, tools/pose/eval_frames.py]
 tags: [pose, detector, challenge, close-range, truncation]
 ---
 

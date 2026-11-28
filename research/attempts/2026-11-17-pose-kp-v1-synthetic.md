@@ -6,7 +6,7 @@ question: How precise is a Pi-sized keypoint detector trained only on domain-ran
 parent: 2026-11-17-pose-smoke-keypoint-pnp
 outcome: negative
 failure_mode: synthetic-data
-refs: [train/pose_kp.py, tools/pose/make_dataset.py]
+refs: [28c46f7, 28c46f7]
 tags: [pose, learning]
 ---
 

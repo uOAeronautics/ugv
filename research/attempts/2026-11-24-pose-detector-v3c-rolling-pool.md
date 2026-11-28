@@ -6,7 +6,7 @@ question: Does training on a continuously refreshed rolling pool with spatial pe
 parent: 2026-11-24-pose-detector-v3-15pt-bay
 outcome: kept
 failure_mode: none
-refs: [src/ugv/pose/dataset.py, src/ugv/pose/render.py, src/ugv/pose/detector.py, train/pose_kp.py, tests/test_pose_pool.py]
+refs: [src/ugv/pose/dataset.py, src/ugv/pose/render.py, src/ugv/pose/detector.py, 28c46f7, tests/test_pose_pool.py]
 tags: [pose, detector, challenge, rolling-pool, close-range]
 ---
 

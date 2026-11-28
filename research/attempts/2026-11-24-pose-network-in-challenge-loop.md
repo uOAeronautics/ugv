@@ -6,7 +6,7 @@ question: How well does the trained keypoint network read the challenge's render
 parent: 2026-11-17-pose-kp-crop-v1
 outcome: kept
 failure_mode: synthetic-data
-refs: [src/ugv/pose/detector.py, src/ugv/lab/record.py, src/ugv/pose/frame_eval.py, tools/pose/eval_frames.py, tools/pose/make_dataset.py, src/ugv/pose/render.py]
+refs: [src/ugv/pose/detector.py, src/ugv/lab/record.py, src/ugv/pose/frame_eval.py, tools/pose/eval_frames.py, 28c46f7, src/ugv/pose/render.py]
 tags: [pose, detector, challenge, evaluation]
 ---
 

@@ -53,10 +53,10 @@ DETECTOR_RUN = re.compile(r"\bkp-(?:crop-)?v\d+[a-z]?\b")
 
 
 def test_live_docs_match_default_detector() -> None:
-    """Live docs only name the active `ugv.pose.detector.DEFAULT` run pair, never stale models."""
+    """Live docs only name the active `ugv.pose.detector.DEFAULT` run, never stale models."""
     from ugv.pose.detector import DEFAULT
 
-    active = set(DEFAULT)
+    active = {DEFAULT} if isinstance(DEFAULT, str) else set(DEFAULT)
     stale = []
     for doc in LIVE:
         for lineno, line in enumerate(doc.read_text().splitlines(), 1):

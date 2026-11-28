@@ -18,11 +18,10 @@ challenge shows cannot flatter the car:
    are applied to the pixels (isotropic kernel, as a simplification of directional streak),
    never as a CSS filter on the display.
 2. That exact 1280x720 frame is drawn for the human and sent, as mono bytes, to the server,
-   where the trained keypoint network reads it (`ugv.pose.detector`: `kp-v3c` on the whole
-   frame, then `kp-crop-v3c` on a crop around what it found plus a tight nose-wheel refinement
-   crop when the main crop exceeds 400 px; ONNX on the CPU). Nothing on this path knows the true
-   pose. Without `runs/pose_train/{kp-v3c,kp-crop-v3c}/model.onnx` the page says so and the car
-   gets no camera. How well it reads these frames and parks:
+   where the trained YOLO-pose network reads it (`ugv.pose.detector.YoloPoseDetector`:
+   `yolo11n-pose-v3-416-int8`, single-stage ONNX on the CPU). Nothing on this path knows the true
+   pose. Without `runs/pose_train/yolo11n-pose-v3-416-int8/model.onnx` the page says so and the car
+   gets no camera. How well the earlier two-stage detector read these frames (retired):
    `research/attempts/2026-11-24-pose-detector-v3c-rolling-pool.md` and
    `research/attempts/2026-11-24-pose-detector-v3c-autopilot-gate.md`.
 3. The network's 15 keypoints (12 skeleton + 3 nose-tyre points) go to `perception.solve` with
@@ -175,7 +174,7 @@ mostly final heading just over 5 deg; with a nominal car the 90th-percentile hea
 with the SDF per-part airframe materials (`body` 0.85, control surfaces orange, `nacelle`/`prop`
 0.15) and `room_background`, applies image-level camera faults (radial lens distortion, Gaussian
 blur, exposure stops/spells, sensor noise, occluder) directly to the pixels (`src/ugv/park/camera.py`),
-runs `ugv.pose.detector.KeypointDetector` (`kp-v3c` + `kp-crop-v3c`) on CPU, and feeds the
+runs `ugv.pose.detector.YoloPoseDetector` (`yolo11n-pose-v3-416-int8`) on CPU, and feeds the
 detections into `perception.measurement_from_detections`. These numbers are **synthetic renders of
 the real mesh, not real-camera evidence**.
 

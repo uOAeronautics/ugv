@@ -57,16 +57,16 @@ Two facts of this task make it easier still, and the code uses both
 | Synthetic-to-real gap | domain randomisation (`ugv.pose.dataset.RollingPool`), then fine-tune on real frames labelled by the tags | evaluate only on held-out / real sets (`research/decisions/2026-11-24-offline-pose-eval-and-reliability-gate.md`) |
 | Viewing angle | 55% level car-camera views (including empty away-facing views), 20% bay run-in, 25% sphere/low aimed | the orbit keeps the airframe in view from the side and the tail |
 
-Training uses a rolling generated pool (`train/pose_kp.py --pool`, `ugv.pose.dataset.RollingPool`,
-~95k unique generated views per run against fixed `val-v3` / `val-crop-v3`) rather than a fixed
-24k dataset on disk. The decisive data remains small and real: the 50-100 frame evaluation set
-(`2026-11-17-real-pose-eval-set`) and, later, real frames labelled by the tags during drives.
+Training uses `train/yolo_pose.py` (single-stage YOLO11n-pose trained on synthetic STRL-001
+renders over 120 HDR panoramas + real lab backgrounds, exported to INT8 ONNX). The decisive data
+remains small and real: the 50-100 frame evaluation set (`2026-11-17-real-pose-eval-set`) and,
+later, real frames labelled by the tags during drives.
 
-### Current detector state (2026-11-24, training paused)
+### Current detector state
 
-- **Active default**: `runs/pose_train/{kp-v3c,kp-crop-v3c}` (`DEFAULT` in `src/ugv/pose/detector.py`);
-  older checkpoints (`v1`, `v2`, `v3a`, `v3b`) and fixed 24k sets are removed from `runs/` with
-  their results and failure modes preserved in `research/attempts/`.
+- **Active default**: `runs/pose_train/yolo11n-pose-v3-416-int8` (`DEFAULT` in `src/ugv/pose/detector.py`);
+  the earlier two-stage MobileNetV3 models (`v1`–`v4`) are retired with their results and failure
+  modes preserved in `research/attempts/`.
 - **Measured on frozen held-out Challenge sets** (`2026-11-24-pose-detector-v3c-rolling-pool`,
   `2026-11-24-pose-detector-v3c-autopilot-gate`): healthy `v3h` (1,261 frames) precision 0.888,
   median 4.5 px, 6+ correct on 56.1% of under-1m frames (68.6% with 6+ in view), 0.11 false

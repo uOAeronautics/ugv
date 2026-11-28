@@ -6,7 +6,7 @@ question: What is the true offline closed-loop parking reliability of kp-v3c + k
 parent: 2026-11-24-pose-detector-v3c-autopilot-gate
 outcome: kept
 failure_mode: none
-refs: [src/ugv/park/camera.py, src/ugv/park/dagger.py, src/ugv/park/episode.py, src/ugv/park/evaluate.py, tools/park/eval.py, train/pose_kp.py, docs/PARK_SIM.md, research/tasks/2026-11-24-pose-detector-v4-reliability.md]
+refs: [src/ugv/park/camera.py, src/ugv/park/dagger.py, src/ugv/park/episode.py, src/ugv/park/evaluate.py, tools/park/eval.py, 28c46f7, docs/PARK_SIM.md, research/tasks/2026-11-24-pose-detector-v4-reliability.md]
 tags: [pose, park, detector, evaluation, dagger]
 ---
 
