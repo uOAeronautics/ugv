@@ -474,6 +474,7 @@ class PlaneAutoPark:
                 backoff_extra_m=0.16,
                 backoff_straight_in_bay=True,
                 approach_align_first=True,
+                hub_rear_entry=True,
                 misalign_confirm=2,
                 camera_silent_s=1.0,
             ),
