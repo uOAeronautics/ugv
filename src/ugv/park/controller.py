@@ -235,7 +235,13 @@ class ParkController:
             vx = (
                 0.0
                 if x >= stage_x
-                or (p.approach_align_first and (abs(y) > 0.08 or abs(yaw) > np.radians(10.0)))
+                or (
+                    p.approach_align_first
+                    and (
+                        abs(y) > max(0.03, p.align_lat_m)
+                        or abs(yaw) > max(np.radians(6.0), np.radians(p.align_yaw_deg))
+                    )
+                )
                 else p.approach_v * float(np.clip((stage_x - x) / 0.25, 0.25, 1))
             )
             v_air = np.array([vx, float(np.clip(-p.k_lat * y, -0.12, 0.12))])

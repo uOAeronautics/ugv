@@ -924,10 +924,17 @@ class RobotController:
                 )
                 meas = None
                 cap_used = None
+                gear_nose_u: float | None = None
                 if latest_fix["seq"] != consumed_seq:
                     consumed_seq = latest_fix["seq"]
                     meas = latest_fix["meas"]
                     cap_used = latest_fix["cap"]
+                    det = latest_fix["det"]
+                    if det and det.get("points"):
+                        for pt in det["points"]:
+                            if int(pt[0]) == 9:
+                                gear_nose_u = float(pt[1])
+                                break
 
                 plan_t0 = time.perf_counter()
                 # RelativeHeading emits CW+ heading_rate_dps; PlaneAutoPark expects CCW+ rad/s.
@@ -939,6 +946,7 @@ class RobotController:
                     gyro_ccw_rad_s=gyro_ccw,
                     meas=meas,
                     cap_t=cap_used,
+                    gear_nose_u=gear_nose_u,
                 )
                 self.perf.record("plan_ms", (time.perf_counter() - plan_t0) * 1000.0)
                 self.state.auto_park_stage = cmd["stage"]

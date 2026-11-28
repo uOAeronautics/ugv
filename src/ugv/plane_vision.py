@@ -442,7 +442,7 @@ class PlaneAutoPark:
         self.est = Estimator(calib_min_points=4)
         # Real-floor breakaway deadzones (concrete + current battery), smoothly tapered below
         # small commanded velocities so tiny lateral corrections never slam the wheels.
-        for ax, dz in zip(self.est.actuator.axes, (0.11, 0.14, 0.11), strict=True):
+        for ax, dz in zip(self.est.actuator.axes, (0.11, 0.17, 0.11), strict=True):
             ax.deadzone = dz
             ax.stall_floor = dz
             ax._theta = np.array([ax.gain, -ax.gain * dz])
@@ -456,18 +456,18 @@ class PlaneAutoPark:
                 k_radial=0.8,
                 k_face=1.4,
                 approach_v=0.08,
-                k_lat=1.2,
+                k_lat=1.4,
                 k_head=1.5,
-                align_lat_m=0.05,
-                align_yaw_deg=10.0,
-                abort_lat_m=0.09,
-                abort_yaw_deg=16.0,
+                align_lat_m=0.018,
+                align_yaw_deg=5.0,
+                abort_lat_m=0.06,
+                abort_yaw_deg=12.0,
                 settle_s=0.15,
                 measure_s=0.25,
-                step_v=0.08,
+                step_v=0.09,
                 step_w=0.35,
-                lat_tol_m=0.025,
-                yaw_tol_deg=4.0,
+                lat_tol_m=0.014,
+                yaw_tol_deg=3.0,
                 stop_tol_m=0.025,
                 k_hold=1.5,
                 shield_backoff=True,
@@ -485,6 +485,8 @@ class PlaneAutoPark:
         self._trans_boost = 1.0
         self._move_anchor: tuple[float, np.ndarray] | None = None
         self._last_stage = ""
+        self._gear_nose_u: float | None = None
+        self._gear_nose_t: float = -1e9
 
     def prior_for_solver(self) -> np.ndarray | None:
         from .park.geometry import inverse
@@ -504,6 +506,7 @@ class PlaneAutoPark:
         gyro_ccw_rad_s: float,
         meas: np.ndarray | None = None,
         cap_t: float | None = None,
+        gear_nose_u: float | None = None,
     ) -> dict[str, Any]:
         from .park.plant import DUTY_CAP
 
@@ -548,7 +551,33 @@ class PlaneAutoPark:
                 upd_status = self.est.update(t_cap, meas, t)
                 jumped = upd_status == "reinit"
 
+        if gear_nose_u is not None:
+            self._gear_nose_u = float(gear_nose_u)
+            self._gear_nose_t = t
+
         cmd_vel = self.ctrl.step(t, self.est, jumped)
+        # Direct visual-servo centering on gear_nose (index 9) during APPROACH / ENTER:
+        # gear_nose lies on the exact fuselage centerline (y=0), so when aligned it must sit
+        # at u=640 px. If it drifts off-center while advancing into the bay, pause forward
+        # motion and strafe purely sideways to re-center so we never clip a main wheel.
+        q_est = self.est.car_in_airframe()
+        if (
+            self.ctrl.state in ("APPROACH", "ENTER")
+            and self._gear_nose_u is not None
+            and (t - self._gear_nose_t) < 0.6
+            and q_est is not None
+            and abs(float(q_est[2])) < np.radians(12.0)
+        ):
+            err_u = self._gear_nose_u - 640.0  # + = gearN right of center -> strafe right (vy < 0)
+            if abs(err_u) > 40.0 and cmd_vel[0] > 0.0:
+                cmd_vel = cmd_vel.copy()
+                cmd_vel[0] = 0.0
+                vy_mag = float(np.clip(0.0009 * abs(err_u), 0.06, 0.11))
+                cmd_vel[1] = -np.sign(err_u) * vy_mag
+            elif abs(err_u) > 18.0 and cmd_vel[0] > 0.0:
+                cmd_vel = cmd_vel.copy()
+                cmd_vel[1] = float(np.clip(cmd_vel[1] - 0.0006 * err_u, -0.09, 0.09))
+
         cmd_vel = np.array(
             [
                 0.0 if abs(cmd_vel[0]) < 0.02 else float(np.clip(cmd_vel[0], -0.18, 0.18)),
@@ -560,11 +589,11 @@ class PlaneAutoPark:
         duty = self.est.actuator.to_duty(cmd_vel)
         # Smooth deadzone taper on forward & strafe so small corrections never slam to full
         # deadzone (prevents diagonal PWM spikes into the main gear), while giving ORBIT
-        # enough strafe authority to break static friction on concrete.
+        # and bay centering enough strafe authority to break static friction on concrete.
         in_bay = self.ctrl.state in ("APPROACH", "ENTER", "BACKOFF")
         for idx, ramp_v, max_d in (
             (0, 0.08, 0.17 if in_bay else 0.22),
-            (1, 0.10, 0.18 if in_bay else 0.26),
+            (1, 0.08, 0.25 if in_bay else 0.26),
         ):
             v_i = float(cmd_vel[idx])
             if abs(v_i) < 1e-4:
@@ -575,7 +604,7 @@ class PlaneAutoPark:
                 d_i = np.sign(v_i) * (ax_i.deadzone * taper + abs(v_i) / ax_i.gain)
                 duty[idx] = float(np.clip(d_i, -max_d, max_d))
         # Closed-loop translation stall booster: if we command forward/strafe (especially a
-        # 2-wheel diagonal with a heavy battery) and the pose moves < 1.2 cm in 0.45 s, ramp
+        # 2-wheel diagonal with a heavy battery) and the pose moves < 1.5 cm in 0.25 s, ramp
         # duty up smoothly until friction breaks, then decay back to 1.0 once rolling.
         q_now = self.est.car_in_airframe()
         trans_mag = float(np.hypot(duty[0], duty[1]))
@@ -591,8 +620,8 @@ class PlaneAutoPark:
             if moved >= 0.015:
                 self._trans_boost = max(1.0, self._trans_boost - 0.6 * dt)
                 self._move_anchor = (t, q_now[:2].copy())
-            elif dt_a >= 0.40:
-                self._trans_boost = min(1.85, self._trans_boost + 0.9 * dt)
+            elif dt_a >= 0.25:
+                self._trans_boost = min(1.85, self._trans_boost + 1.1 * dt)
             duty[0] = float(np.clip(duty[0] * self._trans_boost, -DUTY_CAP, DUTY_CAP))
             duty[1] = float(np.clip(duty[1] * self._trans_boost, -DUTY_CAP, DUTY_CAP))
 
