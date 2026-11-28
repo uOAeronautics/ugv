@@ -13,9 +13,12 @@ from ugv.park.perception import HEIGHT, WIDTH
 from ugv.pose.dataset import CROP
 from ugv.pose.dataset import H as S1_H
 from ugv.pose.dataset import W as S1_W
-from ugv.pose.detector import CROP_MARGIN, CROP_MAX, CROP_MIN, Detection
+from ugv.pose.detector import Detection
 from ugv.pose.mesh import keypoints, load_airframe
 from ugv.pose.render import Camera
+
+CROP_MARGIN = 1.35
+CROP_MIN, CROP_MAX = 64.0, 1400.0
 
 
 @dataclass

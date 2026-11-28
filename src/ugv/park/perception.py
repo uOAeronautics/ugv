@@ -266,9 +266,29 @@ def solve(
                 init = np.array([t[2] + CAMERA_X_M, -t[0], np.arctan2(-R[0, 0], R[2, 0]), pitch0])
     if init is None:
         init = prior
-    if init is None:
-        return None
     gate = max(6.0, 4 * det.pixel_std)
+    if init is None:
+        span = float(np.hypot(*np.ptp(model[:, :2], axis=0))) if len(model) >= 3 else 0.0
+        if len(obs) < 3 or span < 0.35:
+            return None
+        # Cold-start planar solve for 3-5 well-spaced points (e.g. hubRear + gearL + gearR):
+        # try 8 headings and pick the lowest-residual floor-plane pose in front of the camera.
+        best_q, best_err = None, float("inf")
+        for yaw0 in np.linspace(-np.pi, np.pi, 8, endpoint=False):
+            q_try, res_try = solve_planar(
+                model, obs, np.array([0.8, 0.0, float(yaw0), pitch0]), iters=12
+            )
+            if (
+                np.isfinite(q_try).all()
+                and 0.15 < q_try[0] < det.max_range_m
+                and abs(q_try[1]) < det.max_range_m
+            ):
+                err = float(np.max(res_try))
+                if err < best_err:
+                    best_q, best_err = q_try, err
+        if best_q is None or best_err > gate:
+            return None
+        return np.array([best_q[0], best_q[1], wrap(best_q[2]), best_q[3], len(obs)])
     m, o = model, obs
     while len(o) >= det.min_planar_points:
         q, res = solve_planar(m, o, init)

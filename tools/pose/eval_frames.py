@@ -1,7 +1,7 @@
-"""Score the trained keypoint detector on recorded challenge frames (`ugv-lab --record <dir>`).
+"""Score the trained YOLO-pose detector on recorded challenge frames (`ugv-lab --record <dir>`).
 
-    uv run python tools/pose/eval_frames.py runs/challenge_frames/diag1 [--runs kp-v2,kp-crop-v2]
-        [--stage1-only] [--threshold 0.5]
+    uv run python tools/pose/eval_frames.py runs/challenge_frames/diag1 [--run yolo11n-pose-v3-416-int8]
+        [--threshold 0.5]
 
 Prints recall, precision, left/right swaps, pixel error and false alarms on frames with no
 airframe in view, overall and by range; writes <dir>/eval-<variant>.json.
@@ -13,25 +13,24 @@ import argparse
 import json
 from pathlib import Path
 
-from ugv.pose.detector import TRAIN_DIR, KeypointDetector, default_runs
+from ugv.pose.detector import TRAIN_DIR, YoloPoseDetector, default_runs
 from ugv.pose.frame_eval import load, score, summary
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("root", type=Path)
-    ap.add_argument("--runs", help="whole,crop run names under runs/pose_train")
-    ap.add_argument("--stage1-only", action="store_true")
+    ap.add_argument("--run", help="model run name under runs/pose_train")
     ap.add_argument("--threshold", type=float, default=0.5)
-    ap.add_argument("--n-kp", type=int, help="score the first n keypoints (12-point networks)")
+    ap.add_argument("--n-kp", type=int, help="score the first n keypoints")
     ap.add_argument("--hit-px", type=float, default=20.0)
     args = ap.parse_args()
-    whole, crop = (TRAIN_DIR / n for n in args.runs.split(",")) if args.runs else default_runs()
-    det = KeypointDetector(whole, None if args.stage1_only else crop, threshold=args.threshold)
+    run_dir = (TRAIN_DIR / args.run) if args.run else default_runs()[0]
+    det = YoloPoseDetector(run_dir, conf_threshold=args.threshold, kpt_threshold=args.threshold)
     res = summary(
         score(load(args.root), lambda f: det(f).points, args.root, args.hit_px, args.n_kp)
     )
-    variant = f"{whole.name}-{'s1' if args.stage1_only else crop.name}-t{args.threshold}"
+    variant = f"{run_dir.name}-t{args.threshold}"
     (args.root / f"eval-{variant}.json").write_text(json.dumps(res, indent=1))
     print(variant, json.dumps(res, indent=1))
 

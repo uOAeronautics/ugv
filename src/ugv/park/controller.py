@@ -163,6 +163,8 @@ class ParkController:
             if q is not None and t - est.last_fix_t < 0.3:
                 self._go("ACQUIRE", "airframe seen")
                 return np.zeros(3)
+            if q is None and self.fsm.age() < 0.40:
+                return np.zeros(3)  # let the first camera frame land before spinning
             if q is not None and self.fsm.age() < 3.0:
                 bearing = wrap(np.arctan2(-q[1], -q[0]) - q[2])
                 r = float(np.hypot(q[0], q[1]))

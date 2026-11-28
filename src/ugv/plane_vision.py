@@ -1,8 +1,8 @@
-"""Live read-only airframe keypoint detection and planar pose solver for the Pi dashboard.
+"""Live airframe YOLO-pose keypoint detection, planar pose solver, and Auto Park for the Pi.
 
-Runs the two-stage ONNX `KeypointDetector` (`ugv.pose.detector`) on frames from `CameraStream`
-when toggled on from the web UI. Strictly read-only (no actuation, no fabricated stand-ins):
-if `onnxruntime` or the trained `model.onnx` files are missing, it reports the error visibly.
+Runs `YoloPoseDetector` (`ugv.pose.detector`) on frames from `CameraStream` when toggled on
+from the web UI or during Auto Park. If `onnxruntime` or `model.onnx` is missing, it reports
+the error visibly.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 import cv2
 import numpy as np
 
-from .pose.detector import TRAIN_DIR, KeypointDetector, YoloPoseDetector, default_runs
+from .pose.detector import TRAIN_DIR, YoloPoseDetector, default_runs
 
 if TYPE_CHECKING:
     from .web import CameraStream, RobotController
@@ -45,48 +45,26 @@ KEYPOINT_NAMES = (
 )
 
 PRIOR_TTL_S = 1.0
-TRACK_REANCHOR_EVERY = 12
-NOSE_BOX_MIN_PX = 750.0
 
 
-def discover_models(train_dir: Path = TRAIN_DIR) -> dict[str, tuple[Path, Path | None]]:
-    """Return `{tag: (primary_dir, crop_dir_or_None)}` for trained models present on disk.
-
-    Discovers single-stage YOLO-pose models (`yolo*/model.onnx`, listed first) and two-stage
-    keypoint models (`kp-<tag>` + `kp-crop-<tag>`).
-    """
-    found: dict[str, tuple[Path, Path | None]] = {}
+def discover_models(train_dir: Path = TRAIN_DIR) -> dict[str, Path]:
+    """Return `{tag: model_dir}` for trained YOLO-pose ONNX models present on disk."""
+    found: dict[str, Path] = {}
     if not train_dir.is_dir():
         return found
     for d in sorted(train_dir.iterdir()):
         if d.is_dir() and d.name.startswith("yolo") and (d / "model.onnx").is_file():
-            found[d.name] = (d, None)
-    for whole in sorted(train_dir.iterdir()):
-        if not whole.is_dir() or not whole.name.startswith("kp-"):
-            continue
-        if whole.name.startswith("kp-crop-"):
-            continue
-        tag = whole.name[len("kp-") :]
-        crop = train_dir / f"kp-crop-{tag}"
-        if (whole / "model.onnx").is_file() and (crop / "model.onnx").is_file():
-            found[tag] = (whole, crop)
+            found[d.name] = d
     return found
 
 
-def _default_tag(available: dict[str, tuple[Path, Path | None]]) -> str:
+def _default_tag(available: dict[str, Path]) -> str:
     for tag in available:
-        if tag.startswith("yolo") and "int8" in tag:
+        if "int8" in tag:
             return tag
-    for tag in available:
-        if tag.startswith("yolo"):
-            return tag
-    whole, _ = default_runs()
-    tag = whole.name[len("kp-") :] if whole.name.startswith("kp-") else whole.name
-    if tag in available:
-        return tag
     if available:
         return next(iter(available))
-    return tag
+    return default_runs()[0].name
 
 
 def _decode_gray_1280x720(jpeg: bytes) -> np.ndarray | None:
@@ -115,7 +93,7 @@ class PlaneDetectorRunner:
         self.enabled = False
         self.available = discover_models(train_dir)
         self.model_tag = _default_tag(self.available)
-        self._detector: KeypointDetector | None = None
+        self._detector: YoloPoseDetector | None = None
         self._loaded_tag: str | None = None
         self._task: asyncio.Task[None] | None = None
         self._wake = asyncio.Event()
@@ -130,9 +108,6 @@ class PlaneDetectorRunner:
         self._times: deque[float] = deque(maxlen=30)
         self._prior: np.ndarray | None = None
         self._prior_at = 0.0
-        self._track_box: tuple[float, float, float] | None = None
-        self._track_at = 0.0
-        self._track_steps = 0
         self._last_seq = -1
         self._external_active = False
 
@@ -146,15 +121,12 @@ class PlaneDetectorRunner:
     def detect_once(
         self, jpeg: bytes, prior: np.ndarray | None = None, *, close_range: bool = False
     ) -> tuple[dict[str, Any] | None, np.ndarray | None]:
-        """Run one frame synchronously (for Auto Park), updating the dashboard overlay."""
+        """Run one frame synchronously, updating the dashboard overlay."""
         gray = _decode_gray_1280x720(jpeg)
         if gray is None:
             return None, None
         det = self._ensure_detector()
-        if isinstance(det, YoloPoseDetector):
-            res = det(gray, close_range=close_range)
-        else:
-            res = det(gray, nose_box_min=NOSE_BOX_MIN_PX)
+        res = det(gray, close_range=close_range)
         pts = [[idx, u, v, res.prob[idx]] for idx, u, v in res.points]
         box = [round(float(v), 1) for v in res.box] if res.box is not None else None
         pose_out, meas = self._solve_pose(res.points, prior=prior)
@@ -240,8 +212,6 @@ class PlaneDetectorRunner:
         self.available = discover_models(self.train_dir)
         if model is not None:
             tag = str(model).strip()
-            if tag.startswith("kp-"):
-                tag = tag[len("kp-") :]
             if tag not in self.available:
                 raise ValueError(f"unknown plane model: {model}")
             if tag != self.model_tag:
@@ -249,8 +219,6 @@ class PlaneDetectorRunner:
                 self._detector = None
                 self._loaded_tag = None
                 self._prior = None
-                self._track_box = None
-                self._track_steps = 0
         if enabled is not None:
             self.enabled = bool(enabled)
             if not self.enabled:
@@ -269,80 +237,15 @@ class PlaneDetectorRunner:
         self.last_ms = None
         self._times.clear()
         self._prior = None
-        self._track_box = None
-        self._track_steps = 0
 
-    def _ensure_detector(self) -> KeypointDetector | YoloPoseDetector:
+    def _ensure_detector(self) -> YoloPoseDetector:
         if self._detector is not None and self._loaded_tag == self.model_tag:
             return self._detector
         self.available = discover_models(self.train_dir)
-        if self.model_tag in self.available:
-            whole, crop = self.available[self.model_tag]
-        else:
-            whole, crop = default_runs()
-        det: KeypointDetector | YoloPoseDetector = (
-            YoloPoseDetector(whole, threads=self.threads)
-            if crop is None
-            else KeypointDetector(whole, crop, threads=self.threads)
-        )
-        self._detector = det
+        model_dir = self.available.get(self.model_tag, default_runs()[0])
+        self._detector = YoloPoseDetector(model_dir, threads=self.threads)
         self._loaded_tag = self.model_tag
-        return det
-
-    def _infer_frame(self, jpeg: bytes) -> dict[str, Any] | None:
-        gray = _decode_gray_1280x720(jpeg)
-        if gray is None:
-            return None
-        det = self._ensure_detector()
-        now = time.monotonic()
-        use_prev = (
-            self._track_box is not None
-            and (now - self._track_at) <= PRIOR_TTL_S
-            and self._track_steps < TRACK_REANCHOR_EVERY
-        )
-        res = det(
-            gray,
-            prev_box=self._track_box if use_prev else None,
-            nose_box_min=NOSE_BOX_MIN_PX,
-        )
-        if res.box is not None and len(res.box) == 3 and len(res.points) >= 3:
-            self._track_box = (res.box[0], res.box[1], res.box[2])
-            self._track_at = now
-            self._track_steps = self._track_steps + 1 if use_prev else 1
-        else:
-            self._track_box = None
-            self._track_steps = 0
-        pts = [[idx, u, v, res.prob[idx]] for idx, u, v in res.points]
-        box = [round(float(v), 1) for v in res.box] if res.box is not None else None
-
-        pose_out: dict[str, Any] | None = None
-        if len(res.points) >= 2:
-            try:
-                from .park.perception import DetectorModel, model_points, solve
-
-                det_cfg = DetectorModel()
-                all_model = model_points(det_cfg)
-                idxs = [int(p[0]) for p in res.points if int(p[0]) < len(all_model)]
-                if len(idxs) >= 2:
-                    m = all_model[idxs]
-                    o = np.array([[p[1], p[2]] for p in res.points if int(p[0]) < len(all_model)])
-                    now = time.monotonic()
-                    prior = self._prior if (now - self._prior_at) <= PRIOR_TTL_S else None
-                    sol = solve(m, o, det_cfg, prior)
-                    if sol is not None:
-                        self._prior = sol[:4].copy()
-                        self._prior_at = now
-                        pose_out = {
-                            "x_m": round(float(sol[0]), 3),
-                            "y_m": round(float(sol[1]), 3),
-                            "yaw_deg": round(math.degrees(float(sol[2])), 1),
-                            "pitch_deg": round(math.degrees(float(sol[3])), 1),
-                            "used": int(round(float(sol[4]))),
-                        }
-            except Exception:
-                pose_out = None
-
-        return {"points": pts, "box": box, "pose": pose_out, "ms": float(res.ms)}
+        return self._detector
 
     async def _loop(self) -> None:
         while not self._closed:
@@ -366,7 +269,7 @@ class PlaneDetectorRunner:
                 if self._detector is None or self._loaded_tag != self.model_tag:
                     self.status = f"loading {self.model_tag}..."
                     await self.controller.broadcast()
-                out = await asyncio.to_thread(self._infer_frame, frame)
+                out, _ = await asyncio.to_thread(self.detect_once, frame)
             except Exception as exc:
                 self.enabled = False
                 self._clear_detection(f"error: {exc}")
@@ -378,26 +281,6 @@ class PlaneDetectorRunner:
             if out is None:
                 await asyncio.sleep(0.03)
                 continue
-
-            now = time.monotonic()
-            self.points = out["points"]
-            self.box = out["box"]
-            self.pose = out["pose"]
-            self.last_ms = round(out["ms"], 1)
-            self.last_at = now
-            self._times.append(now)
-            self.controller.perf.record("plane_ms", out["ms"])
-
-            n = len(self.points)
-            if self.pose is not None:
-                p = self.pose
-                self.status = (
-                    f"{n} pts · x={p['x_m']:.2f}m y={p['y_m']:+.2f}m yaw={p['yaw_deg']:+.0f}°"
-                )
-            elif n > 0:
-                self.status = f"{n} pts · {self.last_ms:.0f} ms"
-            else:
-                self.status = f"no airframe · {self.last_ms:.0f} ms"
 
             await self.controller.broadcast()
             await asyncio.sleep(0.01)

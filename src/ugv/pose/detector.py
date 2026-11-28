@@ -1,15 +1,8 @@
-"""The trained keypoint detector on one car-camera frame: ONNX Runtime on the CPU, no torch.
+"""Single-stage YOLO-pose keypoint detector on one car-camera frame: ONNX Runtime on CPU, no torch.
 
-Two stages, as trained (`train/pose_kp.py`, `tools/pose/make_dataset.py`):
-
-1. the whole 1280x720 frame shrunk to the first model's input (320x180) finds the airframe;
-2. a square crop around what stage 1 found (1.35x its keypoint extent, 64-1400 px, reflected at
-   the image edges like the training crops) goes to the crop model (256x256) for precise points.
-
-Both models output the 15 keypoints (`ugv.pose.mesh.keypoints(..., near=True)` order: 12 skeleton
-plus 3 nose-tyre points) in input pixels and a visibility logit each. A point is reported when its
-visibility probability exceeds `threshold`; its pixel is mapped back to the full frame. Nothing
-here knows the true pose.
+Predicts the full airframe bounding box (x0, y0, x1, y1) and all 15 keypoints
+(`ugv.pose.mesh.keypoints(..., near=True)` order: 12 skeleton plus 3 nose-tyre points) in one pass
+using aspect-preserving letterbox resize. Nothing here knows the true pose.
 """
 
 from __future__ import annotations
@@ -22,157 +15,22 @@ import cv2
 import numpy as np
 
 W, H = 1280, 720
-CROP_MARGIN = 1.35  # middle of the 1.1-1.6x the crop model was trained on
-CROP_MIN, CROP_MAX = 64.0, 1400.0
 REPO = Path(__file__).resolve().parents[3]
 TRAIN_DIR = REPO / "runs/pose_train"
-DEFAULT = ("kp-v3c", "kp-crop-v3c")  # (whole frame, crop) run names
+DEFAULT = "yolo11n-pose-v3-416-int8"
 
 
 @dataclass(frozen=True)
 class Detection:
     points: list[list[float]]  # [[keypoint index, u, v], ...] in 1280x720 pixels
-    prob: list[float]  # visibility probability per keypoint (final stage)
-    box: tuple[float, ...] | None  # (x0, y0, size) square crop OR (x0, y0, x1, y1) bbox
+    prob: list[float]  # keypoint confidence per keypoint
+    box: tuple[float, float, float, float] | None  # (x0, y0, x1, y1) bbox in 1280x720 pixels
     ms: float  # inference time
-    score: float | None = None  # object detection confidence (YOLO-pose)
-
-
-class _Model:
-    def __init__(self, path: Path, threads: int = 2) -> None:
-        import onnxruntime as ort  # deferred: the Pi runtime imports this package without it
-
-        opts = ort.SessionOptions()
-        opts.intra_op_num_threads = threads
-        if threads == 1:
-            opts.inter_op_num_threads = 1
-        self.sess = ort.InferenceSession(
-            str(path), sess_options=opts, providers=["CPUExecutionProvider"]
-        )
-        shape = self.sess.get_inputs()[0].shape  # (1, 1, h, w)
-        self.h, self.w = int(shape[2]), int(shape[3])
-
-    def __call__(self, gray: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        x = (gray.astype(np.float32) / 255.0)[None, None]
-        kp, vis, _ = self.sess.run(None, {"image": x})
-        return kp[0].astype(np.float64), 1.0 / (1.0 + np.exp(-vis[0].astype(np.float64)))
-
-
-class KeypointDetector:
-    def __init__(
-        self, whole: Path, crop: Path | None, threshold: float = 0.5, threads: int = 2
-    ) -> None:
-        for p in (whole, crop):
-            if p is not None and not (p / "model.onnx").exists():
-                raise FileNotFoundError(f"{p / 'model.onnx'} is missing (train/pose_kp.py)")
-        self.whole = _Model(whole / "model.onnx", threads=threads)
-        self.crop = _Model(crop / "model.onnx", threads=threads) if crop is not None else None
-        self.threshold = threshold
-        self.names = (whole.name, crop.name if crop is not None else None)
-
-    def _run_crop(
-        self, frame: np.ndarray, box: tuple[float, float, float]
-    ) -> tuple[np.ndarray, np.ndarray]:
-        x0, y0, size = box
-        assert self.crop is not None
-        s = self.crop.w / size
-        M = np.array([[s, 0, -x0 * s], [0, s, -y0 * s]])
-        patch = cv2.warpAffine(
-            frame,
-            M,
-            (self.crop.w, self.crop.h),
-            flags=cv2.INTER_AREA,
-            borderMode=cv2.BORDER_REFLECT,
-        )
-        kp, prob = self.crop(patch)
-        return kp / s + [x0, y0], prob
-
-    @staticmethod
-    def _box_from_kp(
-        kp: np.ndarray, seen: np.ndarray, margin: float = CROP_MARGIN
-    ) -> tuple[float, float, float] | None:
-        if seen.sum() < 2:
-            return None
-        lo, hi = kp[seen].min(0), kp[seen].max(0)
-        size = float(np.clip(max(hi - lo) * margin, CROP_MIN, CROP_MAX))
-        x0, y0 = (lo + hi) / 2 - size / 2
-        return (float(x0), float(y0), size)
-
-    def __call__(
-        self,
-        frame: np.ndarray,
-        prev_box: tuple[float, float, float] | None = None,
-        nose_box_min: float = 400.0,
-    ) -> Detection:
-        """frame: (720, 1280) uint8, the car camera's mono picture.
-
-        When `prev_box` is supplied and a crop model is loaded, stage 1 is skipped and the crop
-        model runs directly on `prev_box`; if fewer than 3 keypoints survive, it falls back to
-        stage 1 + stage 2 on the same frame.
-        """
-        if frame.shape != (H, W):
-            raise ValueError(f"frame must be {H}x{W} mono, got {frame.shape}")
-        t0 = cv2.getTickCount()
-        box: tuple[float, float, float] | None = None
-        kp = prob = None
-        if prev_box is not None and self.crop is not None:
-            kp, prob = self._run_crop(frame, prev_box)
-            seen = (
-                (prob > self.threshold)
-                & (kp[:, 0] >= 0)
-                & (kp[:, 0] <= W)
-                & (kp[:, 1] >= 0)
-                & (kp[:, 1] <= H)
-            )
-            if seen.sum() >= 3:
-                box = self._box_from_kp(kp, seen, margin=1.45)
-            else:
-                kp = prob = None
-
-        if kp is None or prob is None:
-            small = cv2.resize(frame, (self.whole.w, self.whole.h), interpolation=cv2.INTER_AREA)
-            kp, prob = self.whole(small)
-            kp = kp * [W / self.whole.w, H / self.whole.h]
-            if self.crop is not None:
-                box = self._box_from_kp(kp, prob > self.threshold)
-                if box is not None:
-                    kp, prob = self._run_crop(frame, box)
-
-        keep = (
-            (prob > self.threshold)
-            & (kp[:, 0] >= 0)
-            & (kp[:, 0] <= W)
-            & (kp[:, 1] >= 0)
-            & (kp[:, 1] <= H)
-        )
-        # When the main crop is wide (> nose_box_min px), the 5 cm nose wheel is tiny inside the
-        # 256x256 patch; a tight crop around its detected points (indices 9, 12-14) sharpens
-        # bay-range localization from ~7 px to ~3 px.
-        if self.crop is not None and box is not None and box[2] > nose_box_min and len(kp) >= 15:
-            nose_ids = [i for i in (9, 12, 13, 14) if keep[i]]
-            if len(nose_ids) >= 2:
-                npts = kp[nose_ids]
-                nlo, nhi = npts.min(0), npts.max(0)
-                nsize = float(np.clip(max(nhi - nlo) * 2.5, 96.0, 320.0))
-                nx0, ny0 = (nlo + nhi) / 2 - nsize / 2
-                nkp, nprob = self._run_crop(frame, (float(nx0), float(ny0), nsize))
-                for i in (9, 12, 13, 14):
-                    if nprob[i] > self.threshold and 0 <= nkp[i, 0] <= W and 0 <= nkp[i, 1] <= H:
-                        kp[i], prob[i], keep[i] = nkp[i], nprob[i], True
-        pts = [
-            [int(i), round(float(kp[i, 0]), 1), round(float(kp[i, 1]), 1)]
-            for i in np.flatnonzero(keep)
-        ]
-        ms = 1000.0 * (cv2.getTickCount() - t0) / cv2.getTickFrequency()
-        return Detection(pts, np.round(prob, 3).tolist(), box, round(ms, 1))
+    score: float | None = None  # object detection confidence
 
 
 class YoloPoseDetector:
-    """Single-stage YOLO-pose ONNX detector (CPU via onnxruntime, no torch/ultralytics).
-
-    Predicts the full airframe bounding box (x0, y0, x1, y1) and all 15 keypoints in one pass
-    using aspect-preserving letterbox resize.
-    """
+    """Single-stage YOLO-pose ONNX detector (CPU via onnxruntime, no torch/ultralytics)."""
 
     def __init__(
         self,
@@ -181,7 +39,7 @@ class YoloPoseDetector:
         kpt_threshold: float = 0.50,
         threads: int = 2,
     ) -> None:
-        import onnxruntime as ort
+        import onnxruntime as ort  # deferred: the Pi runtime imports this package without it
 
         path = model_dir / "model.onnx" if model_dir.is_dir() else model_dir
         if not path.exists():
@@ -204,12 +62,10 @@ class YoloPoseDetector:
     def __call__(
         self,
         frame: np.ndarray,
-        prev_box: tuple[float, ...] | None = None,
-        nose_box_min: float = 400.0,
+        *,
         close_range: bool = False,
     ) -> Detection:
-        """frame: (720, 1280) uint8 mono. Extra kwargs accepted for interface parity."""
-        del prev_box, nose_box_min
+        """frame: (720, 1280) uint8 mono."""
         if frame.shape != (H, W):
             raise ValueError(f"frame must be {H}x{W} mono, got {frame.shape}")
         t0 = cv2.getTickCount()
@@ -228,7 +84,6 @@ class YoloPoseDetector:
         # Support both YOLO11/v8 `(50, N)` [cx,cy,w,h,score,kp...] and YOLO26 end-to-end
         # `(300, 51)` [x1,y1,x2,y2,score,cls,kp...] ONNX layouts.
         if out.ndim == 2 and out.shape[0] > out.shape[1] and out.shape[1] >= 6:
-            # End-to-end (max_det, 6 + 3*n_kp)
             scores = out[:, 4]
             best = int(np.argmax(scores))
             best_score = float(scores[best])
@@ -263,9 +118,9 @@ class YoloPoseDetector:
             for i in range(n_kp)
             if kc[i] >= kpt_thr and 0.0 <= ku[i] <= W and 0.0 <= kv[i] <= H
         ]
-        # Reject weak clutter false positives (e.g. rolling chair/table casters with 2-4 stray pts)
-        # while still keeping close-range bay views (3-4 nose-tyre pts during ENTER).
-        if not close_range and len(pts) < 5 and best_score < 0.65:
+        # Reject weak clutter false positives (e.g. rolling chair/table casters with 1-3 stray pts)
+        # while keeping valid 3-4 pt side/bay views (e.g. hubRear + gearL + gearR or nose tyre).
+        if not close_range and (len(pts) < 3 or (len(pts) < 4 and best_score < 0.58)):
             return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
         if close_range and len(pts) < 3:
             return Detection([], [0.0] * n_kp, None, round(ms, 1), round(best_score, 3))
@@ -278,13 +133,11 @@ class YoloPoseDetector:
         )
 
 
-def default_runs() -> tuple[Path, Path]:
-    """The two trained runs the Lab uses: `UGV_DETECTOR=whole,crop` (run names under
-    runs/pose_train) or `DEFAULT`. Not in Git: copy them with the repo."""
-    names = os.environ.get("UGV_DETECTOR", "").split(",")
-    whole, crop = names if len(names) == 2 and all(names) else DEFAULT
-    return TRAIN_DIR / whole, TRAIN_DIR / crop
+def default_runs() -> tuple[Path, ...]:
+    """The trained YOLO-pose run: `UGV_DETECTOR=<run>` (under runs/pose_train) or `DEFAULT`."""
+    name = os.environ.get("UGV_DETECTOR", "").strip() or DEFAULT
+    return (TRAIN_DIR / name,)
 
 
-def load_default(threads: int = 2) -> KeypointDetector:
-    return KeypointDetector(*default_runs(), threads=threads)
+def load_default(threads: int = 2) -> YoloPoseDetector:
+    return YoloPoseDetector(default_runs()[0], threads=threads)
