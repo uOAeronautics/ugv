@@ -184,7 +184,10 @@ class ParkController:
                     if not self._would_hit(q, away):
                         return away
                 return np.zeros(3)  # facing the plane: pause briefly for a blur-free lock
-            return np.array([0.0, 0.0, p.search_w])
+            # Scan toward the plane's side: on the right side (y < 0) the plane drifts right
+            # (CW, -search_w) while orbiting rearward; on the left side (y >= 0) it drifts left.
+            scan_dir = -1.0 if (q is not None and q[1] < 0.0) else 1.0
+            return np.array([0.0, 0.0, scan_dir * p.search_w])
 
         if s == "ACQUIRE":
             if not fresh:

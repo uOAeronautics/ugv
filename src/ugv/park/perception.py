@@ -266,7 +266,7 @@ def solve(
                 init = np.array([t[2] + CAMERA_X_M, -t[0], np.arctan2(-R[0, 0], R[2, 0]), pitch0])
     if init is None:
         init = prior
-    gate = max(6.0, 4 * det.pixel_std)
+    gate = max(14.0, 4 * det.pixel_std)
     if init is None:
         span = float(np.hypot(*np.ptp(model[:, :2], axis=0))) if len(model) >= 3 else 0.0
         if len(obs) < 3 or span < 0.35:
