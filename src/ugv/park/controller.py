@@ -88,6 +88,7 @@ class ParkParams:
     backoff_straight_in_bay: bool = False  # while x > stage_x, reverse straight out (no strafe/yaw)
     approach_align_first: bool = False  # pause forward advance in APPROACH while misaligned
     hub_rear_entry: bool = True  # route around low V-tail (-0.65, 0) into hub_rear (-0.40, 0)
+    continuous_enter: bool = False  # continuous 50 Hz visual-servo ENTER (no stop-burst sub-FSM)
     calib_min_points: int = 0  # estimator: keypoints a fix needs to calibrate gains and gyro bias
     blind_max_m: float = 1.0  # ENTER: farther than this from the target, never move unseen
     blind_waits: int = 3  # ENTER: empty measure windows to wait out before backing off
@@ -162,6 +163,18 @@ class ParkController:
             if q is not None and t - est.last_fix_t < 0.3:
                 self._go("ACQUIRE", "airframe seen")
                 return np.zeros(3)
+            if q is not None and self.fsm.age() < 3.0:
+                bearing = wrap(np.arctan2(-q[1], -q[0]) - q[2])
+                r = float(np.hypot(q[0], q[1]))
+                if abs(bearing) > np.radians(12.0):
+                    w_mag = float(np.clip(p.k_face * abs(bearing), 0.25, p.search_w))
+                    return np.array([0.0, 0.0, float(np.sign(bearing)) * w_mag])
+                if r < 0.60 and self.fsm.age() > 0.8:
+                    away = np.array([-0.10, 0.0, 0.0])
+                    if not self._would_hit(q, away):
+                        return away
+                if self.fsm.age() < 1.8:
+                    return np.zeros(3)  # facing the plane: pause briefly for a blur-free lock
             return np.array([0.0, 0.0, p.search_w])
 
         if s == "ACQUIRE":
@@ -249,7 +262,9 @@ class ParkController:
             return self._shielded(q, np.array([*_body(v_air, yaw), w]))
 
         if s == "ENTER":
-            return self._enter(t, est, q)
+            return (
+                self._enter_continuous(t, est, q) if p.continuous_enter else self._enter(t, est, q)
+            )
 
         if s == "BACKOFF":
             self._step = None
@@ -270,6 +285,36 @@ class ParkController:
                 return np.array([0.0, 0.0, cmd[2]])  # turn in place to straighten, no translation
             return cmd
         raise AssertionError(s)
+
+    def _enter_continuous(self, t: float, est: Estimator, q: np.ndarray) -> np.ndarray:
+        """Continuous 50 Hz visual-servo bay entry (no stop-measure-burst sub-FSM)."""
+        p, xt = self.params, self.bay.target[0]
+        x, y, yaw = float(q[0]), float(q[1]), float(q[2])
+        remaining = xt - x
+        if remaining <= p.stop_tol_m:
+            self._misaligned = 0
+            self._go("PARKED", "at the target")
+            return np.zeros(3)
+        if abs(y) > p.abort_lat_m or abs(yaw) > np.radians(p.abort_yaw_deg):
+            self._misaligned += 1
+            if self._misaligned >= max(3, p.misalign_confirm):
+                self._misaligned = 0
+                return self._backoff("misaligned in the bay")
+        else:
+            self._misaligned = 0
+        if t - est.last_fix_t > p.lost_s and remaining > p.blind_max_m:
+            return self._backoff("lost in the bay")
+        if abs(yaw) > np.radians(p.yaw_tol_deg):
+            w = float(np.clip(p.k_head * wrap(-yaw), -p.step_w, p.step_w))
+            return np.array([0.0, 0.0, w])
+        if abs(y) > p.lat_tol_m:
+            vy = float(np.clip(-p.k_lat * y, -p.step_v, p.step_v))
+            w = float(np.clip(p.k_head * wrap(-yaw), -0.25, 0.25))
+            return np.array([0.0, vy, w])
+        vx = float(np.clip(p.step_v * min(1.0, remaining / 0.12), 0.05, p.step_v))
+        vy = float(np.clip(-p.k_lat * y, -0.05, 0.05))
+        w = float(np.clip(p.k_head * wrap(-yaw), -0.25, 0.25))
+        return np.array([vx, vy, w])
 
     def _enter(self, t: float, est: Estimator, q: np.ndarray) -> np.ndarray:
         p, xt = self.params, self.bay.target[0]
